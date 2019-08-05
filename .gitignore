@@ -10,3 +10,6 @@ buildNumber.properties
 
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
 !/.mvn/wrapper/maven-wrapper.jar
+protoc-3.9.0-win64/
+.idea/
+*.iml
