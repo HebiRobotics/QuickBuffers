@@ -1,98 +1,88 @@
 package us.hebi.robobuf.compiler;
 
+import com.google.common.base.CaseFormat;
+import com.google.protobuf.DescriptorProtos.DescriptorProto;
+import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileOptions;
-import lombok.Getter;
+import lombok.Value;
 
+import java.io.File;
 import java.util.*;
-
-import static us.hebi.robobuf.compiler.Preconditions.*;
 
 /**
  * @author Florian Enner
  * @since 06 Aug 2019
  */
-@Getter
+@Value
 public class FileParams {
 
     public FileParams(Map<String, String> generatorParams, FileDescriptorProto file, List<String> errors) {
 
-        name = file.getName();
+        fileName = file.getName();
+        protoPackage = file.hasPackage() ? file.getPackage() : DEFAULT_PACKAGE;
 
         // Update parameters for this particular file
         FileOptions options = file.getOptions();
-        outerClassName = options.hasJavaOuterClassname() ? options.getJavaOuterClassname() : "";
-        javaPackage = options.hasJavaPackage() ? options.getJavaPackage() : "";
-        useMultipleFiles = options.hasJavaMultipleFiles() && options.getJavaMultipleFiles();
+        generateMultipleFiles = options.hasJavaMultipleFiles() && options.getJavaMultipleFiles();
+
+        // Use specified name or default to the name of the file
+        if (options.hasJavaOuterClassname()) {
+            outerClassname = options.getJavaOuterClassname();
+        } else {
+            String defaultClassName = toUpperCamel(stripSuffixString(new File(fileName).getName())); // removes slashes etc.
+            if (hasConflictingClassName(file, defaultClassName)) {
+                defaultClassName += "OuterClass"; // same as in recent versions of proto-java
+            }
+            outerClassname = defaultClassName;
+        }
+
+        // Use specified package or convert proto package
+        if (options.hasJavaPackage()) {
+            javaPackage = options.getJavaPackage();
+        } else {
+            javaPackage = protoPackage;
+        }
+
         deprecated = options.hasDeprecated() && options.getDeprecated();
 
-        addToDependencyMapRecursive(file);
-
-        // Overwrite any existing options with ones from command line
-        // (Uses older javanano parameters)
-        generatorParams.forEach((key, value) -> {
-            key = key.trim();
-            value = value.trim();
-            String[] parts;
-
-            switch (key) {
-
-                case "java_package":
-                    parts = value.trim().split("|");
-                    checkArgument(parts.length == 2, "Bad java_package, expecting filename|PackageName. Found: '" + value + "'");
-                    javaPackages.put(parts[0], parts[1]);
-                    break;
-
-                case "java_outer_classname":
-                    parts = value.trim().split("|");
-                    checkArgument(parts.length == 2, "Bad java_outer_classname, expecting filename|ClassName. Found: '" + value + "'");
-                    javaOuterClassnames.put(parts[0], parts[1]);
-                    break;
-
-                case "java_multiple_files":
-                    useMultipleFiles = "true".equals(value);
-                    useMultipleFilesWasOverriden = true;
-                    break;
-
-                case "store_unknown_fields":
-                    storeUnknownFields = "true".equals(value);
-                    break;
-
-                default:
-                    errors.add("Ignoring unknown generator option: " + key);
-                    break;
-
-            }
-
-
-        });
-
     }
 
-    private void addToDependencyMapRecursive(FileDescriptorProto file) {
-        String fileName = file.getName();
-        FileOptions options = file.getOptions();
-        if (options.hasJavaPackage())
-            javaPackages.put(fileName, options.getJavaPackage());
-        if (options.hasJavaMultipleFiles())
-            multipleFileSet.add(fileName);
-        if (options.hasJavaOuterClassname())
-            javaOuterClassnames.put(fileName, options.getJavaOuterClassname());
-
-        for (String dependency : file.getDependencyList()) {
-            // TODO: seems that the proto format was changed?
-            //addToDependencyMapRecursive(dependency);
+    private static boolean hasConflictingClassName(FileDescriptorProto file, String outerClassname) {
+        for (DescriptorProto descriptor : file.getMessageTypeList()) {
+            if (outerClassname.equals(toUpperCamel(descriptor.getName())))
+                return true;
         }
+        for (EnumDescriptorProto descriptor : file.getEnumTypeList()) {
+            if (outerClassname.equals(toUpperCamel(descriptor.getName())))
+                return true;
+        }
+        return false;
     }
 
-    private final String name;
-    private String outerClassName;
-    private String javaPackage;
-    private boolean useMultipleFiles;
-    private boolean useMultipleFilesWasOverriden = false;
-    private boolean deprecated = false;
-    private boolean storeUnknownFields = false;
+    private static String toUpperCamel(String name) {
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
+    }
 
+    private static String stripSuffixString(String fileName) {
+        if (fileName.endsWith(".proto"))
+            return fileName.substring(0, fileName.length() - ".proto".length());
+        if (fileName.endsWith(".protodevel"))
+            return fileName.substring(0, fileName.length() - ".protodevel".length());
+        return fileName;
+    }
+
+    String fileName;
+    boolean generateMultipleFiles;
+
+    private String outerClassname;
+    private String protoPackage;
+    private String javaPackage;
+
+    private boolean deprecated;
+
+    // TODO create a map of all types for validation
+    private static final String DEFAULT_PACKAGE = "";
     private final Map<String, String> javaPackages = new HashMap<>();
     private final Map<String, String> javaOuterClassnames = new HashMap<>();
     private final Set<String> multipleFileSet = new HashSet<>();

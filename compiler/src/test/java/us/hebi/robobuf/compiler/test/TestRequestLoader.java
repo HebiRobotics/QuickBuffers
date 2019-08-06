@@ -1,6 +1,8 @@
 package us.hebi.robobuf.compiler.test;
 
 import com.google.protobuf.compiler.PluginProtos;
+import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,17 +15,23 @@ import static us.hebi.robobuf.compiler.Preconditions.*;
  */
 public class TestRequestLoader {
 
-    public static PluginProtos.CodeGeneratorRequest getSimpleRequest() throws IOException {
+    @Test
+    public void testAllAvailable() throws IOException {
+        getSimpleRequest();
+        getImportRequest();
+    }
+
+    public static CodeGeneratorRequest getSimpleRequest() throws IOException {
         return getRequest("simple");
     }
 
-    public static PluginProtos.CodeGeneratorRequest getImportRequest() throws IOException {
+    public static CodeGeneratorRequest getImportRequest() throws IOException {
         return getRequest("import");
     }
 
-    private static PluginProtos.CodeGeneratorRequest getRequest(String name) throws IOException {
+    private static CodeGeneratorRequest getRequest(String name) throws IOException {
         InputStream is = TestRequestLoader.class.getResourceAsStream(name + ".request");
-        return PluginProtos.CodeGeneratorRequest.parseFrom(checkNotNull(is));
+        return CodeGeneratorRequest.parseFrom(checkNotNull(is));
     }
 
 }
