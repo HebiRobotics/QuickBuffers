@@ -1,24 +1,21 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.parser;
 
-import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
-import us.hebi.robobuf.parser.ParserUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Florian Enner
  * @since 05 Aug 2019
  */
-public class CompilerPlugin {
+public class ParserPlugin {
 
     /**
-     * The protoc-gen-plugin communicates via proto messages on System.in/.out
+     * A protoc-gen-plugin that communicates with protoc via messages on System.in & System.out
      *
      * @param args
      * @throws IOException
@@ -42,15 +39,16 @@ public class CompilerPlugin {
     public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest request) throws IOException {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
 
-        response.addFile(CodeGeneratorResponse.File.newBuilder()
-                .setContent(String.valueOf(request))
-                .setName("test"));
+        // Figure out file name
+        Map<String, String> parameters = ParserUtil.getParameterMap(request);
+        String fileName = parameters.get("requestFile");
+        if (fileName == null)
+            return ParserUtil.asError("parameter 'requestFile' is not set");
 
-        for (DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
-            response.addFile(CodeGeneratorResponse.File.newBuilder()
-                    .setName(file.getName())
-                    .setContent(String.valueOf(file)));
-        }
+        // Add content
+        response.addFile(CodeGeneratorResponse.File.newBuilder()
+                .setContentBytes(request.toByteString())
+                .setName(fileName));
 
         return response.build();
 

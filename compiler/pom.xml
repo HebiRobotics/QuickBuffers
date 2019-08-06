@@ -13,6 +13,13 @@
 
     <dependencies>
 
+        <!-- stores request input as binary that we can load in unit tsts -->
+        <dependency>
+            <groupId>us.hebi.robobuf</groupId>
+            <artifactId>parser</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
@@ -29,28 +36,52 @@
         <plugins>
 
             <!-- Generate descriptors that we can load in unit tests -->
+            <!--      <plugin>
+                      <groupId>com.github.os72</groupId>
+                      <artifactId>protoc-jar-maven-plugin</artifactId>
+                      <version>3.8.0</version>
+                      <executions>
+                          <execution>
+                              <phase>generate-test-sources</phase>
+                              <goals>
+                                  <goal>run</goal>
+                              </goals>
+                              <configuration>
+                                  <protocVersion>${protoc.version}</protocVersion>
+                                  <addSources>none</addSources>
+
+                                  <type>descriptor</type>
+                                  <outputDirectory>${project.build.directory}/test-classes/us/hebi/robobuf/compiler/proto/</outputDirectory>
+
+                                  <inputDirectories>
+                                      <include>src/test/resources/us/hebi/robobuf/test</include>
+                                  </inputDirectories>
+
+                              </configuration>
+                          </execution>
+                      </executions>
+                  </plugin>-->
+
             <plugin>
-                <groupId>com.github.os72</groupId>
-                <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>3.8.0</version>
+                <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>generate-test-sources</id>
                         <phase>generate-test-sources</phase>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="target/test-classes/us/hebi/robobuf/compiler/test"/>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--request_out=requestFile=simple.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/simple.proto"/>
+                                </exec>
+                            </tasks>
+                            <testSourceRoot>target/generated-test-sources</testSourceRoot>
+                        </configuration>
                         <goals>
                             <goal>run</goal>
                         </goals>
-                        <configuration>
-                            <protocVersion>${protoc.version}</protocVersion>
-                            <addSources>none</addSources>
-
-                            <type>descriptor</type>
-                            <outputDirectory>${project.build.directory}/test-classes/us/hebi/robobuf/compiler/proto/</outputDirectory>
-
-                            <inputDirectories>
-                                <include>src/test/resources/us/hebi/robobuf/compiler/proto</include>
-                            </inputDirectories>
-
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
