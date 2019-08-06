@@ -5,7 +5,6 @@ import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -40,7 +39,7 @@ public class ParserPlugin {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
 
         // Figure out file name
-        Map<String, String> parameters = ParserUtil.getParameterMap(request);
+        Map<String, String> parameters = ParserUtil.getGeneratorParameters(request);
         String fileName = parameters.get("requestFile");
         if (fileName == null)
             return ParserUtil.asError("parameter 'requestFile' is not set");

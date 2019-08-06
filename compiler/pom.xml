@@ -26,6 +26,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
@@ -36,31 +41,32 @@
         <plugins>
 
             <!-- Generate descriptors that we can load in unit tests -->
-            <!--      <plugin>
-                      <groupId>com.github.os72</groupId>
-                      <artifactId>protoc-jar-maven-plugin</artifactId>
-                      <version>3.8.0</version>
-                      <executions>
-                          <execution>
-                              <phase>generate-test-sources</phase>
-                              <goals>
-                                  <goal>run</goal>
-                              </goals>
-                              <configuration>
-                                  <protocVersion>${protoc.version}</protocVersion>
-                                  <addSources>none</addSources>
+            <plugin>
+                <groupId>com.github.os72</groupId>
+                <artifactId>protoc-jar-maven-plugin</artifactId>
+                <version>3.8.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <protocVersion>${protoc.version}</protocVersion>
+                            <addSources>none</addSources>
 
-                                  <type>descriptor</type>
-                                  <outputDirectory>${project.build.directory}/test-classes/us/hebi/robobuf/compiler/proto/</outputDirectory>
+                            <type>java</type>
+                            <outputDirectory>${project.build.directory}/generated-test-sources/
+                            </outputDirectory>
 
-                                  <inputDirectories>
-                                      <include>src/test/resources/us/hebi/robobuf/test</include>
-                                  </inputDirectories>
+                            <inputDirectories>
+                                <include>src/test/resources/us/hebi/robobuf/compiler/test</include>
+                            </inputDirectories>
 
-                              </configuration>
-                          </execution>
-                      </executions>
-                  </plugin>-->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -75,6 +81,12 @@
                                     <arg value="--request_out=requestFile=simple.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
                                     <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
                                     <arg value="src/test/resources/us/hebi/robobuf/compiler/test/simple.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--request_out=requestFile=import.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces.proto"/>
+                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces_import.proto"/>
                                 </exec>
                             </tasks>
                             <testSourceRoot>target/generated-test-sources</testSourceRoot>
