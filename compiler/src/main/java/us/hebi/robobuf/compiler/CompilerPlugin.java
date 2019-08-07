@@ -1,15 +1,23 @@
 package us.hebi.robobuf.compiler;
 
-import com.google.protobuf.DescriptorProtos;
+import com.google.common.collect.Lists;
+import com.google.protobuf.DescriptorProtos.DescriptorProto;
+import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.TypeSpec;
+import us.hebi.robobuf.compiler.type.EnumGenerator;
+import us.hebi.robobuf.compiler.type.MessageGenerator;
 import us.hebi.robobuf.parser.ParserUtil;
 
-import java.io.ByteArrayOutputStream;
+import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Florian Enner
@@ -34,22 +42,64 @@ public class CompilerPlugin {
             CodeGeneratorRequest request = CodeGeneratorRequest.parseFrom(input);
             return handleRequest(request);
 
-        } catch (Exception e) {
-            return ParserUtil.asErrorWithStackTrace(e);
+        } catch (GeneratorException ge) {
+            return ParserUtil.asError(ge.getMessage());
+        } catch (Exception ex) {
+            return ParserUtil.asErrorWithStackTrace(ex);
         }
+
     }
 
     public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest request) throws IOException {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
+        Map<String, String> generatorParams = ParserUtil.getGeneratorParameters(request);
+        TypeMap typeMap = TypeMap.fromRequest(request);
 
-        response.addFile(CodeGeneratorResponse.File.newBuilder()
-                .setContent(String.valueOf(request))
-                .setName("test"));
+        for (FileDescriptorProto fileDescriptors : request.getProtoFileList()) {
+            FileParams params = new FileParams(generatorParams, fileDescriptors);
+            boolean nested = !params.isGenerateMultipleFiles();
+            ClassName outerClassName = ClassName.get(params.getJavaPackage(), params.getOuterClassname());
+            TypeSpec.Builder outerClassSpec = TypeSpec.classBuilder(outerClassName)
+                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
-        for (DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
-            response.addFile(CodeGeneratorResponse.File.newBuilder()
-                    .setName(file.getName())
-                    .setContent(String.valueOf(file)));
+            List<TypeSpec> outputFiles = Lists.newArrayList();
+
+            // Enum types
+            for (EnumDescriptorProto enumType : fileDescriptors.getEnumTypeList()) {
+                TypeSpec typeSpec = new EnumGenerator(enumType).generate(nested);
+                if (nested) outerClassSpec.addType(typeSpec);
+                else outputFiles.add(typeSpec);
+            }
+
+            // Message types
+            for (DescriptorProto messageType : fileDescriptors.getMessageTypeList()) {
+                TypeSpec typeSpec = new MessageGenerator(messageType).generate(nested);
+                if (nested) outerClassSpec.addType(typeSpec);
+                else outputFiles.add(typeSpec);
+            }
+
+            // Generate Java files
+            outputFiles.add(outerClassSpec.build());
+            String directory = "";
+            if(!outerClassName.packageName().isEmpty())
+                directory = outerClassName.packageName().replaceAll("\\.", "/") + "/";
+
+            for (TypeSpec typeSpec : outputFiles) {
+
+                JavaFile javaFile = JavaFile.builder(params.getJavaPackage(), typeSpec)
+                        .indent("    ")
+                        .skipJavaLangImports(true)
+                        .build();
+
+                StringBuilder content = new StringBuilder(1000);
+                javaFile.writeTo(content);
+
+                response.addFile(CodeGeneratorResponse.File.newBuilder()
+                        .setName(directory + typeSpec.name + ".java")
+                        .setContent(content.toString())
+                        .build());
+            }
+
         }
 
         return response.build();

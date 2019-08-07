@@ -34,7 +34,7 @@ public class TypeMapTest {
                 .getMessageType(0) // ContainerMessage
                 .getField(6) // optional_nested_import_message
                 .getTypeName();
-        assertEquals("us.hebi.robobuf.testimport.ImportMessage.NestedImportMessage", map.getClassName(typeId).toString());
+        assertEquals("us.hebi.robobuf.test.external.ImportMessage.NestedImportMessage", map.getClassName(typeId).toString());
 
     }
 

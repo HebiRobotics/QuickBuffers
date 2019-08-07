@@ -1,7 +1,9 @@
 package us.hebi.robobuf.compiler;
 
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
+import com.google.protobuf.compiler.PluginProtos;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
+import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import org.junit.Ignore;
 import org.junit.Test;
 import us.hebi.robobuf.compiler.test.TestRequestLoader;
@@ -17,11 +19,18 @@ import java.util.Map;
  * @author Florian Enner
  * @since 05 Aug 2019
  */
-public class CompilerRequestTest {
+public class CompilerPluginTest {
 
     @Test
     public void testSimpleRequest() throws IOException {
         CodeGeneratorRequest request = TestRequestLoader.getSimpleRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test
+    public void testImportRequest() throws IOException {
+        CodeGeneratorRequest request = TestRequestLoader.getImportRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 
     @Ignore
