@@ -50,7 +50,38 @@
     <build>
         <plugins>
 
-            <!-- Generate descriptors that we can load in unit tests -->
+            <!-- Generate compiler plugin requests that we can work with in unit tests -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="target/test-classes/us/hebi/robobuf/compiler/test"/>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--request_out=requestFile=simple.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/simple.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--request_out=requestFile=import.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
+                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces.proto"/>
+                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces_import.proto"/>
+                                </exec>
+                            </tasks>
+                            <testSourceRoot>target/generated-test-sources</testSourceRoot>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Generate Java sources for comparison -->
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
@@ -78,32 +109,25 @@
                 </executions>
             </plugin>
 
+            <!-- Create uber-jar that we can call as a plugin -->
             <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
                 <executions>
                     <execution>
-                        <id>generate-test-sources</id>
-                        <phase>generate-test-sources</phase>
-                        <configuration>
-                            <tasks>
-                                <mkdir dir="target/test-classes/us/hebi/robobuf/compiler/test"/>
-                                <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=simple.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/simple.proto"/>
-                                </exec>
-                                <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces.proto"/>
-                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces_import.proto"/>
-                                </exec>
-                            </tasks>
-                            <testSourceRoot>target/generated-test-sources</testSourceRoot>
-                        </configuration>
+                        <phase>package</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <finalName>${project.artifactId}-shaded</finalName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>us.hebi.robobuf.compiler.CompilerPlugin</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

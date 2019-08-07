@@ -11,6 +11,13 @@
 
     <artifactId>runtime</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
 
@@ -43,6 +50,34 @@
                     </execution>
                 </executions>
             </plugin>-->
+
+            <!-- Generate sources via plugin -->
+            <plugin>
+                <groupId>com.github.os72</groupId>
+                <artifactId>protoc-jar-maven-plugin</artifactId>
+                <version>3.8.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <protocVersion>${protoc.version}</protocVersion>
+                            <addSources>none</addSources>
+
+                            <type>robobuf</type>
+                            <outputDirectory>${project.build.directory}/generated-test-sources/
+                            </outputDirectory>
+
+                            <inputDirectories>
+                                <include>../compiler/src/test/resources/us/hebi/robobuf/compiler/test</include>
+                            </inputDirectories>
+
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
         </plugins>
     </build>
