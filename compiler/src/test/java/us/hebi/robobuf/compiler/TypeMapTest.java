@@ -2,7 +2,6 @@ package us.hebi.robobuf.compiler;
 
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import org.junit.Test;
-import us.hebi.robobuf.compiler.test.TestRequestLoader;
 
 import static org.junit.Assert.*;
 

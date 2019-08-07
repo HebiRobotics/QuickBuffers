@@ -50,7 +50,7 @@
     <build>
         <plugins>
 
-            <!-- Generate compiler plugin requests that we can work with in unit tests -->
+            <!-- Generate sample compiler plugin requests that we can work with in unit tests -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
@@ -59,17 +59,17 @@
                         <phase>generate-test-sources</phase>
                         <configuration>
                             <tasks>
-                                <mkdir dir="target/test-classes/us/hebi/robobuf/compiler/test"/>
+                                <mkdir dir="target/test-classes/us/hebi/robobuf/compiler"/>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=simple.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/simple.proto"/>
+                                    <arg value="--request_out=requestFile=simple.request:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
+                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf//simple.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request:target/test-classes/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="--proto_path=src/test/resources/us/hebi/robobuf/compiler/test"/>
-                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces.proto"/>
-                                    <arg value="src/test/resources/us/hebi/robobuf/compiler/test/namespaces_import.proto"/>
+                                    <arg value="--request_out=requestFile=import.request:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
+                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces.proto"/>
+                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces_import.proto"/>
                                 </exec>
                             </tasks>
                             <testSourceRoot>target/generated-test-sources</testSourceRoot>
@@ -101,7 +101,7 @@
                             </outputDirectory>
 
                             <inputDirectories>
-                                <include>src/test/resources/us/hebi/robobuf/compiler/test</include>
+                                <include>../runtime/src/test/resources/us/hebi/robobuf/</include>
                             </inputDirectories>
 
                         </configuration>

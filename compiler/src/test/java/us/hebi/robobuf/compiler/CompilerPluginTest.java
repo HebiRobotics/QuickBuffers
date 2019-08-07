@@ -1,12 +1,10 @@
 package us.hebi.robobuf.compiler;
 
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
-import com.google.protobuf.compiler.PluginProtos;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import org.junit.Ignore;
 import org.junit.Test;
-import us.hebi.robobuf.compiler.test.TestRequestLoader;
 import us.hebi.robobuf.parser.ParserUtil;
 
 import java.io.IOException;

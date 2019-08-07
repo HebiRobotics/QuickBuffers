@@ -71,7 +71,7 @@
                             </outputDirectory>
 
                             <inputDirectories>
-                                <include>../compiler/src/test/resources/us/hebi/robobuf/compiler/test</include>
+                                <include>src/test/resources/us/hebi/robobuf/</include>
                             </inputDirectories>
 
                         </configuration>
