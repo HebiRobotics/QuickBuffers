@@ -13,6 +13,8 @@ public interface FieldGenerator {
 
     void generateClearCode(MethodSpec.Builder method);
 
+    void generateCopyFromCode(MethodSpec.Builder method);
+
     void generateMergingCode(MethodSpec.Builder method);
 
     void generateMergingCodeFromPacked(MethodSpec.Builder method);

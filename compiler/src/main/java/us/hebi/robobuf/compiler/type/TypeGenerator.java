@@ -8,6 +8,6 @@ import com.squareup.javapoet.TypeSpec;
  */
 public interface TypeGenerator {
 
-    TypeSpec generate(boolean nested);
+    TypeSpec generate();
 
 }

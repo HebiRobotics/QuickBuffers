@@ -14,10 +14,10 @@ public class EnumGenerator implements TypeGenerator {
 
     public EnumGenerator(EnumDescriptorProto descriptor) {
         this.descriptor = descriptor;
-        this.typeName = ClassName.bestGuess(descriptor.getName());
+        this.thisClass = ClassName.get("", descriptor.getName());
     }
 
-    public TypeSpec generate(boolean nested) {
+    public TypeSpec generate() {
         ClassName thisType = ClassName.bestGuess(descriptor.getName());
         TypeSpec.Builder type = TypeSpec.enumBuilder(thisType)
                 .addModifiers(Modifier.PUBLIC);
@@ -57,10 +57,10 @@ public class EnumGenerator implements TypeGenerator {
 
         MethodSpec.Builder forNumber = MethodSpec.methodBuilder("forNumber")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(typeName)
+                .returns(thisClass)
                 .addParameter(TypeName.INT, "value");
 
-        if (highestNumber > LOOKUP_THRESHOLD) {
+        if (highestNumber > MAX_LOOKUP_ARRAY_SIZE) {
 
             // lookup using switch statement
             forNumber.beginControlFlow("switch(value)");
@@ -78,9 +78,9 @@ public class EnumGenerator implements TypeGenerator {
                     .endControlFlow();
             forNumber.addStatement("return lookup[value]");
 
-            TypeName arrayType = ArrayTypeName.of(typeName);
+            TypeName arrayType = ArrayTypeName.of(thisClass);
             typeSpec.addField(FieldSpec.builder(arrayType, "lookup", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("new $T[$L]", typeName, highestNumber + 1)
+                    .initializer("new $T[$L]", thisClass, highestNumber + 1)
                     .build());
 
             CodeBlock.Builder initBlock = CodeBlock.builder();
@@ -96,7 +96,7 @@ public class EnumGenerator implements TypeGenerator {
     }
 
     final EnumDescriptorProto descriptor;
-    final ClassName typeName;
-    private static final int LOOKUP_THRESHOLD = 50;
+    final ClassName thisClass;
+    private static final int MAX_LOOKUP_ARRAY_SIZE = 50; // TODO: make this a parameter
 
 }

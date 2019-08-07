@@ -17,7 +17,7 @@ message ContainerMessage {
   enum NestedEnum {
     FOO = 1;
     BAR = 2;
-    BAZ = 3;
+    BAZ = 100;
   }
 
   // Defined inside message

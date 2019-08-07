@@ -66,14 +66,14 @@ public class CompilerPlugin {
 
             // Enum types
             for (EnumDescriptorProto enumType : fileDescriptors.getEnumTypeList()) {
-                TypeSpec typeSpec = new EnumGenerator(enumType).generate(nested);
+                TypeSpec typeSpec = new EnumGenerator(enumType).generate();
                 if (nested) outerClassSpec.addType(typeSpec);
                 else outputFiles.add(typeSpec);
             }
 
             // Message types
             for (DescriptorProto messageType : fileDescriptors.getMessageTypeList()) {
-                TypeSpec typeSpec = new MessageGenerator(messageType).generate(nested);
+                TypeSpec typeSpec = new MessageGenerator(messageType, nested, typeMap).generate();
                 if (nested) outerClassSpec.addType(typeSpec);
                 else outputFiles.add(typeSpec);
             }
