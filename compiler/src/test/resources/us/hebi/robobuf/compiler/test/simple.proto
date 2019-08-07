@@ -33,9 +33,9 @@
 syntax = "proto2";
 package robobuf_unittest_import;
 
-option java_package = "us.hebi.robobuf";
+option java_package = "us.hebi.robobuf.test";
 
-message SingleMessageNano {
+message SimpleMessage {
 
     optional int32 optional_field = 1;
 

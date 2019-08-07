@@ -4,10 +4,7 @@ import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileOptions;
 import lombok.Value;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Florian Enner
@@ -16,7 +13,7 @@ import java.util.Set;
 @Value
 public class FileParams {
 
-    public FileParams(Map<String, String> generatorParams, FileDescriptorProto file) {
+    public FileParams(Map<String, String> genParams, FileDescriptorProto file) {
 
         fileName = file.getName();
         protoPackage = NameResolver.getProtoPackage(file);
@@ -25,7 +22,9 @@ public class FileParams {
 
         FileOptions options = file.getOptions();
         generateMultipleFiles = options.hasJavaMultipleFiles() && options.getJavaMultipleFiles();
+
         deprecated = options.hasDeprecated() && options.getDeprecated();
+
     }
 
     String fileName;
@@ -36,11 +35,5 @@ public class FileParams {
     private String javaPackage;
 
     private boolean deprecated;
-
-    // TODO create a map of all types for validation
-    private static final String DEFAULT_PACKAGE = "";
-    private final Map<String, String> javaPackages = new HashMap<>();
-    private final Map<String, String> javaOuterClassnames = new HashMap<>();
-    private final Set<String> multipleFileSet = new HashSet<>();
 
 }

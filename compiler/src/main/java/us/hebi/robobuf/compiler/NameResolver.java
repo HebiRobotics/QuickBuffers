@@ -33,7 +33,7 @@ public class NameResolver {
         String defaultOuterClassName = toUpperCamel(stripSuffixString(nameWithoutPath));
 
         // add suffix on collisions to match gen-java behavior
-        if(!hasConflictingClassName(descriptor, defaultOuterClassName))
+        if (!hasConflictingClassName(descriptor, defaultOuterClassName))
             return defaultOuterClassName;
         return defaultOuterClassName + OUTER_CLASS_SUFFIX;
 
