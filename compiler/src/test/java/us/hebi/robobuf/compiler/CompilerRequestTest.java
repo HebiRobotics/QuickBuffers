@@ -8,7 +8,6 @@ import us.hebi.robobuf.compiler.test.TestRequestLoader;
 import us.hebi.robobuf.parser.ParserUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -32,7 +31,7 @@ public class CompilerRequestTest {
         CodeGeneratorRequest request = TestRequestLoader.getImportRequest();
         Map<String, String> params = ParserUtil.getGeneratorParameters(request);
         for (FileDescriptorProto proto : request.getProtoFileList()) {
-            FileParams fileParams = new FileParams(params, proto, new ArrayList<>());
+            FileParams fileParams = new FileParams(params, proto);
         }
 
         System.out.println("Files to generate\n");
