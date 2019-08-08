@@ -58,7 +58,7 @@ class MessageField extends FieldGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
                 .addNamedCode("" +
-                        "$clearHas:L\n" +
+                        "$clearHas:L;\n" +
                         "$name:L.clear();\n" +
                         "return this;\n", m)
                 .build();
