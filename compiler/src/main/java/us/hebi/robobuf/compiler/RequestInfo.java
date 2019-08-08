@@ -183,6 +183,8 @@ public class RequestInfo {
             getterName = "get" + upperName;
             mutableGetterName = "getMutable" + upperName;
             clearName = "clear" + upperName;
+            tag = RuntimeClasses.makeTag(descriptor);
+            number = descriptor.getNumber();
         }
 
         public boolean isRequired() {
@@ -199,10 +201,6 @@ public class RequestInfo {
 
         public boolean isPrimitive() {
             return TypeMap.isPrimitive(descriptor.getType());
-        }
-
-        public int getNumber() {
-            return descriptor.getNumber();
         }
 
         public TypeName getTypeName() {
@@ -224,6 +222,8 @@ public class RequestInfo {
         String getterName;
         String mutableGetterName;
         String clearName;
+        int tag;
+        int number;
 
     }
 
