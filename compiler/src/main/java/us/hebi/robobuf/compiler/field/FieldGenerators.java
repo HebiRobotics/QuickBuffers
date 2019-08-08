@@ -12,91 +12,83 @@ import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 public class FieldGenerators {
 
     public static FieldGenerator createGenerator(FieldInfo field) {
+        if (field.isPrimitive() && !field.isRepeated()) {
+            return new PrimitiveField(field);
+        }
+
         switch (field.getDescriptor().getType()) {
-            case TYPE_DOUBLE:
+            case TYPE_MESSAGE:
+                if (!field.isRepeated())
+                    return new MessageField(field);
                 break;
-            case TYPE_FLOAT:
+
+            case TYPE_ENUM:
+                if (!field.isRepeated())
+                    return new EnumField(field);
                 break;
-            case TYPE_INT64:
-                break;
-            case TYPE_UINT64:
-                break;
-            case TYPE_INT32:
-                break;
-            case TYPE_FIXED64:
-                break;
-            case TYPE_FIXED32:
-                break;
-            case TYPE_BOOL:
-                break;
+
             case TYPE_STRING:
+                break;
+            case TYPE_BYTES:
                 break;
             case TYPE_GROUP:
                 break;
-            case TYPE_MESSAGE:
-                return new MessageField(field);
-            case TYPE_BYTES:
-                break;
-            case TYPE_UINT32:
-                break;
-            case TYPE_ENUM:
-                break;
-            case TYPE_SFIXED32:
-                break;
-            case TYPE_SFIXED64:
-                break;
-            case TYPE_SINT32:
-                break;
-            case TYPE_SINT64:
-                break;
         }
 
-        return new FieldGenerator() {
-            @Override
-            public void generateMembers(TypeSpec.Builder type) {
-                type.addField(FieldSpec.builder(field.getTypeName(), field.getLowerName()).build());
-            }
+        return new IgnoredFieldGenerator(field);
+    }
 
-            @Override
-            public void generateClearCode(MethodSpec.Builder method) {
+    static final class IgnoredFieldGenerator extends FieldGenerator {
 
-            }
+        protected IgnoredFieldGenerator(FieldInfo info) {
+            super(info);
+        }
 
-            @Override
-            public void generateCopyFromCode(MethodSpec.Builder method) {
+        @Override
+        public void generateMembers(TypeSpec.Builder type) {
+            type.addField(FieldSpec.builder(info.getTypeName(), info.getLowerName()).addJavadoc("Unsupported Field Type").build());
+        }
 
-            }
+        @Override
+        public void generateClearCode(MethodSpec.Builder method) {
 
-            @Override
-            public void generateMergingCode(MethodSpec.Builder method) {
+        }
 
-            }
+        @Override
+        public void generateCopyFromCode(MethodSpec.Builder method) {
 
-            @Override
-            public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
+        }
 
-            }
+        @Override
+        public void generateMergingCode(MethodSpec.Builder method) {
 
-            @Override
-            public void generateSerializationCode(MethodSpec.Builder method) {
+        }
 
-            }
+        @Override
+        public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
 
-            @Override
-            public void generateSerializedSizeCode(MethodSpec.Builder method) {
+        }
 
-            }
+        @Override
+        public void generateSerializationCode(MethodSpec.Builder method) {
 
-            @Override
-            public void generateEqualsCode(MethodSpec.Builder method) {
+        }
 
-            }
+        @Override
+        public void generateSerializedSizeCode(MethodSpec.Builder method) {
 
-            @Override
-            public void generateHashCodeCode(MethodSpec.Builder method) {
+        }
 
-            }
-        };
+        @Override
+        public void generateEqualsCode(MethodSpec.Builder method) {
+
+        }
+
+        @Override
+        public void generateHashCodeCode(MethodSpec.Builder method) {
+
+        }
+
     }
 
 }

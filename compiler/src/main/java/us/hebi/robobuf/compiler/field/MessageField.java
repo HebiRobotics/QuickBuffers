@@ -12,11 +12,10 @@ import javax.lang.model.element.Modifier;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-public class MessageField implements FieldGenerator {
+class MessageField extends FieldGenerator {
 
     public MessageField(RequestInfo.FieldInfo info) {
-        this.info = info;
-        this.typeName = info.getTypeName();
+        super(info);
     }
 
     @Override
@@ -58,9 +57,10 @@ public class MessageField implements FieldGenerator {
         MethodSpec clearer = MethodSpec.methodBuilder(info.getClearName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
-                .addStatement(info.getClearBit())
-                .addStatement("$L.clear()", value.name)
-                .addStatement("return this")
+                .addNamedCode("" +
+                        "$clearHas:L\n" +
+                        "$name:L.clear();\n" +
+                        "return this;\n", m)
                 .build();
 
         type.addField(value);
@@ -74,7 +74,7 @@ public class MessageField implements FieldGenerator {
 
     @Override
     public void generateClearCode(MethodSpec.Builder method) {
-
+        method.addNamedCode("this.$name:L.clear();\n", m);
     }
 
     @Override
@@ -111,8 +111,5 @@ public class MessageField implements FieldGenerator {
     public void generateHashCodeCode(MethodSpec.Builder method) {
 
     }
-
-    final RequestInfo.FieldInfo info;
-    final TypeName typeName;
 
 }
