@@ -1,8 +1,11 @@
 package us.hebi.robobuf.compiler;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.TypeName;
 import lombok.ToString;
 import us.hebi.robobuf.compiler.RequestInfo.FileInfo;
 import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
@@ -28,6 +31,62 @@ public class TypeMap {
 
     static TypeMap empty() {
         return new TypeMap();
+    }
+
+    public static boolean isPrimitive(DescriptorProtos.FieldDescriptorProto.Type type) {
+        switch (type) {
+            case TYPE_DOUBLE:
+            case TYPE_FLOAT:
+            case TYPE_INT64:
+            case TYPE_UINT64:
+            case TYPE_INT32:
+            case TYPE_FIXED64:
+            case TYPE_FIXED32:
+            case TYPE_BOOL:
+            case TYPE_UINT32:
+            case TYPE_SFIXED32:
+            case TYPE_SFIXED64:
+            case TYPE_SINT32:
+            case TYPE_SINT64:
+                return true;
+        }
+        return false;
+    }
+
+    public TypeName resolveFieldType(RequestInfo.FieldInfo field) {
+        switch (field.getDescriptor().getType()) {
+
+            case TYPE_DOUBLE:
+                return TypeName.DOUBLE;
+            case TYPE_FLOAT:
+                return TypeName.FLOAT;
+            case TYPE_SFIXED64:
+            case TYPE_FIXED64:
+            case TYPE_SINT64:
+            case TYPE_INT64:
+            case TYPE_UINT64:
+                return TypeName.LONG;
+            case TYPE_SFIXED32:
+            case TYPE_FIXED32:
+            case TYPE_SINT32:
+            case TYPE_INT32:
+            case TYPE_UINT32:
+                return TypeName.INT;
+            case TYPE_BOOL:
+                return TypeName.BOOLEAN;
+            case TYPE_STRING:
+                return ClassName.get(String.class);
+            case TYPE_ENUM:
+            case TYPE_MESSAGE:
+                return resolveClassName(field.getDescriptor().getTypeName());
+            case TYPE_BYTES:
+                return ArrayTypeName.get(byte[].class);
+
+            case TYPE_GROUP:
+            default:
+                throw new GeneratorException("Unsupported type: " + field);
+
+        }
     }
 
     public ClassName resolveClassName(String typeId) {

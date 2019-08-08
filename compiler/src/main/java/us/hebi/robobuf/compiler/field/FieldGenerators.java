@@ -1,9 +1,8 @@
 package us.hebi.robobuf.compiler.field;
 
-import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
+import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.RequestInfo;
 import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 
 /**
@@ -55,7 +54,7 @@ public class FieldGenerators {
         return new FieldGenerator() {
             @Override
             public void generateMembers(TypeSpec.Builder type) {
-
+                type.addField(FieldSpec.builder(field.getTypeName(), field.getLowerName()).build());
             }
 
             @Override

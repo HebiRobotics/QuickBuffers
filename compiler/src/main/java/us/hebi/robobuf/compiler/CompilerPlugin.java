@@ -47,7 +47,7 @@ public class CompilerPlugin {
 
     }
 
-    public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest requestProto) throws IOException {
+    public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest requestProto) {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
         RequestInfo request = RequestInfo.withTypeMap(requestProto);
 
@@ -78,7 +78,11 @@ public class CompilerPlugin {
                         .build();
 
                 StringBuilder content = new StringBuilder(1000);
-                javaFile.writeTo(content);
+                try {
+                    javaFile.writeTo(content);
+                } catch (IOException e) {
+                    throw new AssertionError("Could not write to StringBuilder?");
+                }
 
                 response.addFile(CodeGeneratorResponse.File.newBuilder()
                         .setName(file.getOutputDirectory() + typeSpec.name + ".java")

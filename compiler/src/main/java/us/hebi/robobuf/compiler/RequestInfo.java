@@ -11,7 +11,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
-import us.hebi.robobuf.compiler.field.BitField;
 import us.hebi.robobuf.parser.ParserUtil;
 
 import java.util.ArrayList;
@@ -186,9 +185,29 @@ public class RequestInfo {
             clearName = "clear" + upperName;
         }
 
+        public boolean isRequired() {
+            return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REQUIRED;
+        }
+
+        public boolean isOptional() {
+            return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_OPTIONAL;
+        }
+
+        public boolean isRepeated() {
+            return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REPEATED;
+        }
+
+        public boolean isPrimitive() {
+            return TypeMap.isPrimitive(descriptor.getType());
+        }
+
+        public int getNumber() {
+            return descriptor.getNumber();
+        }
+
         public TypeName getTypeName() {
             // Lazy because type map is not constructed at creation time
-            return getParentFile().getParentRequest().getTypeMap().resolveClassName(descriptor.getTypeName());
+            return getParentFile().getParentRequest().getTypeMap().resolveFieldType(this);
         }
 
         private final FileInfo parentFile;

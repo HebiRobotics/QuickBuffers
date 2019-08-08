@@ -18,6 +18,7 @@ public class TestRequestLoader {
     public void testAllAvailable() {
         getSimpleRequest();
         getImportRequest();
+        getAllTypesRequest();
     }
 
     public static CodeGeneratorRequest getSimpleRequest() {
@@ -26,6 +27,10 @@ public class TestRequestLoader {
 
     public static CodeGeneratorRequest getImportRequest() {
         return getRequest("import");
+    }
+
+    public static CodeGeneratorRequest getAllTypesRequest() {
+        return getRequest("allTypes");
     }
 
     private static CodeGeneratorRequest getRequest(String name) {

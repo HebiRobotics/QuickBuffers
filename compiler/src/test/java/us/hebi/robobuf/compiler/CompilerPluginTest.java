@@ -17,21 +17,27 @@ import java.io.IOException;
 public class CompilerPluginTest {
 
     @Test
-    public void testSimpleRequest() throws IOException {
+    public void testSimpleRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getSimpleRequest();
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 
     @Test
-    public void testImportRequest() throws IOException {
+    public void testImportRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getImportRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test
+    public void testAllTypesRequest() {
+        CodeGeneratorRequest request = TestRequestLoader.getAllTypesRequest();
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 
     @Ignore
     @Test
     public void printRequestPackages() throws IOException {
-        CodeGeneratorRequest request = TestRequestLoader.getImportRequest();
+        CodeGeneratorRequest request = TestRequestLoader.getAllTypesRequest();
         RequestInfo info = RequestInfo.withoutTypeMap(request);
 
         System.out.println("Files to generate\n");

@@ -71,6 +71,12 @@
                                     <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces.proto"/>
                                     <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces_import.proto"/>
                                 </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--request_out=requestFile=allTypes.request:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
+                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces.proto"/>
+                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/unittest_all_types.proto"/>
+                                </exec>
                             </tasks>
                             <testSourceRoot>target/generated-test-sources</testSourceRoot>
                         </configuration>

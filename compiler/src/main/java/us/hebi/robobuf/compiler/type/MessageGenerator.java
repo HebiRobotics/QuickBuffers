@@ -5,7 +5,7 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
-import us.hebi.robobuf.compiler.field.BitField;
+import us.hebi.robobuf.compiler.BitField;
 import us.hebi.robobuf.compiler.field.FieldGenerator;
 import us.hebi.robobuf.compiler.field.FieldGenerators;
 

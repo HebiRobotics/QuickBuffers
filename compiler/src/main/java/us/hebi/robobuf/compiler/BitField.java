@@ -1,10 +1,11 @@
-package us.hebi.robobuf.compiler.field;
+package us.hebi.robobuf.compiler;
 
 /**
  * @author Florian Enner < florian @ hebirobotics.com >
  * @since 19 Jun 2015
  */
 public class BitField {
+
     public static String hasBit(int hasBitIndex) {
         int intSlot = hasBitIndex / 32;
         int indexInSlot = hasBitIndex - (intSlot * 32);
@@ -30,4 +31,5 @@ public class BitField {
     public static int getNumberOfFields(int fieldCount){
         return (fieldCount + 31) / 32;
     }
+
 }
