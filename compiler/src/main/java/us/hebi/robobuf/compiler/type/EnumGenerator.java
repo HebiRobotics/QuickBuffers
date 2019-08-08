@@ -57,7 +57,7 @@ public class EnumGenerator implements TypeGenerator {
         if (info.isUsingArrayLookup()) {
 
             // (fast) lookup using array index
-            forNumber.beginControlFlow("if(value < 0 || value > lookup.length)", info.getHighestNumber())
+            forNumber.beginControlFlow("if (value < 0 || value > lookup.length)", info.getHighestNumber())
                     .addStatement("return null")
                     .endControlFlow();
             forNumber.addStatement("return lookup[value]");

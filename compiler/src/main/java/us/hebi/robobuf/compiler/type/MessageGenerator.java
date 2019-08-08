@@ -96,7 +96,7 @@ public class MessageGenerator implements TypeGenerator {
                 .returns(info.getTypeName());
         fields.forEach(field -> field.generateCopyFromCode(copyFrom));
         for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
-            copyFrom.addStatement("this.$1L = other.$1L", BitField.fieldName(i));
+            copyFrom.addStatement("$1L = other.$1L", BitField.fieldName(i));
         }
         copyFrom.addStatement("return this"); // TODO: remember dirty bit
         type.addMethod(copyFrom.build());

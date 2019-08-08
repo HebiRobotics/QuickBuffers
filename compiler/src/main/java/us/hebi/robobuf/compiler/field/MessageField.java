@@ -63,23 +63,23 @@ class MessageField extends FieldGenerator {
                         "return this;\n", m)
                 .build();
 
-        type.addField(value);
+        type.addMethod(hazzer);
         type.addMethod(getter);
         type.addMethod(mutableGetter);
         type.addMethod(setter);
-        type.addMethod(hazzer);
         type.addMethod(clearer);
+        type.addField(value);
 
     }
 
     @Override
     public void generateClearCode(MethodSpec.Builder method) {
-        method.addNamedCode("this.$name:L.clear();\n", m);
+        method.addNamedCode("$name:L.clear();\n", m);
     }
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addStatement("this.$1L.copyFrom(other.$1L)", info.getLowerName());
+        method.addNamedCode("$name:L.copyFrom(other.$name:L);\n", m);
     }
 
     @Override

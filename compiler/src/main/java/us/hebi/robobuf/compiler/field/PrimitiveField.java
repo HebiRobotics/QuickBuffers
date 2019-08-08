@@ -17,7 +17,6 @@ class PrimitiveField extends FieldGenerator {
     protected PrimitiveField(FieldInfo info) {
         super(info);
         m.put("default", getDefaultValue());
-
     }
 
     @Override
@@ -27,18 +26,53 @@ class PrimitiveField extends FieldGenerator {
                 .addModifiers(Modifier.PRIVATE)
                 .build();
 
+        MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(TypeName.BOOLEAN)
+                .addNamedCode("return $getHas:L;\n", m)
+                .build();
+
+        MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(value.type)
+                .addStatement("return $L", info.getLowerName())
+                .build();
+
+        MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(info.getTypeName(), "value")
+                .returns(info.getParentType())
+                .addNamedCode("" +
+                        "$setHas:L;\n" +
+                        "$name:L = value;\n" +
+                        "return this;\n", m)
+                .build();
+
+        MethodSpec clearer = MethodSpec.methodBuilder(info.getClearName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(info.getParentType())
+                .addNamedCode("" +
+                        "$clearHas:L;\n" +
+                        "$name:L = $default:L;\n" +
+                        "return this;\n", m)
+                .build();
+
+        type.addMethod(hazzer);
+        type.addMethod(getter);
+        type.addMethod(setter);
+        type.addMethod(clearer);
         type.addField(value);
 
     }
 
     @Override
     public void generateClearCode(MethodSpec.Builder method) {
-        method.addNamedCode("this.$name:L = $default:L;\n", m);
+        method.addNamedCode("$name:L = $default:L;\n", m);
     }
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addNamedCode("this.$name:L = other.$name:L;\n", m);
+        method.addNamedCode("$name:L = other.$name:L;\n", m);
     }
 
     @Override
