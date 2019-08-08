@@ -137,7 +137,7 @@ public class MessageGenerator implements TypeGenerator {
                 "Messages have no immutable state and should not\n" +
                 "be used in hashing structures. This implementation\n" +
                 "returns a constant value in order to satisfy the\n" +
-                "contract.");
+                "contract.\n");
         hashCode.addStatement("return 0");
         type.addMethod(hashCode.build());
     }

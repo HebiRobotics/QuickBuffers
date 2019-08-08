@@ -46,7 +46,7 @@ public class FieldGenerators {
 
         @Override
         public void generateMembers(TypeSpec.Builder type) {
-            type.addField(FieldSpec.builder(info.getTypeName(), info.getLowerName()).addJavadoc("Unsupported Field Type").build());
+            type.addField(FieldSpec.builder(info.getTypeName(), info.getLowerName()).addJavadoc("Unsupported Field Type\n").build());
         }
 
         @Override

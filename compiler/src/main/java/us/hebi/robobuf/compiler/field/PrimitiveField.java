@@ -93,7 +93,7 @@ class PrimitiveField extends FieldGenerator {
     @Override
     public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
         method.addNamedCode("" +
-                "if ($getHas:L) {$>;\n" +
+                "if ($getHas:L) {$>\n" +
                 "size += $computeClass:T.compute$capitalizedType:LSize($number:L, $name:L);\n" +
                 "$<}\n", m);
     }

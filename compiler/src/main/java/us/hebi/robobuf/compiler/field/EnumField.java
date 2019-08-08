@@ -44,7 +44,7 @@ public class EnumField extends FieldGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(info.getTypeName(), "value")
                 .returns(info.getParentType())
-                .beginControlFlow("if(value == null)")
+                .beginControlFlow("if (value == null)")
                 .addNamedCode("$clearHas:L;\n", m)
                 .nextControlFlow("else")
                 .addNamedCode("$setHas:L;\n", m)
@@ -107,7 +107,7 @@ public class EnumField extends FieldGenerator {
 
     @Override
     public void generateEqualsCode(MethodSpec.Builder method) {
-        method.addNamedCode("if ($getHas:L && $name:N != other.$name:N)) {$>", m)
+        method.addNamedCode("if ($getHas:L && $name:N != other.$name:N) {$>\n", m)
                 .addStatement("return false")
                 .endControlFlow();
     }
