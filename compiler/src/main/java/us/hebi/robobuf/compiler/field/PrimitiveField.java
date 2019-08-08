@@ -38,7 +38,7 @@ class PrimitiveField extends FieldGenerator {
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addNamedCode("this.$name:L = other$name:L;\n", m);
+        method.addNamedCode("this.$name:L = other.$name:L;\n", m);
     }
 
     @Override
