@@ -4,7 +4,6 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.GeneratorException;
 import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 
 import javax.lang.model.element.Modifier;
@@ -92,7 +91,7 @@ class PrimitiveField extends FieldGenerator {
     }
 
     @Override
-    public void generateSerializedSizeCode(MethodSpec.Builder method) {
+    public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
         method.addNamedCode("" +
                 "if ($getHas:L) {$>;\n" +
                 "size += $computeClass:T.compute$capitalizedType:LSize($number:L, $name:L);\n" +
@@ -109,11 +108,6 @@ class PrimitiveField extends FieldGenerator {
         else
             method.addNamedCode("($name:L != other.$name:L)", m);
         method.addNamedCode(") {$>\nreturn false;$<\n}\n", m);
-    }
-
-    @Override
-    public void generateHashCodeCode(MethodSpec.Builder method) {
-
     }
 
     private String getDefaultValue() {

@@ -29,11 +29,13 @@ public abstract class FieldGenerator {
 
     public abstract void generateSerializationCode(MethodSpec.Builder method);
 
-    public abstract void generateSerializedSizeCode(MethodSpec.Builder method);
+    public abstract void generateComputeSerializedSizeCode(MethodSpec.Builder method);
 
     public abstract void generateEqualsCode(MethodSpec.Builder method);
 
-    public abstract void generateHashCodeCode(MethodSpec.Builder method);
+    public final void generateHashCodeCode(MethodSpec.Builder method){
+        throw new GeneratorException("hashCode() not supported"); // not yet needed
+    }
 
     public int getTag() {
         return info.getTag();
@@ -51,6 +53,7 @@ public abstract class FieldGenerator {
         m.put("message", info.getParentType());
         m.put("type", typeName);
         m.put("number", info.getNumber());
+        m.put("tag", info.getTag());
         m.put("capitalizedType", RuntimeClasses.getCapitalizedType(info.getDescriptor().getType()));
         m.put("computeClass", RuntimeClasses.PROTO_DEST);
 

@@ -199,7 +199,7 @@ public class MessageGenerator implements TypeGenerator {
                 .addModifiers(Modifier.PROTECTED)
                 .returns(int.class);
         computeSerializedSize.addStatement("int size = 0");
-        fields.forEach(f -> f.generateSerializedSizeCode(computeSerializedSize));
+        fields.forEach(f -> f.generateComputeSerializedSizeCode(computeSerializedSize));
         computeSerializedSize.addStatement("return size");
         type.addMethod(computeSerializedSize.build());
     }

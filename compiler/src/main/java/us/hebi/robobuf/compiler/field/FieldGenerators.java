@@ -75,17 +75,12 @@ public class FieldGenerators {
         }
 
         @Override
-        public void generateSerializedSizeCode(MethodSpec.Builder method) {
+        public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
 
         }
 
         @Override
         public void generateEqualsCode(MethodSpec.Builder method) {
-
-        }
-
-        @Override
-        public void generateHashCodeCode(MethodSpec.Builder method) {
 
         }
 

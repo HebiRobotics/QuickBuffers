@@ -77,36 +77,39 @@ public class EnumField extends FieldGenerator {
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addNamedCode("$name:L = other.$name:L;\n", m);
+        method.addNamedCode("$name:N = other.$name:N;\n", m);
     }
 
     @Override
     public void generateMergingCode(MethodSpec.Builder method) {
-
-    }
-
-    @Override
-    public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-
+        method.addNamedCode("$type:T value = $type:T.forNumber(input.readInt32());\n", m)
+                .beginControlFlow("if (value != null)")
+                .addNamedCode("$name:N = value;\n", m)
+                .addNamedCode("$setHas:L;\n", m)
+                .endControlFlow();
     }
 
     @Override
     public void generateSerializationCode(MethodSpec.Builder method) {
-
+        method.addNamedCode("" +
+                "if ($getHas:L) {$>\n" +
+                "output.writeInt32($number:L, $name:N.getNumber());\n" +
+                "$<}\n", m);
     }
 
     @Override
-    public void generateSerializedSizeCode(MethodSpec.Builder method) {
-
+    public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
+        method.addNamedCode("" +
+                "if ($getHas:L) {$>;\n" +
+                "size += $computeClass:T.computeInt32Size($number:L, $name:N.getNumber());\n" +
+                "$<}\n", m);
     }
 
     @Override
     public void generateEqualsCode(MethodSpec.Builder method) {
-    }
-
-    @Override
-    public void generateHashCodeCode(MethodSpec.Builder method) {
-
+        method.addNamedCode("if ($getHas:L && $name:N != other.$name:N)) {$>", m)
+                .addStatement("return false")
+                .endControlFlow();
     }
 
 }

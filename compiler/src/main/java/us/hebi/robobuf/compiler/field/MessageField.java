@@ -1,5 +1,6 @@
 package us.hebi.robobuf.compiler.field;
 
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -16,6 +17,7 @@ class MessageField extends FieldGenerator {
 
     public MessageField(RequestInfo.FieldInfo info) {
         super(info);
+        m.put("groupOrMessage", isGroup() ? "Group" : "Message");
     }
 
     @Override
@@ -84,32 +86,33 @@ class MessageField extends FieldGenerator {
 
     @Override
     public void generateMergingCode(MethodSpec.Builder method) {
-
-    }
-
-    @Override
-    public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-
+        method.addNamedCode("input.read$groupOrMessage:L(this.$name:L);\n", m);
+        method.addNamedCode("$setHas:L;\n", m);
     }
 
     @Override
     public void generateSerializationCode(MethodSpec.Builder method) {
-
+        method.addNamedCode("if ($getHas:L) {$>\n", m);
+        method.addNamedCode("output.write$groupOrMessage:L($number:L, this.$name:L);\n", m);
+        method.endControlFlow();
     }
 
     @Override
-    public void generateSerializedSizeCode(MethodSpec.Builder method) {
-
+    public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
+        method.addNamedCode("if ($getHas:L) {$>\n", m);
+        method.addNamedCode("size += $computeClass:T.compute$groupOrMessage:LSize($number:L, this.$name:L);\n", m);
+        method.endControlFlow();
     }
 
     @Override
     public void generateEqualsCode(MethodSpec.Builder method) {
-
+        method.addNamedCode("if ($getHas:L && !$name:L.equals(other.$name:L)) {$>\n", m);
+        method.addStatement("return false");
+        method.endControlFlow();
     }
 
-    @Override
-    public void generateHashCodeCode(MethodSpec.Builder method) {
-
+    private boolean isGroup() {
+        return info.getDescriptor().getType() == Type.TYPE_GROUP;
     }
 
 }
