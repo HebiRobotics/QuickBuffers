@@ -1,8 +1,8 @@
 package us.hebi.robobuf.compiler.type;
 
-import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.EnumValueDescriptorProto;
 import com.squareup.javapoet.*;
+import us.hebi.robobuf.compiler.RequestInfo.EnumInfo;
 
 import javax.lang.model.element.Modifier;
 
@@ -12,17 +12,15 @@ import javax.lang.model.element.Modifier;
  */
 public class EnumGenerator implements TypeGenerator {
 
-    public EnumGenerator(EnumDescriptorProto descriptor) {
-        this.descriptor = descriptor;
-        this.thisClass = ClassName.get("", descriptor.getName());
+    public EnumGenerator(EnumInfo info) {
+        this.info = info;
     }
 
     public TypeSpec generate() {
-        ClassName thisType = ClassName.bestGuess(descriptor.getName());
-        TypeSpec.Builder type = TypeSpec.enumBuilder(thisType)
+        TypeSpec.Builder type = TypeSpec.enumBuilder(info.getTypeName())
                 .addModifiers(Modifier.PUBLIC);
 
-        for (EnumValueDescriptorProto value : descriptor.getValueList()) {
+        for (EnumValueDescriptorProto value : info.getValues()) {
             type.addEnumConstant(value.getName(), TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
         }
 
@@ -51,43 +49,39 @@ public class EnumGenerator implements TypeGenerator {
 
     private void generateForNumber(TypeSpec.Builder typeSpec) {
 
-        int highestNumber = descriptor.getValueList().stream()
-                .mapToInt(EnumValueDescriptorProto::getNumber)
-                .max().orElseGet(() -> 0);
-
         MethodSpec.Builder forNumber = MethodSpec.methodBuilder("forNumber")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(thisClass)
+                .returns(info.getTypeName())
                 .addParameter(TypeName.INT, "value");
 
-        if (highestNumber > MAX_LOOKUP_ARRAY_SIZE) {
+        if (info.isUsingArrayLookup()) {
 
-            // lookup using switch statement
-            forNumber.beginControlFlow("switch(value)");
-            for (EnumValueDescriptorProto value : descriptor.getValueList()) {
-                forNumber.addStatement("case $L: return $L", value.getNumber(), value.getName());
-            }
-            forNumber.addStatement("default: return null");
-            forNumber.endControlFlow();
-
-        } else {
-
-            // lookup using array index
-            forNumber.beginControlFlow("if(value < 0 || value > lookup.length)", highestNumber)
+            // (fast) lookup using array index
+            forNumber.beginControlFlow("if(value < 0 || value > lookup.length)", info.getHighestNumber())
                     .addStatement("return null")
                     .endControlFlow();
             forNumber.addStatement("return lookup[value]");
 
-            TypeName arrayType = ArrayTypeName.of(thisClass);
+            TypeName arrayType = ArrayTypeName.of(info.getTypeName());
             typeSpec.addField(FieldSpec.builder(arrayType, "lookup", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("new $T[$L]", thisClass, highestNumber + 1)
+                    .initializer("new $T[$L]", info.getTypeName(), info.getHighestNumber() + 1)
                     .build());
 
             CodeBlock.Builder initBlock = CodeBlock.builder();
-            for (EnumValueDescriptorProto value : descriptor.getValueList()) {
+            for (EnumValueDescriptorProto value : info.getValues()) {
                 initBlock.addStatement("lookup[$L] = $L", value.getNumber(), value.getName());
             }
             typeSpec.addStaticBlock(initBlock.build());
+
+        } else {
+
+            // lookup using switch statement
+            forNumber.beginControlFlow("switch(value)");
+            for (EnumValueDescriptorProto value : info.getValues()) {
+                forNumber.addStatement("case $L: return $L", value.getNumber(), value.getName());
+            }
+            forNumber.addStatement("default: return null");
+            forNumber.endControlFlow();
 
         }
 
@@ -95,8 +89,6 @@ public class EnumGenerator implements TypeGenerator {
 
     }
 
-    final EnumDescriptorProto descriptor;
-    final ClassName thisClass;
-    private static final int MAX_LOOKUP_ARRAY_SIZE = 50; // TODO: make this a parameter
+    final EnumInfo info;
 
 }

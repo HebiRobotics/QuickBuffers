@@ -1,8 +1,10 @@
 package us.hebi.robobuf.compiler.type;
 
-import com.google.protobuf.DescriptorProtos.DescriptorProto;
-import com.squareup.javapoet.*;
-import us.hebi.robobuf.compiler.TypeMap;
+import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
+import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
 import us.hebi.robobuf.compiler.field.BitField;
 import us.hebi.robobuf.compiler.field.FieldGenerator;
 import us.hebi.robobuf.compiler.field.FieldGenerators;
@@ -17,38 +19,22 @@ import java.util.List;
  */
 public class MessageGenerator implements TypeGenerator {
 
-    public MessageGenerator(DescriptorProto descriptor, boolean isNested, TypeMap typeMap) {
-        this.descriptor = descriptor;
-        this.isNested = isNested;
-        this.thisClass = ClassName.get("", descriptor.getName());
-        this.typeMap = typeMap;
-
-        // Nested messages
-        descriptor.getNestedTypeList().stream()
-                .map(msg -> new MessageGenerator(msg, true, typeMap))
-                .forEach(nestedTypes::add);
-
-        // Nested enums
-        descriptor.getEnumTypeList().stream()
-                .map(EnumGenerator::new)
-                .forEach(nestedTypes::add);
-
-        // Fields
-        for (int i = 0; i < descriptor.getFieldCount(); i++) {
-            fields.add(FieldGenerators.createGenerator(descriptor.getField(i), typeMap, i));
-        }
-
+    public MessageGenerator(MessageInfo info) {
+        this.info = info;
+        info.getNestedTypes().forEach(t -> nestedTypes.add(new MessageGenerator(t)));
+        info.getNestedEnums().forEach(t -> nestedTypes.add(new EnumGenerator(t)));
+        info.getFields().forEach(f -> fields.add(FieldGenerators.createGenerator(f)));
     }
 
     public TypeSpec generate() {
-        TypeSpec.Builder type = TypeSpec.classBuilder(descriptor.getName())
+        TypeSpec.Builder type = TypeSpec.classBuilder(info.getTypeName())
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
-        if (isNested) {
+        if (info.isNested()) {
             type.addModifiers(Modifier.STATIC);
         }
 
-        if (!isNested) {
+        if (!info.isNested()) {
             // Note: constants from enums and fields may have the same names
             // as constants in the nested classes. This causes Java warnings,
             // but is not fatal, so we suppress those warnings in the top-most
@@ -64,15 +50,12 @@ public class MessageGenerator implements TypeGenerator {
                 .forEach(type::addType);
 
         // Fields
-        descriptor.getFieldList().stream()
-                .map(fieldDescriptor -> FieldGenerators.createGenerator(fieldDescriptor, typeMap, 0))
-                .forEach(fieldGen -> fieldGen.generateMembers(type));
-
+        fields.forEach(f-> f.generateMembers(type));
         generateCopyFrom(type);
         generateClear(type);
 
         // Has-state
-        for (int i = 0; i < BitField.getNumberOfFields(descriptor.getFieldCount()); i++) {
+        for (int i = 0; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
 
@@ -87,7 +70,7 @@ public class MessageGenerator implements TypeGenerator {
     private void generateClear(TypeSpec.Builder type) {
         MethodSpec.Builder clear = MethodSpec.methodBuilder("clear")
                 .addModifiers(Modifier.PUBLIC)
-                .returns(thisClass);
+                .returns(info.getTypeName());
         // TODO: clear bitfields
         fields.forEach(field -> field.generateClearCode(clear));
         clear.addStatement("return this");
@@ -108,9 +91,9 @@ public class MessageGenerator implements TypeGenerator {
 
     private void generateCopyFrom(TypeSpec.Builder type) {
         MethodSpec.Builder copyFrom = MethodSpec.methodBuilder("copyFrom")
-                .addParameter(thisClass, "other", Modifier.FINAL)
+                .addParameter(info.getTypeName(), "other", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
-                .returns(thisClass);
+                .returns(info.getTypeName());
         fields.forEach(field -> field.generateCopyFromCode(copyFrom));
         for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
             copyFrom.addStatement("this.$1L = other.$1L", BitField.fieldName(i));
@@ -119,10 +102,7 @@ public class MessageGenerator implements TypeGenerator {
         type.addMethod(copyFrom.build());
     }
 
-    final DescriptorProto descriptor;
-    final boolean isNested;
-    final TypeMap typeMap;
-    final ClassName thisClass;
+    final MessageInfo info;
     final List<TypeGenerator> nestedTypes = new ArrayList<>();
     final List<FieldGenerator> fields = new ArrayList<>();
 

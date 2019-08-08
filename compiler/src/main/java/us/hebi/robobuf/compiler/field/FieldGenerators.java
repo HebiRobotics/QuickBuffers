@@ -3,7 +3,8 @@ package us.hebi.robobuf.compiler.field;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.TypeMap;
+import us.hebi.robobuf.compiler.RequestInfo;
+import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 
 /**
  * @author Florian Enner
@@ -11,8 +12,8 @@ import us.hebi.robobuf.compiler.TypeMap;
  */
 public class FieldGenerators {
 
-    public static FieldGenerator createGenerator(FieldDescriptorProto descriptor, TypeMap typeMap, int fieldIndex) {
-        switch (descriptor.getType()) {
+    public static FieldGenerator createGenerator(FieldInfo field) {
+        switch (field.getDescriptor().getType()) {
             case TYPE_DOUBLE:
                 break;
             case TYPE_FLOAT:
@@ -34,7 +35,7 @@ public class FieldGenerators {
             case TYPE_GROUP:
                 break;
             case TYPE_MESSAGE:
-                return new MessageField(descriptor, typeMap, fieldIndex);
+                return new MessageField(field);
             case TYPE_BYTES:
                 break;
             case TYPE_UINT32:

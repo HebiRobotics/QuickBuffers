@@ -1,14 +1,11 @@
 package us.hebi.robobuf.compiler;
 
 import com.google.common.collect.Lists;
-import com.google.protobuf.DescriptorProtos.DescriptorProto;
-import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
-import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
-import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
+import us.hebi.robobuf.compiler.RequestInfo.FileInfo;
 import us.hebi.robobuf.compiler.type.EnumGenerator;
 import us.hebi.robobuf.compiler.type.MessageGenerator;
 import us.hebi.robobuf.parser.ParserUtil;
@@ -17,7 +14,7 @@ import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author Florian Enner
@@ -50,44 +47,33 @@ public class CompilerPlugin {
 
     }
 
-    public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest request) throws IOException {
+    public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest requestProto) throws IOException {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
-        Map<String, String> generatorParams = ParserUtil.getGeneratorParameters(request);
-        TypeMap typeMap = TypeMap.fromRequest(request);
+        RequestInfo request = RequestInfo.withTypeMap(requestProto);
 
-        for (FileDescriptorProto fileDescriptors : request.getProtoFileList()) {
-            FileParams params = new FileParams(generatorParams, fileDescriptors);
-            boolean nested = !params.isGenerateMultipleFiles();
-            ClassName outerClassName = ClassName.get(params.getJavaPackage(), params.getOuterClassname());
-            TypeSpec.Builder outerClassSpec = TypeSpec.classBuilder(outerClassName)
+        for (FileInfo file : request.getFiles()) {
+
+            // Generate type specifications
+            List<TypeSpec> topLevelTypes = Lists.newArrayList();
+            TypeSpec.Builder outerClassSpec = TypeSpec.classBuilder(file.getOuterClassName())
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+            Consumer<TypeSpec> list = file.isGenerateMultipleFiles() ? topLevelTypes::add : outerClassSpec::addType;
 
-            List<TypeSpec> outputFiles = Lists.newArrayList();
-
-            // Enum types
-            for (EnumDescriptorProto enumType : fileDescriptors.getEnumTypeList()) {
-                TypeSpec typeSpec = new EnumGenerator(enumType).generate();
-                if (nested) outerClassSpec.addType(typeSpec);
-                else outputFiles.add(typeSpec);
+            for (RequestInfo.EnumInfo type : file.getEnumTypes()) {
+                list.accept(new EnumGenerator(type).generate());
             }
 
-            // Message types
-            for (DescriptorProto messageType : fileDescriptors.getMessageTypeList()) {
-                TypeSpec typeSpec = new MessageGenerator(messageType, nested, typeMap).generate();
-                if (nested) outerClassSpec.addType(typeSpec);
-                else outputFiles.add(typeSpec);
+            for (RequestInfo.MessageInfo type : file.getMessageTypes()) {
+                list.accept(new MessageGenerator(type).generate());
             }
+
+            topLevelTypes.add(outerClassSpec.build());
 
             // Generate Java files
-            outputFiles.add(outerClassSpec.build());
-            String directory = "";
-            if(!outerClassName.packageName().isEmpty())
-                directory = outerClassName.packageName().replaceAll("\\.", "/") + "/";
+            for (TypeSpec typeSpec : topLevelTypes) {
 
-            for (TypeSpec typeSpec : outputFiles) {
-
-                JavaFile javaFile = JavaFile.builder(params.getJavaPackage(), typeSpec)
-                        .indent("    ")
+                JavaFile javaFile = JavaFile.builder(file.getJavaPackage(), typeSpec)
+                        .indent(request.getIndentString())
                         .skipJavaLangImports(true)
                         .build();
 
@@ -95,7 +81,7 @@ public class CompilerPlugin {
                 javaFile.writeTo(content);
 
                 response.addFile(CodeGeneratorResponse.File.newBuilder()
-                        .setName(directory + typeSpec.name + ".java")
+                        .setName(file.getOutputDirectory() + typeSpec.name + ".java")
                         .setContent(content.toString())
                         .build());
             }

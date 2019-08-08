@@ -1,15 +1,12 @@
 package us.hebi.robobuf.compiler.field;
 
-import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.TypeMap;
+import us.hebi.robobuf.compiler.RequestInfo;
 
 import javax.lang.model.element.Modifier;
-
-import static us.hebi.robobuf.compiler.field.FieldUtil.*;
 
 /**
  * @author Florian Enner
@@ -17,56 +14,53 @@ import static us.hebi.robobuf.compiler.field.FieldUtil.*;
  */
 public class MessageField implements FieldGenerator {
 
-    public MessageField(FieldDescriptorProto descriptor, TypeMap typeMap, int fieldIndex) {
-        this.descriptor = descriptor;
-        this.typeMap = typeMap;
-        this.typeName = typeMap.getClassName(descriptor.getTypeName());
-        this.fieldIndex = fieldIndex;
-        this.fieldName = descriptor.getName();
+    public MessageField(RequestInfo.FieldInfo info) {
+        this.info = info;
+        this.typeName = info.getTypeName();
     }
 
     @Override
     public void generateMembers(TypeSpec.Builder type) {
 
-        FieldSpec value = FieldSpec.builder(typeName, memberName(fieldName))
+        FieldSpec value = FieldSpec.builder(typeName, info.getLowerName())
                 .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                 .initializer("new $T()", typeName)
                 .build();
 
-        MethodSpec getter = MethodSpec.methodBuilder(getterName(fieldName))
+        MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(value.type)
                 .addStatement("return $L", value.name)
                 .build();
 
-        MethodSpec mutableGetter = MethodSpec.methodBuilder(mutableGetterName(fieldName))
+        MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(value.type)
-                .addStatement(BitField.setBit(fieldIndex))
+                .addStatement(info.getSetBit())
                 .addStatement("return $L", value.name)
                 .build();
 
-        MethodSpec setter = MethodSpec.methodBuilder(setterName(fieldName))
+        MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(void.class) // TODO: parent type
+                .returns(info.getParentType())
                 .addParameter(value.type, "value")
                 .addStatement("$L.copyFrom(value)", value.name)
-                .addStatement(BitField.setBit(fieldIndex))
-//                .addStatement("return this")
+                .addStatement(info.getSetBit())
+                .addStatement("return this")
                 .build();
 
-        MethodSpec hazzer = MethodSpec.methodBuilder(hazzerName(fieldName))
+        MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(TypeName.BOOLEAN)
-                .addStatement("return $L", BitField.hasBit(fieldIndex))
+                .addStatement("return $L", info.getHasBit())
                 .build();
 
-        MethodSpec clearer = MethodSpec.methodBuilder(clearerName(fieldName))
+        MethodSpec clearer = MethodSpec.methodBuilder(info.getClearName())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(void.class) // TODO: parent type
-                .addStatement(BitField.clearBit(fieldIndex))
+                .returns(info.getParentType())
+                .addStatement(info.getClearBit())
                 .addStatement("$L.clear()", value.name)
-//                .addStatement("return this")
+                .addStatement("return this")
                 .build();
 
         type.addField(value);
@@ -85,7 +79,7 @@ public class MessageField implements FieldGenerator {
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addStatement("this.$1L.copyFrom(other.$1L)", memberName(fieldName));
+        method.addStatement("this.$1L.copyFrom(other.$1L)", info.getLowerName());
     }
 
     @Override
@@ -118,10 +112,7 @@ public class MessageField implements FieldGenerator {
 
     }
 
-    private final FieldDescriptorProto descriptor;
-    private final TypeMap typeMap;
-    private final TypeName typeName;
-    private final int fieldIndex;
-    private final String fieldName;
+    final RequestInfo.FieldInfo info;
+    final TypeName typeName;
 
 }
