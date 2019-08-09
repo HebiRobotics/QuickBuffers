@@ -15,6 +15,8 @@ import java.util.HashMap;
  */
 public abstract class FieldGenerator {
 
+    public abstract void generateField(TypeSpec.Builder type);
+
     public abstract void generateMembers(TypeSpec.Builder type);
 
     public abstract void generateClearCode(MethodSpec.Builder method);
@@ -33,7 +35,7 @@ public abstract class FieldGenerator {
 
     public abstract void generateEqualsCode(MethodSpec.Builder method);
 
-    public final void generateHashCodeCode(MethodSpec.Builder method){
+    public final void generateHashCodeCode(MethodSpec.Builder method) {
         throw new GeneratorException("hashCode() not supported"); // not yet needed
     }
 

@@ -20,11 +20,15 @@ class PrimitiveField extends FieldGenerator {
     }
 
     @Override
-    public void generateMembers(TypeSpec.Builder type) {
-
+    public void generateField(TypeSpec.Builder type) {
         FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE)
                 .build();
+        type.addField(value);
+    }
+
+    @Override
+    public void generateMembers(TypeSpec.Builder type) {
 
         MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
                 .addModifiers(Modifier.PUBLIC)
@@ -34,7 +38,7 @@ class PrimitiveField extends FieldGenerator {
 
         MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(value.type)
+                .returns(typeName)
                 .addStatement("return $L", info.getFieldName())
                 .build();
 
@@ -61,7 +65,6 @@ class PrimitiveField extends FieldGenerator {
         type.addMethod(getter);
         type.addMethod(setter);
         type.addMethod(clearer);
-        type.addField(value);
 
     }
 

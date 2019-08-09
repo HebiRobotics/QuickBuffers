@@ -54,12 +54,13 @@ public class MessageGenerator implements TypeGenerator {
                 .map(TypeGenerator::generate)
                 .forEach(type::addType);
 
-        // Has-state
+        // Member state
         for (int i = 0; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
+        fields.forEach(f -> f.generateField(type));
 
-        // Fields
+        // Fields accessors
         fields.forEach(f -> f.generateMembers(type));
         generateCopyFrom(type);
         generateClear(type);

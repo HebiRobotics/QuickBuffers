@@ -20,13 +20,17 @@ public class EnumField extends FieldGenerator {
         m.put("default", !defaultValue.isEmpty() ? info.getTypeName() + "." + defaultValue : "null");
     }
 
-    // TODO: protobuf-java stores int and converts to enum lazily. Maybe do that as well?
     @Override
-    public void generateMembers(TypeSpec.Builder type) {
-
+    public void generateField(TypeSpec.Builder type) {
         FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE)
                 .build();
+        type.addField(value);
+    }
+
+    // TODO: protobuf-java stores int and converts to enum lazily. Maybe do that as well?
+    @Override
+    public void generateMembers(TypeSpec.Builder type) {
 
         MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
                 .addModifiers(Modifier.PUBLIC)
@@ -36,7 +40,7 @@ public class EnumField extends FieldGenerator {
 
         MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(value.type)
+                .returns(typeName)
                 .addStatement("return $L", info.getFieldName())
                 .build();
 
@@ -66,7 +70,6 @@ public class EnumField extends FieldGenerator {
         type.addMethod(getter);
         type.addMethod(setter);
         type.addMethod(clearer);
-        type.addField(value);
 
     }
 

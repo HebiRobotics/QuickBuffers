@@ -21,31 +21,35 @@ class MessageField extends FieldGenerator {
     }
 
     @Override
-    public void generateMembers(TypeSpec.Builder type) {
-
+    public void generateField(TypeSpec.Builder type) {
         FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                 .initializer("new $T()", typeName)
                 .build();
+        type.addField(value);
+    }
+
+    @Override
+    public void generateMembers(TypeSpec.Builder type) {
 
         MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(value.type)
-                .addStatement("return $L", value.name)
+                .returns(typeName)
+                .addStatement("return $L", info.getFieldName())
                 .build();
 
         MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(value.type)
+                .returns(typeName)
                 .addStatement(info.getSetBit())
-                .addStatement("return $L", value.name)
+                .addStatement("return $L", info.getFieldName())
                 .build();
 
         MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
-                .addParameter(value.type, "value")
-                .addStatement("$L.copyFrom(value)", value.name)
+                .addParameter(typeName, "value")
+                .addStatement("$L.copyFrom(value)", info.getFieldName())
                 .addStatement(info.getSetBit())
                 .addStatement("return this")
                 .build();
@@ -70,7 +74,6 @@ class MessageField extends FieldGenerator {
         type.addMethod(mutableGetter);
         type.addMethod(setter);
         type.addMethod(clearer);
-        type.addField(value);
 
     }
 
