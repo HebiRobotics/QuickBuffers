@@ -55,7 +55,7 @@
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}</pluginPath>
                                     <type>robobuf</type>
-                                    <outputOptions>replacePackage=us.hebi.robobuf.java=us.hebi.robobuf.robo</outputOptions>
+                                    <outputOptions>replacePackage=us.hebi.robobuf.java=us.hebi.robobuf.robo,indent=4</outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>
 

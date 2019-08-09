@@ -61,12 +61,12 @@
                             <tasks>
                                 <mkdir dir="target/test-classes/us/hebi/robobuf/compiler"/>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=simple.request:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=simple.request,indent=tab:target/test-classes/us/hebi/robobuf/compiler"/>
                                     <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
                                     <arg value="../runtime/src/test/resources/us/hebi/robobuf//simple.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=import.request,indent=2:target/test-classes/us/hebi/robobuf/compiler"/>
                                     <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
                                     <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces.proto"/>
                                     <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces_import.proto"/>

@@ -66,13 +66,24 @@ public class RequestInfo {
 
         String[] parts = replaceOption.split("=");
         if (parts.length != 2)
-            throw new GeneratorException("Expected 'replacePackage=<pattern>=<replacement>'");
+            throw new GeneratorException("'replacePackage' expects 'pattern=replacement'. Found: '" + replaceOption + "'");
 
         return javaPackage.replaceAll(parts[0], parts[1]);
     }
 
     public String getIndentString() {
-        return "    "; // parameter?
+        String indent = generatorParameters.getOrDefault("indent", "2");
+        switch (indent) {
+            case "8":
+                return "        ";
+            case "4":
+                return "    ";
+            case "2":
+                return "  ";
+            case "tab":
+                return "\t";
+        }
+        throw new GeneratorException("Expected 2,4,8,tab. Found: " + indent);
     }
 
     public boolean shouldEnumUseArrayLookup(int highestNumber) {
