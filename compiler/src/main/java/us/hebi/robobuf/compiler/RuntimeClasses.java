@@ -17,6 +17,12 @@ public class RuntimeClasses {
     public static final ClassName UNKNOWN_FIELD_PARSE_CLASS = ClassName.get("com.google.protobuf.nano", "WireFormatNano");
     public static final ClassName ROBO_UTIL = ClassName.get("us.hebi.robobuf", "RoboUtil");
 
+    public static final ClassName REPEATED_BOOL_CLASS = ClassName.get("com.google.protobuf", "BooleanArrayList");
+    public static final ClassName REPEATED_INT_CLASS = ClassName.get("com.google.protobuf", "IntArrayList");
+    public static final ClassName REPEATED_LONG_CLASS = ClassName.get("com.google.protobuf", "LongArrayList");
+    public static final ClassName REPEATED_FLOAT_CLASS = ClassName.get("com.google.protobuf", "FloatArrayList");
+    public static final ClassName REPEATED_DOUBLE_CLASS = ClassName.get("com.google.protobuf", "DoubleArrayList");
+
     private static final int WIRETYPE_VARINT = 0;
     private static final int WIRETYPE_FIXED64 = 1;
     private static final int WIRETYPE_LENGTH_DELIMITED = 2;
