@@ -44,8 +44,6 @@ public class TypeMapTest {
 
         assertEquals(10, map.getMap().entrySet().size());
 
-        map.getMap().forEach((key, value) -> System.out.println(key + " = " + value));
-
         assertEquals("us.hebi.robobuf.test.external.ImportMessage", map.resolveClassName(".robobuf_unittest_import.ImportMessage").toString());
         assertEquals("us.hebi.robobuf.test.AllTypesOuterClass.ForeignEnum", map.resolveClassName(".robobuf_unittest.ForeignEnum").toString());
         assertEquals("us.hebi.robobuf.test.external.ImportMessage.NestedImportMessage", map.resolveClassName(".robobuf_unittest_import.ImportMessage.NestedImportMessage").toString());
