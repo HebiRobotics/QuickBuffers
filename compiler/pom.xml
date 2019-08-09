@@ -87,34 +87,6 @@
                 </executions>
             </plugin>
 
-            <!-- Generate Java sources for comparison -->
-            <plugin>
-                <groupId>com.github.os72</groupId>
-                <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>3.8.0</version>
-                <executions>
-                    <execution>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <protocVersion>${protoc.version}</protocVersion>
-                            <addSources>none</addSources>
-
-                            <type>java</type>
-                            <outputDirectory>${project.build.directory}/generated-test-sources/
-                            </outputDirectory>
-
-                            <inputDirectories>
-                                <include>../runtime/src/test/resources/us/hebi/robobuf/</include>
-                            </inputDirectories>
-
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Create uber-jar that we can call as a plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

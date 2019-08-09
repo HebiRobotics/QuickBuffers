@@ -18,6 +18,11 @@
             <version>3.1.0</version>
         </dependency>
         <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
@@ -39,19 +44,28 @@
                         </goals>
                         <configuration>
                             <protocVersion>${protoc.version}</protocVersion>
-                            <addSources>none</addSources>
-
-                            <pluginPath>${project.parent.basedir}</pluginPath>
-                            <type>robobuf</type>
-                            <outputOptions>javaPackage=us.hebi.robobuf.robo</outputOptions>
-
-                            <outputDirectory>
-                                ${project.build.directory}/generated-test-sources/
-                            </outputDirectory>
 
                             <inputDirectories>
                                 <include>src/test/resources/us/hebi/robobuf/</include>
                             </inputDirectories>
+
+                            <outputTargets>
+
+                                <!-- Generate sources (override java package so we don't have name collisions with java) -->
+                                <outputTarget>
+                                    <pluginPath>${project.parent.basedir}</pluginPath>
+                                    <type>robobuf</type>
+                                    <outputOptions>javaPackage=us.hebi.robobuf.robo</outputOptions>
+                                    <addSources>test</addSources>
+                                </outputTarget>
+
+                                <!-- Generate Java sources for sanity checks -->
+                                <outputTarget>
+                                    <type>java</type>
+                                    <addSources>test</addSources>
+                                </outputTarget>
+
+                            </outputTargets>
 
                         </configuration>
                     </execution>
