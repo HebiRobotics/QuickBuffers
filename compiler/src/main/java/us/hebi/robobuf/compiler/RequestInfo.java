@@ -53,12 +53,22 @@ public class RequestInfo {
         return checkNotNull(typeMap.resolveClassName(typeId), "Unable to resolve type id: " + typeId);
     }
 
-    public boolean hasOverrideJavaPackage() {
-        return generatorParameters.containsKey("javaPackage");
-    }
+    /**
+     * replacePackage=pattern=replacement
+     *
+     * @param javaPackage
+     * @return
+     */
+    public String applyJavaPackageReplace(String javaPackage) {
+        String replaceOption = generatorParameters.get("replacePackage");
+        if (replaceOption == null)
+            return javaPackage;
 
-    public String getOverrideJavaPackage() {
-        return generatorParameters.get("javaPackage");
+        String[] parts = replaceOption.split("=");
+        if (parts.length != 2)
+            throw new GeneratorException("Expected 'replacePackage=<pattern>=<replacement>'");
+
+        return javaPackage.replaceAll(parts[0], parts[1]);
     }
 
     public String getIndentString() {
@@ -84,9 +94,8 @@ public class RequestInfo {
             fileName = descriptor.getName();
             protoPackage = NameResolver.getProtoPackage(descriptor);
 
-            javaPackage = parentRequest.hasOverrideJavaPackage() ?
-                    parentRequest.getOverrideJavaPackage() :
-                    NameResolver.getJavaPackage(descriptor);
+            javaPackage = getParentRequest().applyJavaPackageReplace(
+                    NameResolver.getJavaPackage(descriptor));
 
             outerClassName = ClassName.get(javaPackage, NameResolver.getJavaOuterClassname(descriptor));
 

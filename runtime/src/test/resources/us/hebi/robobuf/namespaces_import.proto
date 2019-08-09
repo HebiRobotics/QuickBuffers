@@ -3,7 +3,7 @@ package robobuf_unittest;
 
 import "namespaces.proto";
 
-option java_package = "us.hebi.robobuf.test";
+option java_package = "us.hebi.robobuf.java";
 option java_outer_classname = "ImportingOuterClass";
 option java_multiple_files = true;
 
