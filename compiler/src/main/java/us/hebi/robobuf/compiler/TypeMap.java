@@ -82,7 +82,7 @@ public class TypeMap {
             case TYPE_BOOL:
                 return TypeName.BOOLEAN;
             case TYPE_STRING:
-                return ClassName.get(String.class);
+                return RuntimeClasses.STRING_CLASS;
             case TYPE_ENUM:
             case TYPE_GROUP:
             case TYPE_MESSAGE:

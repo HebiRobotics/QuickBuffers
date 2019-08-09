@@ -43,10 +43,9 @@ public abstract class FieldGenerator {
     }
 
     public void generateEqualsCode(MethodSpec.Builder method) {
-        method.addNamedCode("if ($getHas:L && " + getNamedNotEqualsStatement() + ") {$>\n", m)
+        method.addNamedCode("if ($hasMethod:N() && " + getNamedNotEqualsStatement() + ") {$>\n", m)
                 .addStatement("return false")
                 .endControlFlow();
-
     }
 
     protected abstract String getNamedNotEqualsStatement();
@@ -96,6 +95,7 @@ public abstract class FieldGenerator {
 
         // Common-variable map for named arguments
         m.put("name", info.getFieldName());
+        m.put("hasMethod", info.getHazzerName());
         m.put("getHas", info.getHasBit());
         m.put("setHas", info.getSetBit());
         m.put("clearHas", info.getClearBit());
@@ -106,6 +106,7 @@ public abstract class FieldGenerator {
         m.put("capitalizedType", RuntimeClasses.getCapitalizedType(info.getDescriptor().getType()));
         m.put("serializableValue", info.getFieldName());
         m.put("computeClass", RuntimeClasses.PROTO_DEST);
+        m.put("roboUtil", RuntimeClasses.ROBO_UTIL);
 
     }
 

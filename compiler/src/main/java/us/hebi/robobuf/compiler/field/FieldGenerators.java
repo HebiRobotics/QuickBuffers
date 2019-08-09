@@ -29,7 +29,10 @@ public class FieldGenerators {
                 break;
 
             case TYPE_STRING:
+                if (!field.isRepeated())
+                    return new StringField(field);
                 break;
+
             case TYPE_BYTES:
                 break;
         }
@@ -85,7 +88,7 @@ public class FieldGenerators {
 
         @Override
         protected String getNamedNotEqualsStatement() {
-            return null;
+            return "false";
         }
 
     }

@@ -12,7 +12,10 @@ public class RuntimeClasses {
     public static final ClassName PROTO_SOURCE = ClassName.get("com.google.protobuf.nano", "CodedInputByteBufferNano");
     public static final ClassName PROTO_DEST = ClassName.get("com.google.protobuf.nano", "CodedOutputByteBufferNano");
     public static final ClassName BASE_MESSAGE = ClassName.get("com.google.protobuf.nano", "MessageNano");
+    public static final ClassName STRING_CLASS = ClassName.get(CharSequence.class);
+    public static final ClassName STRING_STORAGE_CLASS = ClassName.get(StringBuilder.class);
     public static final ClassName UNKNOWN_FIELD_PARSE_CLASS = ClassName.get("com.google.protobuf.nano", "WireFormatNano");
+    public static final ClassName ROBO_UTIL = ClassName.get("us.hebi.robobuf", "RoboUtil");
 
     private static final int WIRETYPE_VARINT = 0;
     private static final int WIRETYPE_FIXED64 = 1;
