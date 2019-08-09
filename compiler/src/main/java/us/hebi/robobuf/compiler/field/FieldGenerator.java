@@ -16,26 +16,7 @@ import java.util.HashMap;
  */
 public abstract class FieldGenerator {
 
-    public abstract void generateField(TypeSpec.Builder type);
-
-    public abstract void generateMembers(TypeSpec.Builder type);
-
-    protected void generateHasAndGet(TypeSpec.Builder type) {
-        MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(TypeName.BOOLEAN)
-                .addNamedCode("return $getHas:L;\n", m)
-                .build();
-
-        MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(typeName)
-                .addNamedCode("return $name:N;\n", m)
-                .build();
-
-        type.addMethod(hazzer);
-        type.addMethod(getter);
-    }
+    public abstract void generateMemberFields(TypeSpec.Builder type);
 
     public abstract void generateClearCode(MethodSpec.Builder method);
 
@@ -47,14 +28,62 @@ public abstract class FieldGenerator {
         throw new GeneratorException("Merging from packed not implemented"); // only for repeated fields
     }
 
-    public abstract void generateSerializationCode(MethodSpec.Builder method);
+    public void generateSerializationCode(MethodSpec.Builder method) {
+        method.addNamedCode("" +
+                "if ($getHas:L) {$>\n" +
+                "output.write$capitalizedType:L($number:L, $serializableValue:L);\n" +
+                "$<}\n", m);
+    }
 
-    public abstract void generateComputeSerializedSizeCode(MethodSpec.Builder method);
+    public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
+        method.addNamedCode("" +
+                "if ($getHas:L) {$>\n" +
+                "size += $computeClass:T.compute$capitalizedType:LSize($number:L, $serializableValue:L);\n" +
+                "$<}\n", m);
+    }
 
-    public abstract void generateEqualsCode(MethodSpec.Builder method);
+    public void generateEqualsCode(MethodSpec.Builder method) {
+        method.addNamedCode("if ($getHas:L && " + getNamedNotEqualsStatement() + ") {$>\n", m)
+                .addStatement("return false")
+                .endControlFlow();
 
-    public final void generateHashCodeCode(MethodSpec.Builder method) {
-        throw new GeneratorException("hashCode() not supported"); // not yet needed
+    }
+
+    protected abstract String getNamedNotEqualsStatement();
+
+    protected abstract void generateSetter(TypeSpec.Builder type);
+
+    public void generateMemberMethods(TypeSpec.Builder type) {
+        generateHazzer(type);
+        generateGetter(type);
+        generateSetter(type);
+        generateClearer(type);
+    }
+
+    protected void generateHazzer(TypeSpec.Builder type) {
+        type.addMethod(MethodSpec.methodBuilder(info.getHazzerName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(TypeName.BOOLEAN)
+                .addNamedCode("return $getHas:L;\n", m)
+                .build());
+    }
+
+    protected void generateGetter(TypeSpec.Builder type) {
+        type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(typeName)
+                .addNamedCode("return $name:N;\n", m)
+                .build());
+    }
+
+    protected void generateClearer(TypeSpec.Builder type) {
+        MethodSpec.Builder method = MethodSpec.methodBuilder(info.getClearName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(info.getParentType())
+                .addNamedCode("$clearHas:L;\n", m);
+        generateClearCode(method);
+        method.addStatement("return this");
+        type.addMethod(method.build());
     }
 
     public int getTag() {
@@ -75,6 +104,7 @@ public abstract class FieldGenerator {
         m.put("number", info.getNumber());
         m.put("tag", info.getTag());
         m.put("capitalizedType", RuntimeClasses.getCapitalizedType(info.getDescriptor().getType()));
+        m.put("serializableValue", info.getFieldName());
         m.put("computeClass", RuntimeClasses.PROTO_DEST);
 
     }

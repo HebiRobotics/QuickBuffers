@@ -17,11 +17,10 @@ class MessageField extends FieldGenerator {
 
     public MessageField(RequestInfo.FieldInfo info) {
         super(info);
-        m.put("groupOrMessage", isGroup() ? "Group" : "Message");
     }
 
     @Override
-    public void generateField(TypeSpec.Builder type) {
+    public void generateMemberFields(TypeSpec.Builder type) {
         FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                 .initializer("new $T()", typeName)
@@ -30,38 +29,28 @@ class MessageField extends FieldGenerator {
     }
 
     @Override
-    public void generateMembers(TypeSpec.Builder type) {
-
+    protected void generateGetter(TypeSpec.Builder type){
+        super.generateGetter(type);
         MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(typeName)
-                .addStatement(info.getSetBit())
-                .addStatement("return $L", info.getFieldName())
+                .addNamedCode("$setHas:L;\n", m)
+                .addNamedCode("return $name:N;\n", m)
                 .build();
+        type.addMethod(mutableGetter);
+    }
 
+    @Override
+    protected void generateSetter(TypeSpec.Builder type) {
         MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
                 .addParameter(typeName, "value")
-                .addStatement("$L.copyFrom(value)", info.getFieldName())
-                .addStatement(info.getSetBit())
+                .addNamedCode("$name:N.copyFrom(value);\n", m)
+                .addNamedCode("$setHas:L;\n", m)
                 .addStatement("return this")
                 .build();
-
-        MethodSpec clearer = MethodSpec.methodBuilder(info.getClearName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(info.getParentType())
-                .addNamedCode("" +
-                        "$clearHas:L;\n" +
-                        "$name:L.clear();\n" +
-                        "return this;\n", m)
-                .build();
-
-        generateHasAndGet(type);
-        type.addMethod(mutableGetter);
         type.addMethod(setter);
-        type.addMethod(clearer);
-
     }
 
     @Override
@@ -77,32 +66,16 @@ class MessageField extends FieldGenerator {
     @Override
     public void generateMergingCode(MethodSpec.Builder method) {
         if (isGroup()) {
-            method.addNamedCode("input.readGroup(this.$name:L, $number:L);\n", m);
+            method.addNamedCode("input.readGroup($name:L, $number:L);\n", m);
         } else {
-            method.addNamedCode("input.readMessage(this.$name:L);\n", m);
+            method.addNamedCode("input.readMessage($name:L);\n", m);
         }
         method.addNamedCode("$setHas:L;\n", m);
     }
 
     @Override
-    public void generateSerializationCode(MethodSpec.Builder method) {
-        method.addNamedCode("if ($getHas:L) {$>\n", m);
-        method.addNamedCode("output.write$groupOrMessage:L($number:L, this.$name:L);\n", m);
-        method.endControlFlow();
-    }
-
-    @Override
-    public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-        method.addNamedCode("if ($getHas:L) {$>\n", m);
-        method.addNamedCode("size += $computeClass:T.compute$groupOrMessage:LSize($number:L, this.$name:L);\n", m);
-        method.endControlFlow();
-    }
-
-    @Override
-    public void generateEqualsCode(MethodSpec.Builder method) {
-        method.addNamedCode("if ($getHas:L && !$name:L.equals(other.$name:L)) {$>\n", m);
-        method.addStatement("return false");
-        method.endControlFlow();
+    protected String getNamedNotEqualsStatement() {
+        return "!$name:L.equals(other.$name:L)";
     }
 
     private boolean isGroup() {

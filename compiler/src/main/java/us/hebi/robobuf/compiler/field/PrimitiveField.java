@@ -14,13 +14,13 @@ import javax.lang.model.element.Modifier;
  */
 class PrimitiveField extends FieldGenerator {
 
-    protected PrimitiveField(FieldInfo info) {
+    PrimitiveField(FieldInfo info) {
         super(info);
         m.put("default", getDefaultValue());
     }
 
     @Override
-    public void generateField(TypeSpec.Builder type) {
+    public void generateMemberFields(TypeSpec.Builder type) {
         FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE)
                 .build();
@@ -28,8 +28,7 @@ class PrimitiveField extends FieldGenerator {
     }
 
     @Override
-    public void generateMembers(TypeSpec.Builder type) {
-
+    protected void generateSetter(TypeSpec.Builder type) {
         MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(info.getTypeName(), "value")
@@ -39,20 +38,7 @@ class PrimitiveField extends FieldGenerator {
                         "$name:L = value;\n" +
                         "return this;\n", m)
                 .build();
-
-        MethodSpec clearer = MethodSpec.methodBuilder(info.getClearName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(info.getParentType())
-                .addNamedCode("" +
-                        "$clearHas:L;\n" +
-                        "$name:L = $default:L;\n" +
-                        "return this;\n", m)
-                .build();
-
-        generateHasAndGet(type);
         type.addMethod(setter);
-        type.addMethod(clearer);
-
     }
 
     @Override
@@ -73,34 +59,15 @@ class PrimitiveField extends FieldGenerator {
     }
 
     @Override
-    public void generateSerializationCode(MethodSpec.Builder method) {
-        method.addNamedCode("" +
-                "if ($getHas:L) {$>\n" +
-                "output.write$capitalizedType:L($number:L, $name:L);\n" +
-                "$<}\n", m);
-    }
-
-    @Override
-    public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-        method.addNamedCode("" +
-                "if ($getHas:L) {$>\n" +
-                "size += $computeClass:T.compute$capitalizedType:LSize($number:L, $name:L);\n" +
-                "$<}\n", m);
-    }
-
-    @Override
-    public void generateEqualsCode(MethodSpec.Builder method) {
-        method.addNamedCode("if ($getHas:L && ", m);
+    protected String getNamedNotEqualsStatement() {
         if (typeName == TypeName.FLOAT)
-            method.addNamedCode("(Float.floatToIntBits($name:L) != Float.floatToIntBits(other.$name:L))", m);
+            return "(Float.floatToIntBits($name:L) != Float.floatToIntBits(other.$name:L))";
         else if (typeName == TypeName.DOUBLE)
-            method.addNamedCode("(Double.doubleToLongBits($name:L) != Double.doubleToLongBits(other.$name:L))", m);
-        else
-            method.addNamedCode("($name:L != other.$name:L)", m);
-        method.addNamedCode(") {$>\nreturn false;$<\n}\n", m);
+            return "(Double.doubleToLongBits($name:L) != Double.doubleToLongBits(other.$name:L))";
+        return "($name:L != other.$name:L)";
     }
 
-    private String getDefaultValue() {
+    protected String getDefaultValue() {
         String value = info.getDescriptor().getDefaultValue();
         if (value.isEmpty()) {
             if (typeName == TypeName.FLOAT)

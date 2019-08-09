@@ -44,12 +44,12 @@ public class FieldGenerators {
         }
 
         @Override
-        public void generateField(TypeSpec.Builder type) {
+        public void generateMemberFields(TypeSpec.Builder type) {
             type.addField(FieldSpec.builder(info.getTypeName(), info.getFieldName()).addJavadoc("Unsupported:\n$L\n", info.getDescriptor()).build());
         }
 
         @Override
-        public void generateMembers(TypeSpec.Builder type) {
+        protected void generateSetter(TypeSpec.Builder type) {
 
         }
 
@@ -84,8 +84,8 @@ public class FieldGenerators {
         }
 
         @Override
-        public void generateEqualsCode(MethodSpec.Builder method) {
-
+        protected String getNamedNotEqualsStatement() {
+            return null;
         }
 
     }

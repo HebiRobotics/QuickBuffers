@@ -92,7 +92,7 @@ public class RuntimeClasses {
             case TYPE_GROUP:
                 return "Group";
             case TYPE_MESSAGE:
-                return "";
+                return "Message";
             case TYPE_BYTES:
                 return "Bytes";
             case TYPE_UINT32:
