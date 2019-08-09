@@ -77,12 +77,11 @@ public class TypeMap {
             case TYPE_STRING:
                 return ClassName.get(String.class);
             case TYPE_ENUM:
+            case TYPE_GROUP:
             case TYPE_MESSAGE:
                 return resolveClassName(field.getDescriptor().getTypeName());
             case TYPE_BYTES:
                 return ArrayTypeName.get(byte[].class);
-
-            case TYPE_GROUP:
             default:
                 throw new GeneratorException("Unsupported type: " + field);
 

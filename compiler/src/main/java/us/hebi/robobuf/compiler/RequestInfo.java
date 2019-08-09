@@ -185,6 +185,7 @@ public class RequestInfo {
             clearName = "clear" + upperName;
             tag = RuntimeClasses.makeTag(descriptor);
             number = descriptor.getNumber();
+            fieldName = NameUtil.isReservedKeyword(lowerName) ? lowerName + "_" : lowerName;
         }
 
         public boolean isRequired() {
@@ -215,6 +216,7 @@ public class RequestInfo {
         private final String hasBit;
         private final String setBit;
         private final String clearBit;
+        String fieldName;
         String lowerName;
         String upperName;
         String hazzerName;

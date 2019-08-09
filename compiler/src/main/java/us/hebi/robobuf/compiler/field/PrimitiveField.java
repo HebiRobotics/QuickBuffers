@@ -22,7 +22,7 @@ class PrimitiveField extends FieldGenerator {
     @Override
     public void generateMembers(TypeSpec.Builder type) {
 
-        FieldSpec value = FieldSpec.builder(typeName, info.getLowerName())
+        FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE)
                 .build();
 
@@ -35,7 +35,7 @@ class PrimitiveField extends FieldGenerator {
         MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(value.type)
-                .addStatement("return $L", info.getLowerName())
+                .addStatement("return $L", info.getFieldName())
                 .build();
 
         MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
@@ -113,16 +113,15 @@ class PrimitiveField extends FieldGenerator {
     private String getDefaultValue() {
         String value = info.getDescriptor().getDefaultValue();
         if (value.isEmpty()) {
-            switch (info.getDescriptor().getType()) {
-                case TYPE_DOUBLE:
-                    return "0d";
-                case TYPE_FLOAT:
-                    return "0f";
-                case TYPE_BOOL:
-                    return "false";
-                default:
-                    return "0";
-            }
+            if(typeName == TypeName.FLOAT)
+                return "0F";
+            if(typeName == TypeName.DOUBLE)
+                return "0D";
+            if(typeName == TypeName.LONG)
+                return "0L";
+            if(typeName == TypeName.BOOLEAN)
+                return "false";
+            return "0";
         }
 
         // Special cased default values
@@ -142,9 +141,9 @@ class PrimitiveField extends FieldGenerator {
         char lastChar = Character.toUpperCase(value.charAt(value.length() - 1));
 
         if (typeName == TypeName.FLOAT && lastChar != 'F')
-            return value + 'f';
+            return value + 'F';
         if (typeName == TypeName.DOUBLE && lastChar != 'D')
-            return value + 'd';
+            return value + 'D';
         if (typeName == TypeName.LONG && lastChar != 'L')
             return value + 'L'; // lower case L may make it difficult to read number 1 (l=1?)
         return value;

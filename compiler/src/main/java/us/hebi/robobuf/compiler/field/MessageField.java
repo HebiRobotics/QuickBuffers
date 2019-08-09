@@ -23,7 +23,7 @@ class MessageField extends FieldGenerator {
     @Override
     public void generateMembers(TypeSpec.Builder type) {
 
-        FieldSpec value = FieldSpec.builder(typeName, info.getLowerName())
+        FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                 .initializer("new $T()", typeName)
                 .build();
@@ -86,7 +86,11 @@ class MessageField extends FieldGenerator {
 
     @Override
     public void generateMergingCode(MethodSpec.Builder method) {
-        method.addNamedCode("input.read$groupOrMessage:L(this.$name:L);\n", m);
+        if (isGroup()) {
+            method.addNamedCode("input.readGroup(this.$name:L, $number:L);\n", m);
+        } else {
+            method.addNamedCode("input.readMessage(this.$name:L);\n", m);
+        }
         method.addNamedCode("$setHas:L;\n", m);
     }
 

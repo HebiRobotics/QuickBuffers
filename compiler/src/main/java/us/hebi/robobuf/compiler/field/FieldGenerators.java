@@ -17,6 +17,7 @@ public class FieldGenerators {
         }
 
         switch (field.getDescriptor().getType()) {
+            case TYPE_GROUP:
             case TYPE_MESSAGE:
                 if (!field.isRepeated())
                     return new MessageField(field);
@@ -31,8 +32,6 @@ public class FieldGenerators {
                 break;
             case TYPE_BYTES:
                 break;
-            case TYPE_GROUP:
-                break;
         }
 
         return new IgnoredFieldGenerator(field);
@@ -46,7 +45,7 @@ public class FieldGenerators {
 
         @Override
         public void generateMembers(TypeSpec.Builder type) {
-            type.addField(FieldSpec.builder(info.getTypeName(), info.getLowerName()).addJavadoc("Unsupported Field Type\n").build());
+            type.addField(FieldSpec.builder(info.getTypeName(), info.getFieldName()).addJavadoc("Unsupported Field Type\n").build());
         }
 
         @Override

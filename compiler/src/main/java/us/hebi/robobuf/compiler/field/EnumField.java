@@ -24,7 +24,7 @@ public class EnumField extends FieldGenerator {
     @Override
     public void generateMembers(TypeSpec.Builder type) {
 
-        FieldSpec value = FieldSpec.builder(typeName, info.getLowerName())
+        FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
                 .addModifiers(Modifier.PRIVATE)
                 .build();
 
@@ -37,7 +37,7 @@ public class EnumField extends FieldGenerator {
         MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(value.type)
-                .addStatement("return $L", info.getLowerName())
+                .addStatement("return $L", info.getFieldName())
                 .build();
 
         MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())

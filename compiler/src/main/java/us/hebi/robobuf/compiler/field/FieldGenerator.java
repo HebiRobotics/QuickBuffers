@@ -46,7 +46,7 @@ public abstract class FieldGenerator {
         typeName = info.getTypeName();
 
         // Common-variable map for named arguments
-        m.put("name", info.getLowerName());
+        m.put("name", info.getFieldName());
         m.put("getHas", info.getHasBit());
         m.put("setHas", info.getSetBit());
         m.put("clearHas", info.getClearBit());
