@@ -32,12 +32,6 @@ class MessageField extends FieldGenerator {
     @Override
     public void generateMembers(TypeSpec.Builder type) {
 
-        MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(typeName)
-                .addStatement("return $L", info.getFieldName())
-                .build();
-
         MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(typeName)
@@ -54,12 +48,6 @@ class MessageField extends FieldGenerator {
                 .addStatement("return this")
                 .build();
 
-        MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(TypeName.BOOLEAN)
-                .addStatement("return $L", info.getHasBit())
-                .build();
-
         MethodSpec clearer = MethodSpec.methodBuilder(info.getClearName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
@@ -69,8 +57,7 @@ class MessageField extends FieldGenerator {
                         "return this;\n", m)
                 .build();
 
-        type.addMethod(hazzer);
-        type.addMethod(getter);
+        generateHasAndGet(type);
         type.addMethod(mutableGetter);
         type.addMethod(setter);
         type.addMethod(clearer);

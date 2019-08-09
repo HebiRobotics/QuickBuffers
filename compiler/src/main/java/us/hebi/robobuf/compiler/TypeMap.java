@@ -49,8 +49,15 @@ public class TypeMap {
             case TYPE_SINT32:
             case TYPE_SINT64:
                 return true;
+
+            case TYPE_STRING:
+            case TYPE_GROUP:
+            case TYPE_MESSAGE:
+            case TYPE_BYTES:
+            case TYPE_ENUM:
+                return false;
         }
-        return false;
+        throw new GeneratorException("Unsupported type: " + type);
     }
 
     public TypeName resolveFieldType(RequestInfo.FieldInfo field) {
@@ -82,10 +89,9 @@ public class TypeMap {
                 return resolveClassName(field.getDescriptor().getTypeName());
             case TYPE_BYTES:
                 return ArrayTypeName.get(byte[].class);
-            default:
-                throw new GeneratorException("Unsupported type: " + field);
 
         }
+        throw new GeneratorException("Unsupported type: " + field.getDescriptor());
     }
 
     public ClassName resolveClassName(String typeId) {

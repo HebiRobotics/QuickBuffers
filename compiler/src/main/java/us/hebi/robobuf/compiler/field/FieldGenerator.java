@@ -7,6 +7,7 @@ import us.hebi.robobuf.compiler.GeneratorException;
 import us.hebi.robobuf.compiler.RequestInfo;
 import us.hebi.robobuf.compiler.RuntimeClasses;
 
+import javax.lang.model.element.Modifier;
 import java.util.HashMap;
 
 /**
@@ -18,6 +19,23 @@ public abstract class FieldGenerator {
     public abstract void generateField(TypeSpec.Builder type);
 
     public abstract void generateMembers(TypeSpec.Builder type);
+
+    protected void generateHasAndGet(TypeSpec.Builder type) {
+        MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(TypeName.BOOLEAN)
+                .addNamedCode("return $getHas:L;\n", m)
+                .build();
+
+        MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(typeName)
+                .addNamedCode("return $name:N;\n", m)
+                .build();
+
+        type.addMethod(hazzer);
+        type.addMethod(getter);
+    }
 
     public abstract void generateClearCode(MethodSpec.Builder method);
 

@@ -30,18 +30,6 @@ class PrimitiveField extends FieldGenerator {
     @Override
     public void generateMembers(TypeSpec.Builder type) {
 
-        MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(TypeName.BOOLEAN)
-                .addNamedCode("return $getHas:L;\n", m)
-                .build();
-
-        MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(typeName)
-                .addStatement("return $L", info.getFieldName())
-                .build();
-
         MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(info.getTypeName(), "value")
@@ -61,8 +49,7 @@ class PrimitiveField extends FieldGenerator {
                         "return this;\n", m)
                 .build();
 
-        type.addMethod(hazzer);
-        type.addMethod(getter);
+        generateHasAndGet(type);
         type.addMethod(setter);
         type.addMethod(clearer);
 
@@ -116,13 +103,13 @@ class PrimitiveField extends FieldGenerator {
     private String getDefaultValue() {
         String value = info.getDescriptor().getDefaultValue();
         if (value.isEmpty()) {
-            if(typeName == TypeName.FLOAT)
+            if (typeName == TypeName.FLOAT)
                 return "0F";
-            if(typeName == TypeName.DOUBLE)
+            if (typeName == TypeName.DOUBLE)
                 return "0D";
-            if(typeName == TypeName.LONG)
+            if (typeName == TypeName.LONG)
                 return "0L";
-            if(typeName == TypeName.BOOLEAN)
+            if (typeName == TypeName.BOOLEAN)
                 return "false";
             return "0";
         }

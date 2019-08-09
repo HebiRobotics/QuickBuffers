@@ -32,18 +32,6 @@ public class EnumField extends FieldGenerator {
     @Override
     public void generateMembers(TypeSpec.Builder type) {
 
-        MethodSpec hazzer = MethodSpec.methodBuilder(info.getHazzerName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(TypeName.BOOLEAN)
-                .addNamedCode("return $getHas:L;\n", m)
-                .build();
-
-        MethodSpec getter = MethodSpec.methodBuilder(info.getGetterName())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(typeName)
-                .addStatement("return $L", info.getFieldName())
-                .build();
-
         MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(info.getTypeName(), "value")
@@ -66,8 +54,7 @@ public class EnumField extends FieldGenerator {
                         "return this;\n", m)
                 .build();
 
-        type.addMethod(hazzer);
-        type.addMethod(getter);
+        generateHasAndGet(type);
         type.addMethod(setter);
         type.addMethod(clearer);
 
