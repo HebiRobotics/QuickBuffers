@@ -26,36 +26,6 @@
     <build>
         <plugins>
 
-            <!-- NOTE: Stupid plugin always also generates the default Java target. Is there any way around it? -->
-            <!--<plugin>
-                <groupId>org.xolstice.maven.plugins</groupId>
-                <artifactId>protobuf-maven-plugin</artifactId>
-                <version>0.6.1</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <protocExecutable>${protoc.executable}</protocExecutable>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>test-compile</goal>
-                        </goals>
-                        <configuration>
-                            <protocPlugins>
-                                <protocPlugin>
-                                    <id>myParser</id>
-                                    <groupId>${project.parent.groupId}</groupId>
-                                    <artifactId>parser</artifactId>
-                                    <version>${project.parent.version}</version>
-                                    <mainClass>us.hebi.robobuf.parser.ParserPlugin</mainClass>
-                                </protocPlugin>
-                            </protocPlugins>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>-->
-
             <!-- Generate sources via plugin -->
             <plugin>
                 <groupId>com.github.os72</groupId>
@@ -71,8 +41,12 @@
                             <protocVersion>${protoc.version}</protocVersion>
                             <addSources>none</addSources>
 
+                            <pluginPath>${project.parent.basedir}</pluginPath>
                             <type>robobuf</type>
-                            <outputDirectory>${project.build.directory}/generated-test-sources/
+                            <outputOptions>javaPackage=us.hebi.robobuf.robo</outputOptions>
+
+                            <outputDirectory>
+                                ${project.build.directory}/generated-test-sources/
                             </outputDirectory>
 
                             <inputDirectories>

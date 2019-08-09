@@ -129,7 +129,8 @@
                         <configuration>
                             <finalName>${project.artifactId}-shaded</finalName>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>us.hebi.robobuf.compiler.CompilerPlugin</mainClass>
                                 </transformer>
                             </transformers>

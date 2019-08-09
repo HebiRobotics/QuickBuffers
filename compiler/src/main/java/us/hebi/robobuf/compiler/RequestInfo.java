@@ -53,6 +53,14 @@ public class RequestInfo {
         return checkNotNull(typeMap.resolveClassName(typeId), "Unable to resolve type id: " + typeId);
     }
 
+    public boolean hasOverrideJavaPackage() {
+        return generatorParameters.containsKey("javaPackage");
+    }
+
+    public String getOverrideJavaPackage() {
+        return generatorParameters.get("javaPackage");
+    }
+
     public String getIndentString() {
         return "    "; // parameter?
     }
@@ -75,7 +83,11 @@ public class RequestInfo {
 
             fileName = descriptor.getName();
             protoPackage = NameResolver.getProtoPackage(descriptor);
-            javaPackage = NameResolver.getJavaPackage(descriptor);
+
+            javaPackage = parentRequest.hasOverrideJavaPackage() ?
+                    parentRequest.getOverrideJavaPackage() :
+                    NameResolver.getJavaPackage(descriptor);
+
             outerClassName = ClassName.get(javaPackage, NameResolver.getJavaOuterClassname(descriptor));
 
             outputDirectory = javaPackage.isEmpty() ? "" : javaPackage.replaceAll("\\.", "/") + "/";
