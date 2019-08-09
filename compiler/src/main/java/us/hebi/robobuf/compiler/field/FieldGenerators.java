@@ -45,7 +45,7 @@ public class FieldGenerators {
 
         @Override
         public void generateField(TypeSpec.Builder type) {
-            type.addField(FieldSpec.builder(info.getTypeName(), info.getFieldName()).addJavadoc("Unsupported:\n$S\n", info.getDescriptor()).build());
+            type.addField(FieldSpec.builder(info.getTypeName(), info.getFieldName()).addJavadoc("Unsupported:\n$L\n", info.getDescriptor()).build());
         }
 
         @Override
