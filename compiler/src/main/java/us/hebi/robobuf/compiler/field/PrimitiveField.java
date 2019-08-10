@@ -35,7 +35,7 @@ class PrimitiveField extends FieldGenerator {
                 .returns(info.getParentType())
                 .addNamedCode("" +
                         "$setHas:L;\n" +
-                        "$name:L = value;\n" +
+                        "$field:N = value;\n" +
                         "return this;\n", m)
                 .build();
         type.addMethod(setter);
@@ -43,28 +43,28 @@ class PrimitiveField extends FieldGenerator {
 
     @Override
     public void generateClearCode(MethodSpec.Builder method) {
-        method.addNamedCode("$name:L = $default:L;\n", m);
+        method.addNamedCode("$field:N = $default:L;\n", m);
     }
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addNamedCode("$name:L = other.$name:L;\n", m);
+        method.addNamedCode("$field:N = other.$field:N;\n", m);
     }
 
     @Override
     public void generateMergingCode(MethodSpec.Builder method) {
         method.addNamedCode("" +
-                "$name:L = input.read$capitalizedType:L();\n" +
+                "$field:N = input.read$capitalizedType:L();\n" +
                 "$setHas:L;\n", m);
     }
 
     @Override
     protected String getNamedNotEqualsStatement() {
         if (typeName == TypeName.FLOAT)
-            return "(Float.floatToIntBits($name:L) != Float.floatToIntBits(other.$name:L))";
+            return "(Float.floatToIntBits($field:N) != Float.floatToIntBits(other.$field:N))";
         else if (typeName == TypeName.DOUBLE)
-            return "(Double.doubleToLongBits($name:L) != Double.doubleToLongBits(other.$name:L))";
-        return "($name:L != other.$name:L)";
+            return "(Double.doubleToLongBits($field:N) != Double.doubleToLongBits(other.$field:N))";
+        return "($field:N != other.$field:N)";
     }
 
     protected String getDefaultValue() {

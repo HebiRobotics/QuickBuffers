@@ -215,7 +215,9 @@ public class RequestInfo {
             getterName = "get" + upperName;
             mutableGetterName = "getMutable" + upperName;
             clearName = "clear" + upperName;
+            isPrimitive = TypeMap.isPrimitive(descriptor.getType());
             tag = RuntimeClasses.makeTag(descriptor);
+            packedTag = RuntimeClasses.makePackedTag(descriptor);
             number = descriptor.getNumber();
             fieldName = NameUtil.isReservedKeyword(lowerName) ? lowerName + "_" : lowerName;
         }
@@ -232,8 +234,12 @@ public class RequestInfo {
             return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REPEATED;
         }
 
-        public boolean isPrimitive() {
-            return TypeMap.isPrimitive(descriptor.getType());
+        public boolean isPacked() {
+            return descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
+        }
+
+        public boolean isDeprecated() {
+            return descriptor.getOptions().hasDeprecated() && descriptor.getOptions().getDeprecated();
         }
 
         public TypeName getTypeName() {
@@ -248,6 +254,7 @@ public class RequestInfo {
         private final String hasBit;
         private final String setBit;
         private final String clearBit;
+        private final boolean isPrimitive;
         String fieldName;
         String lowerName;
         String upperName;
@@ -257,6 +264,7 @@ public class RequestInfo {
         String mutableGetterName;
         String clearName;
         int tag;
+        int packedTag;
         int number;
 
     }

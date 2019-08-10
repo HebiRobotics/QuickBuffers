@@ -36,8 +36,8 @@ public class StringField extends FieldGenerator {
                 .returns(info.getParentType())
                 .addNamedCode("" +
                         "$setHas:L;\n" +
-                        "$name:L.setLength(0);\n" +
-                        "$name:L.append(value);\n" +
+                        "$field:N.setLength(0);\n" +
+                        "$field:N.append(value);\n" +
                         "return this;\n", m)
                 .build();
         type.addMethod(setter);
@@ -45,29 +45,29 @@ public class StringField extends FieldGenerator {
 
     @Override
     public void generateClearCode(MethodSpec.Builder method) {
-        method.addNamedCode("$name:N.setLength(0);\n", m);
+        method.addNamedCode("$field:N.setLength(0);\n", m);
         if (!info.getDescriptor().getDefaultValue().isEmpty()) {
-            method.addNamedCode("$name:N.append($default:S);\n", m);
+            method.addNamedCode("$field:N.append($default:S);\n", m);
         }
     }
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addNamedCode("$name:N.setLength(0);\n", m);
-        method.addNamedCode("$name:N.append(other);\n", m);
+        method.addNamedCode("$field:N.setLength(0);\n", m);
+        method.addNamedCode("$field:N.append(other);\n", m);
     }
 
     @Override
     public void generateMergingCode(MethodSpec.Builder method) {
         method.addNamedCode("" +
-                "$name:N.setLength(0);\n" +
-                "$name:N.append(input.readString());\n" +
+                "$field:N.setLength(0);\n" +
+                "$field:N.append(input.readString());\n" +
                 "$setHas:L;\n", m);
     }
 
     @Override
     protected String getNamedNotEqualsStatement() {
-        return "!$roboUtil:T.equals($name:N, other.$name:N)";
+        return "!$roboUtil:T.equals($field:N, other.$field:N)";
     }
 
 }

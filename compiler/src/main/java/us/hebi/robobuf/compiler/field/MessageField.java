@@ -35,7 +35,7 @@ class MessageField extends FieldGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(typeName)
                 .addNamedCode("$setHas:L;\n", m)
-                .addNamedCode("return $name:N;\n", m)
+                .addNamedCode("return $field:N;\n", m)
                 .build();
         type.addMethod(mutableGetter);
     }
@@ -46,7 +46,7 @@ class MessageField extends FieldGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
                 .addParameter(typeName, "value")
-                .addNamedCode("$name:N.copyFrom(value);\n", m)
+                .addNamedCode("$field:N.copyFrom(value);\n", m)
                 .addNamedCode("$setHas:L;\n", m)
                 .addStatement("return this")
                 .build();
@@ -55,27 +55,27 @@ class MessageField extends FieldGenerator {
 
     @Override
     public void generateClearCode(MethodSpec.Builder method) {
-        method.addNamedCode("$name:L.clear();\n", m);
+        method.addNamedCode("$field:N.clear();\n", m);
     }
 
     @Override
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addNamedCode("$name:L.copyFrom(other.$name:L);\n", m);
+        method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m);
     }
 
     @Override
     public void generateMergingCode(MethodSpec.Builder method) {
         if (isGroup()) {
-            method.addNamedCode("input.readGroup($name:L, $number:L);\n", m);
+            method.addNamedCode("input.readGroup($field:N, $number:L);\n", m);
         } else {
-            method.addNamedCode("input.readMessage($name:L);\n", m);
+            method.addNamedCode("input.readMessage($field:N);\n", m);
         }
         method.addNamedCode("$setHas:L;\n", m);
     }
 
     @Override
     protected String getNamedNotEqualsStatement() {
-        return "!$name:L.equals(other.$name:L)";
+        return "!$field:N.equals(other.$field:N)";
     }
 
     private boolean isGroup() {

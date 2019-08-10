@@ -33,6 +33,32 @@ public class TypeMap {
         return new TypeMap();
     }
 
+    public static int getMinimumPackedSize(DescriptorProtos.FieldDescriptorProto.Type type) {
+        switch (type) {
+
+            case TYPE_DOUBLE:
+            case TYPE_SFIXED64:
+            case TYPE_FIXED64:
+                return 8;
+
+
+            case TYPE_FLOAT:
+            case TYPE_SFIXED32:
+            case TYPE_FIXED32:
+                return 4;
+
+            // Maybe 2 because of extra fields? Probably doesn't matter
+            case TYPE_STRING:
+            case TYPE_GROUP:
+            case TYPE_MESSAGE:
+            case TYPE_BYTES:
+
+            // everything else is varint encoded
+            default:
+                return 1;
+        }
+    }
+
     public static boolean isPrimitive(DescriptorProtos.FieldDescriptorProto.Type type) {
         switch (type) {
             case TYPE_DOUBLE:

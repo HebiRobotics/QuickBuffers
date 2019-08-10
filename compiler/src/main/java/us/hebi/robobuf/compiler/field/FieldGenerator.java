@@ -16,6 +16,10 @@ import java.util.HashMap;
  */
 public abstract class FieldGenerator {
 
+    public RequestInfo.FieldInfo getInfo() {
+        return info;
+    }
+
     public abstract void generateMemberFields(TypeSpec.Builder type);
 
     public abstract void generateClearCode(MethodSpec.Builder method);
@@ -71,7 +75,7 @@ public abstract class FieldGenerator {
         type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(typeName)
-                .addNamedCode("return $name:N;\n", m)
+                .addNamedCode("return $field:N;\n", m)
                 .build());
     }
 
@@ -85,16 +89,12 @@ public abstract class FieldGenerator {
         type.addMethod(method.build());
     }
 
-    public int getTag() {
-        return info.getTag();
-    }
-
     protected FieldGenerator(RequestInfo.FieldInfo info) {
         this.info = info;
         typeName = info.getTypeName();
 
         // Common-variable map for named arguments
-        m.put("name", info.getFieldName());
+        m.put("field", info.getFieldName());
         m.put("hasMethod", info.getHazzerName());
         m.put("getHas", info.getHasBit());
         m.put("setHas", info.getSetBit());
@@ -107,6 +107,7 @@ public abstract class FieldGenerator {
         m.put("serializableValue", info.getFieldName());
         m.put("computeClass", RuntimeClasses.PROTO_DEST);
         m.put("roboUtil", RuntimeClasses.ROBO_UTIL);
+        m.put("wireFormat", RuntimeClasses.WIRE_FORMAT);
 
     }
 

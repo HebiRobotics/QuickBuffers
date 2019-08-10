@@ -12,8 +12,8 @@ import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 public class FieldGenerators {
 
     public static FieldGenerator createGenerator(FieldInfo field) {
-        if (field.isPrimitive() && !field.isRepeated()) {
-            return new PrimitiveField(field);
+        if (field.isPrimitive()) {
+            return field.isRepeated() ? new RepeatedPrimitiveField(field) : new PrimitiveField(field);
         }
 
         switch (field.getDescriptor().getType()) {

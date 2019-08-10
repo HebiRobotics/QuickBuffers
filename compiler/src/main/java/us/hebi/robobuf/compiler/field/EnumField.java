@@ -33,7 +33,7 @@ class EnumField extends PrimitiveField {
                 .nextControlFlow("else")
                 .addNamedCode("$setHas:L;\n", m)
                 .endControlFlow()
-                .addNamedCode("$name:L = value;\n", m)
+                .addNamedCode("$field:N = value;\n", m)
                 .addStatement("return this")
                 .build();
 
@@ -44,7 +44,7 @@ class EnumField extends PrimitiveField {
     public void generateMergingCode(MethodSpec.Builder method) {
         method.addNamedCode("$type:T value = $type:T.forNumber(input.readInt32());\n", m)
                 .beginControlFlow("if (value != null)")
-                .addNamedCode("$name:N = value;\n", m)
+                .addNamedCode("$field:N = value;\n", m)
                 .addNamedCode("$setHas:L;\n", m)
                 .endControlFlow();
     }

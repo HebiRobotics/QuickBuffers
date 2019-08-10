@@ -172,10 +172,19 @@ public class MessageGenerator implements TypeGenerator {
 
         // individual fields
         fields.forEach(field -> {
-            mergeFrom.beginControlFlow("case $L:", field.getTag());
+            // Non-packed
+            mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
             field.generateMergingCode(mergeFrom);
             mergeFrom.addStatement("break");
             mergeFrom.endControlFlow();
+
+            // Packed code (only for repeated. Needs to be generated even for non packed fields for forwards compatibility)
+            if (field.getInfo().isRepeated()) {
+                mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
+                field.generateMergingCodeFromPacked(mergeFrom);
+                mergeFrom.addStatement("break");
+                mergeFrom.endControlFlow();
+            }
         });
 
         mergeFrom.endControlFlow();
