@@ -179,7 +179,7 @@ public class MessageGenerator implements TypeGenerator {
             mergeFrom.endControlFlow();
 
             // Packed code (only for repeated. Needs to be generated even for non packed fields for forwards compatibility)
-            if (field.getInfo().isRepeated()) {
+            if (field.getInfo().isRepeated() && field.getInfo().isPrimitive()) { // TODO: duplicate case for repeated bytes / string?
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
                 field.generateMergingCodeFromPacked(mergeFrom);
                 mergeFrom.addStatement("break");
