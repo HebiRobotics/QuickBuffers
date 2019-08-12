@@ -13,9 +13,7 @@ import us.hebi.robobuf.compiler.field.FieldGenerators;
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Florian Enner
@@ -153,9 +151,6 @@ public class MessageGenerator implements TypeGenerator {
                 .addParameter(RuntimeClasses.PROTO_SOURCE, "input")
                 .addException(IOException.class);
 
-        Map<String, Object> m = new HashMap<>();
-        m.put("unknownFieldParseClass", RuntimeClasses.UNKNOWN_FIELD_PARSE_CLASS);
-
         mergeFrom.beginControlFlow("while (true)");
         mergeFrom.addStatement("int tag = input.readTag()");
         mergeFrom.beginControlFlow("switch (tag)");
@@ -167,7 +162,7 @@ public class MessageGenerator implements TypeGenerator {
 
         // default case -> skip field
         mergeFrom.beginControlFlow("default:")
-                .beginControlFlow("if (!$T.parseUnknownField(input,tag))", RuntimeClasses.UNKNOWN_FIELD_PARSE_CLASS)
+                .beginControlFlow("if (!input.skipField(tag))")
                 .addStatement("return this")
                 .endControlFlow()
                 .endControlFlow();

@@ -2,7 +2,6 @@ package us.hebi.robobuf.compiler;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.TypeName;
 
 /**
  * @author Florian Enner
@@ -16,7 +15,7 @@ public class RuntimeClasses {
     public static final ClassName BASE_MESSAGE = ClassName.get(API_PACKAGE, "MessageNano");
     public static final ClassName STRING_CLASS = ClassName.get(CharSequence.class);
     public static final ClassName STRING_STORAGE_CLASS = ClassName.get(StringBuilder.class);
-    public static final ClassName UNKNOWN_FIELD_PARSE_CLASS = ClassName.get(API_PACKAGE, "WireFormatNano");
+    public static final ClassName BYTES_STORAGE_CLASS = ClassName.get(API_PACKAGE, "ByteStore");
     public static final ClassName ROBO_UTIL = ClassName.get(API_PACKAGE, "RoboUtil");
     public static final ClassName WIRE_FORMAT = ClassName.get(API_PACKAGE, "WireFormatNano");
 

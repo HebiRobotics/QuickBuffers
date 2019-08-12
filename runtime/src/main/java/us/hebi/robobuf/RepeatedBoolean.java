@@ -35,4 +35,5 @@ public class RepeatedBoolean implements RepeatedField {
     public void clear() {
 
     }
+
 }

@@ -469,7 +469,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a {@code bytes} field, including tag, to the stream. */
-  public void writeBytes(final int fieldNumber, final byte[] value)
+  public void writeBytes(final int fieldNumber, final ByteStore value)
                          throws IOException {
     writeTag(fieldNumber, WireFormatNano.WIRETYPE_LENGTH_DELIMITED);
     writeBytesNoTag(value);
@@ -814,9 +814,9 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a {@code bytes} field to the stream. */
-  public void writeBytesNoTag(final byte[] value) throws IOException {
+  public void writeBytesNoTag(final ByteStore value) throws IOException {
     writeRawVarint32(value.length);
-    writeRawBytes(value);
+    writeRawBytes(value.array, 0, value.length);
   }
 
   /** Write a {@code uint32} field to the stream. */
@@ -954,7 +954,7 @@ public final class CodedOutputByteBufferNano {
    * {@code bytes} field, including tag.
    */
   public static int computeBytesSize(final int fieldNumber,
-                                     final byte[] value) {
+                                     final ByteStore value) {
     return computeTagSize(fieldNumber) + computeBytesSizeNoTag(value);
   }
 
@@ -1110,7 +1110,7 @@ public final class CodedOutputByteBufferNano {
    * Compute the number of bytes that would be needed to encode a
    * {@code bytes} field.
    */
-  public static int computeBytesSizeNoTag(final byte[] value) {
+  public static int computeBytesSizeNoTag(final ByteStore value) {
     return computeRawVarint32Size(value.length) + value.length;
   }
 
@@ -1230,11 +1230,6 @@ public final class CodedOutputByteBufferNano {
   /** Write a single byte, represented by an integer value. */
   public void writeRawByte(final int value) throws IOException {
     writeRawByte((byte) value);
-  }
-
-  /** Write an array of bytes. */
-  public void writeRawBytes(final byte[] value) throws IOException {
-    writeRawBytes(value, 0, value.length);
   }
 
   /** Write part of an array of bytes. */
@@ -1363,129 +1358,6 @@ public final class CodedOutputByteBufferNano {
   public static long encodeZigZag64(final long n) {
     // Note:  the right-shift must be arithmetic
     return (n << 1) ^ (n >> 63);
-  }
-
-  static int computeFieldSize(int number, int type, Object object) {
-    switch (type) {
-      case InternalNano.TYPE_BOOL:
-        return computeBoolSize(number, (Boolean) object);
-      case InternalNano.TYPE_BYTES:
-        return computeBytesSize(number, (byte[]) object);
-      case InternalNano.TYPE_STRING:
-        return computeStringSize(number, (String) object);
-      case InternalNano.TYPE_FLOAT:
-        return computeFloatSize(number, (Float) object);
-      case InternalNano.TYPE_DOUBLE:
-        return computeDoubleSize(number, (Double) object);
-      case InternalNano.TYPE_ENUM:
-        return computeEnumSize(number, (Integer) object);
-      case InternalNano.TYPE_FIXED32:
-        return computeFixed32Size(number, (Integer) object);
-      case InternalNano.TYPE_INT32:
-        return computeInt32Size(number, (Integer) object);
-      case InternalNano.TYPE_UINT32:
-        return computeUInt32Size(number, (Integer) object);
-      case InternalNano.TYPE_SINT32:
-        return computeSInt32Size(number, (Integer) object);
-      case InternalNano.TYPE_SFIXED32:
-        return computeSFixed32Size(number, (Integer) object);
-      case InternalNano.TYPE_INT64:
-        return computeInt64Size(number, (Long) object);
-      case InternalNano.TYPE_UINT64:
-        return computeUInt64Size(number, (Long) object);
-      case InternalNano.TYPE_SINT64:
-        return computeSInt64Size(number, (Long) object);
-      case InternalNano.TYPE_FIXED64:
-        return computeFixed64Size(number, (Long) object);
-      case InternalNano.TYPE_SFIXED64:
-        return computeSFixed64Size(number, (Long) object);
-      case InternalNano.TYPE_MESSAGE:
-        return computeMessageSize(number, (MessageNano) object);
-      case InternalNano.TYPE_GROUP:
-        return computeGroupSize(number, (MessageNano) object);
-      default:
-        throw new IllegalArgumentException("Unknown type: " + type);
-    }
-  }
-
-  void writeField(int number, int type, Object value)
-      throws IOException {
-    switch (type) {
-      case InternalNano.TYPE_DOUBLE:
-        Double doubleValue = (Double) value;
-        writeDouble(number, doubleValue);
-        break;
-      case InternalNano.TYPE_FLOAT:
-        Float floatValue = (Float) value;
-        writeFloat(number, floatValue);
-        break;
-      case InternalNano.TYPE_INT64:
-        Long int64Value = (Long) value;
-        writeInt64(number, int64Value);
-        break;
-      case InternalNano.TYPE_UINT64:
-        Long uint64Value = (Long) value;
-        writeUInt64(number, uint64Value);
-        break;
-      case InternalNano.TYPE_INT32:
-        Integer int32Value = (Integer) value;
-        writeInt32(number, int32Value);
-        break;
-      case InternalNano.TYPE_FIXED64:
-        Long fixed64Value = (Long) value;
-        writeFixed64(number, fixed64Value);
-        break;
-      case InternalNano.TYPE_FIXED32:
-        Integer fixed32Value = (Integer) value;
-        writeFixed32(number, fixed32Value);
-        break;
-      case InternalNano.TYPE_BOOL:
-        Boolean boolValue = (Boolean) value;
-        writeBool(number, boolValue);
-        break;
-      case InternalNano.TYPE_STRING:
-        String stringValue = (String) value;
-        writeString(number, stringValue);
-        break;
-      case InternalNano.TYPE_BYTES:
-        byte[] bytesValue = (byte[]) value;
-        writeBytes(number, bytesValue);
-        break;
-      case InternalNano.TYPE_UINT32:
-        Integer uint32Value = (Integer) value;
-        writeUInt32(number, uint32Value);
-        break;
-      case InternalNano.TYPE_ENUM:
-        Integer enumValue = (Integer) value;
-        writeEnum(number, enumValue);
-        break;
-      case InternalNano.TYPE_SFIXED32:
-        Integer sfixed32Value = (Integer) value;
-        writeSFixed32(number, sfixed32Value);
-        break;
-      case InternalNano.TYPE_SFIXED64:
-        Long sfixed64Value = (Long) value;
-        writeSFixed64(number, sfixed64Value);
-        break;
-      case InternalNano.TYPE_SINT32:
-        Integer sint32Value = (Integer) value;
-        writeSInt32(number, sint32Value);
-        break;
-      case InternalNano.TYPE_SINT64:
-        Long sint64Value = (Long) value;
-        writeSInt64(number, sint64Value);
-        break;
-      case InternalNano.TYPE_MESSAGE:
-        MessageNano messageValue = (MessageNano) value;
-        writeMessage(number, messageValue);
-        break;
-      case InternalNano.TYPE_GROUP:
-        MessageNano groupValue = (MessageNano) value;
-        writeGroup(number, groupValue);
-        break;
-      default:
-        throw new IOException("Unknown type: " + type);
-    }
   }
 
 }

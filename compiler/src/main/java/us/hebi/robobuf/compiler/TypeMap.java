@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
-import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
 import lombok.ToString;
@@ -115,7 +114,7 @@ public class TypeMap {
             case TYPE_MESSAGE:
                 return resolveClassName(descriptor.getTypeName());
             case TYPE_BYTES:
-                return ArrayTypeName.get(byte[].class);
+                return RuntimeClasses.BYTES_STORAGE_CLASS;
 
         }
         throw new GeneratorException("Unsupported type: " + descriptor);

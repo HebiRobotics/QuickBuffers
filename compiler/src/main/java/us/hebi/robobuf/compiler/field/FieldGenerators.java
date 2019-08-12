@@ -3,6 +3,7 @@ package us.hebi.robobuf.compiler.field;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+import us.hebi.robobuf.compiler.GeneratorException;
 import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 
 /**
@@ -35,20 +36,20 @@ public class FieldGenerators {
 
             case TYPE_GROUP:
             case TYPE_MESSAGE:
-                    return new MessageField(field);
+                return new MessageField(field);
 
             case TYPE_ENUM:
-                    return new EnumField(field);
+                return new EnumField(field);
 
             case TYPE_STRING:
-                    return new StringField(field);
+                return new StringField(field);
 
             case TYPE_BYTES:
-                break;
+                return new BytesField(field);
 
         }
 
-        return new IgnoredFieldGenerator(field);
+        throw new GeneratorException("Unsupported field:\n" + field.getDescriptor());
     }
 
     static final class IgnoredFieldGenerator extends FieldGenerator {

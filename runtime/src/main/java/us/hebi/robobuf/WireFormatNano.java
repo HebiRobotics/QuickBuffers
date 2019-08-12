@@ -82,20 +82,6 @@ public final class WireFormatNano {
   public static final byte[] EMPTY_BYTES = {};
 
   /**
-   * Parses an unknown field. This implementation skips the field.
-   *
-   * <p>Generated messages will call this for unknown fields if the store_unknown_fields
-   * option is off.
-   *
-   * @return {@literal true} unless the tag is an end-group tag.
-   */
-  public static boolean parseUnknownField(
-      final CodedInputByteBufferNano input,
-      final int tag) throws IOException {
-    return input.skipField(tag);
-  }
-
-  /**
    * Computes the array length of a repeated field. We assume that in the common case repeated
    * fields are contiguously serialized but we still correctly handle interspersed values of a
    * repeated field (but with extra allocations).

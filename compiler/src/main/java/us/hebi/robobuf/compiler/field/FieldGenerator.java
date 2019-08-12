@@ -3,7 +3,7 @@ package us.hebi.robobuf.compiler.field;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import us.hebi.robobuf.compiler.GeneratorException;
 import us.hebi.robobuf.compiler.RequestInfo;
 import us.hebi.robobuf.compiler.RuntimeClasses;
 
@@ -47,7 +47,7 @@ public abstract class FieldGenerator {
     }
 
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        throw new NotImplementedException(); // only for repeated fields
+        throw new GeneratorException(""); // only for repeated fields
     }
 
     public void generateSerializationCode(MethodSpec.Builder method) {
