@@ -9,14 +9,14 @@ import com.squareup.javapoet.ClassName;
  */
 public class RuntimeClasses {
 
-    public static final ClassName PROTO_SOURCE = ClassName.get("com.google.protobuf.nano", "CodedInputByteBufferNano");
-    public static final ClassName PROTO_DEST = ClassName.get("com.google.protobuf.nano", "CodedOutputByteBufferNano");
-    public static final ClassName BASE_MESSAGE = ClassName.get("com.google.protobuf.nano", "MessageNano");
+    public static final ClassName PROTO_SOURCE = ClassName.get("us.hebi.robobuf", "CodedInputByteBufferNano");
+    public static final ClassName PROTO_DEST = ClassName.get("us.hebi.robobuf", "CodedOutputByteBufferNano");
+    public static final ClassName BASE_MESSAGE = ClassName.get("us.hebi.robobuf", "MessageNano");
     public static final ClassName STRING_CLASS = ClassName.get(CharSequence.class);
     public static final ClassName STRING_STORAGE_CLASS = ClassName.get(StringBuilder.class);
-    public static final ClassName UNKNOWN_FIELD_PARSE_CLASS = ClassName.get("com.google.protobuf.nano", "WireFormatNano");
+    public static final ClassName UNKNOWN_FIELD_PARSE_CLASS = ClassName.get("us.hebi.robobuf", "WireFormatNano");
     public static final ClassName ROBO_UTIL = ClassName.get("us.hebi.robobuf", "RoboUtil");
-    public static final ClassName WIRE_FORMAT = ClassName.get("com.google.protobuf.nano", "WireFormatNano");
+    public static final ClassName WIRE_FORMAT = ClassName.get("us.hebi.robobuf", "WireFormatNano");
 
     public static final ClassName REPEATED_BOOLEAN_CLASS = ClassName.get("us.hebi.robobuf", "RepeatedBoolean");
     public static final ClassName REPEATED_INT_CLASS = ClassName.get("us.hebi.robobuf", "RepeatedInt");

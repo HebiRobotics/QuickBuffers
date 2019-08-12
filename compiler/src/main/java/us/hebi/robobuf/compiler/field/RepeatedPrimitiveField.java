@@ -85,21 +85,17 @@ public class RepeatedPrimitiveField extends FieldGenerator {
     @Override
     public void generateSerializationCode(MethodSpec.Builder method) {
         method.addNamedCode("" +
-                "if ($getHas:L) {$>\n" +
                 "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                 "output.write$capitalizedType:L($number:L, $field:N.get(i));\n" +
-                "$<}\n" +
                 "$<}\n", m);
     }
 
     @Override
     public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
         method.addNamedCode("" +
-                "if ($getHas:L) {$>\n" +
                 "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                 "size += $computeClass:T.compute$capitalizedType:LSize($number:L, $field:N.get(i));\n" +
-                "}$<\n" +
-                "$<}\n", m);
+                "}$<\n", m);
     }
 
     @Override
@@ -116,7 +112,7 @@ public class RepeatedPrimitiveField extends FieldGenerator {
         method.addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m);
     }
 
-    @Override
+   /* @Override
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
         // We don't know exactly how many items there are for non-fixed width types,
         // but we at least know how many items there will be at least. The first iteration
@@ -131,12 +127,7 @@ public class RepeatedPrimitiveField extends FieldGenerator {
                 "$field:N.add(input.read$capitalizedType:L());\n" +
                 "$<}\n" +
                 "input.popLimit(limit);\n", m);
-    }
-
-    @Override
-    protected String getNamedNotEqualsStatement() {
-        return "!$field:N.equals(other.$field:N)";
-    }
+    }*/
 
     @Override
     protected void generateSetter(TypeSpec.Builder type) {

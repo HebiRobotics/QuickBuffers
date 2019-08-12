@@ -59,11 +59,6 @@ class MessageField extends FieldGenerator {
     }
 
     @Override
-    public void generateCopyFromCode(MethodSpec.Builder method) {
-        method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m);
-    }
-
-    @Override
     public void generateMergingCode(MethodSpec.Builder method) {
         if (isGroup()) {
             method.addNamedCode("input.readGroup($field:N, $number:L);\n", m);
@@ -71,11 +66,6 @@ class MessageField extends FieldGenerator {
             method.addNamedCode("input.readMessage($field:N);\n", m);
         }
         method.addNamedCode("$setHas:L;\n", m);
-    }
-
-    @Override
-    protected String getNamedNotEqualsStatement() {
-        return "!$field:N.equals(other.$field:N)";
     }
 
     private boolean isGroup() {

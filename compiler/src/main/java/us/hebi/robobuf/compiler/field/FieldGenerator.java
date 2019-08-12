@@ -22,37 +22,31 @@ public abstract class FieldGenerator {
 
     public abstract void generateMemberFields(TypeSpec.Builder type);
 
-    public abstract void generateClearCode(MethodSpec.Builder method);
+    public void generateClearCode(MethodSpec.Builder method){
+        method.addNamedCode("$field:N.clear();\n", m); // all reference types
+    }
 
-    public abstract void generateCopyFromCode(MethodSpec.Builder method);
+    public void generateCopyFromCode(MethodSpec.Builder method){
+        method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m); // all reference types
+    }
 
     public abstract void generateMergingCode(MethodSpec.Builder method);
 
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        throw new GeneratorException("Merging from packed not implemented"); // only for repeated fields
+        method.addNamedCode("input.readPacked$capitalizedType:L($field:N);\n", m); // all reference types
     }
 
     public void generateSerializationCode(MethodSpec.Builder method) {
-        method.addNamedCode("" +
-                "if ($getHas:L) {$>\n" +
-                "output.write$capitalizedType:L($number:L, $serializableValue:L);\n" +
-                "$<}\n", m);
+//        method.addNamedCode("output.write$capitalizedType:L($number:L, $serializableValue:L);\n", m);
     }
 
     public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-        method.addNamedCode("" +
-                "if ($getHas:L) {$>\n" +
-                "size += $computeClass:T.compute$capitalizedType:LSize($number:L, $serializableValue:L);\n" +
-                "$<}\n", m);
+//        method.addNamedCode("size += $computeClass:T.compute$capitalizedType:LSize($number:L, $serializableValue:L);\n", m);
     }
 
-    public void generateEqualsCode(MethodSpec.Builder method) {
-        method.addNamedCode("if ($hasMethod:N() && " + getNamedNotEqualsStatement() + ") {$>\n", m)
-                .addStatement("return false")
-                .endControlFlow();
+    public void generateEqualsStatement(MethodSpec.Builder method) {
+        method.addNamedCode("$field:N.equals(other.$field:N)", m); // all reference types (not string)
     }
-
-    protected abstract String getNamedNotEqualsStatement();
 
     protected abstract void generateSetter(TypeSpec.Builder type);
 
@@ -113,6 +107,7 @@ public abstract class FieldGenerator {
 
     protected final RequestInfo.FieldInfo info;
     protected final TypeName typeName;
-    protected HashMap<String, Object> m = new HashMap<>();
+
+    protected final HashMap<String, Object> m = new HashMap<>();
 
 }

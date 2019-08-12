@@ -66,8 +66,8 @@ public class StringField extends FieldGenerator {
     }
 
     @Override
-    protected String getNamedNotEqualsStatement() {
-        return "!$roboUtil:T.equals($field:N, other.$field:N)";
+    public void generateEqualsStatement(MethodSpec.Builder method) {
+        method.addNamedCode("$roboUtil:T.equals($field:N, other.$field:N)", m);
     }
 
 }

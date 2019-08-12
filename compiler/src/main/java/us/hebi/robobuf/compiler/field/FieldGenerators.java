@@ -86,11 +86,6 @@ public class FieldGenerators {
 
         }
 
-        @Override
-        protected String getNamedNotEqualsStatement() {
-            return "false";
-        }
-
     }
 
 }

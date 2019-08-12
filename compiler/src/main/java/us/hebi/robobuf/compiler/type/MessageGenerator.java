@@ -112,20 +112,22 @@ public class MessageGenerator implements TypeGenerator {
 
         // Check whether all of the same fields are set
         if (info.getFieldCount() > 0) {
-            equals.addCode("boolean hasDifferentFields = $1L != other.$1L$>", BitField.fieldName(0));
+            equals.addCode("return $1L == other.$1L$>", BitField.fieldName(0));
             for (int i = 1; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
-                equals.addCode("\n|| $1L != other.$1L", BitField.fieldName(i));
+                equals.addCode("\n&& $1L == other.$1L", BitField.fieldName(i));
             }
+
+            for (FieldGenerator field : fields) {
+                equals.addCode("\n&& (!$1N() || ", field.getInfo().getHazzerName());
+                field.generateEqualsStatement(equals);
+                equals.addCode(")");
+            }
+
             equals.addCode(";$<\n");
-            equals.beginControlFlow("if (hasDifferentFields)")
-                    .addStatement("return false")
-                    .endControlFlow();
+        } else {
+            equals.addCode("return true");
         }
 
-        // Check individual fields
-        fields.forEach(f -> f.generateEqualsCode(equals));
-
-        equals.addStatement("return true");
         type.addMethod(equals.build());
     }
 
@@ -199,7 +201,11 @@ public class MessageGenerator implements TypeGenerator {
                 .returns(void.class)
                 .addParameter(RuntimeClasses.PROTO_DEST, "output")
                 .addException(IOException.class);
-        fields.forEach(f -> f.generateSerializationCode(writeTo));
+        fields.forEach(f -> {
+            writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
+            f.generateSerializationCode(writeTo);
+            writeTo.endControlFlow();
+        });
         type.addMethod(writeTo.build());
     }
 
@@ -209,7 +215,11 @@ public class MessageGenerator implements TypeGenerator {
                 .addModifiers(Modifier.PROTECTED)
                 .returns(int.class);
         computeSerializedSize.addStatement("int size = 0");
-        fields.forEach(f -> f.generateComputeSerializedSizeCode(computeSerializedSize));
+        fields.forEach(f -> {
+            computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
+            f.generateComputeSerializedSizeCode(computeSerializedSize);
+            computeSerializedSize.endControlFlow();
+        });
         computeSerializedSize.addStatement("return size");
         type.addMethod(computeSerializedSize.build());
     }

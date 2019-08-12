@@ -59,12 +59,14 @@ class PrimitiveField extends FieldGenerator {
     }
 
     @Override
-    protected String getNamedNotEqualsStatement() {
-        if (typeName == TypeName.FLOAT)
-            return "(Float.floatToIntBits($field:N) != Float.floatToIntBits(other.$field:N))";
-        else if (typeName == TypeName.DOUBLE)
-            return "(Double.doubleToLongBits($field:N) != Double.doubleToLongBits(other.$field:N))";
-        return "($field:N != other.$field:N)";
+    public void generateEqualsStatement(MethodSpec.Builder method) {
+        if (typeName == TypeName.FLOAT) {
+            method.addNamedCode("(Float.floatToIntBits($field:N) == Float.floatToIntBits(other.$field:N))", m);
+        } else if (typeName == TypeName.DOUBLE) {
+            method.addNamedCode("(Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N))", m);
+        } else {
+            method.addNamedCode("($field:N == other.$field:N)", m);
+        }
     }
 
     protected String getDefaultValue() {
