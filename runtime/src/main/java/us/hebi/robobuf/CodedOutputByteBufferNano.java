@@ -90,10 +90,9 @@ public final class CodedOutputByteBufferNano {
   // -----------------------------------------------------------------
 
     // TODO: remove non-packed helper methods and just add packed ones? non-packed are easy to generate
-    // TODO: and can't be optimized further. Store Enums as ints?
 
   /** Write a repeated (non-packed) {@code double} field, including tag, to the stream. */
-  public void writeRepeatedDouble(final int fieldNumber, final RepeatedDouble values)
+  public void writePackedDouble(final int fieldNumber, final RepeatedDouble values)
           throws IOException {
     for (int i = 0; i < values.length(); i++) {
       writeDouble(fieldNumber, values.get(i));
@@ -101,7 +100,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code float} field, including tag, to the stream. */
-  public void writeRepeatedFloat(final int fieldNumber, final RepeatedFloat values)
+  public void writePackedFloat(final int fieldNumber, final RepeatedFloat values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeFloat(fieldNumber, values.get(i));
@@ -109,7 +108,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code uint64} field, including tag, to the stream. */
-  public void writeRepeatedUInt64(final int fieldNumber, final RepeatedLong values)
+  public void writePackedUInt64(final int fieldNumber, final RepeatedLong values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeUInt64(fieldNumber, values.get(i));
@@ -117,7 +116,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code int64} field, including tag, to the stream. */
-  public void writeRepeatedInt64(final int fieldNumber, final RepeatedLong values)
+  public void writePackedInt64(final int fieldNumber, final RepeatedLong values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeInt64(fieldNumber, values.get(i));
@@ -125,7 +124,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code int32} field, including tag, to the stream. */
-  public void writeRepeatedInt32(final int fieldNumber, final RepeatedInt values)
+  public void writePackedInt32(final int fieldNumber, final RepeatedInt values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeInt32(fieldNumber, values.get(i));
@@ -133,7 +132,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed){@code fixed64} field, including tag, to the stream. */
-  public void writeRepeatedFixed64(final int fieldNumber, final RepeatedLong values)
+  public void writePackedFixed64(final int fieldNumber, final RepeatedLong values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeFixed64(fieldNumber, values.get(i));
@@ -141,7 +140,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed){@code fixed32} field, including tag, to the stream. */
-  public void writeRepeatedFixed32(final int fieldNumber, final RepeatedInt values)
+  public void writePackedFixed32(final int fieldNumber, final RepeatedInt values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeFixed32(fieldNumber, values.get(i));
@@ -149,7 +148,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed){@code bool} field, including tag, to the stream. */
-  public void writeRepeatedBool(final int fieldNumber, final RepeatedBoolean values)
+  public void writePackedBool(final int fieldNumber, final RepeatedBoolean values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeBool(fieldNumber, values.get(i));
@@ -157,7 +156,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed){@code string} field, including tag, to the stream. */
-  public void writeRepeatedString(final int fieldNumber, final RepeatedString values)
+  public void writePackedString(final int fieldNumber, final RepeatedString values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeString(fieldNumber, values.get(i));
@@ -165,7 +164,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed){@code group} field, including tag, to the stream. */
-  public void writeRepeatedGroup(final int fieldNumber, final RepeatedMessage values)
+  public void writePackedGroup(final int fieldNumber, final RepeatedMessage values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeGroup(fieldNumber, values.get(i));
@@ -173,7 +172,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) embedded message field, including tag, to the stream. */
-  public void writeRepeatedMessage(final int fieldNumber, final RepeatedMessage values)
+  public void writePackedMessage(final int fieldNumber, final RepeatedMessage values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeMessage(fieldNumber, values.get(i));
@@ -181,7 +180,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed){@code bytes} field, including tag, to the stream. */
-  public void writeRepeatedBytes(final int fieldNumber, final RepeatedBytes values)
+  public void writePackedBytes(final int fieldNumber, final RepeatedBytes values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeBytes(fieldNumber, values.get(i));
@@ -189,7 +188,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed){@code uint32} field, including tag, to the stream. */
-  public void writeRepeatedUInt32(final int fieldNumber, final RepeatedInt values)
+  public void writePackedUInt32(final int fieldNumber, final RepeatedInt values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeUInt32(fieldNumber, values.get(i));
@@ -200,7 +199,7 @@ public final class CodedOutputByteBufferNano {
    * Write a repeated enum field, including tag, to the stream.  Caller is responsible
    * for converting the enum values to its numeric values.
    */
-  public void writeRepeatedEnum(final int fieldNumber, final RepeatedInt values) // TODO: Enum?
+  public void writePackedEnum(final int fieldNumber, final RepeatedInt values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeEnum(fieldNumber, values.get(i));
@@ -208,7 +207,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code sfixed32} field, including tag, to the stream. */
-  public void writeRepeatedSFixed32(final int fieldNumber, final RepeatedInt values)
+  public void writePackedSFixed32(final int fieldNumber, final RepeatedInt values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeSFixed32(fieldNumber, values.get(i));
@@ -216,7 +215,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code sfixed64} field, including tag, to the stream. */
-  public void writeRepeatedSFixed64(final int fieldNumber, final RepeatedLong values)
+  public void writePackedSFixed64(final int fieldNumber, final RepeatedLong values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeSFixed64(fieldNumber, values.get(i));
@@ -224,7 +223,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code sint32} field, including tag, to the stream. */
-  public void writeRepeatedSInt32(final int fieldNumber, final RepeatedInt values)
+  public void writePackedSInt32(final int fieldNumber, final RepeatedInt values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeSInt32(fieldNumber, values.get(i));
@@ -232,14 +231,162 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a repeated (non-packed) {@code sint64} field, including tag, to the stream. */
-  public void writeRepeatedSInt64(final int fieldNumber, final RepeatedLong values)
+  public void writePackedSInt64(final int fieldNumber, final RepeatedLong values)
           throws IOException {
       for (int i = 0; i < values.length(); i++) {
           writeSInt64(fieldNumber, values.get(i));
       }
   }
 
-  // !__@!@_!@+_!@+!_@+!_@+!_+!_@!+@_
+  // -----------------------------------------------------------------
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code double} field, including tag.
+   */
+  public static int computePackedDoubleSize(final int fieldNumber, final RepeatedDouble values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code float} field, including tag.
+   */
+  public static int computePackedFloatSize(final int fieldNumber, final RepeatedFloat values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code uint64} field, including tag.
+   */
+  public static int computePackedUInt64Size(final int fieldNumber, final RepeatedLong values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * {@code int64} field, including tag.
+   */
+  public static int computePackedInt64Size(final int fieldNumber, final RepeatedLong values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * {@code int32} field, including tag.
+   */
+  public static int computePackedInt32Size(final int fieldNumber, final RepeatedInt values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code fixed64} field, including tag.
+   */
+  public static int computePackedFixed64Size(final int fieldNumber, final RepeatedLong values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code fixed32} field, including tag.
+   */
+  public static int computePackedFixed32Size(final int fieldNumber, final RepeatedInt values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code bool} field, including tag.
+   */
+  public static int computePackedBoolSize(final int fieldNumber, final RepeatedBoolean values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code string} field, including tag.
+   */
+  public static int computePackedStringSize(final int fieldNumber, final RepeatedString values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code group} field, including tag.
+   */
+  public static int computePackedGroupSize(final int fieldNumber, final RepeatedMessage values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * embedded message field, including tag.
+   */
+  public static int computePackedMessageSize(final int fieldNumber, final RepeatedMessage values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code bytes} field, including tag.
+   */
+  public static int computePackedBytesSize(final int fieldNumber, final RepeatedBytes values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a
+   * {@code uint32} field, including tag.
+   */
+  public static int computePackedUInt32Size(final int fieldNumber, final RepeatedInt values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * enum field, including tag.  Caller is responsible for converting the
+   * enum value to its numeric value.
+   */
+  public static int computePackedEnumSize(final int fieldNumber, final RepeatedInt values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * {@code sfixed32} field, including tag.
+   */
+  public static int computePackedSFixed32Size(final int fieldNumber, final RepeatedInt values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * {@code sfixed64} field, including tag.
+   */
+  public static int computePackedSFixed64Size(final int fieldNumber, final RepeatedLong values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * {@code sint32} field, including tag.
+   */
+  public static int computePackedSInt32Size(final int fieldNumber, final RepeatedInt values) {
+    return 0;
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode an
+   * {@code sint64} field, including tag.
+   */
+  public static int computePackedSInt64Size(final int fieldNumber, final RepeatedLong valuess) {
+    return 0;
+  }
+
+
+  // !__@!@_!@+_!@+!_@+!_@+!_+!_@!+@_ TODO: above
 
   // -----------------------------------------------------------------
 
@@ -861,30 +1008,6 @@ public final class CodedOutputByteBufferNano {
   public static int computeSInt64Size(final int fieldNumber, final long value) {
     return computeTagSize(fieldNumber) + computeSInt64SizeNoTag(value);
   }
-
-  /**
-   * Compute the number of bytes that would be needed to encode a
-   * MessageSet extension to the stream.  For historical reasons,
-   * the wire format differs from normal fields.
-   */
-//  public static int computeMessageSetExtensionSize(
-//      final int fieldNumber, final MessageMicro value) {
-//    return computeTagSize(WireFormatMicro.MESSAGE_SET_ITEM) * 2 +
-//           computeUInt32Size(WireFormatMicro.MESSAGE_SET_TYPE_ID, fieldNumber) +
-//           computeMessageSize(WireFormatMicro.MESSAGE_SET_MESSAGE, value);
-//  }
-
-  /**
-   * Compute the number of bytes that would be needed to encode an
-   * unparsed MessageSet extension field to the stream.  For
-   * historical reasons, the wire format differs from normal fields.
-   */
-//  public static int computeRawMessageSetExtensionSize(
-//      final int fieldNumber, final ByteStringMicro value) {
-//    return computeTagSize(WireFormatMicro.MESSAGE_SET_ITEM) * 2 +
-//           computeUInt32Size(WireFormatMicro.MESSAGE_SET_TYPE_ID, fieldNumber) +
-//           computeBytesSize(WireFormatMicro.MESSAGE_SET_MESSAGE, value);
-//  }
 
   // -----------------------------------------------------------------
 

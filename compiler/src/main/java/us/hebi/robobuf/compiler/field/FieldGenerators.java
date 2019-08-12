@@ -12,29 +12,40 @@ import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 public class FieldGenerators {
 
     public static FieldGenerator createGenerator(FieldInfo field) {
-        if (field.isPrimitive()) {
-            return field.isRepeated() ? new RepeatedPrimitiveField(field) : new PrimitiveField(field);
+        if (field.isRepeated()) {
+            return new RepeatedField(field);
         }
 
         switch (field.getDescriptor().getType()) {
+
+            case TYPE_DOUBLE:
+            case TYPE_FLOAT:
+            case TYPE_INT64:
+            case TYPE_UINT64:
+            case TYPE_INT32:
+            case TYPE_FIXED64:
+            case TYPE_FIXED32:
+            case TYPE_UINT32:
+            case TYPE_SFIXED32:
+            case TYPE_SFIXED64:
+            case TYPE_SINT32:
+            case TYPE_SINT64:
+            case TYPE_BOOL:
+                return new PrimitiveField(field);
+
             case TYPE_GROUP:
             case TYPE_MESSAGE:
-                if (!field.isRepeated())
                     return new MessageField(field);
-                break;
 
             case TYPE_ENUM:
-                if (!field.isRepeated())
                     return new EnumField(field);
-                break;
 
             case TYPE_STRING:
-                if (!field.isRepeated())
                     return new StringField(field);
-                break;
 
             case TYPE_BYTES:
                 break;
+
         }
 
         return new IgnoredFieldGenerator(field);
@@ -68,11 +79,6 @@ public class FieldGenerators {
 
         @Override
         public void generateMergingCode(MethodSpec.Builder method) {
-
-        }
-
-        @Override
-        public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
 
         }
 

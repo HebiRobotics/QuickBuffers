@@ -3,7 +3,7 @@ package us.hebi.robobuf.compiler.field;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.GeneratorException;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import us.hebi.robobuf.compiler.RequestInfo;
 import us.hebi.robobuf.compiler.RuntimeClasses;
 
@@ -22,30 +22,44 @@ public abstract class FieldGenerator {
 
     public abstract void generateMemberFields(TypeSpec.Builder type);
 
-    public void generateClearCode(MethodSpec.Builder method){
-        method.addNamedCode("$field:N.clear();\n", m); // all reference types
+    public void generateClearCode(MethodSpec.Builder method) {
+        if (info.isNonRepeatedPrimitive()) {
+            method.addNamedCode("$field:N = $default:L;\n", m);
+        } else {
+            method.addNamedCode("$field:N.clear();\n", m);
+        }
     }
 
-    public void generateCopyFromCode(MethodSpec.Builder method){
-        method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m); // all reference types
+    public void generateCopyFromCode(MethodSpec.Builder method) {
+        if (info.isNonRepeatedPrimitive()) {
+            method.addNamedCode("$field:N = other.$field:N;\n", m);
+        } else {
+            method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m);
+        }
     }
 
-    public abstract void generateMergingCode(MethodSpec.Builder method);
+    public void generateMergingCode(MethodSpec.Builder method) {
+        if (info.isPrimitive()) {
+            method.addNamedCode("$field:N = input.read$capitalizedType:L();\n", m);
+        }
+        // What else? Messages etc.?
+        method.addNamedCode("$setHas:L;\n", m);
+    }
 
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        method.addNamedCode("input.readPacked$capitalizedType:L($field:N);\n", m); // all reference types
+        throw new NotImplementedException(); // only for repeated fields
     }
 
     public void generateSerializationCode(MethodSpec.Builder method) {
-//        method.addNamedCode("output.write$capitalizedType:L($number:L, $serializableValue:L);\n", m);
+        method.addNamedCode("output.write$capitalizedType:L($number:L, $serializableValue:L);\n", m); // non-repeated
     }
 
     public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-//        method.addNamedCode("size += $computeClass:T.compute$capitalizedType:LSize($number:L, $serializableValue:L);\n", m);
+        method.addNamedCode("size += $computeClass:T.compute$capitalizedType:LSize($number:L, $serializableValue:L);\n", m); // non-repeated
     }
 
     public void generateEqualsStatement(MethodSpec.Builder method) {
-        method.addNamedCode("$field:N.equals(other.$field:N)", m); // all reference types (not string)
+        method.addNamedCode("$field:N.equals(other.$field:N)", m); // non-primitive
     }
 
     protected abstract void generateSetter(TypeSpec.Builder type);
@@ -89,6 +103,7 @@ public abstract class FieldGenerator {
 
         // Common-variable map for named arguments
         m.put("field", info.getFieldName());
+        m.put("default", info.getDefaultValue());
         m.put("hasMethod", info.getHazzerName());
         m.put("getHas", info.getHasBit());
         m.put("setHas", info.getSetBit());

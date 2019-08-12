@@ -1,7 +1,8 @@
 package us.hebi.robobuf.compiler;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
@@ -33,7 +34,7 @@ public class TypeMap {
         return new TypeMap();
     }
 
-    public static int getMinimumPackedSize(DescriptorProtos.FieldDescriptorProto.Type type) {
+    public static int getMinimumPackedSize(Type type) {
         switch (type) {
 
             case TYPE_DOUBLE:
@@ -53,13 +54,13 @@ public class TypeMap {
             case TYPE_MESSAGE:
             case TYPE_BYTES:
 
-            // everything else is varint encoded
+                // everything else is varint encoded
             default:
                 return 1;
         }
     }
 
-    public static boolean isPrimitive(DescriptorProtos.FieldDescriptorProto.Type type) {
+    public static boolean isPrimitive(Type type) {
         switch (type) {
             case TYPE_DOUBLE:
             case TYPE_FLOAT:
@@ -74,20 +75,20 @@ public class TypeMap {
             case TYPE_SFIXED64:
             case TYPE_SINT32:
             case TYPE_SINT64:
+            case TYPE_ENUM:
                 return true;
 
             case TYPE_STRING:
             case TYPE_GROUP:
             case TYPE_MESSAGE:
             case TYPE_BYTES:
-            case TYPE_ENUM:
                 return false;
         }
         throw new GeneratorException("Unsupported type: " + type);
     }
 
-    public TypeName resolveFieldType(RequestInfo.FieldInfo field) {
-        switch (field.getDescriptor().getType()) {
+    public TypeName resolveFieldType(FieldDescriptorProto descriptor) {
+        switch (descriptor.getType()) {
 
             case TYPE_DOUBLE:
                 return TypeName.DOUBLE;
@@ -112,12 +113,144 @@ public class TypeMap {
             case TYPE_ENUM:
             case TYPE_GROUP:
             case TYPE_MESSAGE:
-                return resolveClassName(field.getDescriptor().getTypeName());
+                return resolveClassName(descriptor.getTypeName());
             case TYPE_BYTES:
                 return ArrayTypeName.get(byte[].class);
 
         }
-        throw new GeneratorException("Unsupported type: " + field.getDescriptor());
+        throw new GeneratorException("Unsupported type: " + descriptor);
+    }
+
+    public static String getDefaultValue(FieldDescriptorProto descriptor) {
+        final String value = descriptor.getDefaultValue();
+        if (value.isEmpty())
+            return getEmptyDefaultValue(descriptor.getType());
+
+        if (isPrimitive(descriptor.getType())) {
+
+            // Convert special floating point values
+            boolean isFloat = (descriptor.getType() == Type.TYPE_FLOAT);
+            String constantClass = isFloat ? "Float" : "Double";
+            switch (value) {
+                case "nan":
+                    return constantClass + ".NaN";
+                case "-inf":
+                    return constantClass + ".NEGATIVE_INFINITY";
+                case "+inf":
+                case "inf":
+                    return constantClass + ".POSITIVE_INFINITY";
+            }
+
+            // Add modifiers
+            String modifier = getPrimitiveModifier(descriptor.getType());
+            if (modifier.isEmpty())
+                return value;
+
+            char modifierChar = Character.toUpperCase(modifier.charAt(0));
+            char lastChar = Character.toUpperCase(value.charAt(value.length() - 1));
+
+            if (lastChar == modifierChar)
+                return value;
+            return value + modifierChar;
+
+        }
+
+        // Note: Google does some odd things with non-ascii default Strings in order
+        // to not need to store UTF-8 or literals with escaped unicode, but I'm really
+        // not sure what the problems with either of those options are. Maybe they need
+        // to support some archaic Java runtimes that didn't support it?
+
+        return value;
+
+    }
+
+    private static String getEmptyDefaultValue(FieldDescriptorProto.Type type) {
+        switch (type) {
+
+            case TYPE_DOUBLE:
+                return "0D";
+            case TYPE_FLOAT:
+                return "0F";
+            case TYPE_SFIXED64:
+            case TYPE_FIXED64:
+            case TYPE_SINT64:
+            case TYPE_INT64:
+            case TYPE_UINT64:
+                return "0L";
+            case TYPE_SFIXED32:
+            case TYPE_FIXED32:
+            case TYPE_SINT32:
+            case TYPE_INT32:
+            case TYPE_UINT32:
+                return "0";
+            case TYPE_BOOL:
+                return "false";
+            case TYPE_STRING:
+                return "";
+
+            case TYPE_ENUM:
+                return "null";
+
+            case TYPE_GROUP:
+            case TYPE_MESSAGE:
+            case TYPE_BYTES:
+            default:
+                return "";
+
+        }
+    }
+
+    private static String getPrimitiveModifier(FieldDescriptorProto.Type type) {
+        switch (type) {
+
+            case TYPE_DOUBLE:
+                return "D";
+            case TYPE_FLOAT:
+                return "F";
+            case TYPE_SFIXED64:
+            case TYPE_FIXED64:
+            case TYPE_SINT64:
+            case TYPE_INT64:
+            case TYPE_UINT64:
+                return "L";
+            default:
+                return "";
+
+        }
+    }
+
+
+    private int getMaximumExpansionSize(FieldDescriptorProto.Type type) {
+        switch (type) {
+
+            case TYPE_BOOL:
+                return 1;
+
+            case TYPE_DOUBLE:
+            case TYPE_SFIXED64:
+            case TYPE_FIXED64:
+                return 8;
+
+            case TYPE_FLOAT:
+            case TYPE_SFIXED32:
+            case TYPE_FIXED32:
+                return 4;
+
+            // may expand to 5 bytes
+            case TYPE_SINT32:
+            case TYPE_UINT32:
+            case TYPE_INT32:
+                return 5;
+
+            // may expand to 10 bytes
+            case TYPE_SINT64:
+            case TYPE_UINT64:
+            case TYPE_INT64:
+                return 10;
+
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
     }
 
     public ClassName resolveClassName(String typeId) {

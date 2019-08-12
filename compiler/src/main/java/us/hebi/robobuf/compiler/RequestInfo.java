@@ -220,6 +220,12 @@ public class RequestInfo {
             packedTag = RuntimeClasses.makePackedTag(descriptor);
             number = descriptor.getNumber();
             fieldName = NameUtil.isReservedKeyword(lowerName) ? lowerName + "_" : lowerName;
+            defaultValue = TypeMap.getDefaultValue(descriptor);
+            repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
+        }
+
+        public boolean isNonRepeatedPrimitive() {
+            return !isRepeated() && isPrimitive;
         }
 
         public boolean isRequired() {
@@ -234,6 +240,21 @@ public class RequestInfo {
             return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REPEATED;
         }
 
+        public boolean isPackable() {
+            if (!isRepeated())
+                return false;
+
+            switch (descriptor.getType()) {
+                case TYPE_STRING:
+                case TYPE_GROUP:
+                case TYPE_MESSAGE:
+                case TYPE_BYTES:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
         public boolean isPacked() {
             return descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
         }
@@ -244,11 +265,12 @@ public class RequestInfo {
 
         public TypeName getTypeName() {
             // Lazy because type map is not constructed at creation time
-            return getParentFile().getParentRequest().getTypeMap().resolveFieldType(this);
+            return getParentFile().getParentRequest().getTypeMap().resolveFieldType(descriptor);
         }
 
         private final FileInfo parentFile;
         private final ClassName parentType;
+        private final ClassName repeatedStoreType;
         private final FieldDescriptorProto descriptor;
         private final int fieldIndex;
         private final String hasBit;
@@ -263,6 +285,7 @@ public class RequestInfo {
         String getterName;
         String mutableGetterName;
         String clearName;
+        String defaultValue;
         int tag;
         int packedTag;
         int number;

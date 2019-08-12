@@ -2,6 +2,7 @@ package us.hebi.robobuf.compiler;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.TypeName;
 
 /**
  * @author Florian Enner
@@ -9,20 +10,15 @@ import com.squareup.javapoet.ClassName;
  */
 public class RuntimeClasses {
 
-    public static final ClassName PROTO_SOURCE = ClassName.get("us.hebi.robobuf", "CodedInputByteBufferNano");
-    public static final ClassName PROTO_DEST = ClassName.get("us.hebi.robobuf", "CodedOutputByteBufferNano");
-    public static final ClassName BASE_MESSAGE = ClassName.get("us.hebi.robobuf", "MessageNano");
+    private static final String API_PACKAGE = "us.hebi.robobuf";
+    public static final ClassName PROTO_SOURCE = ClassName.get(API_PACKAGE, "CodedInputByteBufferNano");
+    public static final ClassName PROTO_DEST = ClassName.get(API_PACKAGE, "CodedOutputByteBufferNano");
+    public static final ClassName BASE_MESSAGE = ClassName.get(API_PACKAGE, "MessageNano");
     public static final ClassName STRING_CLASS = ClassName.get(CharSequence.class);
     public static final ClassName STRING_STORAGE_CLASS = ClassName.get(StringBuilder.class);
-    public static final ClassName UNKNOWN_FIELD_PARSE_CLASS = ClassName.get("us.hebi.robobuf", "WireFormatNano");
-    public static final ClassName ROBO_UTIL = ClassName.get("us.hebi.robobuf", "RoboUtil");
-    public static final ClassName WIRE_FORMAT = ClassName.get("us.hebi.robobuf", "WireFormatNano");
-
-    public static final ClassName REPEATED_BOOLEAN_CLASS = ClassName.get("us.hebi.robobuf", "RepeatedBoolean");
-    public static final ClassName REPEATED_INT_CLASS = ClassName.get("us.hebi.robobuf", "RepeatedInt");
-    public static final ClassName REPEATED_LONG_CLASS = ClassName.get("us.hebi.robobuf", "RepeatedLong");
-    public static final ClassName REPEATED_FLOAT_CLASS = ClassName.get("us.hebi.robobuf", "RepeatedFloat");
-    public static final ClassName REPEATED_DOUBLE_CLASS = ClassName.get("us.hebi.robobuf", "RepeatedDouble");
+    public static final ClassName UNKNOWN_FIELD_PARSE_CLASS = ClassName.get(API_PACKAGE, "WireFormatNano");
+    public static final ClassName ROBO_UTIL = ClassName.get(API_PACKAGE, "RoboUtil");
+    public static final ClassName WIRE_FORMAT = ClassName.get(API_PACKAGE, "WireFormatNano");
 
     private static final int WIRETYPE_VARINT = 0;
     private static final int WIRETYPE_FIXED64 = 1;
@@ -33,6 +29,48 @@ public class RuntimeClasses {
 
     private static final int TAG_TYPE_BITS = 3;
     private static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
+
+    static ClassName getArrayStoreType(FieldDescriptorProto.Type type) {
+        switch (type) {
+
+            case TYPE_DOUBLE:
+                return ClassName.get(API_PACKAGE, "RepeatedDouble");
+
+            case TYPE_FLOAT:
+                return ClassName.get(API_PACKAGE, "RepeatedFloat");
+
+            case TYPE_SFIXED64:
+            case TYPE_FIXED64:
+            case TYPE_SINT64:
+            case TYPE_INT64:
+            case TYPE_UINT64:
+                return ClassName.get(API_PACKAGE, "RepeatedLong");
+
+            case TYPE_ENUM:
+            case TYPE_SFIXED32:
+            case TYPE_FIXED32:
+            case TYPE_SINT32:
+            case TYPE_INT32:
+            case TYPE_UINT32:
+                return ClassName.get(API_PACKAGE, "RepeatedInt");
+
+            case TYPE_BOOL:
+                return ClassName.get(API_PACKAGE, "RepeatedBoolean");
+
+            case TYPE_STRING:
+                return ClassName.get(API_PACKAGE, "RepeatedString");
+
+            case TYPE_GROUP:
+            case TYPE_MESSAGE:
+                return ClassName.get(API_PACKAGE, "RepeatedMessage");
+
+            case TYPE_BYTES:
+                return ClassName.get(API_PACKAGE, "RepeatedBytes");
+
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
+    }
 
     public static int makeTag(FieldDescriptorProto descriptor) {
         return descriptor.getNumber() << TAG_TYPE_BITS | getWireType(descriptor.getType());
