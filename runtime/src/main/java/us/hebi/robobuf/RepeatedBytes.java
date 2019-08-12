@@ -19,7 +19,7 @@ public class RepeatedBytes implements RepeatedField {
     }
 
     @Override
-    public int capacity() {
+    public int remainingCapacity() {
         return 0;
     }
 

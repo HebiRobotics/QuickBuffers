@@ -11,7 +11,7 @@ public interface RepeatedField {
 
     int length();
 
-    int capacity();
+    int remainingCapacity();
 
     void clear();
 

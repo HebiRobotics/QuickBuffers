@@ -27,7 +27,7 @@ public class RepeatedBoolean implements RepeatedField {
     }
 
     @Override
-    public int capacity() {
+    public int remainingCapacity() {
         return 0;
     }
 

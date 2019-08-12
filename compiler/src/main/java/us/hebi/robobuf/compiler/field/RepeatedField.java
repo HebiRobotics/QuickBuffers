@@ -25,7 +25,7 @@ public class RepeatedField extends FieldGenerator {
                 .build());
     }
 
-    @Override
+ /*   @Override
     public void generateMergingCode(MethodSpec.Builder method) {
         if (info.isPrimitive()) {
             // non-packed fields aren't expected to be used much, so do something dumb for now
@@ -33,7 +33,7 @@ public class RepeatedField extends FieldGenerator {
         }
         // What else?
         method.addNamedCode("$setHas:L;\n", m);
-    }
+    }*/
 
     @Override
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
@@ -67,7 +67,28 @@ public class RepeatedField extends FieldGenerator {
 
     @Override
     protected void generateGetter(TypeSpec.Builder type) {
+        type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Count")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(int.class)
+                .addNamedCode("return $field:N.length();\n", m)
+                .build());
 
+        /*if (info.isPrimitive()) {
+
+
+
+        } else if (info.isEnum()) {
+
+            type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(int.class, "index", Modifier.FINAL)
+                    .returns(typeName)
+                    .addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m)
+                    .build());
+
+        } else {
+
+        }*/
     }
 
     @Override

@@ -9,6 +9,14 @@ public class RepeatedMessage implements RepeatedField {
     public void copyFrom(RepeatedMessage other) {
     }
 
+    public void set(int index, MessageNano message) {
+
+    }
+
+    public void add(MessageNano message) {
+
+    }
+
     public MessageNano get(int index) {
         return null;
     }
@@ -19,7 +27,7 @@ public class RepeatedMessage implements RepeatedField {
     }
 
     @Override
-    public int capacity() {
+    public int remainingCapacity() {
         return 0;
     }
 

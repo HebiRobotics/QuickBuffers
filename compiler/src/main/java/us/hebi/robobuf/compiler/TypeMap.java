@@ -59,6 +59,27 @@ public class TypeMap {
         }
     }
 
+    public static boolean isFixedWidth(Type type) {
+        switch (type) {
+
+            // 64 bit
+            case TYPE_DOUBLE:
+            case TYPE_SFIXED64:
+            case TYPE_FIXED64:
+                return true;
+
+            // 32 bit
+            case TYPE_FLOAT:
+            case TYPE_SFIXED32:
+            case TYPE_FIXED32:
+                return true;
+
+            // varint
+            default:
+                return false;
+        }
+    }
+
     public static boolean isPrimitive(Type type) {
         switch (type) {
             case TYPE_DOUBLE:
@@ -74,9 +95,9 @@ public class TypeMap {
             case TYPE_SFIXED64:
             case TYPE_SINT32:
             case TYPE_SINT64:
-            case TYPE_ENUM:
                 return true;
 
+            case TYPE_ENUM:
             case TYPE_STRING:
             case TYPE_GROUP:
             case TYPE_MESSAGE:

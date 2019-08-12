@@ -1,10 +1,13 @@
 package us.hebi.robobuf.compiler.field;
 
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
 import us.hebi.robobuf.compiler.GeneratorException;
 import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
+import us.hebi.robobuf.compiler.field.BytesField.OptionalBytesField;
+import us.hebi.robobuf.compiler.field.EnumField.OptionalEnumField;
+import us.hebi.robobuf.compiler.field.MessageField.OptionalMessageField;
+import us.hebi.robobuf.compiler.field.PrimitiveField.OptionalPrimitiveField;
+import us.hebi.robobuf.compiler.field.PrimitiveField.RepeatedPrimitiveField;
+import us.hebi.robobuf.compiler.field.StringField.OptionalStringField;
 
 /**
  * @author Florian Enner
@@ -13,9 +16,6 @@ import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 public class FieldGenerators {
 
     public static FieldGenerator createGenerator(FieldInfo field) {
-        if (field.isRepeated()) {
-            return new RepeatedField(field);
-        }
 
         switch (field.getDescriptor().getType()) {
 
@@ -32,67 +32,24 @@ public class FieldGenerators {
             case TYPE_SINT32:
             case TYPE_SINT64:
             case TYPE_BOOL:
-                return new PrimitiveField(field);
+                return field.isRepeated() ? new RepeatedPrimitiveField(field) : new OptionalPrimitiveField(field);
 
             case TYPE_GROUP:
             case TYPE_MESSAGE:
-                return new MessageField(field);
+                return field.isRepeated() ? new RepeatedField(field) : new OptionalMessageField(field);
 
             case TYPE_ENUM:
-                return new EnumField(field);
+                return field.isRepeated() ? new RepeatedField(field) : new OptionalEnumField(field);
 
             case TYPE_STRING:
-                return new StringField(field);
+                return field.isRepeated() ? new RepeatedField(field) : new OptionalStringField(field);
 
             case TYPE_BYTES:
-                return new BytesField(field);
+                return field.isRepeated() ? new RepeatedField(field) : new OptionalBytesField(field);
 
         }
 
         throw new GeneratorException("Unsupported field:\n" + field.getDescriptor());
-    }
-
-    static final class IgnoredFieldGenerator extends FieldGenerator {
-
-        protected IgnoredFieldGenerator(FieldInfo info) {
-            super(info);
-        }
-
-        @Override
-        public void generateMemberFields(TypeSpec.Builder type) {
-            type.addField(FieldSpec.builder(info.getTypeName(), info.getFieldName()).addJavadoc("Unsupported:\n$L\n", info.getDescriptor()).build());
-        }
-
-        @Override
-        protected void generateSetter(TypeSpec.Builder type) {
-
-        }
-
-        @Override
-        public void generateClearCode(MethodSpec.Builder method) {
-
-        }
-
-        @Override
-        public void generateCopyFromCode(MethodSpec.Builder method) {
-
-        }
-
-        @Override
-        public void generateMergingCode(MethodSpec.Builder method) {
-
-        }
-
-        @Override
-        public void generateSerializationCode(MethodSpec.Builder method) {
-
-        }
-
-        @Override
-        public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-
-        }
-
     }
 
 }

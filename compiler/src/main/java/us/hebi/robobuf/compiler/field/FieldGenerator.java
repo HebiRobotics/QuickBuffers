@@ -47,7 +47,7 @@ public abstract class FieldGenerator {
     }
 
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        throw new GeneratorException(""); // only for repeated fields
+        throw new GeneratorException("Not a packable field: " + info.getDescriptor()); // only for repeated fields
     }
 
     public void generateSerializationCode(MethodSpec.Builder method) {

@@ -224,6 +224,14 @@ public class RequestInfo {
             repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
         }
 
+        public boolean isFixedWidth() {
+            return TypeMap.isFixedWidth(descriptor.getType());
+        }
+
+        public boolean isEnum() {
+            return descriptor.getType() == FieldDescriptorProto.Type.TYPE_ENUM;
+        }
+
         public boolean isNonRepeatedPrimitive() {
             return !isRepeated() && isPrimitive;
         }
