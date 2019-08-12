@@ -89,6 +89,160 @@ public final class CodedOutputByteBufferNano {
 
   // -----------------------------------------------------------------
 
+    // TODO: remove non-packed helper methods and just add packed ones? non-packed are easy to generate
+    // TODO: and can't be optimized further. Store Enums as ints?
+
+  /** Write a repeated (non-packed) {@code double} field, including tag, to the stream. */
+  public void writeRepeatedDouble(final int fieldNumber, final RepeatedDouble values)
+          throws IOException {
+    for (int i = 0; i < values.length(); i++) {
+      writeDouble(fieldNumber, values.get(i));
+    }
+  }
+
+  /** Write a repeated (non-packed) {@code float} field, including tag, to the stream. */
+  public void writeRepeatedFloat(final int fieldNumber, final RepeatedFloat values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeFloat(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) {@code uint64} field, including tag, to the stream. */
+  public void writeRepeatedUInt64(final int fieldNumber, final RepeatedLong values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeUInt64(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) {@code int64} field, including tag, to the stream. */
+  public void writeRepeatedInt64(final int fieldNumber, final RepeatedLong values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeInt64(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) {@code int32} field, including tag, to the stream. */
+  public void writeRepeatedInt32(final int fieldNumber, final RepeatedInt values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeInt32(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed){@code fixed64} field, including tag, to the stream. */
+  public void writeRepeatedFixed64(final int fieldNumber, final RepeatedLong values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeFixed64(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed){@code fixed32} field, including tag, to the stream. */
+  public void writeRepeatedFixed32(final int fieldNumber, final RepeatedInt values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeFixed32(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed){@code bool} field, including tag, to the stream. */
+  public void writeRepeatedBool(final int fieldNumber, final RepeatedBoolean values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeBool(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed){@code string} field, including tag, to the stream. */
+  public void writeRepeatedString(final int fieldNumber, final RepeatedString values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeString(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed){@code group} field, including tag, to the stream. */
+  public void writeRepeatedGroup(final int fieldNumber, final RepeatedMessage values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeGroup(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) embedded message field, including tag, to the stream. */
+  public void writeRepeatedMessage(final int fieldNumber, final RepeatedMessage values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeMessage(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed){@code bytes} field, including tag, to the stream. */
+  public void writeRepeatedBytes(final int fieldNumber, final RepeatedBytes values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeBytes(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed){@code uint32} field, including tag, to the stream. */
+  public void writeRepeatedUInt32(final int fieldNumber, final RepeatedInt values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeUInt32(fieldNumber, values.get(i));
+      }
+  }
+
+  /**
+   * Write a repeated enum field, including tag, to the stream.  Caller is responsible
+   * for converting the enum values to its numeric values.
+   */
+  public void writeRepeatedEnum(final int fieldNumber, final RepeatedInt values) // TODO: Enum?
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeEnum(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) {@code sfixed32} field, including tag, to the stream. */
+  public void writeRepeatedSFixed32(final int fieldNumber, final RepeatedInt values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeSFixed32(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) {@code sfixed64} field, including tag, to the stream. */
+  public void writeRepeatedSFixed64(final int fieldNumber, final RepeatedLong values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeSFixed64(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) {@code sint32} field, including tag, to the stream. */
+  public void writeRepeatedSInt32(final int fieldNumber, final RepeatedInt values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeSInt32(fieldNumber, values.get(i));
+      }
+  }
+
+  /** Write a repeated (non-packed) {@code sint64} field, including tag, to the stream. */
+  public void writeRepeatedSInt64(final int fieldNumber, final RepeatedLong values)
+          throws IOException {
+      for (int i = 0; i < values.length(); i++) {
+          writeSInt64(fieldNumber, values.get(i));
+      }
+  }
+
+  // !__@!@_!@+_!@+!_@+!_@+!_+!_@!+@_
+
+  // -----------------------------------------------------------------
+
   /** Write a {@code double} field, including tag, to the stream. */
   public void writeDouble(final int fieldNumber, final double value)
                           throws IOException {
