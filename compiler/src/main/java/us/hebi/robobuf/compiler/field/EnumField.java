@@ -18,7 +18,13 @@ class EnumField {
         OptionalEnumField(RequestInfo.FieldInfo info) {
             super(info);
             String defaultValue = info.getDescriptor().getDefaultValue();
-            m.put("default", !defaultValue.isEmpty() ? info.getTypeName() + "." + defaultValue + ".getNumber()" : "0");
+            m.put("default", hasDefaultValue() ? info.getTypeName() + "." + defaultValue + ".getNumber()" : "0");
+            m.put("defaultValue", hasDefaultValue() ? info.getTypeName() + "." + defaultValue : "null");
+        }
+
+        private boolean hasDefaultValue() {
+            String string = info.getDescriptor().getDefaultValue();
+            return !string.isEmpty() && !string.equals("null");
         }
 
         @Override
@@ -31,7 +37,17 @@ class EnumField {
 
         @Override
         protected void generateGetter(TypeSpec.Builder type) {
-
+            MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(typeName);
+            if (!hasDefaultValue()) {
+                getter.addNamedCode("return $type:T.forNumber($field:N);\n", m);
+            } else {
+                getter.addNamedCode("" +
+                        "final $type:T result = $type:T.forNumber($field:N);\n" +
+                        "return result == null ? $defaultValue:L : result;\n", m);
+            }
+            type.addMethod(getter.build());
         }
 
         @Override
@@ -54,7 +70,7 @@ class EnumField {
         @Override
         public void generateMergingCode(MethodSpec.Builder method) {
             method.addStatement("final int value = input.readInt32()")
-                    .beginControlFlow("if ( $T.forNumber(value) != null )", typeName)
+                    .beginControlFlow("if ($T.forNumber(value) != null)", typeName)
                     .addNamedCode("$field:N = value;\n", m)
                     .addNamedCode("$setHas:L;\n", m)
                     .endControlFlow();
@@ -62,7 +78,7 @@ class EnumField {
 
         @Override
         public void generateEqualsStatement(MethodSpec.Builder method) {
-            method.addNamedCode("($field:N == other.$field:N)", m);
+            method.addNamedCode("$field:N == other.$field:N", m);
         }
 
     }

@@ -238,8 +238,8 @@ public class RequestInfo {
             return descriptor.getType() == FieldDescriptorProto.Type.TYPE_ENUM;
         }
 
-        public boolean isNonRepeatedPrimitive() {
-            return !isRepeated() && isPrimitive;
+        public boolean isNonRepeatedPrimitiveOrEnum() {
+            return !isRepeated() && (isPrimitive || isEnum());
         }
 
         public boolean isRequired() {

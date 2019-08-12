@@ -3,7 +3,6 @@ package us.hebi.robobuf.compiler.field;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.GeneratorException;
 import us.hebi.robobuf.compiler.RequestInfo;
 import us.hebi.robobuf.compiler.RuntimeClasses;
 
@@ -23,7 +22,7 @@ public abstract class FieldGenerator {
     public abstract void generateMemberFields(TypeSpec.Builder type);
 
     public void generateClearCode(MethodSpec.Builder method) {
-        if (info.isNonRepeatedPrimitive()) {
+        if (info.isNonRepeatedPrimitiveOrEnum()) {
             method.addNamedCode("$field:N = $default:L;\n", m);
         } else {
             method.addNamedCode("$field:N.clear();\n", m);
@@ -31,7 +30,7 @@ public abstract class FieldGenerator {
     }
 
     public void generateCopyFromCode(MethodSpec.Builder method) {
-        if (info.isNonRepeatedPrimitive()) {
+        if (info.isNonRepeatedPrimitiveOrEnum()) {
             method.addNamedCode("$field:N = other.$field:N;\n", m);
         } else {
             method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m);
