@@ -16,6 +16,10 @@ public class RepeatedField extends FieldGenerator {
     protected RepeatedField(RequestInfo.FieldInfo info) {
         super(info);
         m.put("repeatedType", info.getRepeatedStoreType());
+        m.put("bytesPerTag", info.getBytesPerTag());
+        m.put("packedTag", info.getPackedTag());
+        if (info.isFixedWidth())
+            m.put("fixedWidth", info.getFixedWidth());
     }
 
     @Override
@@ -36,33 +40,24 @@ public class RepeatedField extends FieldGenerator {
     }*/
 
     @Override
-    public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        method.addNamedCode("input.readPacked$capitalizedType:L($field:N);\n", m);
-        method.addNamedCode("$setHas:L;\n", m);
-    }
-
-    @Override
     public void generateSerializationCode(MethodSpec.Builder method) {
-        if (info.isPacked()) {
-            method.addNamedCode("output.writePacked$capitalizedType:L($number:L, $field:N);\n", m);
-        } else {
-            method.addNamedCode("" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "output.write$capitalizedType:L($number:L, $field:N.get(i));\n" +
-                    "$<}\n", m);
-        }
+        // Non-packed
+        method.addNamedCode("" +
+                "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                "output.write$capitalizedType:L($number:L, $field:N.get(i));\n" +
+                "$<}\n", m);
     }
 
     @Override
     public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-        if (info.isPacked()) {
-            method.addNamedCode("size += $computeClass:T.computePacked$capitalizedType:LSize($number:L, $field:N);\n", m);
-        } else {
-            method.addNamedCode("" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "size += $computeClass:T.compute$capitalizedType:LSize($number:L, $field:N.get(i));\n" +
-                    "$<}\n", m);
-        }
+        // Non-packed
+        method.addNamedCode("" +
+                "int dataSize = 0;\n" +
+                "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                "$<}\n" +
+                "size += dataSize;\n" +
+                "size += $bytesPerTag:L * $field:N.length();\n", m);
     }
 
     @Override

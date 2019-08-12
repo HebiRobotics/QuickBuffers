@@ -165,6 +165,7 @@ public class MessageGenerator implements TypeGenerator {
                 .beginControlFlow("if (!input.skipField(tag))")
                 .addStatement("return this")
                 .endControlFlow()
+                .addStatement("break")
                 .endControlFlow();
 
         // individual fields
@@ -176,7 +177,7 @@ public class MessageGenerator implements TypeGenerator {
             mergeFrom.endControlFlow();
 
             // Packed code (needs to be generated even for non packed fields for forwards compatibility)
-            if (field.getInfo().isPackable()) {
+            if (field.getInfo().isPacked()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
                 field.generateMergingCodeFromPacked(mergeFrom);
                 mergeFrom.addStatement("break");

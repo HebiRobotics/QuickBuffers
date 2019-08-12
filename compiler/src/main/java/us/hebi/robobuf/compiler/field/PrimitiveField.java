@@ -76,7 +76,6 @@ class PrimitiveField {
                     .addNamedCode("$setHas:L;\n", m);
         }
 
-
         @Override
         public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
 
@@ -123,17 +122,66 @@ class PrimitiveField {
         }
 
         @Override
+        public void generateSerializationCode(MethodSpec.Builder method) {
+            if (info.isPacked() && info.isFixedWidth()) {
+
+                method.addNamedCode("output.writePacked$capitalizedType:L($number:L, $field:N);\n", m);
+
+            } else if (info.isPacked()) {
+
+                method.addNamedCode("" +
+                        "int dataSize = 0;\n" +
+                        "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                        "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                        "$<}\n" +
+
+                        "output.writeRawVarint32($packedTag:L);\n" +
+                        "output.writeRawVarint32(dataSize);\n" +
+
+                        "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                        "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
+                        "$<}\n", m);
+
+            } else {
+                super.generateSerializationCode(method);
+            }
+        }
+
+        @Override
+        public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
+            if (info.isPacked() && info.isFixedWidth()) {
+
+                method.addNamedCode("" +
+                        "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
+                        "size += dataSize;\n" +
+                        "size += $bytesPerTag:L;\n" +
+                        "size += $computeClass:T.computeRawVarint32Size(dataSize);\n", m);
+
+            } else if (info.isPacked()) {
+
+                method.addNamedCode("" +
+                        "int dataSize = 0;\n" +
+                        "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                        "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                        "$<}\n" +
+                        "size += dataSize;\n" +
+                        "size += $bytesPerTag:L;\n" +
+                        "size += $computeClass:T.computeRawVarint32Size(dataSize);\n", m);
+
+            } else {
+                super.generateComputeSerializedSizeCode(method);
+            }
+        }
+
+        @Override
         protected void generateGetter(TypeSpec.Builder type) {
             super.generateGetter(type);
-
             type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(int.class, "index", Modifier.FINAL)
                     .returns(typeName)
                     .addNamedCode("return $field:N.get(index);\n", m)
                     .build());
-
-
         }
 
         @Override

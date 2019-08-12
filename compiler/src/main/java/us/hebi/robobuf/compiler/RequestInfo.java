@@ -217,6 +217,7 @@ public class RequestInfo {
             clearName = "clear" + upperName;
             isPrimitive = TypeMap.isPrimitive(descriptor.getType());
             tag = RuntimeClasses.makeTag(descriptor);
+            bytesPerTag = RuntimeClasses.computeRawVarint32Size(tag);
             packedTag = RuntimeClasses.makePackedTag(descriptor);
             number = descriptor.getNumber();
             fieldName = NameUtil.isReservedKeyword(lowerName) ? lowerName + "_" : lowerName;
@@ -226,6 +227,11 @@ public class RequestInfo {
 
         public boolean isFixedWidth() {
             return TypeMap.isFixedWidth(descriptor.getType());
+        }
+
+        public int getFixedWidth() {
+            checkState(isFixedWidth(), "not a fixed width type");
+            return TypeMap.getFixedWidth(descriptor.getType());
         }
 
         public boolean isEnum() {
@@ -248,7 +254,11 @@ public class RequestInfo {
             return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REPEATED;
         }
 
-        public boolean isPackable() {
+        public boolean isPacked() {
+            return isPackable() && descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
+        }
+
+        private boolean isPackable() {
             if (!isRepeated())
                 return false;
 
@@ -261,10 +271,6 @@ public class RequestInfo {
                 default:
                     return true;
             }
-        }
-
-        public boolean isPacked() {
-            return descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
         }
 
         public boolean isDeprecated() {
@@ -295,6 +301,7 @@ public class RequestInfo {
         String clearName;
         String defaultValue;
         int tag;
+        int bytesPerTag;
         int packedTag;
         int number;
 

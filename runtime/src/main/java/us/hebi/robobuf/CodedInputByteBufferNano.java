@@ -152,18 +152,6 @@ public final class CodedInputByteBufferNano {
   public void readPackedFloat(RepeatedFloat store) throws IOException {
   }
 
-  /** Read a repeated (packed) {@code uint64} field value from the stream. */
-  public void readPackedUInt64(RepeatedLong store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code int64} field value from the stream. */
-  public void readPackedInt64(RepeatedLong store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code int32} field value from the stream. */
-  public void readPackedInt32(RepeatedInt store) throws IOException {
-  }
-
   /** Read a repeated (packed) {@code fixed64} field value from the stream. */
   public void readPackedFixed64(RepeatedLong store) throws IOException {
   }
@@ -176,47 +164,12 @@ public final class CodedInputByteBufferNano {
   public void readPackedBool(RepeatedBoolean store) throws IOException {
   }
 
-  /** Read a repeated (packed) {@code string} field value from the stream. */
-  public void readPackedString(RepeatedString store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code group} field value from the stream. */
-  public void readPackedGroup(RepeatedMessage store, final int fieldNumber)
-          throws IOException {
-  }
-
-  public void readPackedMessage(RepeatedMessage store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code bytes} field value from the stream. */
-  public void readPackedBytes(RepeatedBytes store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code uint32} field value from the stream. */
-  public void readPackedUInt32(RepeatedInt store) throws IOException {
-  }
-
-  /**
-   * Read an enum field value from the stream.  Caller is responsible
-   * for converting the numeric value to an actual enum.
-   */
-  public void readPackedEnum(RepeatedInt store) throws IOException {
-  }
-
   /** Read a repeated (packed) {@code sfixed32} field value from the stream. */
   public void readPackedSFixed32(RepeatedInt store) throws IOException {
   }
 
   /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
   public void readPackedSFixed64(RepeatedLong store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code sint32} field value from the stream. */
-  public void readPackedSInt32(RepeatedInt store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code sint64} field value from the stream. */
-  public void readPackedSInt64(RepeatedLong store) throws IOException {
   }
 
   // !#!)@(!)__)_)# TODO: above

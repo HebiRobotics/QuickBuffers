@@ -60,23 +60,31 @@ public class TypeMap {
     }
 
     public static boolean isFixedWidth(Type type) {
+        return getFixedWidth(type) > 0;
+    }
+
+    public static int getFixedWidth(Type type) {
         switch (type) {
 
             // 64 bit
             case TYPE_DOUBLE:
             case TYPE_SFIXED64:
             case TYPE_FIXED64:
-                return true;
+                return 8;
 
             // 32 bit
             case TYPE_FLOAT:
             case TYPE_SFIXED32:
             case TYPE_FIXED32:
-                return true;
+                return 4;
+
+            // 8 bit
+            case TYPE_BOOL:
+                return 1;
 
             // varint
             default:
-                return false;
+                return -1;
         }
     }
 
