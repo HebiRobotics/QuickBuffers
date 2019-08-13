@@ -1,9 +1,9 @@
 package us.hebi.robobuf;
 
 import org.junit.Test;
-import us.hebi.robobuf.java.AllTypesOuterClass.ForeignEnum;
-import us.hebi.robobuf.java.AllTypesOuterClass.TestAllSupportedTypes;
-import us.hebi.robobuf.java.AllTypesOuterClass.TestAllSupportedTypes.NestedEnum;
+import us.hebi.robobuf.java.ForeignEnum;
+import us.hebi.robobuf.java.TestAllTypes;
+import us.hebi.robobuf.java.TestAllTypes.NestedEnum;
 import us.hebi.robobuf.java.RepeatedPackables;
 import us.hebi.robobuf.java.external.ImportEnum;
 
@@ -27,12 +27,12 @@ public class TestSamples {
         byte[] data;
 
         // primitives
-        data = MessageNano.toByteArray(us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes.parseFrom(optionalPrimitives()));
-        TestAllSupportedTypes.parseFrom(data);
+        data = MessageNano.toByteArray(us.hebi.robobuf.robo.TestAllTypes.parseFrom(optionalPrimitives()));
+        TestAllTypes.parseFrom(data);
 
         // enum
-        data = MessageNano.toByteArray(us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes.parseFrom(optionalEnums()));
-        TestAllSupportedTypes.parseFrom(data);
+        data = MessageNano.toByteArray(us.hebi.robobuf.robo.TestAllTypes.parseFrom(optionalEnums()));
+        TestAllTypes.parseFrom(data);
 
         // packed
         data = MessageNano.toByteArray(us.hebi.robobuf.robo.RepeatedPackables.Packed.parseFrom(
@@ -47,7 +47,7 @@ public class TestSamples {
     }
 
     static byte[] optionalPrimitives() {
-        TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
+        TestAllTypes msg = TestAllTypes.newBuilder()
                 .setId(99) // needs to be set
                 .setOptionalBool(true)
                 .setOptionalDouble(100.0d)
@@ -105,7 +105,7 @@ public class TestSamples {
     }
 
     static byte[] optionalEnums() {
-        TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
+        TestAllTypes msg = TestAllTypes.newBuilder()
                 .setId(0)
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
@@ -115,7 +115,7 @@ public class TestSamples {
     }
 
     static byte[] optionalString() {
-        TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
+        TestAllTypes msg = TestAllTypes.newBuilder()
                 .setId(0)
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)

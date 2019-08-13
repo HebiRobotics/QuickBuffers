@@ -34,6 +34,12 @@ public class CompilerPluginTest {
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 
+    @Test
+    public void testRepeatedPackablesRequest() {
+        CodeGeneratorRequest request = TestRequestLoader.getRepeatedPackablesRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
     @Ignore
     @Test
     public void printRequestPackages() throws IOException {

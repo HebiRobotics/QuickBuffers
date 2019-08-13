@@ -82,7 +82,7 @@ public class RepeatedLong extends RepeatedField<RepeatedLong> {
     }
 
     long[] array = EMPTY;
-    private static long[] EMPTY = new long[0];
-    private static long DEFAULT_VALUE = 0;
+    private static final long[] EMPTY = new long[0];
+    private static final long DEFAULT_VALUE = 0;
 
 }

@@ -19,6 +19,7 @@ public class TestRequestLoader {
         getSimpleRequest();
         getImportRequest();
         getAllTypesRequest();
+        getRepeatedPackablesRequest();
     }
 
     public static CodeGeneratorRequest getSimpleRequest() {
@@ -31,6 +32,10 @@ public class TestRequestLoader {
 
     public static CodeGeneratorRequest getAllTypesRequest() {
         return getRequest("allTypes");
+    }
+
+    public static CodeGeneratorRequest getRepeatedPackablesRequest() {
+        return getRequest("repeatedPackables");
     }
 
     private static CodeGeneratorRequest getRequest(String name) {

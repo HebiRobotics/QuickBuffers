@@ -82,7 +82,7 @@ public class RepeatedInt extends RepeatedField<RepeatedInt> {
     }
 
     int[] array = EMPTY;
-    private static int[] EMPTY = new int[0];
-    private static int DEFAULT_VALUE = 0;
+    private static final int[] EMPTY = new int[0];
+    private static final int DEFAULT_VALUE = 0;
 
 }

@@ -67,7 +67,10 @@ public class CompilerPlugin {
                 list.accept(new MessageGenerator(type).generate());
             }
 
-            topLevelTypes.add(outerClassSpec.build());
+            // Omitt completely empty outer classes
+            if (!file.isGenerateMultipleFiles()) {
+                topLevelTypes.add(outerClassSpec.build());
+            }
 
             // Generate Java files
             for (TypeSpec typeSpec : topLevelTypes) {

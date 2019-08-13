@@ -7,8 +7,9 @@ import "namespaces.proto";
 
 option java_package = "us.hebi.robobuf.java";
 option java_outer_classname = "AllTypesOuterClass";
+option java_multiple_files = true;
 
-message TestAllSupportedTypes {
+message TestAllTypes {
 
   message NestedMessage {
     optional int32 bb = 1;

@@ -82,7 +82,7 @@ public class RepeatedDouble extends RepeatedField<RepeatedDouble> {
     }
 
     double[] array = EMPTY;
-    private static double[] EMPTY = new double[0];
-    private static double DEFAULT_VALUE = 0;
+    private static final double[] EMPTY = new double[0];
+    private static final double DEFAULT_VALUE = 0;
 
 }

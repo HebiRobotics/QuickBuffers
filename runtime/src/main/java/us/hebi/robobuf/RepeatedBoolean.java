@@ -82,7 +82,7 @@ public class RepeatedBoolean extends RepeatedField<RepeatedBoolean> {
     }
 
     boolean[] array = EMPTY;
-    private static boolean[] EMPTY = new boolean[0];
-    private static boolean DEFAULT_VALUE = false;
+    private static final boolean[] EMPTY = new boolean[0];
+    private static final boolean DEFAULT_VALUE = false;
 
 }

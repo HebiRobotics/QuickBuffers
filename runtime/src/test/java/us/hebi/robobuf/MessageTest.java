@@ -1,10 +1,11 @@
 package us.hebi.robobuf;
 
+import org.junit.Ignore;
 import org.junit.Test;
-import us.hebi.robobuf.robo.AllTypesOuterClass.ForeignEnum;
-import us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes;
-import us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes.NestedEnum;
+import us.hebi.robobuf.robo.ForeignEnum;
 import us.hebi.robobuf.robo.RepeatedPackables;
+import us.hebi.robobuf.robo.TestAllTypes;
+import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
@@ -20,7 +21,7 @@ public class MessageTest {
 
     @Test
     public void testOptionalPrimitives() throws IOException {
-        TestAllSupportedTypes emptyMsg = new TestAllSupportedTypes();
+        TestAllTypes emptyMsg = new TestAllTypes();
         assertFalse(emptyMsg.hasId());
         assertFalse(emptyMsg.hasOptionalBool());
         assertFalse(emptyMsg.hasOptionalDouble());
@@ -36,7 +37,7 @@ public class MessageTest {
         assertFalse(emptyMsg.hasOptionalUint32());
         assertFalse(emptyMsg.hasOptionalUint64());
 
-        TestAllSupportedTypes msg = TestAllSupportedTypes.parseFrom(TestSamples.optionalPrimitives());
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.optionalPrimitives());
         assertNotEquals(msg, emptyMsg);
 
         assertTrue(msg.hasId());
@@ -69,7 +70,7 @@ public class MessageTest {
         assertEquals(110, msg.getOptionalUint32());
         assertEquals(111, msg.getOptionalUint64());
 
-        TestAllSupportedTypes manualMsg = new TestAllSupportedTypes()
+        TestAllTypes manualMsg = new TestAllTypes()
                 .setId(99)
                 .setOptionalBool(true)
                 .setOptionalDouble(100.0d)
@@ -88,7 +89,7 @@ public class MessageTest {
 
         // Test round-trip
         byte[] output = MessageNano.toByteArray(manualMsg);
-        TestAllSupportedTypes msg3 = TestAllSupportedTypes.parseFrom(output);
+        TestAllTypes msg3 = TestAllTypes.parseFrom(output);
         assertEquals(msg, msg3);
 
     }
@@ -153,12 +154,12 @@ public class MessageTest {
 
     @Test
     public void testOptionalEnums() throws IOException {
-        TestAllSupportedTypes emptyMsg = new TestAllSupportedTypes();
+        TestAllTypes emptyMsg = new TestAllTypes();
         assertFalse(emptyMsg.hasOptionalNestedEnum());
         assertFalse(emptyMsg.hasOptionalForeignEnum());
         assertFalse(emptyMsg.hasOptionalImportEnum());
 
-        TestAllSupportedTypes msg = TestAllSupportedTypes.parseFrom(TestSamples.optionalEnums());
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.optionalEnums());
         assertNotEquals(msg, emptyMsg);
         assertTrue(msg.hasOptionalNestedEnum());
         assertTrue(msg.hasOptionalForeignEnum());
@@ -168,7 +169,7 @@ public class MessageTest {
         assertEquals(ForeignEnum.FOREIGN_BAR, msg.getOptionalForeignEnum());
         assertEquals(ImportEnum.IMPORT_BAZ, msg.getOptionalImportEnum());
 
-        TestAllSupportedTypes manualMsg = new TestAllSupportedTypes()
+        TestAllTypes manualMsg = new TestAllTypes()
                 .setId(0)
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
@@ -185,13 +186,13 @@ public class MessageTest {
 
         // Test round-trip
         byte[] output = MessageNano.toByteArray(manualMsg);
-        TestAllSupportedTypes msg3 = TestAllSupportedTypes.parseFrom(output);
+        TestAllTypes msg3 = TestAllTypes.parseFrom(output);
         assertEquals(msg, msg3);
     }
 
     @Test
     public void testDefaults() throws IOException {
-        TestAllSupportedTypes msg = new TestAllSupportedTypes();
+        TestAllTypes msg = new TestAllTypes();
         for (int i = 0; i < 2; i++) {
             assertTrue(msg.getDefaultBool());
             assertEquals(41, msg.getDefaultInt32());
@@ -231,14 +232,40 @@ public class MessageTest {
 
     @Test
     public void testStrings() throws IOException {
+        TestAllTypes msg = new TestAllTypes().setId(0);
 
+        assertFalse(msg.hasOptionalString());
+        assertEquals("", msg.getOptionalString().toString());
+        msg.setOptionalString("optionalString\uD83D\uDCA9");
+        assertTrue(msg.hasOptionalString());
+        assertEquals("optionalString\uD83D\uDCA9", msg.getOptionalString().toString());
 
+        byte[] result = MessageNano.toByteArray(msg);
+        TestAllTypes actual = TestAllTypes.parseFrom(result);
+        assertEquals(msg, actual);
+
+    }
+
+    @Ignore
+    @Test
+    public void testBytes() throws IOException {
+        TestAllTypes msg = new TestAllTypes().setId(0);
+
+        assertFalse(msg.hasOptionalBytes());
+        assertArrayEquals(new byte[0], msg.getOptionalBytesArray());
+        msg.setOptionalBytes("optionalString\uD83D\uDCA9".getBytes(UTF_8));
+        assertTrue(msg.hasOptionalBytes());
+        assertArrayEquals("optionalString\uD83D\uDCA9".getBytes(UTF_8), msg.getOptionalBytesArray());
+
+        byte[] result = MessageNano.toByteArray(msg);
+        TestAllTypes actual = TestAllTypes.parseFrom(result);
+        assertEquals(msg, actual);
 
     }
 
     @Test(expected = IllegalStateException.class)
     public void testMissingRequiredField() {
-        MessageNano.toByteArray(new TestAllSupportedTypes());
+        MessageNano.toByteArray(new TestAllTypes());
     }
 
 }

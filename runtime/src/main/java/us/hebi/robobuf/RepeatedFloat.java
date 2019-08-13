@@ -82,7 +82,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     float[] array = EMPTY;
-    private static float[] EMPTY = new float[0];
-    private static float DEFAULT_VALUE = 0;
+    private static final float[] EMPTY = new float[0];
+    private static final float DEFAULT_VALUE = 0;
 
 }

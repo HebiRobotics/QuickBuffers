@@ -24,8 +24,8 @@ public class RepeatedString extends RepeatedField<RepeatedString> {
 
     }
 
-    public String get(int index) { // TODO: make char sequence
-        return "";
+    public StringBuilder get(int index) { // TODO: make char sequence
+        return new StringBuilder();
     }
 
 
