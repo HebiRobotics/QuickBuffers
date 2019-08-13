@@ -288,7 +288,7 @@ public class RequestInfo {
             return isPackable() && descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
         }
 
-        private boolean isPackable() {
+        public boolean isPackable() {
             if (!isRepeated())
                 return false;
 

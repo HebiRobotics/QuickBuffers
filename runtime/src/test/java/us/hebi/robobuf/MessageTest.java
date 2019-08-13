@@ -93,14 +93,6 @@ public class MessageTest {
 
     }
 
-    static byte[] repeatedPackablesPacked() throws IOException {
-        return MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()));
-    }
-
-    static byte[] repeatedPackablesNonPacked() throws IOException {
-        return MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked()));
-    }
-
     @Test
     public void testRepeatedPackables() throws IOException {
         RepeatedPackables.Packed emptyMsg = new RepeatedPackables.Packed();
@@ -158,7 +150,8 @@ public class MessageTest {
         byte[] packed = MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked()));
 
         assertEquals(msg, RepeatedPackables.Packed.parseFrom(packed));
-        assertEquals(RepeatedPackables.Packed.parseFrom(packed), RepeatedPackables.Packed.parseFrom(nonPacked));
+        assertEquals(RepeatedPackables.Packed.parseFrom(packed), RepeatedPackables.Packed.parseFrom(packed));
+        assertEquals(RepeatedPackables.Packed.parseFrom(nonPacked), RepeatedPackables.Packed.parseFrom(nonPacked));
 
     }
 

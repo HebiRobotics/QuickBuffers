@@ -1,9 +1,6 @@
 package us.hebi.robobuf.compiler.field;
 
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 import us.hebi.robobuf.compiler.RequestInfo;
 
 import javax.lang.model.element.Modifier;
@@ -106,33 +103,30 @@ class PrimitiveField {
 
                 // Varint decoding. In steady state we should already have an array that
                 // can fit the incoming data, so we can skip the array size checks
-                method.addNamedCode("" +
-                        "final int length = input.readRawVarint32();\n" +
-                        "final int limit = input.pushLimit(length);\n" +
-                        "\n" +
+                method
+                        .addStatement("final int length = input.readRawVarint32()")
+                        .addStatement("final int limit = input.pushLimit(length)")
+                        .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
 
-                        "// Do a size check if the data is guaranteed not to fit\n" +
-                        "if ($field:N.remainingCapacity() < length) {$>\n" +
-                        "int arrayLength = 0;\n" +
-                        "int startPos = input.getPosition();\n" +
+                        // Defer count-checks until we run out of capacity
+                        .addComment("do a look-ahead to avoid unnecessary allocations")
+                        .beginControlFlow("if ($N.remainingCapacity() == 0)", info.getFieldName())
+                        .addStatement("final int position = input.getPosition()")
+                        .addStatement("int numEntries = 0")
+                        .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
+                        .addNamedCode("input.read$capitalizedType:L();\n", m)
+                        .addStatement("numEntries++")
+                        .endControlFlow()
+                        .addStatement("input.rewindToPosition(position)")
+                        .addNamedCode("$field:N.ensureSpace(numEntries);\n", m)
+                        .endControlFlow()
 
-                        "while (input.getBytesUntilLimit() > 0) {$>\n" +
-                        "input.read$capitalizedType:L();\n" +
-                        "arrayLength++;\n" +
-                        "$<}\n" +
-
-                        "input.rewindToPosition(startPos);\n" +
-                        "$field:N.ensureSpace(arrayLength);\n" +
-                        "$<}\n" +
-                        "\n" +
-
-                        "// Fill in data\n" +
-                        "while (input.getBytesUntilLimit() > 0) {$>\n" + // TODO: only do lookahead if capacity is full
-                        "$field:N.add(input.read$capitalizedType:L());\n" +
-                        "$<}\n" +
-
-                        "input.popLimit(limit);\n" +
-                        "$setHas:L;\n", m);
+                        // Add data
+                        .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
+                        .endControlFlow()
+                        .addNamedCode(
+                                "input.popLimit(limit);\n" +
+                                "$setHas:L;\n", m);
 
             }
 
