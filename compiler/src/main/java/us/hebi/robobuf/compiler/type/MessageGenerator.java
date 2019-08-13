@@ -120,10 +120,7 @@ public class MessageGenerator implements TypeGenerator {
             }
 
             for (FieldGenerator field : fields) {
-                equals.addCode("\n&& (");
-                if (!field.getInfo().isRequired()) {
-                    equals.addCode("!$1N() || ", field.getInfo().getHazzerName());
-                }
+                equals.addCode("\n&& (!$1N() || ", field.getInfo().getHazzerName());
                 field.generateEqualsStatement(equals);
                 equals.addCode(")");
             }
@@ -205,9 +202,16 @@ public class MessageGenerator implements TypeGenerator {
                 .addParameter(RuntimeClasses.PROTO_DEST, "output")
                 .addException(IOException.class);
         fields.forEach(f -> {
-            if (!f.getInfo().isRequired()) writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
+            writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
             f.generateSerializationCode(writeTo);
-            if (!f.getInfo().isRequired()) writeTo.endControlFlow();
+
+            if (f.getInfo().isRequired()) {
+                String error = "Message is missing required field (" + f.getInfo().getLowerName() + ")";
+                writeTo.nextControlFlow("else")
+                        .addStatement("throw new $T($S)", IllegalStateException.class, error);
+            }
+
+            writeTo.endControlFlow();
         });
         type.addMethod(writeTo.build());
     }
@@ -219,9 +223,9 @@ public class MessageGenerator implements TypeGenerator {
                 .returns(int.class);
         computeSerializedSize.addStatement("int size = 0");
         fields.forEach(f -> {
-            if (!f.getInfo().isRequired()) computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
+            computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
             f.generateComputeSerializedSizeCode(computeSerializedSize);
-            if (!f.getInfo().isRequired()) computeSerializedSize.endControlFlow();
+            computeSerializedSize.endControlFlow();
         });
         computeSerializedSize.addStatement("return size");
         type.addMethod(computeSerializedSize.build());

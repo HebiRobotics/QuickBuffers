@@ -14,9 +14,9 @@ import us.hebi.robobuf.java.external.ImportEnum;
  */
 public class TestSamples {
 
-    public static byte[] optionalPrimitives() {
+    static byte[] optionalPrimitives() {
         TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
-                .setId(99)
+                .setId(99) // needs to be set
                 .setOptionalBool(true)
                 .setOptionalDouble(100.0d)
                 .setOptionalFloat(101.0f)
@@ -34,9 +34,19 @@ public class TestSamples {
         return msg.toByteArray();
     }
 
-    public static byte[] optionalEnums() {
+    static byte[] optionalEnums() {
         TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
-                .setId(99)
+                .setId(0)
+                .setOptionalNestedEnum(NestedEnum.FOO)
+                .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
+                .setOptionalImportEnum(ImportEnum.IMPORT_BAZ)
+                .build();
+        return msg.toByteArray();
+    }
+
+    static byte[] optionalString() {
+        TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
+                .setId(0)
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
                 .setOptionalImportEnum(ImportEnum.IMPORT_BAZ)

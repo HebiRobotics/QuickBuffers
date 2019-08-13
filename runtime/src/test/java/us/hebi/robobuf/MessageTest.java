@@ -53,8 +53,8 @@ public class MessageTest {
         assertTrue(msg.hasOptionalUint32());
         assertTrue(msg.hasOptionalUint64());
 
+        assertTrue(msg.getOptionalBool());
         assertEquals(99, msg.getId());
-        assertEquals(true, msg.getOptionalBool());
         assertEquals(100.0d, msg.getOptionalDouble(), 0);
         assertEquals(101.0f, msg.getOptionalFloat(), 0);
         assertEquals(102, msg.getOptionalFixed32());
@@ -110,7 +110,7 @@ public class MessageTest {
         assertEquals(ImportEnum.IMPORT_BAZ, msg.getOptionalImportEnum());
 
         TestAllSupportedTypes manualMsg = new TestAllSupportedTypes()
-                .setId(99)
+                .setId(0)
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
                 .setOptionalImportEnum(ImportEnum.IMPORT_BAZ);
@@ -153,12 +153,18 @@ public class MessageTest {
             assertEquals(Double.NEGATIVE_INFINITY, msg.getDefaultDoubleNegInf(), 0);
             assertEquals(Double.NaN, msg.getDefaultDoubleNan(), 0);
 
+            msg.setId(0); // required
             byte[] result = MessageNano.toByteArray(msg);
             int msgSerializedSize = msg.getSerializedSize();
-            assertEquals(3, msgSerializedSize); // required id
+            assertEquals(3, msgSerializedSize);
             assertEquals(result.length, msgSerializedSize);
             msg.clear();
         }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testRequired() {
+        MessageNano.toByteArray(new TestAllSupportedTypes());
     }
 
 }
