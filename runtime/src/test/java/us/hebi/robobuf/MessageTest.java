@@ -142,16 +142,12 @@ public class MessageTest {
         assertArrayEquals(new long[]{5L, 6L, 23L << 40, 8L}, msg.getUint64s().toArray());
 
         // Make sure packed fields can be parsed from non-packed data to maintain forwards compatibility
-        assertEquals(
-                RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked()),
-                RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()));
-
+        byte[] packed = MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()));
         byte[] nonPacked = MessageNano.toByteArray(RepeatedPackables.NonPacked.parseFrom(TestSamples.repeatedPackablesNonPacked()));
-        byte[] packed = MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked()));
 
         assertEquals(msg, RepeatedPackables.Packed.parseFrom(packed));
-        assertEquals(RepeatedPackables.Packed.parseFrom(packed), RepeatedPackables.Packed.parseFrom(packed));
-        assertEquals(RepeatedPackables.Packed.parseFrom(nonPacked), RepeatedPackables.Packed.parseFrom(nonPacked));
+        assertEquals(RepeatedPackables.Packed.parseFrom(packed), RepeatedPackables.Packed.parseFrom(nonPacked));
+        assertEquals(RepeatedPackables.NonPacked.parseFrom(packed), RepeatedPackables.NonPacked.parseFrom(nonPacked));
 
     }
 
@@ -178,6 +174,14 @@ public class MessageTest {
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
                 .setOptionalImportEnum(ImportEnum.IMPORT_BAZ);
         assertEquals(msg, manualMsg);
+
+        try {
+            manualMsg.setOptionalNestedEnum(null);
+            fail();
+        } catch (NullPointerException npe) {
+            assertTrue(manualMsg.hasOptionalNestedEnum());
+            assertEquals(ForeignEnum.FOREIGN_BAR, msg.getOptionalForeignEnum());
+        }
 
         // Test round-trip
         byte[] output = MessageNano.toByteArray(manualMsg);
@@ -225,8 +229,15 @@ public class MessageTest {
         }
     }
 
+    @Test
+    public void testStrings() throws IOException {
+
+
+
+    }
+
     @Test(expected = IllegalStateException.class)
-    public void testRequired() {
+    public void testMissingRequiredField() {
         MessageNano.toByteArray(new TestAllSupportedTypes());
     }
 

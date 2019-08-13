@@ -2,6 +2,7 @@ package us.hebi.robobuf.compiler.type;
 
 import com.google.protobuf.DescriptorProtos.EnumValueDescriptorProto;
 import com.squareup.javapoet.*;
+import us.hebi.robobuf.compiler.NameUtil;
 import us.hebi.robobuf.compiler.RequestInfo.EnumInfo;
 
 import javax.lang.model.element.Modifier;
@@ -21,7 +22,7 @@ public class EnumGenerator implements TypeGenerator {
                 .addModifiers(Modifier.PUBLIC);
 
         for (EnumValueDescriptorProto value : info.getValues()) {
-            type.addEnumConstant(value.getName(), TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
+            type.addEnumConstant(NameUtil.filterKeyword(value.getName()), TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
         }
 
         generateGetValue(type);
@@ -69,7 +70,7 @@ public class EnumGenerator implements TypeGenerator {
 
             CodeBlock.Builder initBlock = CodeBlock.builder();
             for (EnumValueDescriptorProto value : info.getValues()) {
-                initBlock.addStatement("lookup[$L] = $L", value.getNumber(), value.getName());
+                initBlock.addStatement("lookup[$L] = $L", value.getNumber(), NameUtil.filterKeyword(value.getName()));
             }
             typeSpec.addStaticBlock(initBlock.build());
 
@@ -78,7 +79,7 @@ public class EnumGenerator implements TypeGenerator {
             // lookup using switch statement
             forNumber.beginControlFlow("switch(value)");
             for (EnumValueDescriptorProto value : info.getValues()) {
-                forNumber.addStatement("case $L: return $L", value.getNumber(), value.getName());
+                forNumber.addStatement("case $L: return $L", value.getNumber(), NameUtil.filterKeyword(value.getName()));
             }
             forNumber.addStatement("default: return null");
             forNumber.endControlFlow();

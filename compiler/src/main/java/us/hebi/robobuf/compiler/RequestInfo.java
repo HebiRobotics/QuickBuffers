@@ -230,8 +230,9 @@ public class RequestInfo {
             bytesPerTag = RuntimeClasses.computeRawVarint32Size(tag);
             packedTag = RuntimeClasses.makePackedTag(descriptor);
             number = descriptor.getNumber();
-            fieldName = NameUtil.isReservedKeyword(lowerName) ? lowerName + "_" : lowerName;
-            defaultValue = TypeMap.getDefaultValue(descriptor);
+            fieldName = NameUtil.filterKeyword(lowerName);
+            final String defValue = TypeMap.getDefaultValue(descriptor);
+            defaultValue = isEnum() ? NameUtil.filterKeyword(defValue) : defValue;
             repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
 
         }

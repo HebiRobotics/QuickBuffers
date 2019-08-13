@@ -19,7 +19,11 @@ public class NameUtil {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
     }
 
-    public static boolean isReservedKeyword(String key) {
+    public static String filterKeyword(String name) {
+        return isReservedKeyword(name) ? name + "_" : name;
+    }
+
+    private static boolean isReservedKeyword(String key) {
         return keywordSet.contains(key);
     }
 

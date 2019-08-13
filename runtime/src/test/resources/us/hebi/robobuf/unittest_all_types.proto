@@ -141,6 +141,7 @@ message ForeignMessage {
 }
 
 enum ForeignEnum {
+  //default = 1; // test keyword renaming (works, but lite runtime fails)
   FOREIGN_FOO = 4;
   FOREIGN_BAR = 5;
   FOREIGN_BAZ = 6;
