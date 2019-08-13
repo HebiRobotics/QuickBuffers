@@ -1,6 +1,9 @@
 package us.hebi.robobuf.compiler.field;
 
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 import us.hebi.robobuf.compiler.RequestInfo;
 
 import javax.lang.model.element.Modifier;
@@ -124,9 +127,9 @@ class PrimitiveField {
                         // Add data
                         .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
                         .endControlFlow()
-                        .addNamedCode(
-                                "input.popLimit(limit);\n" +
-                                "$setHas:L;\n", m);
+
+                        .addStatement("input.popLimit(limit)")
+                        .addNamedCode("$setHas:L;\n", m);
 
             }
 
