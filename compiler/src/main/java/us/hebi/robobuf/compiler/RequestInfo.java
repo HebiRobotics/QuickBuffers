@@ -225,6 +225,10 @@ public class RequestInfo {
             repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
         }
 
+        public String getJavadoc() {
+            return descriptor.toBuilder().clearJsonName().toString();
+        }
+
         public boolean isFixedWidth() {
             return TypeMap.isFixedWidth(descriptor.getType());
         }

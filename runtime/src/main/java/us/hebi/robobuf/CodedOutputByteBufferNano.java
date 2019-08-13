@@ -206,7 +206,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a {@code string} field, including tag, to the stream. */
-  public void writeString(final int fieldNumber, final String value)
+  public void writeString(final int fieldNumber, final CharSequence value)
                           throws IOException {
     writeTag(fieldNumber, WireFormatNano.WIRETYPE_LENGTH_DELIMITED);
     writeStringNoTag(value);
@@ -353,7 +353,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a {@code string} field to the stream. */
-  public void writeStringNoTag(final String value) throws IOException {
+  public void writeStringNoTag(final CharSequence value) throws IOException {
     // UTF-8 byte length of the string is at least its UTF-16 code unit length (value.length()),
     // and at most 3 times of it. Optimize for the case where we know this length results in a
     // constant varint length - saves measuring length of the string.
@@ -686,7 +686,7 @@ public final class CodedOutputByteBufferNano {
    * {@code string} field, including tag.
    */
   public static int computeStringSize(final int fieldNumber,
-                                      final String value) {
+                                      final CharSequence value) {
     return computeTagSize(fieldNumber) + computeStringSizeNoTag(value);
   }
 
@@ -843,7 +843,7 @@ public final class CodedOutputByteBufferNano {
    * Compute the number of bytes that would be needed to encode a
    * {@code string} field.
    */
-  public static int computeStringSizeNoTag(final String value) {
+  public static int computeStringSizeNoTag(final CharSequence value) {
     final int length = encodedLength(value);
     return computeRawVarint32Size(length) + length;
   }

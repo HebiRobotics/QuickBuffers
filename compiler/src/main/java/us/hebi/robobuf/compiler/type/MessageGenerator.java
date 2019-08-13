@@ -52,6 +52,12 @@ public class MessageGenerator implements TypeGenerator {
                 .map(TypeGenerator::generate)
                 .forEach(type::addType);
 
+        // Constructor
+        type.addMethod(MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addStatement("clear()")
+                .build());
+
         // Member state
         for (int i = 0; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
@@ -62,18 +68,11 @@ public class MessageGenerator implements TypeGenerator {
         fields.forEach(f -> f.generateMemberMethods(type));
         generateCopyFrom(type);
         generateClear(type);
-
-        // Internal Constructor
-        type.addMethod(MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC)
-                .addStatement("clear()")
-                .build());
-
+        generateEquals(type);
+        generateHashCode(type);
         generateWriteTo(type);
         generateComputeSerializedSize(type);
         generateMergeFrom(type);
-        generateEquals(type);
-        generateHashCode(type);
 
         return type.build();
     }
@@ -82,6 +81,7 @@ public class MessageGenerator implements TypeGenerator {
         MethodSpec.Builder clear = MethodSpec.methodBuilder("clear")
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
+        clear.addStatement("cachedSize = -1");
         for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
             clear.addStatement("$L = 0", BitField.fieldName(0));
         }
@@ -225,6 +225,7 @@ public class MessageGenerator implements TypeGenerator {
                 .addParameter(info.getTypeName(), "other", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
+        copyFrom.addStatement("cachedSize = other.cachedSize");
         for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
             copyFrom.addStatement("$1L = other.$1L", BitField.fieldName(i));
         }

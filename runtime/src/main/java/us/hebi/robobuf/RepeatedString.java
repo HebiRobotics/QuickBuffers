@@ -27,4 +27,16 @@ public class RepeatedString implements RepeatedField {
     public void clear() {
 
     }
+
+    public void add(CharSequence value) {
+
+    }
+
+    public void set(int index, CharSequence value) {
+
+    }
+
+    public StringBuilder getAndAdd() {
+        return null;
+    }
 }

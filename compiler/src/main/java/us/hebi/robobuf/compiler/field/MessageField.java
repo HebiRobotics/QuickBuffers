@@ -23,6 +23,7 @@ class MessageField {
         @Override
         public void generateMemberFields(TypeSpec.Builder type) {
             FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
+                    .addJavadoc(info.getJavadoc())
                     .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                     .initializer("new $T()", typeName)
                     .build();

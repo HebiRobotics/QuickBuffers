@@ -23,6 +23,7 @@ class PrimitiveField {
         @Override
         public void generateMemberFields(TypeSpec.Builder type) {
             FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
+                    .addJavadoc(info.getJavadoc())
                     .addModifiers(Modifier.PRIVATE)
                     .build();
             type.addField(value);
@@ -171,30 +172,6 @@ class PrimitiveField {
             } else {
                 super.generateComputeSerializedSizeCode(method);
             }
-        }
-
-        @Override
-        protected void generateSetter(TypeSpec.Builder type) {
-            type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "index", Modifier.FINAL)
-                    .addParameter(info.getTypeName(), "value", Modifier.FINAL)
-                    .returns(info.getParentType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.set(index, value);\n" +
-                            "return this;\n", m)
-                    .build());
-
-            type.addMethod(MethodSpec.methodBuilder("add" + info.getUpperName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(info.getTypeName(), "value", Modifier.FINAL)
-                    .returns(info.getParentType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.add(value);\n" +
-                            "return this;\n", m)
-                    .build());
         }
 
     }

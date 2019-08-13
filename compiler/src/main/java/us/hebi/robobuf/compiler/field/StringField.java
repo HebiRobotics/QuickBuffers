@@ -18,13 +18,13 @@ class StringField {
 
         protected OptionalStringField(RequestInfo.FieldInfo info) {
             super(info);
-            m.put("serializableValue", info.getFieldName() + ".toString()");
             m.put("default", info.getDescriptor().getDefaultValue());
         }
 
         @Override
         public void generateMemberFields(TypeSpec.Builder type) {
             type.addField(FieldSpec.builder(RuntimeClasses.STRING_STORAGE_CLASS, info.getFieldName())
+                    .addJavadoc(info.getJavadoc())
                     .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                     .initializer("new $T(0)", RuntimeClasses.STRING_STORAGE_CLASS)
                     .build());
@@ -62,8 +62,7 @@ class StringField {
         @Override
         public void generateMergingCode(MethodSpec.Builder method) {
             method.addNamedCode("" +
-                    "$field:N.setLength(0);\n" +
-                    "$field:N.append(input.readString());\n" +
+                    "input.readStringInto($field:N);\n" +
                     "$setHas:L;\n", m);
         }
 
@@ -73,4 +72,26 @@ class StringField {
         }
 
     }
+
+    static class RepeatedStringField extends RepeatedField {
+
+        protected RepeatedStringField(RequestInfo.FieldInfo info) {
+            super(info);
+        }
+
+        @Override
+        public void generateMergingCode(MethodSpec.Builder method) {
+            method
+                    .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
+                    .addNamedCode("$field:N.ensureSpace(arrayLength);\n", m)
+                    .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
+                    .addNamedCode("input.readStringInto($field:N.getAndAdd());\n", m)
+                    .addStatement("input.readTag()")
+                    .endControlFlow()
+                    .addNamedCode("input.readStringInto($field:N.getAndAdd());\n", m)
+                    .addNamedCode("$setHas:L;\n", m);
+        }
+
+    }
+
 }

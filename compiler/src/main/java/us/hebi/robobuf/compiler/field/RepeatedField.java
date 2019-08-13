@@ -25,6 +25,7 @@ public class RepeatedField extends FieldGenerator {
     @Override
     public void generateMemberFields(TypeSpec.Builder type) {
         type.addField(FieldSpec.builder(info.getRepeatedStoreType(), info.getFieldName(), Modifier.FINAL, Modifier.PRIVATE)
+                .addJavadoc(info.getJavadoc())
                 .initializer("new $T()", info.getRepeatedStoreType())
                 .build());
     }
@@ -75,7 +76,26 @@ public class RepeatedField extends FieldGenerator {
 
     @Override
     protected void generateSetter(TypeSpec.Builder type) {
+        type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(int.class, "index", Modifier.FINAL)
+                .addParameter(info.getTypeName(), "value", Modifier.FINAL)
+                .returns(info.getParentType())
+                .addNamedCode("" +
+                        "$setHas:L;\n" +
+                        "$field:N.set(index, value);\n" +
+                        "return this;\n", m)
+                .build());
 
+        type.addMethod(MethodSpec.methodBuilder("add" + info.getUpperName())
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(info.getTypeName(), "value", Modifier.FINAL)
+                .returns(info.getParentType())
+                .addNamedCode("" +
+                        "$setHas:L;\n" +
+                        "$field:N.add(value);\n" +
+                        "return this;\n", m)
+                .build());
     }
 
 }

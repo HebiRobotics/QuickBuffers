@@ -29,6 +29,7 @@ class EnumField {
         @Override
         public void generateMemberFields(TypeSpec.Builder type) {
             FieldSpec value = FieldSpec.builder(int.class, info.getFieldName())
+                    .addJavadoc(info.getJavadoc())
                     .addModifiers(Modifier.PRIVATE)
                     .build();
             type.addField(value);

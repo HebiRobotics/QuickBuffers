@@ -9,6 +9,7 @@ import us.hebi.robobuf.compiler.field.MessageField.OptionalMessageField;
 import us.hebi.robobuf.compiler.field.PrimitiveField.OptionalPrimitiveField;
 import us.hebi.robobuf.compiler.field.PrimitiveField.RepeatedPrimitiveField;
 import us.hebi.robobuf.compiler.field.StringField.OptionalStringField;
+import us.hebi.robobuf.compiler.field.StringField.RepeatedStringField;
 
 /**
  * @author Florian Enner
@@ -43,7 +44,7 @@ public class FieldGenerators {
                 return field.isRepeated() ? new RepeatedEnumField(field) : new OptionalEnumField(field);
 
             case TYPE_STRING:
-                return field.isRepeated() ? new RepeatedField(field) : new OptionalStringField(field);
+                return field.isRepeated() ? new RepeatedStringField(field) : new OptionalStringField(field);
 
             case TYPE_BYTES:
                 return field.isRepeated() ? new RepeatedField(field) : new OptionalBytesField(field);
