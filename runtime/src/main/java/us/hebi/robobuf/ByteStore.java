@@ -9,12 +9,12 @@ public class ByteStore implements RepeatedField {
     public ByteStore(String world) {
     }
 
-    public ByteStore(){
+    public ByteStore() {
     }
 
     @Override
     public int length() {
-        return 0;
+        return array.length;
     }
 
     public byte[] array() {
@@ -36,7 +36,7 @@ public class ByteStore implements RepeatedField {
     }
 
     public void setBytes(byte[] array) {
-
+        this.array = array;
     }
 
     public void setBytes(byte[] buffer, int offset, int length) {

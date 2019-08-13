@@ -73,6 +73,10 @@ public class MessageGenerator implements TypeGenerator {
         generateWriteTo(type);
         generateComputeSerializedSize(type);
         generateMergeFrom(type);
+        generateClone(type);
+
+        // Static utilities
+        generateParseFrom(type);
 
         return type.build();
     }
@@ -116,7 +120,10 @@ public class MessageGenerator implements TypeGenerator {
             }
 
             for (FieldGenerator field : fields) {
-                equals.addCode("\n&& (!$1N() || ", field.getInfo().getHazzerName());
+                equals.addCode("\n&& (");
+                if (!field.getInfo().isRequired()) {
+                    equals.addCode("!$1N() || ", field.getInfo().getHazzerName());
+                }
                 field.generateEqualsStatement(equals);
                 equals.addCode(")");
             }
@@ -198,9 +205,9 @@ public class MessageGenerator implements TypeGenerator {
                 .addParameter(RuntimeClasses.PROTO_DEST, "output")
                 .addException(IOException.class);
         fields.forEach(f -> {
-            writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
+            if (!f.getInfo().isRequired()) writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
             f.generateSerializationCode(writeTo);
-            writeTo.endControlFlow();
+            if (!f.getInfo().isRequired()) writeTo.endControlFlow();
         });
         type.addMethod(writeTo.build());
     }
@@ -212,9 +219,9 @@ public class MessageGenerator implements TypeGenerator {
                 .returns(int.class);
         computeSerializedSize.addStatement("int size = 0");
         fields.forEach(f -> {
-            computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
+            if (!f.getInfo().isRequired()) computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
             f.generateComputeSerializedSizeCode(computeSerializedSize);
-            computeSerializedSize.endControlFlow();
+            if (!f.getInfo().isRequired()) computeSerializedSize.endControlFlow();
         });
         computeSerializedSize.addStatement("return size");
         type.addMethod(computeSerializedSize.build());
@@ -232,6 +239,26 @@ public class MessageGenerator implements TypeGenerator {
         fields.forEach(field -> field.generateCopyFromCode(copyFrom));
         copyFrom.addStatement("return this"); // TODO: remember dirty bit
         type.addMethod(copyFrom.build());
+    }
+
+    private void generateClone(TypeSpec.Builder type) {
+        type.addSuperinterface(Cloneable.class);
+        type.addMethod(MethodSpec.methodBuilder("clone")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(info.getTypeName())
+                .addStatement("return new $T().copyFrom(this)", info.getTypeName())
+                .build());
+    }
+
+    private void generateParseFrom(TypeSpec.Builder type) {
+        type.addMethod(MethodSpec.methodBuilder("parseFrom")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addException(IOException.class)
+                .addParameter(byte[].class, "data")
+                .returns(info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.BASE_MESSAGE, info.getTypeName())
+                .build());
     }
 
     final MessageInfo info;
