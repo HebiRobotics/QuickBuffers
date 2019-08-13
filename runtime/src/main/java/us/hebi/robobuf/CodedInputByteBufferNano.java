@@ -32,6 +32,8 @@ package us.hebi.robobuf;
 
 import java.io.IOException;
 
+import static us.hebi.robobuf.WireFormatNano.*;
+
 /**
  * Reads and decodes protocol message fields.
  *
@@ -146,33 +148,66 @@ public final class CodedInputByteBufferNano {
 
   /** Read a repeated (packed) {@code double} field value from the stream. */
   public void readPackedDouble(RepeatedDouble store) throws IOException {
+    final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
+    store.ensureSpace(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      store.add(readDouble());
+    }
   }
 
   /** Read a repeated (packed) {@code float} field value from the stream. */
   public void readPackedFloat(RepeatedFloat store) throws IOException {
+    final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
+    store.ensureSpace(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      store.add(readFloat());
+    }
   }
 
   /** Read a repeated (packed) {@code fixed64} field value from the stream. */
   public void readPackedFixed64(RepeatedLong store) throws IOException {
+    final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
+    store.ensureSpace(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      store.add(readFixed64());
+    }
   }
 
   /** Read a repeated (packed) {@code fixed32} field value from the stream. */
   public void readPackedFixed32(RepeatedInt store) throws IOException {
-  }
-
-  /** Read a repeated (packed) {@code bool} field value from the stream. */
-  public void readPackedBool(RepeatedBoolean store) throws IOException {
+    final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
+    store.ensureSpace(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      store.add(readFixed32());
+    }
   }
 
   /** Read a repeated (packed) {@code sfixed32} field value from the stream. */
   public void readPackedSFixed32(RepeatedInt store) throws IOException {
+    final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
+    store.ensureSpace(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      store.add(readSFixed32());
+    }
   }
 
   /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
   public void readPackedSFixed64(RepeatedLong store) throws IOException {
+    final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
+    store.ensureSpace(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      store.add(readSFixed64());
+    }
   }
 
-  // !#!)@(!)__)_)# TODO: above
+  /** Read a repeated (packed) {@code bool} field value from the stream. */
+  public void readPackedBool(RepeatedBoolean store) throws IOException {
+    final int numEntries = readRawVarint32() / SIZEOF_FIXED_BOOL;
+    store.ensureSpace(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      store.add(readBool());
+    }
+  }
 
   // -----------------------------------------------------------------
 
@@ -262,7 +297,7 @@ public final class CodedInputByteBufferNano {
 
   /** Read a {@code bytes} field value from the stream. */
   public void readBytes(ByteStore store) throws IOException {
-    final byte[] result; // TODO: fix allocations
+    final byte[] result; // TODO: get rid of allocations
     final int size = readRawVarint32();
     if (size <= (bufferSize - bufferPos) && size > 0) {
       // Fast path:  We already have the bytes in a contiguous buffer, so

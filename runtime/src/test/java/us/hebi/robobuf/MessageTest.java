@@ -4,6 +4,7 @@ import org.junit.Test;
 import us.hebi.robobuf.robo.AllTypesOuterClass.ForeignEnum;
 import us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes;
 import us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes.NestedEnum;
+import us.hebi.robobuf.robo.RepeatedPackables;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
@@ -92,56 +93,72 @@ public class MessageTest {
 
     }
 
-    @Test
-    public void testRepeatedPrimitives() throws IOException {
-        TestAllSupportedTypes emptyMsg = new TestAllSupportedTypes();
-        assertFalse(emptyMsg.hasRepeatedBool());
-        assertFalse(emptyMsg.hasRepeatedDouble());
-        assertFalse(emptyMsg.hasRepeatedFloat());
-        assertFalse(emptyMsg.hasRepeatedFixed32());
-        assertFalse(emptyMsg.hasRepeatedFixed64());
-        assertFalse(emptyMsg.hasRepeatedSfixed32());
-        assertFalse(emptyMsg.hasRepeatedSfixed64());
-        assertFalse(emptyMsg.hasRepeatedSint32());
-        assertFalse(emptyMsg.hasRepeatedSint64());
-        assertFalse(emptyMsg.hasRepeatedInt32());
-        assertFalse(emptyMsg.hasRepeatedInt64());
-        assertFalse(emptyMsg.hasRepeatedUint32());
-        assertFalse(emptyMsg.hasRepeatedUint64());
+    static byte[] repeatedPackablesPacked() throws IOException {
+        return MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()));
+    }
 
-        TestAllSupportedTypes msg = TestAllSupportedTypes.parseFrom(TestSamples.repeatedPrimitives());
+    static byte[] repeatedPackablesNonPacked() throws IOException {
+        return MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked()));
+    }
+
+    @Test
+    public void testRepeatedPackables() throws IOException {
+        RepeatedPackables.Packed emptyMsg = new RepeatedPackables.Packed();
+        assertFalse(emptyMsg.hasBools());
+        assertFalse(emptyMsg.hasDoubles());
+        assertFalse(emptyMsg.hasFloats());
+        assertFalse(emptyMsg.hasFixed32s());
+        assertFalse(emptyMsg.hasFixed64s());
+        assertFalse(emptyMsg.hasSfixed32s());
+        assertFalse(emptyMsg.hasSfixed64s());
+        assertFalse(emptyMsg.hasSint32s());
+        assertFalse(emptyMsg.hasSint64s());
+        assertFalse(emptyMsg.hasInt32s());
+        assertFalse(emptyMsg.hasInt64s());
+        assertFalse(emptyMsg.hasUint32s());
+        assertFalse(emptyMsg.hasUint64s());
+
+        RepeatedPackables.Packed msg = RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked());
         assertNotEquals(msg, emptyMsg);
 
-        assertTrue(msg.hasRepeatedBool());
-        assertTrue(msg.hasRepeatedDouble());
-        assertTrue(msg.hasRepeatedFloat());
-        assertTrue(msg.hasRepeatedFixed32());
-        assertTrue(msg.hasRepeatedFixed64());
-        assertTrue(msg.hasRepeatedSfixed32());
-        assertTrue(msg.hasRepeatedSfixed64());
-        assertTrue(msg.hasRepeatedSint32());
-        assertTrue(msg.hasRepeatedSint64());
-        assertTrue(msg.hasRepeatedInt32());
-        assertTrue(msg.hasRepeatedInt64());
-        assertTrue(msg.hasRepeatedUint32());
-        assertTrue(msg.hasRepeatedUint64());
+        assertTrue(msg.hasBools());
+        assertTrue(msg.hasDoubles());
+        assertTrue(msg.hasFloats());
+        assertTrue(msg.hasFixed32s());
+        assertTrue(msg.hasFixed64s());
+        assertTrue(msg.hasSfixed32s());
+        assertTrue(msg.hasSfixed64s());
+        assertTrue(msg.hasSint32s());
+        assertTrue(msg.hasSint64s());
+        assertTrue(msg.hasInt32s());
+        assertTrue(msg.hasInt64s());
+        assertTrue(msg.hasUint32s());
+        assertTrue(msg.hasUint64s());
 
-        assertArrayEquals(new boolean[]{true, false, true, true}, msg.getRepeatedBool().toArray());
-        assertArrayEquals(new double[]{1d, 2d, 3d, 4d}, msg.getRepeatedDouble().toArray(), 0);
-        assertArrayEquals(new float[]{10f, 20f, 30f, 40f}, msg.getRepeatedFloat().toArray(), 0);
-        assertArrayEquals(new int[]{2, 3, 4, 5}, msg.getRepeatedFixed32().toArray());
-        assertArrayEquals(new long[]{5L, 6L, 7L, 8L}, msg.getRepeatedFixed64().toArray());
-        assertArrayEquals(new int[]{2, 3, 4, 5}, msg.getRepeatedSfixed32().toArray());
-        assertArrayEquals(new long[]{5L, 6L, 7L, 8L}, msg.getRepeatedSfixed64().toArray());
-        assertArrayEquals(new int[]{2, 3, 4, 5}, msg.getRepeatedSint32().toArray());
-        assertArrayEquals(new long[]{5L, 6L, 7L, 8L}, msg.getRepeatedSint64().toArray());
-        assertArrayEquals(new int[]{2, 3, 4, 5}, msg.getRepeatedInt32().toArray());
-        assertArrayEquals(new long[]{5L, 6L, 7L, 8L}, msg.getRepeatedInt64().toArray());
-        assertArrayEquals(new int[]{2, 3, 4, 5}, msg.getRepeatedUint32().toArray());
-        assertArrayEquals(new long[]{5L, 6L, 7L, 8L}, msg.getRepeatedUint64().toArray());
+        assertArrayEquals(new boolean[]{true, false, true, true}, msg.getBools().toArray());
+        assertArrayEquals(new double[]{Double.POSITIVE_INFINITY, -2d, 3d, 4d}, msg.getDoubles().toArray(), 0);
+        assertArrayEquals(new float[]{10f, 20f, -30f, Float.NaN}, msg.getFloats().toArray(), 0);
+        assertArrayEquals(new int[]{2, -2, 4, 67423}, msg.getFixed32s().toArray());
+        assertArrayEquals(new long[]{3231313L, 6L, -7L, 8L}, msg.getFixed64s().toArray());
+        assertArrayEquals(new int[]{2, -3, 4, 5}, msg.getSfixed32s().toArray());
+        assertArrayEquals(new long[]{5L, -6L, 7L, -8L}, msg.getSfixed64s().toArray());
+        assertArrayEquals(new int[]{2, -3, 4, 5}, msg.getSint32s().toArray());
+        assertArrayEquals(new long[]{5L, 6L, -7L, 8L}, msg.getSint64s().toArray());
+        assertArrayEquals(new int[]{2, 3, -4, 5}, msg.getInt32s().toArray());
+        assertArrayEquals(new long[]{5L, -6L, 7L, 8L}, msg.getInt64s().toArray());
+        assertArrayEquals(new int[]{2, 300, 4, 5}, msg.getUint32s().toArray());
+        assertArrayEquals(new long[]{5L, 6L, 23L << 40, 8L}, msg.getUint64s().toArray());
 
-        TestAllSupportedTypes msg2 = TestAllSupportedTypes.parseFrom(MessageNano.toByteArray(msg));
-        assertEquals(msg, msg2);
+        // Make sure packed fields can be parsed from non-packed data to maintain forwards compatibility
+        assertEquals(
+                RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked()),
+                RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()));
+
+        byte[] nonPacked = MessageNano.toByteArray(RepeatedPackables.NonPacked.parseFrom(TestSamples.repeatedPackablesNonPacked()));
+        byte[] packed = MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked()));
+
+        assertEquals(msg, RepeatedPackables.Packed.parseFrom(packed));
+        assertEquals(RepeatedPackables.Packed.parseFrom(packed), RepeatedPackables.Packed.parseFrom(nonPacked));
 
     }
 

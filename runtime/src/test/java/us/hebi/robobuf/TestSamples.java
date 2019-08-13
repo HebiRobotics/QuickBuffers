@@ -1,10 +1,13 @@
 package us.hebi.robobuf;
 
+import org.junit.Test;
 import us.hebi.robobuf.java.AllTypesOuterClass.ForeignEnum;
 import us.hebi.robobuf.java.AllTypesOuterClass.TestAllSupportedTypes;
 import us.hebi.robobuf.java.AllTypesOuterClass.TestAllSupportedTypes.NestedEnum;
+import us.hebi.robobuf.java.RepeatedPackables;
 import us.hebi.robobuf.java.external.ImportEnum;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -14,6 +17,34 @@ import java.util.Arrays;
  * @since 13 Aug 2019
  */
 public class TestSamples {
+
+    /**
+     * Make sure Java bindings can still parse messages after doing a round-trip
+     * TODO: maybe also check for equality?
+     */
+    @Test
+    public void testCompatibility() throws IOException {
+        byte[] data;
+
+        // primitives
+        data = MessageNano.toByteArray(us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes.parseFrom(optionalPrimitives()));
+        TestAllSupportedTypes.parseFrom(data);
+
+        // enum
+        data = MessageNano.toByteArray(us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes.parseFrom(optionalEnums()));
+        TestAllSupportedTypes.parseFrom(data);
+
+        // packed
+        data = MessageNano.toByteArray(us.hebi.robobuf.robo.RepeatedPackables.Packed.parseFrom(
+                repeatedPackablesPacked()));
+        RepeatedPackables.Packed.parseFrom(data);
+
+        // non packed
+        data = MessageNano.toByteArray(us.hebi.robobuf.robo.RepeatedPackables.NonPacked.parseFrom(
+                repeatedPackablesNonPacked()));
+        RepeatedPackables.NonPacked.parseFrom(data);
+
+    }
 
     static byte[] optionalPrimitives() {
         TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
@@ -35,22 +66,40 @@ public class TestSamples {
         return msg.toByteArray();
     }
 
-    static byte[] repeatedPrimitives() {
-        TestAllSupportedTypes msg = TestAllSupportedTypes.newBuilder()
-                .setId(0)
-                .addAllRepeatedBool(Arrays.asList(true, false, true, true))
-                .addAllRepeatedDouble(Arrays.asList(1d, 2d, 3d, 4d))
-                .addAllRepeatedFloat(Arrays.asList(10f, 20f, 30f, 40f))
-                .addAllRepeatedFixed32(Arrays.asList(2, 3, 4, 5))
-                .addAllRepeatedFixed64(Arrays.asList(5L, 6L, 7L, 8L))
-                .addAllRepeatedSfixed32(Arrays.asList(2, 3, 4, 5))
-                .addAllRepeatedSfixed64(Arrays.asList(5L, 6L, 7L, 8L))
-                .addAllRepeatedSint32(Arrays.asList(2, 3, 4, 5))
-                .addAllRepeatedSint64(Arrays.asList(5L, 6L, 7L, 8L))
-                .addAllRepeatedInt32(Arrays.asList(2, 3, 4, 5))
-                .addAllRepeatedInt64(Arrays.asList(5L, 6L, 7L, 8L))
-                .addAllRepeatedUint32(Arrays.asList(2, 3, 4, 5))
-                .addAllRepeatedUint64(Arrays.asList(5L, 6L, 7L, 8L))
+    static byte[] repeatedPackablesNonPacked() {
+        RepeatedPackables.NonPacked msg = RepeatedPackables.NonPacked.newBuilder()
+                .addAllBools(Arrays.asList(true, false, true, true))
+                .addAllDoubles(Arrays.asList(Double.POSITIVE_INFINITY, -2d, 3d, 4d))
+                .addAllFloats(Arrays.asList(10f, 20f, -30f, Float.NaN))
+                .addAllFixed32S(Arrays.asList(2, -2, 4, 67423))
+                .addAllFixed64S(Arrays.asList(3231313L, 6L, -7L, 8L))
+                .addAllSfixed32S(Arrays.asList(2, -3, 4, 5))
+                .addAllSfixed64S(Arrays.asList(5L, -6L, 7L, -8L))
+                .addAllSint32S(Arrays.asList(2, -3, 4, 5))
+                .addAllSint64S(Arrays.asList(5L, 6L, -7L, 8L))
+                .addAllInt32S(Arrays.asList(2, 3, -4, 5))
+                .addAllInt64S(Arrays.asList(5L, -6L, 7L, 8L))
+                .addAllUint32S(Arrays.asList(2, 300, 4, 5))
+                .addAllUint64S(Arrays.asList(5L, 6L, 23L << 40, 8L))
+                .build();
+        return msg.toByteArray();
+    }
+
+    static byte[] repeatedPackablesPacked() {
+        RepeatedPackables.Packed msg = RepeatedPackables.Packed.newBuilder()
+                .addAllBools(Arrays.asList(true, false, true, true))
+                .addAllDoubles(Arrays.asList(Double.POSITIVE_INFINITY, -2d, 3d, 4d))
+                .addAllFloats(Arrays.asList(10f, 20f, -30f, Float.NaN))
+                .addAllFixed32S(Arrays.asList(2, -2, 4, 67423))
+                .addAllFixed64S(Arrays.asList(3231313L, 6L, -7L, 8L))
+                .addAllSfixed32S(Arrays.asList(2, -3, 4, 5))
+                .addAllSfixed64S(Arrays.asList(5L, -6L, 7L, -8L))
+                .addAllSint32S(Arrays.asList(2, -3, 4, 5))
+                .addAllSint64S(Arrays.asList(5L, 6L, -7L, 8L))
+                .addAllInt32S(Arrays.asList(2, 3, -4, 5))
+                .addAllInt64S(Arrays.asList(5L, -6L, 7L, 8L))
+                .addAllUint32S(Arrays.asList(2, 300, 4, 5))
+                .addAllUint64S(Arrays.asList(5L, 6L, 23L << 40, 8L))
                 .build();
         return msg.toByteArray();
     }

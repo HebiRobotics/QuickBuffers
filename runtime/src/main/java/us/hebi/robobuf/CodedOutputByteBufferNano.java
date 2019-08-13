@@ -36,6 +36,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
 
+import static us.hebi.robobuf.WireFormatNano.*;
+
 /**
  * Encodes and writes protocol message fields.
  *
@@ -89,61 +91,73 @@ public final class CodedOutputByteBufferNano {
 
   // -----------------------------------------------------------------
 
-    // TODO: remove non-packed helper methods and just add packed ones? non-packed are easy to generate
-
   /** Write a repeated (non-packed) {@code double} field, including tag, to the stream. */
   public void writePackedDouble(final int fieldNumber, final RepeatedDouble values)
           throws IOException {
+    writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
+    writeRawVarint32(values.length * SIZEOF_FIXED_64);
     for (int i = 0; i < values.length(); i++) {
-      writeDouble(fieldNumber, values.get(i));
+      writeDoubleNoTag(values.array[i]);
     }
   }
 
   /** Write a repeated (non-packed) {@code float} field, including tag, to the stream. */
   public void writePackedFloat(final int fieldNumber, final RepeatedFloat values)
           throws IOException {
+      writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
+      writeRawVarint32(values.length * SIZEOF_FIXED_32);
       for (int i = 0; i < values.length(); i++) {
-          writeFloat(fieldNumber, values.get(i));
+          writeFloatNoTag(values.array[i]);
       }
   }
 
   /** Write a repeated (non-packed){@code fixed64} field, including tag, to the stream. */
   public void writePackedFixed64(final int fieldNumber, final RepeatedLong values)
           throws IOException {
+      writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
+      writeRawVarint32(values.length * SIZEOF_FIXED_64);
       for (int i = 0; i < values.length(); i++) {
-          writeFixed64(fieldNumber, values.get(i));
+          writeFixed64NoTag(values.array[i]);
       }
   }
 
   /** Write a repeated (non-packed){@code fixed32} field, including tag, to the stream. */
   public void writePackedFixed32(final int fieldNumber, final RepeatedInt values)
           throws IOException {
+      writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
+      writeRawVarint32(values.length * SIZEOF_FIXED_32);
       for (int i = 0; i < values.length(); i++) {
-          writeFixed32(fieldNumber, values.get(i));
-      }
-  }
-
-  /** Write a repeated (non-packed){@code bool} field, including tag, to the stream. */
-  public void writePackedBool(final int fieldNumber, final RepeatedBoolean values)
-          throws IOException {
-      for (int i = 0; i < values.length(); i++) {
-          writeBool(fieldNumber, values.get(i));
+          writeFixed32NoTag(values.array[i]);
       }
   }
 
   /** Write a repeated (non-packed) {@code sfixed32} field, including tag, to the stream. */
   public void writePackedSFixed32(final int fieldNumber, final RepeatedInt values)
           throws IOException {
+      writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
+      writeRawVarint32(values.length * SIZEOF_FIXED_32);
       for (int i = 0; i < values.length(); i++) {
-          writeSFixed32(fieldNumber, values.get(i));
+          writeSFixed32NoTag(values.array[i]);
       }
   }
 
   /** Write a repeated (non-packed) {@code sfixed64} field, including tag, to the stream. */
   public void writePackedSFixed64(final int fieldNumber, final RepeatedLong values)
           throws IOException {
+      writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
+      writeRawVarint32(values.length * SIZEOF_FIXED_64);
       for (int i = 0; i < values.length(); i++) {
-          writeSFixed64(fieldNumber, values.get(i));
+          writeSFixed64NoTag(values.array[i]);
+      }
+  }
+
+  /** Write a repeated (non-packed){@code bool} field, including tag, to the stream. */
+  public void writePackedBool(final int fieldNumber, final RepeatedBoolean values)
+          throws IOException {
+      writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
+      writeRawVarint32(values.length * SIZEOF_FIXED_BOOL);
+      for (int i = 0; i < values.length(); i++) {
+          writeBoolNoTag(values.array[i]);
       }
   }
 

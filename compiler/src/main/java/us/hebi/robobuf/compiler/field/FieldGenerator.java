@@ -46,7 +46,6 @@ public abstract class FieldGenerator {
     }
 
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        // TODO: enums
 //        throw new GeneratorException("Not a packable field: " + info.getDescriptor()); // only for repeated fields
     }
 
