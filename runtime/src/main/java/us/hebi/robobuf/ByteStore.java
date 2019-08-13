@@ -6,9 +6,19 @@ package us.hebi.robobuf;
  */
 public class ByteStore implements RepeatedField {
 
+    public ByteStore(String world) {
+    }
+
+    public ByteStore(){
+    }
+
     @Override
     public int length() {
         return 0;
+    }
+
+    public byte[] array() {
+        return array;
     }
 
     @Override
@@ -18,10 +28,22 @@ public class ByteStore implements RepeatedField {
 
     @Override
     public void clear() {
-
+        length = 0;
     }
 
     public void copyFrom(ByteStore other) {
+
+    }
+
+    public void setBytes(byte[] array) {
+
+    }
+
+    public void setBytes(byte[] buffer, int offset, int length) {
+
+    }
+
+    public void setLength(int length) {
 
     }
 

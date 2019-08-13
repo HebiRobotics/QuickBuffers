@@ -27,4 +27,13 @@ public class RepeatedBytes implements RepeatedField {
     public void clear() {
 
     }
+
+    public ByteStore getAndAdd() {
+        return null;
+    }
+
+    public void add(byte[] buffer, int offset, int length) {
+
+    }
+
 }

@@ -3,6 +3,7 @@ package us.hebi.robobuf.compiler.field;
 import us.hebi.robobuf.compiler.GeneratorException;
 import us.hebi.robobuf.compiler.RequestInfo.FieldInfo;
 import us.hebi.robobuf.compiler.field.BytesField.OptionalBytesField;
+import us.hebi.robobuf.compiler.field.BytesField.RepeatedBytesField;
 import us.hebi.robobuf.compiler.field.EnumField.OptionalEnumField;
 import us.hebi.robobuf.compiler.field.EnumField.RepeatedEnumField;
 import us.hebi.robobuf.compiler.field.MessageField.OptionalMessageField;
@@ -47,7 +48,7 @@ public class FieldGenerators {
                 return field.isRepeated() ? new RepeatedStringField(field) : new OptionalStringField(field);
 
             case TYPE_BYTES:
-                return field.isRepeated() ? new RepeatedField(field) : new OptionalBytesField(field);
+                return field.isRepeated() ? new RepeatedBytesField(field) : new OptionalBytesField(field);
 
         }
 

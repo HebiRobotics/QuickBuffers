@@ -117,6 +117,7 @@ public abstract class FieldGenerator {
         m.put("computeClass", RuntimeClasses.PROTO_DEST);
         m.put("roboUtil", RuntimeClasses.ROBO_UTIL);
         m.put("wireFormat", RuntimeClasses.WIRE_FORMAT);
+        m.put("internal", RuntimeClasses.INTERNAL);
 
     }
 

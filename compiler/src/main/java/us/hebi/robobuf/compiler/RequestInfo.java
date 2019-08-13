@@ -214,6 +214,7 @@ public class RequestInfo {
             setterName = "set" + upperName;
             getterName = "get" + upperName;
             mutableGetterName = "getMutable" + upperName;
+            adderName = "add" + upperName;
             clearName = "clear" + upperName;
             isPrimitive = TypeMap.isPrimitive(descriptor.getType());
             tag = RuntimeClasses.makeTag(descriptor);
@@ -302,6 +303,7 @@ public class RequestInfo {
         String setterName;
         String getterName;
         String mutableGetterName;
+        String adderName;
         String clearName;
         String defaultValue;
         int tag;

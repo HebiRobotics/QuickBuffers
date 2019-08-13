@@ -261,21 +261,22 @@ public final class CodedInputByteBufferNano {
   }
 
   /** Read a {@code bytes} field value from the stream. */
-  public byte[] readBytes() throws IOException {
+  public void readBytesInto(ByteStore store) throws IOException {
+    final byte[] result; // TODO: fix allocations
     final int size = readRawVarint32();
     if (size <= (bufferSize - bufferPos) && size > 0) {
       // Fast path:  We already have the bytes in a contiguous buffer, so
       //   just copy directly from it.
-      final byte[] result = new byte[size];
+      result = new byte[size];
       System.arraycopy(buffer, bufferPos, result, 0, size);
       bufferPos += size;
-      return result;
     } else if (size == 0) {
-      return WireFormatNano.EMPTY_BYTES;
+      result = WireFormatNano.EMPTY_BYTES;
     } else {
       // Slow path:  Build a byte array first then copy it.
-      return readRawBytes(size);
+      result = readRawBytes(size);
     }
+    store.setBytes(result,0, result.length);
   }
 
   /** Read a {@code uint32} field value from the stream. */
