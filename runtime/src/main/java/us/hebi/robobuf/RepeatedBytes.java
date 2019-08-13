@@ -4,8 +4,9 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedBytes implements RepeatedField {
+public class RepeatedBytes extends RepeatedField<RepeatedBytes> {
 
+    @Override
     public void copyFrom(RepeatedBytes other) {
     }
 
@@ -14,17 +15,17 @@ public class RepeatedBytes implements RepeatedField {
     }
 
     @Override
-    public int length() {
+    public int capacity() {
         return 0;
     }
 
     @Override
-    public int remainingCapacity() {
-        return 0;
+    protected void growCapacity(int desiredSize) {
+
     }
 
     @Override
-    public void clear() {
+    public void clearRange(int fromIndex, int toIndex) {
 
     }
 

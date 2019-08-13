@@ -4,15 +4,36 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 10 Aug 2019
  */
-public interface RepeatedField {
+abstract class RepeatedField<T extends RepeatedField> {
 
-    default void ensureSpace(int length){
+    public final int length() {
+        return length;
     }
 
-    int length();
+    public final int remainingCapacity() {
+        return capacity() - length;
+    }
 
-    int remainingCapacity();
+    public final void ensureSpace(int numEntries) {
+        final int desiredSize = length + numEntries;
+        if (desiredSize > capacity()) {
+            growCapacity(desiredSize);
+        }
+    }
 
-    void clear();
+    public final void clear() {
+        clearRange(0, length);
+        length = 0;
+    }
+
+    public abstract void copyFrom(T other);
+
+    public abstract int capacity();
+
+    protected abstract void growCapacity(int desiredSize);
+
+    protected abstract void clearRange(int fromIndex, int toIndex);
+
+    protected int length = 0;
 
 }

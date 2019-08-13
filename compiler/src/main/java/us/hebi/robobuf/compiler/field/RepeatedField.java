@@ -60,6 +60,7 @@ public abstract class RepeatedField extends FieldGenerator {
     protected void generateGetCount(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Count")
                 .addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Deprecated.class) // TODO: replace with getField() / getMutableField()
                 .returns(int.class)
                 .addNamedCode("return $field:N.length();\n", m)
                 .build());
@@ -68,6 +69,7 @@ public abstract class RepeatedField extends FieldGenerator {
     protected void generateGetIndex(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Deprecated.class)
                 .addParameter(int.class, "index", Modifier.FINAL)
                 .returns(typeName)
                 .addNamedCode("return $field:N.get(index);\n", m)

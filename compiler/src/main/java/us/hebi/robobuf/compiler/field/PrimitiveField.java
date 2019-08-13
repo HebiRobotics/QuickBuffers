@@ -77,6 +77,22 @@ class PrimitiveField {
                     .addNamedCode("$setHas:L;\n", m);
         }
 
+        protected void generateGetter(TypeSpec.Builder type) {
+            type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(info.getRepeatedStoreType())
+                    .addNamedCode("return $field:N;\n", m)
+                    .build());
+
+            type.addMethod(MethodSpec.methodBuilder(info.getMutableGetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(info.getRepeatedStoreType())
+                    .addNamedCode("" +
+                            "$setHas:L;\n" +
+                            "return $field:N;\n", m)
+                    .build());
+        }
+
         @Override
         public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
 
@@ -111,7 +127,7 @@ class PrimitiveField {
                         "\n" +
 
                         "// Fill in data\n" +
-                        "while (input.getBytesUntilLimit() > 0) {$>\n" +
+                        "while (input.getBytesUntilLimit() > 0) {$>\n" + // TODO: only do lookahead if capacity is full
                         "$field:N.add(input.read$capitalizedType:L());\n" +
                         "$<}\n" +
 
