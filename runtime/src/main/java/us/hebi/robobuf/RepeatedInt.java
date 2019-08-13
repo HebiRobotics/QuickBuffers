@@ -55,6 +55,32 @@ public class RepeatedInt extends RepeatedField<RepeatedInt> {
         return Arrays.copyOf(array, length);
     }
 
+    @Override
+    public String toString() {
+        return Arrays.toString(toArray());
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(toArray());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RepeatedInt other = (RepeatedInt) o;
+
+        if (length != other.length)
+            return false;
+
+        for (int i = 0; i < length; i++) {
+            if (array[i] != other.array[i])
+                return false;
+        }
+        return true;
+    }
+
     int[] array = EMPTY;
     private static int[] EMPTY = new int[0];
     private static int DEFAULT_VALUE = 0;

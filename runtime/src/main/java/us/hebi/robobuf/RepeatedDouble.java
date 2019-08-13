@@ -55,6 +55,32 @@ public class RepeatedDouble extends RepeatedField<RepeatedDouble> {
         return Arrays.copyOf(array, length);
     }
 
+    @Override
+    public String toString() {
+        return Arrays.toString(toArray());
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(toArray());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RepeatedDouble other = (RepeatedDouble) o;
+
+        if (length != other.length)
+            return false;
+
+        for (int i = 0; i < length; i++) {
+            if (Double.doubleToLongBits(array[i]) != Double.doubleToLongBits(other.array[i]))
+                return false;
+        }
+        return true;
+    }
+
     double[] array = EMPTY;
     private static double[] EMPTY = new double[0];
     private static double DEFAULT_VALUE = 0;

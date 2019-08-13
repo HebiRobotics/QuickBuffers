@@ -7,7 +7,6 @@ import us.hebi.robobuf.robo.AllTypesOuterClass.TestAllSupportedTypes.NestedEnum;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.Assert.*;
 import static us.hebi.robobuf.InternalNano.*;
@@ -140,6 +139,9 @@ public class MessageTest {
         assertArrayEquals(new long[]{5L, 6L, 7L, 8L}, msg.getRepeatedInt64().toArray());
         assertArrayEquals(new int[]{2, 3, 4, 5}, msg.getRepeatedUint32().toArray());
         assertArrayEquals(new long[]{5L, 6L, 7L, 8L}, msg.getRepeatedUint64().toArray());
+
+        TestAllSupportedTypes msg2 = TestAllSupportedTypes.parseFrom(MessageNano.toByteArray(msg));
+        assertEquals(msg, msg2);
 
     }
 
