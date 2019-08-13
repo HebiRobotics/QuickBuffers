@@ -124,10 +124,10 @@ class BytesField {
                     .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
                     .addNamedCode("$field:N.ensureSpace(arrayLength);\n", m)
                     .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
-                    .addNamedCode("input.readBytesInto($field:N.getAndAdd());\n", m)
+                    .addNamedCode("input.readBytes($field:N.getAndAdd());\n", m)
                     .addStatement("input.readTag()")
                     .endControlFlow()
-                    .addNamedCode("input.readBytesInto($field:N.getAndAdd());\n", m)
+                    .addNamedCode("input.readBytes($field:N.getAndAdd());\n", m)
                     .addNamedCode("$setHas:L;\n", m);
         }
 

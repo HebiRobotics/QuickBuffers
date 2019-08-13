@@ -6,6 +6,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -208,8 +209,16 @@ public class RequestInfo {
             hasBit = BitField.hasBit(fieldIndex);
             setBit = BitField.setBit(fieldIndex);
             clearBit = BitField.clearBit(fieldIndex);
-            lowerName = NameUtil.toLowerCamel(descriptor.getName());
-            upperName = NameUtil.toUpperCamel(descriptor.getName());
+            if (isGroup()) {
+                // name is all lowercase, so convert the type name instead (e.g. ".package.OptionalGroup")
+                String name = descriptor.getTypeName();
+                int packageEndIndex = name.lastIndexOf('.');
+                upperName = packageEndIndex > 0 ? name.substring(packageEndIndex + 1, name.length()) : name;
+                lowerName = Character.toLowerCase(upperName.charAt(0)) + upperName.substring(1);
+            } else {
+                lowerName = NameUtil.toLowerCamel(descriptor.getName());
+                upperName = NameUtil.toUpperCamel(descriptor.getName());
+            }
             hazzerName = "has" + upperName;
             setterName = "set" + upperName;
             getterName = "get" + upperName;
@@ -224,6 +233,14 @@ public class RequestInfo {
             fieldName = NameUtil.isReservedKeyword(lowerName) ? lowerName + "_" : lowerName;
             defaultValue = TypeMap.getDefaultValue(descriptor);
             repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
+
+        }
+
+        public TypeName getRepeatedStoreType() {
+            if (isGroup() || isMessage()) {
+                return ParameterizedTypeName.get(repeatedStoreType, getTypeName());
+            }
+            return repeatedStoreType;
         }
 
         public String getJavadoc() {
@@ -237,6 +254,14 @@ public class RequestInfo {
         public int getFixedWidth() {
             checkState(isFixedWidth(), "not a fixed width type");
             return TypeMap.getFixedWidth(descriptor.getType());
+        }
+
+        public boolean isGroup() {
+            return descriptor.getType() == FieldDescriptorProto.Type.TYPE_GROUP;
+        }
+
+        public boolean isMessage() {
+            return descriptor.getType() == FieldDescriptorProto.Type.TYPE_MESSAGE;
         }
 
         public boolean isEnum() {

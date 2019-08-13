@@ -75,4 +75,13 @@ class MessageField {
         }
 
     }
+
+    static class RepeatedMessageField extends RepeatedReferenceField {
+
+        protected RepeatedMessageField(RequestInfo.FieldInfo info) {
+            super(info);
+        }
+
+    }
+
 }

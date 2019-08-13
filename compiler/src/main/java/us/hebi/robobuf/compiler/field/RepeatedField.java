@@ -11,7 +11,7 @@ import javax.lang.model.element.Modifier;
  * @author Florian Enner
  * @since 12 Aug 2019
  */
-public class RepeatedField extends FieldGenerator {
+public abstract class RepeatedField extends FieldGenerator {
 
     protected RepeatedField(RequestInfo.FieldInfo info) {
         super(info);

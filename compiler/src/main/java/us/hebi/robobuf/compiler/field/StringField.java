@@ -62,7 +62,7 @@ class StringField {
         @Override
         public void generateMergingCode(MethodSpec.Builder method) {
             method.addNamedCode("" +
-                    "input.readStringInto($field:N);\n" +
+                    "input.readString($field:N);\n" +
                     "$setHas:L;\n", m);
         }
 
@@ -73,23 +73,10 @@ class StringField {
 
     }
 
-    static class RepeatedStringField extends RepeatedField {
+    static class RepeatedStringField extends RepeatedReferenceField {
 
         protected RepeatedStringField(RequestInfo.FieldInfo info) {
             super(info);
-        }
-
-        @Override
-        public void generateMergingCode(MethodSpec.Builder method) {
-            method
-                    .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.ensureSpace(arrayLength);\n", m)
-                    .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
-                    .addNamedCode("input.readStringInto($field:N.getAndAdd());\n", m)
-                    .addStatement("input.readTag()")
-                    .endControlFlow()
-                    .addNamedCode("input.readStringInto($field:N.getAndAdd());\n", m)
-                    .addNamedCode("$setHas:L;\n", m);
         }
 
     }
