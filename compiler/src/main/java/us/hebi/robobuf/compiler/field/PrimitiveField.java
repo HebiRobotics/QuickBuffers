@@ -94,7 +94,7 @@ class PrimitiveField {
                         "final int limit = input.pushLimit(length);\n" +
                         "\n" +
 
-                        "// Do a size check if the data is guaranteed to not fit\n" +
+                        "// Do a size check if the data is guaranteed not to fit\n" +
                         "if ($field:N.remainingCapacity() < length) {$>\n" +
                         "int arrayLength = 0;\n" +
                         "int startPos = input.getPosition();\n" +
@@ -171,17 +171,6 @@ class PrimitiveField {
             } else {
                 super.generateComputeSerializedSizeCode(method);
             }
-        }
-
-        @Override
-        protected void generateGetter(TypeSpec.Builder type) {
-            super.generateGetter(type);
-            type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "index", Modifier.FINAL)
-                    .returns(typeName)
-                    .addNamedCode("return $field:N.get(index);\n", m)
-                    .build());
         }
 
         @Override

@@ -217,7 +217,7 @@ public class TypeMap {
                 return "";
 
             case TYPE_ENUM:
-                return "null";
+                return "";
 
             case TYPE_GROUP:
             case TYPE_MESSAGE:
