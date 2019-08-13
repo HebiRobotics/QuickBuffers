@@ -23,10 +23,10 @@ class StringField {
 
         @Override
         public void generateMemberFields(TypeSpec.Builder type) {
-            type.addField(FieldSpec.builder(RuntimeClasses.STRING_STORAGE_CLASS, info.getFieldName())
+            type.addField(FieldSpec.builder(RuntimeClasses.STRING_CLASS, info.getFieldName())
                     .addJavadoc(info.getJavadoc())
                     .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-                    .initializer("new $T(0)", RuntimeClasses.STRING_STORAGE_CLASS)
+                    .initializer("new $T(0)", RuntimeClasses.STRING_CLASS)
                     .build());
         }
 
@@ -34,7 +34,7 @@ class StringField {
         protected void generateSetter(TypeSpec.Builder type) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(info.getTypeName(), "value")
+                    .addParameter(CharSequence.class, "value")
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +

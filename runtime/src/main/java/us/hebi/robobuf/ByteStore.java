@@ -21,13 +21,12 @@ public class ByteStore extends RepeatedField<ByteStore> {
     }
 
     public byte get(int index) {
+        checkIndex(index);
         return array[index];
     }
 
     public void set(int index, byte value) {
-        if (index >= length) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        checkIndex(index);
         array[index] = value;
     }
 
@@ -36,25 +35,15 @@ public class ByteStore extends RepeatedField<ByteStore> {
         array[length++] = value;
     }
 
-    public void setBytes(byte[] buffer) {
-        setBytes(buffer, 0, buffer.length);
+    public void copyFrom(byte[] buffer) {
+        copyFrom(buffer, 0, buffer.length);
     }
 
-    public void setBytes(byte[] buffer, int offset, int length) {
+    public void copyFrom(byte[] buffer, int offset, int length) {
         if (capacity() < length) {
             growCapacity(length);
         }
         System.arraycopy(buffer, offset, array, 0, length);
-        this.length = length;
-    }
-
-    public byte[] array() {
-        return toArray();
-    }
-
-    public void setLength(int length) {
-        if (length > capacity())
-            growCapacity(length);
         this.length = length;
     }
 

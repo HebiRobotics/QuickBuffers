@@ -44,6 +44,12 @@ class PrimitiveField {
         }
 
         @Override
+        public void generateMergingCode(MethodSpec.Builder method) {
+            method.addNamedCode("$field:N = input.read$capitalizedType:L();\n", m);
+            method.addNamedCode("$setHas:L;\n", m);
+        }
+
+        @Override
         public void generateEqualsStatement(MethodSpec.Builder method) {
             if (typeName == TypeName.FLOAT) {
                 method.addNamedCode("Float.floatToIntBits($field:N) == Float.floatToIntBits(other.$field:N)", m);

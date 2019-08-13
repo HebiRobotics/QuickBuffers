@@ -9,6 +9,7 @@ import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 import static us.hebi.robobuf.InternalNano.*;
@@ -208,9 +209,9 @@ public class MessageTest {
             assertEquals(51.5f, msg.getDefaultFloat(), 0);
             assertEquals(52.0e3, msg.getDefaultDouble(), 0.0);
             assertEquals("hello", msg.getDefaultString().toString());
-            assertEquals("world", new String(msg.getDefaultBytesArray(), 0, msg.getDefaultBytesLength(), UTF_8));
+            assertEquals("world", new String(msg.getDefaultBytes().toArray(), UTF_8));
             assertEquals("dünya", msg.getDefaultStringNonascii().toString());
-            assertEquals("dünyab", new String(msg.getDefaultBytesNonasciiArray(), 0, msg.getDefaultBytesNonasciiLength(), UTF_8));
+            assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), UTF_8));
             assertEquals(NestedEnum.BAR, msg.getDefaultNestedEnum());
             assertEquals(ForeignEnum.FOREIGN_BAR, msg.getDefaultForeignEnum());
             assertEquals(ImportEnum.IMPORT_BAR, msg.getDefaultImportEnum());
@@ -232,34 +233,56 @@ public class MessageTest {
 
     @Test
     public void testStrings() throws IOException {
-        TestAllTypes msg = new TestAllTypes().setId(0);
+        TestAllTypes msg = new TestAllTypes();
 
+        // Setter
         assertFalse(msg.hasOptionalString());
-        assertEquals("", msg.getOptionalString().toString());
         msg.setOptionalString("optionalString\uD83D\uDCA9");
         assertTrue(msg.hasOptionalString());
-        assertEquals("optionalString\uD83D\uDCA9", msg.getOptionalString().toString());
 
-        byte[] result = MessageNano.toByteArray(msg);
+        // Mutable getter
+        assertFalse(msg.hasOptionalCord());
+        msg.getMutableOptionalCord()
+                .append("he")
+                .append("llo!");
+        assertTrue(msg.hasOptionalCord());
+
+        // Parse
+        byte[] result = MessageNano.toByteArray(msg.setId(0));
         TestAllTypes actual = TestAllTypes.parseFrom(result);
         assertEquals(msg, actual);
+
+        assertEquals("optionalString\uD83D\uDCA9", actual.getOptionalString().toString());
+        assertEquals("hello!", actual.getOptionalCord().toString());
 
     }
 
-    @Ignore
     @Test
     public void testBytes() throws IOException {
+        byte[] utf8Bytes = "optionalString\uD83D\uDCA9".getBytes(UTF_8);
+        byte[] randomBytes = new byte[256];
+        new Random(0).nextBytes(randomBytes);
+
         TestAllTypes msg = new TestAllTypes().setId(0);
 
         assertFalse(msg.hasOptionalBytes());
-        assertArrayEquals(new byte[0], msg.getOptionalBytesArray());
-        msg.setOptionalBytes("optionalString\uD83D\uDCA9".getBytes(UTF_8));
+        msg.setOptionalBytes(utf8Bytes);
         assertTrue(msg.hasOptionalBytes());
-        assertArrayEquals("optionalString\uD83D\uDCA9".getBytes(UTF_8), msg.getOptionalBytesArray());
+        assertArrayEquals(utf8Bytes, msg.getOptionalBytes().toArray());
 
-        byte[] result = MessageNano.toByteArray(msg);
+        assertFalse(msg.hasDefaultBytes());
+        msg.getMutableDefaultBytes()
+                .copyFrom(randomBytes);
+        assertTrue(msg.hasDefaultBytes());
+        assertArrayEquals(randomBytes, msg.getDefaultBytes().toArray());
+
+        // Parse
+        byte[] result = MessageNano.toByteArray(msg.setId(0));
         TestAllTypes actual = TestAllTypes.parseFrom(result);
         assertEquals(msg, actual);
+
+        assertArrayEquals(utf8Bytes, actual.getOptionalBytes().toArray());
+        assertArrayEquals(randomBytes, actual.getDefaultBytes().toArray());
 
     }
 

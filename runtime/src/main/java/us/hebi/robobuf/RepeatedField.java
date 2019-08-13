@@ -26,6 +26,12 @@ abstract class RepeatedField<T extends RepeatedField> {
         length = 0;
     }
 
+    protected final void checkIndex(int index) {
+        if (index < 0 || index >= length) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+    }
+
     public abstract void copyFrom(T other);
 
     public abstract int capacity();

@@ -28,10 +28,10 @@ class BytesField {
 
         @Override
         public void generateMemberFields(TypeSpec.Builder type) {
-            type.addField(FieldSpec.builder(RuntimeClasses.BYTES_STORAGE_CLASS, info.getFieldName())
+            type.addField(FieldSpec.builder(RuntimeClasses.BYTES_CLASS, info.getFieldName())
                     .addJavadoc(info.getJavadoc())
                     .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-                    .initializer("new $T()", RuntimeClasses.BYTES_STORAGE_CLASS)
+                    .initializer("new $T()", RuntimeClasses.BYTES_CLASS)
                     .build());
 
             if (!info.getDefaultValue().isEmpty()) {
@@ -46,8 +46,14 @@ class BytesField {
             if (info.getDefaultValue().isEmpty()) {
                 method.addNamedCode("$field:N.clear();\n", m);
             } else {
-                method.addNamedCode("$field:N.setBytes($defaultField:N);\n", m);
+                method.addNamedCode("$field:N.copyFrom($defaultField:N);\n", m);
             }
+        }
+
+        @Override
+        public void generateMergingCode(MethodSpec.Builder method) {
+            method.addNamedCode("input.read$capitalizedType:L($field:N);\n", m);
+            method.addNamedCode("$setHas:L;\n", m);
         }
 
         @Override
@@ -69,41 +75,8 @@ class BytesField {
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +
-                            "$field:N.setBytes(buffer, offset, length);\n" +
+                            "$field:N.copyFrom(buffer, offset, length);\n" +
                             "return this;\n", m)
-                    .build());
-
-            // setFieldLength(int)
-            type.addMethod(MethodSpec.methodBuilder(info.getSetterName() + "Length")
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "length", Modifier.FINAL)
-                    .returns(info.getParentType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.setLength(length);\n" +
-                            "return this;\n", m)
-                    .build());
-        }
-
-        @Override
-        protected void generateGetter(TypeSpec.Builder type) {
-            // int getFieldLength()
-            type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Length")
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(int.class)
-                    .addNamedCode("return $field:N.length();\n", m)
-                    .build());
-
-            // byte[] getFieldArray()
-            CodeBlock link = CodeBlock.of("{@link $1N $1N}", info.getGetterName() + "Length");
-            type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Array")
-                    .addJavadoc("" +
-                            "Only valid up to " + link + " bytes.\n" +
-                            "\n" +
-                            "@return underlying array\n")
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(BYTE_ARRAY)
-                    .addNamedCode("return $field:N.array();\n", m)
                     .build());
 
         }
@@ -133,41 +106,6 @@ class BytesField {
 
         @Override
         protected void generateSetter(TypeSpec.Builder type) {
-            // setField(byte[])
-            type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "index", Modifier.FINAL)
-                    .addParameter(BYTE_ARRAY, "buffer", Modifier.FINAL)
-                    .returns(info.getParentType())
-                    .addNamedCode("return $setMethod:N(index, buffer, 0, buffer.length);\n", m)
-                    .build());
-
-            // setField(byte[], int, int)
-            type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "index", Modifier.FINAL)
-                    .addParameter(BYTE_ARRAY, "buffer", Modifier.FINAL)
-                    .addParameter(int.class, "offset", Modifier.FINAL)
-                    .addParameter(int.class, "length", Modifier.FINAL)
-                    .returns(info.getParentType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.get(index).setBytes(buffer, offset, length);\n" +
-                            "return this;\n", m)
-                    .build());
-
-            // setFieldLength(int)
-            type.addMethod(MethodSpec.methodBuilder(info.getSetterName() + "Length")
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "index", Modifier.FINAL)
-                    .addParameter(int.class, "length", Modifier.FINAL)
-                    .returns(info.getParentType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.get(index).setLength(length);\n" +
-                            "return this;\n", m)
-                    .build());
-
             // addField(byte[])
             type.addMethod(MethodSpec.methodBuilder(info.getAdderName())
                     .addModifiers(Modifier.PUBLIC)
@@ -187,33 +125,6 @@ class BytesField {
                             "$field:N.add(buffer, offset, length);\n" +
                             "return this;\n", m)
                     .build());
-        }
-
-        @Override
-        protected void generateGetter(TypeSpec.Builder type) {
-            generateGetCount(type);
-
-            // int getFieldLength(int)
-            type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Length")
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "index", Modifier.FINAL)
-                    .returns(int.class)
-                    .addNamedCode("return $field:N.get(index).length();\n", m)
-                    .build());
-
-            // byte[] getFieldArray(int)
-            CodeBlock link = CodeBlock.of("{@link $1N(int) $1N(index)}", info.getGetterName() + "Length");
-            type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Array")
-                    .addJavadoc("" +
-                            "Only valid up to " + link + " bytes.\n" +
-                            "\n" +
-                            "@return underlying array\n")
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(int.class, "index", Modifier.FINAL)
-                    .returns(BYTE_ARRAY)
-                    .addNamedCode("return $field:N.get(index).array();\n", m)
-                    .build());
-
         }
 
     }

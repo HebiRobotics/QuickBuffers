@@ -311,7 +311,7 @@ public final class CodedInputByteBufferNano {
       // Slow path:  Build a byte array first then copy it.
       result = readRawBytes(size);
     }
-    store.setBytes(result,0, result.length);
+    store.copyFrom(result,0, result.length);
   }
 
   /** Read a {@code uint32} field value from the stream. */

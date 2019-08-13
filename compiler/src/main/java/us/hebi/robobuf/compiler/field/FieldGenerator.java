@@ -37,13 +37,7 @@ public abstract class FieldGenerator {
         }
     }
 
-    public void generateMergingCode(MethodSpec.Builder method) {
-        if (info.isPrimitive()) {
-            method.addNamedCode("$field:N = input.read$capitalizedType:L();\n", m);
-        }
-        // What else? Messages etc.?
-        method.addNamedCode("$setHas:L;\n", m);
-    }
+    public abstract void generateMergingCode(MethodSpec.Builder method);
 
     public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
 //        throw new GeneratorException("Not a packable field: " + info.getDescriptor()); // only for repeated fields
@@ -84,6 +78,16 @@ public abstract class FieldGenerator {
                 .returns(typeName)
                 .addNamedCode("return $field:N;\n", m)
                 .build());
+
+        if (info.isMutableReferenceObject()) {
+            MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(typeName)
+                    .addNamedCode("$setHas:L;\n", m)
+                    .addNamedCode("return $field:N;\n", m)
+                    .build();
+            type.addMethod(mutableGetter);
+        }
     }
 
     protected void generateClearer(TypeSpec.Builder type) {

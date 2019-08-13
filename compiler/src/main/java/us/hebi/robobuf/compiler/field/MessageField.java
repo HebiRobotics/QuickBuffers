@@ -31,18 +31,6 @@ class MessageField {
         }
 
         @Override
-        protected void generateGetter(TypeSpec.Builder type) {
-            super.generateGetter(type);
-            MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(typeName)
-                    .addNamedCode("$setHas:L;\n", m)
-                    .addNamedCode("return $field:N;\n", m)
-                    .build();
-            type.addMethod(mutableGetter);
-        }
-
-        @Override
         protected void generateSetter(TypeSpec.Builder type) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)

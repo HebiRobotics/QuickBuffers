@@ -143,7 +143,7 @@ public class TypeMap {
             case TYPE_MESSAGE:
                 return resolveClassName(descriptor.getTypeName());
             case TYPE_BYTES:
-                return RuntimeClasses.BYTES_STORAGE_CLASS;
+                return RuntimeClasses.BYTES_CLASS;
 
         }
         throw new GeneratorException("Unsupported type: " + descriptor);

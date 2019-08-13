@@ -13,9 +13,8 @@ public class RuntimeClasses {
     public static final ClassName PROTO_SOURCE = ClassName.get(API_PACKAGE, "CodedInputByteBufferNano");
     public static final ClassName PROTO_DEST = ClassName.get(API_PACKAGE, "CodedOutputByteBufferNano");
     public static final ClassName BASE_MESSAGE = ClassName.get(API_PACKAGE, "MessageNano");
-    public static final ClassName STRING_CLASS = ClassName.get(CharSequence.class);
-    public static final ClassName STRING_STORAGE_CLASS = ClassName.get(StringBuilder.class);
-    public static final ClassName BYTES_STORAGE_CLASS = ClassName.get(API_PACKAGE, "ByteStore");
+    public static final ClassName STRING_CLASS = ClassName.get(StringBuilder.class);
+    public static final ClassName BYTES_CLASS = ClassName.get(API_PACKAGE, "ByteStore");
     public static final ClassName ROBO_UTIL = ClassName.get(API_PACKAGE, "RoboUtil");
     public static final ClassName WIRE_FORMAT = ClassName.get(API_PACKAGE, "WireFormatNano");
     public static final ClassName INTERNAL = ClassName.get(API_PACKAGE, "InternalNano");
