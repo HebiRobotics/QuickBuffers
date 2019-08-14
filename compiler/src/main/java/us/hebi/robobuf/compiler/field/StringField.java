@@ -18,16 +18,6 @@ class StringField {
 
         protected OptionalStringField(RequestInfo.FieldInfo info) {
             super(info);
-            m.put("default", info.getDescriptor().getDefaultValue());
-        }
-
-        @Override
-        public void generateMemberFields(TypeSpec.Builder type) {
-            type.addField(FieldSpec.builder(RuntimeClasses.STRING_CLASS, info.getFieldName())
-                    .addJavadoc(info.getJavadoc())
-                    .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-                    .initializer("new $T(0)", RuntimeClasses.STRING_CLASS)
-                    .build());
         }
 
         @Override
@@ -43,32 +33,6 @@ class StringField {
                             "return this;\n", m)
                     .build();
             type.addMethod(setter);
-        }
-
-        @Override
-        public void generateClearCode(MethodSpec.Builder method) {
-            method.addNamedCode("$field:N.setLength(0);\n", m);
-            if (!info.getDescriptor().getDefaultValue().isEmpty()) {
-                method.addNamedCode("$field:N.append($default:S);\n", m);
-            }
-        }
-
-        @Override
-        public void generateCopyFromCode(MethodSpec.Builder method) {
-            method.addNamedCode("$field:N.setLength(0);\n", m);
-            method.addNamedCode("$field:N.append(other);\n", m);
-        }
-
-        @Override
-        public void generateMergingCode(MethodSpec.Builder method) {
-            method.addNamedCode("" +
-                    "input.readString($field:N);\n" +
-                    "$setHas:L;\n", m);
-        }
-
-        @Override
-        public void generateEqualsStatement(MethodSpec.Builder method) {
-            method.addNamedCode("$roboUtil:T.equals($field:N, other.$field:N)", m);
         }
 
     }

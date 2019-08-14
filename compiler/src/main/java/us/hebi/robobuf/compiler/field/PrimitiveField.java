@@ -2,7 +2,6 @@ package us.hebi.robobuf.compiler.field;
 
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import us.hebi.robobuf.compiler.RequestInfo;
 
@@ -21,15 +20,6 @@ class PrimitiveField {
         }
 
         @Override
-        public void generateMemberFields(TypeSpec.Builder type) {
-            FieldSpec value = FieldSpec.builder(typeName, info.getFieldName())
-                    .addJavadoc(info.getJavadoc())
-                    .addModifiers(Modifier.PRIVATE)
-                    .build();
-            type.addField(value);
-        }
-
-        @Override
         protected void generateSetter(TypeSpec.Builder type) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
@@ -43,154 +33,12 @@ class PrimitiveField {
             type.addMethod(setter);
         }
 
-        @Override
-        public void generateMergingCode(MethodSpec.Builder method) {
-            method.addNamedCode("$field:N = input.read$capitalizedType:L();\n", m);
-            method.addNamedCode("$setHas:L;\n", m);
-        }
-
-        @Override
-        public void generateEqualsStatement(MethodSpec.Builder method) {
-            if (typeName == TypeName.FLOAT) {
-                method.addNamedCode("Float.floatToIntBits($field:N) == Float.floatToIntBits(other.$field:N)", m);
-            } else if (typeName == TypeName.DOUBLE) {
-                method.addNamedCode("Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N)", m);
-            } else {
-                method.addNamedCode("$field:N == other.$field:N", m);
-            }
-        }
-
     }
 
     static class RepeatedPrimitiveField extends RepeatedField {
 
         RepeatedPrimitiveField(RequestInfo.FieldInfo info) {
             super(info);
-        }
-
-        @Override
-        public void generateMergingCode(MethodSpec.Builder method) {
-            // non-packed fields still expected to be located together. Most repeated primitives should be
-            // packed, so optimizing this further is not a priority.
-            method
-                    .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.ensureSpace(arrayLength);\n", m)
-                    .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
-                    .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
-                    .addStatement("input.readTag()")
-                    .endControlFlow()
-                    .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
-                    .addNamedCode("$setHas:L;\n", m);
-        }
-
-        protected void generateGetter(TypeSpec.Builder type) {
-            type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(info.getRepeatedStoreType())
-                    .addNamedCode("return $field:N;\n", m)
-                    .build());
-
-            type.addMethod(MethodSpec.methodBuilder(info.getMutableGetterName())
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(info.getRepeatedStoreType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "return $field:N;\n", m)
-                    .build());
-        }
-
-        @Override
-        public void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-
-            if (info.isFixedWidth()) {
-
-                // For fixed width types we can potentially just copy the raw memory
-                method.addNamedCode("input.readPacked$capitalizedType:L($field:N);\n", m);
-                method.addNamedCode("$setHas:L;\n", m);
-
-            } else {
-
-                // Varint decoding. In steady state we should already have an array that
-                // can fit the incoming data, so we can skip the array size checks
-                method
-                        .addStatement("final int length = input.readRawVarint32()")
-                        .addStatement("final int limit = input.pushLimit(length)")
-                        .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
-
-                        // Defer count-checks until we run out of capacity
-                        .addComment("do a look-ahead to avoid unnecessary allocations")
-                        .beginControlFlow("if ($N.remainingCapacity() == 0)", info.getFieldName())
-                        .addStatement("final int position = input.getPosition()")
-                        .addStatement("int numEntries = 0")
-                        .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
-                        .addNamedCode("input.read$capitalizedType:L();\n", m)
-                        .addStatement("numEntries++")
-                        .endControlFlow()
-                        .addStatement("input.rewindToPosition(position)")
-                        .addNamedCode("$field:N.ensureSpace(numEntries);\n", m)
-                        .endControlFlow()
-
-                        // Add data
-                        .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
-                        .endControlFlow()
-
-                        .addStatement("input.popLimit(limit)")
-                        .addNamedCode("$setHas:L;\n", m);
-
-            }
-
-        }
-
-        @Override
-        public void generateSerializationCode(MethodSpec.Builder method) {
-            if (info.isPacked() && info.isFixedWidth()) {
-
-                method.addNamedCode("output.writePacked$capitalizedType:L($number:L, $field:N);\n", m);
-
-            } else if (info.isPacked()) {
-
-                method.addNamedCode("" +
-                        "int dataSize = 0;\n" +
-                        "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                        "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
-                        "$<}\n" +
-
-                        "output.writeRawVarint32($packedTag:L);\n" +
-                        "output.writeRawVarint32(dataSize);\n" +
-
-                        "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                        "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
-                        "$<}\n", m);
-
-            } else {
-                super.generateSerializationCode(method);
-            }
-        }
-
-        @Override
-        public void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-            if (info.isPacked() && info.isFixedWidth()) {
-
-                method.addNamedCode("" +
-                        "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
-                        "size += dataSize;\n" +
-                        "size += $bytesPerTag:L;\n" +
-                        "size += $computeClass:T.computeRawVarint32Size(dataSize);\n", m);
-
-            } else if (info.isPacked()) {
-
-                method.addNamedCode("" +
-                        "int dataSize = 0;\n" +
-                        "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                        "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
-                        "$<}\n" +
-                        "size += dataSize;\n" +
-                        "size += $bytesPerTag:L;\n" +
-                        "size += $computeClass:T.computeRawVarint32Size(dataSize);\n", m);
-
-            } else {
-                super.generateComputeSerializedSizeCode(method);
-            }
         }
 
     }

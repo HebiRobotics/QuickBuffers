@@ -3,6 +3,8 @@ package us.hebi.robobuf;
 import java.util.Arrays;
 
 /**
+ * Class that represents the data for a repeated float field.
+ *
  * @author Florian Enner
  * @since 09 Aug 2019
  */

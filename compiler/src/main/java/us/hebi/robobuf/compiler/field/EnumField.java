@@ -1,6 +1,5 @@
 package us.hebi.robobuf.compiler.field;
 
-import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import us.hebi.robobuf.compiler.RequestInfo;
@@ -27,19 +26,10 @@ class EnumField {
         }
 
         @Override
-        public void generateMemberFields(TypeSpec.Builder type) {
-            FieldSpec value = FieldSpec.builder(int.class, info.getFieldName())
-                    .addJavadoc(info.getJavadoc())
-                    .addModifiers(Modifier.PRIVATE)
-                    .build();
-            type.addField(value);
-        }
-
-        @Override
         protected void generateGetter(TypeSpec.Builder type) {
             MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(typeName);
+                    .returns(fieldType);
             if (!hasDefaultValue()) {
                 getter.addNamedCode("return $type:T.forNumber($field:N);\n", m);
             } else {
@@ -64,20 +54,6 @@ class EnumField {
             type.addMethod(setter);
         }
 
-        @Override
-        public void generateMergingCode(MethodSpec.Builder method) {
-            method.addStatement("final int value = input.readInt32()")
-                    .beginControlFlow("if ($T.forNumber(value) != null)", typeName)
-                    .addNamedCode("$field:N = value;\n", m)
-                    .addNamedCode("$setHas:L;\n", m)
-                    .endControlFlow();
-        }
-
-        @Override
-        public void generateEqualsStatement(MethodSpec.Builder method) {
-            method.addNamedCode("$field:N == other.$field:N", m);
-        }
-
     }
 
     static class RepeatedEnumField extends PrimitiveField.RepeatedPrimitiveField {
@@ -95,12 +71,10 @@ class EnumField {
 
         @Override
         protected void generateGetter(TypeSpec.Builder type) {
-            generateGetCount(type);
-
             MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(int.class, "index", Modifier.FINAL)
-                    .returns(typeName);
+                    .returns(fieldType);
             if (!hasDefaultValue()) {
                 getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
             } else {

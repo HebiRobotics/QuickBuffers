@@ -256,12 +256,32 @@ public class RequestInfo {
             return TypeMap.getFixedWidth(descriptor.getType());
         }
 
+        public boolean isMessageOrGroup() {
+            return isMessage() || isGroup();
+        }
+
+        public String getDefaultFieldName() {
+            return "_default" + getUpperName();
+        }
+
+        public boolean isPrimitiveOrEnum() {
+            return isPrimitive() || isEnum();
+        }
+
         public boolean isGroup() {
             return descriptor.getType() == FieldDescriptorProto.Type.TYPE_GROUP;
         }
 
         public boolean isMessage() {
             return descriptor.getType() == FieldDescriptorProto.Type.TYPE_MESSAGE;
+        }
+
+        public boolean isString() {
+            return descriptor.getType() == FieldDescriptorProto.Type.TYPE_STRING;
+        }
+
+        public boolean isBytes() {
+            return descriptor.getType() == FieldDescriptorProto.Type.TYPE_BYTES;
         }
 
         public boolean isEnum() {
@@ -307,6 +327,10 @@ public class RequestInfo {
             }
         }
 
+        public boolean hasDefaultValue() {
+            return !defaultValue.isEmpty();
+        }
+
         public boolean isDeprecated() {
             return descriptor.getOptions().hasDeprecated() && descriptor.getOptions().getDeprecated();
         }
@@ -314,6 +338,16 @@ public class RequestInfo {
         public TypeName getTypeName() {
             // Lazy because type map is not constructed at creation time
             return getParentFile().getParentRequest().getTypeMap().resolveFieldType(descriptor);
+        }
+
+        public TypeName getStoreType() {
+            if (isRepeated())
+                return getRepeatedStoreType();
+            if (isString())
+                return RuntimeClasses.STRING_CLASS;
+            if (isEnum())
+                return TypeName.INT;
+            return getTypeName();
         }
 
         private final FileInfo parentFile;

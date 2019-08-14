@@ -134,6 +134,14 @@ public class TestSamples {
         return msg.toByteArray();
     }
 
+    static byte[] repeatedStrings() {
+        return TestAllTypes.newBuilder()
+                .setId(0)
+                .addAllRepeatedString(Arrays.asList("hello", "world", "ascii", "utf8\uD83D\uDCA9"))
+                .build()
+                .toByteArray();
+    }
+
 }
 
 
