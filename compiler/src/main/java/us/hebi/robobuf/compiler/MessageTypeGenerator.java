@@ -1,14 +1,10 @@
-package us.hebi.robobuf.compiler.type;
+package us.hebi.robobuf.compiler;
 
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.BitField;
 import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
-import us.hebi.robobuf.compiler.RuntimeClasses;
-import us.hebi.robobuf.compiler.field.FieldGenerator;
-import us.hebi.robobuf.compiler.field.FieldGenerators;
 
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
@@ -19,13 +15,13 @@ import java.util.List;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-public class MessageGenerator implements TypeGenerator {
+public class MessageTypeGenerator implements TypeGenerator {
 
-    public MessageGenerator(MessageInfo info) {
+    public MessageTypeGenerator(MessageInfo info) {
         this.info = info;
-        info.getNestedEnums().forEach(t -> nestedTypes.add(new EnumGenerator(t)));
-        info.getNestedTypes().forEach(t -> nestedTypes.add(new MessageGenerator(t)));
-        info.getFields().forEach(f -> fields.add(FieldGenerators.createGenerator(f)));
+        info.getNestedEnums().forEach(t -> nestedTypes.add(new EnumTypeGenerator(t)));
+        info.getNestedTypes().forEach(t -> nestedTypes.add(new MessageTypeGenerator(t)));
+        info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
     }
 
     public TypeSpec generate() {

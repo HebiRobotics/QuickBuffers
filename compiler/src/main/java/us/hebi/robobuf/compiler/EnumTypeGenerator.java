@@ -1,8 +1,7 @@
-package us.hebi.robobuf.compiler.type;
+package us.hebi.robobuf.compiler;
 
 import com.google.protobuf.DescriptorProtos.EnumValueDescriptorProto;
 import com.squareup.javapoet.*;
-import us.hebi.robobuf.compiler.NameUtil;
 import us.hebi.robobuf.compiler.RequestInfo.EnumInfo;
 
 import javax.lang.model.element.Modifier;
@@ -11,9 +10,9 @@ import javax.lang.model.element.Modifier;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-public class EnumGenerator implements TypeGenerator {
+public class EnumTypeGenerator implements TypeGenerator {
 
-    public EnumGenerator(EnumInfo info) {
+    public EnumTypeGenerator(EnumInfo info) {
         this.info = info;
     }
 

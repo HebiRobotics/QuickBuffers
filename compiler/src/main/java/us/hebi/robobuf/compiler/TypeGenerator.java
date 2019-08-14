@@ -1,4 +1,4 @@
-package us.hebi.robobuf.compiler.type;
+package us.hebi.robobuf.compiler;
 
 import com.squareup.javapoet.TypeSpec;
 

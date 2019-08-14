@@ -5,8 +5,6 @@ import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import us.hebi.robobuf.compiler.RequestInfo.FileInfo;
-import us.hebi.robobuf.compiler.type.EnumGenerator;
-import us.hebi.robobuf.compiler.type.MessageGenerator;
 import us.hebi.robobuf.parser.ParserUtil;
 
 import javax.lang.model.element.Modifier;
@@ -60,11 +58,11 @@ public class CompilerPlugin {
             Consumer<TypeSpec> list = file.isGenerateMultipleFiles() ? topLevelTypes::add : outerClassSpec::addType;
 
             for (RequestInfo.EnumInfo type : file.getEnumTypes()) {
-                list.accept(new EnumGenerator(type).generate());
+                list.accept(new EnumTypeGenerator(type).generate());
             }
 
             for (RequestInfo.MessageInfo type : file.getMessageTypes()) {
-                list.accept(new MessageGenerator(type).generate());
+                list.accept(new MessageTypeGenerator(type).generate());
             }
 
             // Omitt completely empty outer classes

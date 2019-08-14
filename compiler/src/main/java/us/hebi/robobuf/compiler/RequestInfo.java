@@ -5,19 +5,14 @@ import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
-import com.squareup.javapoet.ArrayTypeName;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
 import us.hebi.robobuf.parser.ParserUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static us.hebi.robobuf.compiler.Preconditions.*;
@@ -234,7 +229,9 @@ public class RequestInfo {
             final String defValue = TypeMap.getDefaultValue(descriptor);
             defaultValue = isEnum() ? NameUtil.filterKeyword(defValue) : defValue;
             repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
-
+            methodAnnotations = isDeprecated() ?
+                    Arrays.asList(AnnotationSpec.builder(Deprecated.class).build()) :
+                    Collections.emptyList();
         }
 
         public TypeName getRepeatedStoreType() {
@@ -358,6 +355,7 @@ public class RequestInfo {
         private final String setBit;
         private final String clearBit;
         private final boolean isPrimitive;
+        private final List<AnnotationSpec> methodAnnotations;
         String fieldName;
         String lowerName;
         String upperName;

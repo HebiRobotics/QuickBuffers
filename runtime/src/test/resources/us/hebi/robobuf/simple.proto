@@ -37,6 +37,6 @@ option java_package = "us.hebi.robobuf.java";
 
 message SimpleMessage {
 
-    optional int32 optional_field = 1;
+    optional int32 optional_field = 1 [deprecated = true];
 
 }

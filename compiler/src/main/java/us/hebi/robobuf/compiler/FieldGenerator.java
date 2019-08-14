@@ -1,13 +1,17 @@
-package us.hebi.robobuf.compiler.field;
+package us.hebi.robobuf.compiler;
 
 import com.squareup.javapoet.*;
-import us.hebi.robobuf.compiler.RequestInfo;
-import us.hebi.robobuf.compiler.RuntimeClasses;
 
 import javax.lang.model.element.Modifier;
 import java.util.HashMap;
 
 /**
+ * This class generates all serialization logic and field related accessors.
+ * It is a bit of a mess due to lots of switch statements, but I found that
+ * splitting the types up similarly to how the protobuf-generator code is
+ * organized makes it really difficult to find duplicate code or synergies
+ * and was more difficult to work with overall.
+ *
  * @author Florian Enner
  * @since 07 Aug 2019
  */
@@ -22,16 +26,12 @@ public class FieldGenerator {
                 .addJavadoc(info.getJavadoc())
                 .addModifiers(Modifier.PRIVATE);
 
-        if (info.isDeprecated()) {
-            field.addAnnotation(Deprecated.class);
-        }
-
         if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
         } else if (info.isString()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);
         } else if (info.isPrimitive() || info.isEnum()) {
-            // do nothing
+            // no initializer needed
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
@@ -258,15 +258,30 @@ public class FieldGenerator {
 
     public final void generateMemberMethods(TypeSpec.Builder type) {
         generateHasMethod(type);
-        generateGetMethods(type);
+        if (info.isEnum()) {
+            generateGetEnumMethods(type);
+        } else {
+            generateGetMethods(type);
+        }
         generateSetMethods(type);
         generateClearMethod(type);
+    }
+
+
+    private void generateHasMethod(TypeSpec.Builder type) {
+        type.addMethod(MethodSpec.methodBuilder(info.getHazzerName())
+                .addAnnotations(info.getMethodAnnotations())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(TypeName.BOOLEAN)
+                .addNamedCode("return $getHas:L;\n", m)
+                .build());
     }
 
     private void generateSetMethods(TypeSpec.Builder type) {
         if (info.isRepeated() || info.isBytes()) {
 
             MethodSpec adder = MethodSpec.methodBuilder(info.getAdderName())
+                    .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
@@ -278,6 +293,7 @@ public class FieldGenerator {
             type.addMethod(adder);
 
             MethodSpec.Builder addAll = MethodSpec.methodBuilder("addAll" + info.getUpperName())
+                    .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
                     .varargs(true)
@@ -297,6 +313,7 @@ public class FieldGenerator {
 
         } else if (info.isMessageOrGroup()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(info.getParentType())
                     .addParameter(typeName, "value", Modifier.FINAL)
@@ -308,6 +325,7 @@ public class FieldGenerator {
 
         } else if (info.isString()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
@@ -321,6 +339,7 @@ public class FieldGenerator {
 
         } else if (info.isPrimitive() || info.isEnum()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getTypeName(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
@@ -335,16 +354,39 @@ public class FieldGenerator {
 
     }
 
-    private void generateHasMethod(TypeSpec.Builder type) {
-        type.addMethod(MethodSpec.methodBuilder(info.getHazzerName())
+    private void generateGetEnumMethods(TypeSpec.Builder type) {
+        // Enums are weird because they need to be converter back and forth
+        // and we can't just expose the repeated store. Maybe we should switch
+        // to using either fully int or fully enum.
+        MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
+                .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(TypeName.BOOLEAN)
-                .addNamedCode("return $getHas:L;\n", m)
-                .build());
+                .returns(typeName);
+
+        if (!info.isRepeated()) { // get()
+            if (!info.hasDefaultValue()) {
+                getter.addNamedCode("return $type:T.forNumber($field:N);\n", m);
+            } else {
+                getter.addNamedCode("" +
+                        "final $type:T result = $type:T.forNumber($field:N);\n" +
+                        "return result == null ? $defaultEnumValue:L : result;\n", m);
+            }
+        } else { // get(index)
+            getter.addParameter(int.class, "index", Modifier.FINAL);
+            if (!info.hasDefaultValue()) {
+                getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
+            } else {
+                getter.addNamedCode("" +
+                        "final $type:T result = $type:T.forNumber($field:N.get(index));\n" +
+                        "return result == null ? $defaultEnumValue:L : result;\n", m);
+            }
+        }
+        type.addMethod(getter.build());
     }
 
     protected void generateGetMethods(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
+                .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(storeType)
                 .addNamedCode("return $field:N;\n", m)
@@ -352,6 +394,7 @@ public class FieldGenerator {
 
         if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes() || info.isString()) {
             MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
+                    .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
                     .addNamedCode("$setHas:L;\n", m)
@@ -363,6 +406,7 @@ public class FieldGenerator {
 
     private void generateClearMethod(TypeSpec.Builder type) {
         MethodSpec.Builder method = MethodSpec.methodBuilder(info.getClearName())
+                .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
                 .addNamedCode("$clearHas:L;\n", m);
@@ -371,7 +415,7 @@ public class FieldGenerator {
         type.addMethod(method.build());
     }
 
-    protected FieldGenerator(RequestInfo.FieldInfo info) {
+    public FieldGenerator(RequestInfo.FieldInfo info) {
         this.info = info;
         typeName = info.getTypeName();
         storeType = info.getStoreType();

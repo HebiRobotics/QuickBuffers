@@ -281,6 +281,7 @@ public class MessageTest {
     public void testRepeatedStrings() throws IOException {
         /*TestAllTypes msg = new TestAllTypes().setId(0)
                 .addAllREpeated*/
+        new TestAllTypes().addAllRepeatedForeignEnum(ForeignEnum.FOREIGN_BAR, ForeignEnum.FOREIGN_BAZ);
     }
 
     @Test
