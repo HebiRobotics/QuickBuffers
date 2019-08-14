@@ -18,6 +18,7 @@ public class RuntimeClasses {
     public static final ClassName ROBO_UTIL = ClassName.get(API_PACKAGE, "RoboUtil");
     public static final ClassName WIRE_FORMAT = ClassName.get(API_PACKAGE, "WireFormatNano");
     public static final ClassName INTERNAL = ClassName.get(API_PACKAGE, "InternalNano");
+    public static final ClassName REPEATED_MESSAGE = ClassName.get(API_PACKAGE, "RepeatedMessage");
 
     private static final int WIRETYPE_VARINT = 0;
     private static final int WIRETYPE_FIXED64 = 1;
@@ -85,7 +86,7 @@ public class RuntimeClasses {
      * negative.
      */
     public static int computeRawVarint32Size(final int value) {
-        if ((value & (0xffffffff <<  7)) == 0) return 1;
+        if ((value & (0xffffffff << 7)) == 0) return 1;
         if ((value & (0xffffffff << 14)) == 0) return 2;
         if ((value & (0xffffffff << 21)) == 0) return 3;
         if ((value & (0xffffffff << 28)) == 0) return 4;

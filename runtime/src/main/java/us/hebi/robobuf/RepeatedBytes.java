@@ -4,45 +4,38 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedBytes extends RepeatedField<RepeatedBytes> {
+public class RepeatedBytes extends RepeatedObject<RepeatedBytes, RepeatedByte, byte[]> {
 
     @Override
-    public void copyFrom(RepeatedBytes other) {
-    }
-
-    public RepeatedByte get(int index) {
-        return null;
-    }
-
-    @Override
-    public int capacity() {
-        return 0;
+    protected void copyDataFrom0(RepeatedBytes other) {
+        for (int i = 0; i < other.length; i++) {
+            array[i].copyFrom(other.array[i]);
+        }
     }
 
     @Override
-    protected void growCapacity(int desiredSize) {
-
+    protected void clearIndex0(int index) {
+        array[index].clear();
     }
 
     @Override
-    public void clearRange(int fromIndex, int toIndex) {
-
+    protected void setIndex0(int index, byte[] value) {
+        array[index].copyFrom(value);
     }
 
-    public RepeatedByte getAndAdd() {
-        return null;
+    @Override
+    protected boolean isEqual(RepeatedByte a, Object b) {
+        return a.equals(b);
     }
 
-    public void add(byte[] buffer, int offset, int length) {
-
+    @Override
+    protected RepeatedByte createEmpty() {
+        return new RepeatedByte();
     }
 
-    public void add(byte[] value) {
-
-    }
-
-    public void addAll(byte[][] values) {
-
+    @Override
+    protected RepeatedByte[] allocateArray0(int desiredSize) {
+        return new RepeatedByte[desiredSize];
     }
 
 }

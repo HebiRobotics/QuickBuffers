@@ -230,7 +230,7 @@ public class RequestInfo {
             defaultValue = isEnum() ? NameUtil.filterKeyword(defValue) : defValue;
             repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
             methodAnnotations = isDeprecated() ?
-                    Arrays.asList(AnnotationSpec.builder(Deprecated.class).build()) :
+                    Collections.singletonList(AnnotationSpec.builder(Deprecated.class).build()) :
                     Collections.emptyList();
         }
 

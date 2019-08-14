@@ -26,7 +26,9 @@ public class FieldGenerator {
                 .addJavadoc(info.getJavadoc())
                 .addModifiers(Modifier.PRIVATE);
 
-        if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
+        if (info.isRepeated() && info.isMessageOrGroup()) {
+            field.addModifiers(Modifier.FINAL).initializer("new $T($T.class)", RuntimeClasses.REPEATED_MESSAGE, info.getTypeName());
+        } else if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
         } else if (info.isString()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);

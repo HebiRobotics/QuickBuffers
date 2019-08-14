@@ -1,9 +1,6 @@
 package us.hebi.robobuf.compiler;
 
-import com.squareup.javapoet.AnnotationSpec;
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
 
 import javax.lang.model.element.Modifier;
@@ -26,7 +23,7 @@ public class MessageTypeGenerator implements TypeGenerator {
 
     public TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.classBuilder(info.getTypeName())
-                .superclass(RuntimeClasses.BASE_MESSAGE)
+                .superclass(ParameterizedTypeName.get(RuntimeClasses.BASE_MESSAGE, info.getTypeName()))
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
         if (info.isNested()) {
@@ -79,6 +76,7 @@ public class MessageTypeGenerator implements TypeGenerator {
 
     private void generateClear(TypeSpec.Builder type) {
         MethodSpec.Builder clear = MethodSpec.methodBuilder("clear")
+                .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
         clear.addStatement("cachedSize = -1");
@@ -229,6 +227,7 @@ public class MessageTypeGenerator implements TypeGenerator {
 
     private void generateCopyFrom(TypeSpec.Builder type) {
         MethodSpec.Builder copyFrom = MethodSpec.methodBuilder("copyFrom")
+                .addAnnotation(Override.class)
                 .addParameter(info.getTypeName(), "other", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());

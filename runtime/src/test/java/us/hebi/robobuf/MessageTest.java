@@ -1,6 +1,5 @@
 package us.hebi.robobuf;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import us.hebi.robobuf.robo.ForeignEnum;
 import us.hebi.robobuf.robo.ForeignMessage;
@@ -326,13 +325,12 @@ public class MessageTest {
         assertArrayEquals(randomBytes, parsedMsg.getDefaultBytes().toArray());
     }
 
-    @Ignore
     @Test
     public void testRepeatedBytes() throws IOException {
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedStrings());
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedBytes());
         assertEquals(2, msg.getRepeatedBytes().length());
-        assertEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
-        assertEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
+        assertArrayEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
+        assertArrayEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
         TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }
@@ -357,15 +355,21 @@ public class MessageTest {
         assertEquals(msg, TestAllTypes.parseFrom(msg.toByteArray()));
     }
 
-    @Ignore
     @Test
     public void testRepeatedMessages() throws IOException {
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedStrings());
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedMessages());
         assertEquals(3, msg.getRepeatedForeignMessage().length());
         assertEquals(new ForeignMessage().setC(0), msg.getRepeatedForeignMessage().get(0));
         assertEquals(new ForeignMessage().setC(1), msg.getRepeatedForeignMessage().get(1));
         assertEquals(new ForeignMessage().setC(2), msg.getRepeatedForeignMessage().get(2));
-        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
+
+        TestAllTypes msg2 = new TestAllTypes().setId(0)
+                .addRepeatedForeignMessage(new ForeignMessage().setC(0))
+                .addRepeatedForeignMessage(new ForeignMessage().setC(1))
+                .addRepeatedForeignMessage(new ForeignMessage().setC(2));
+        assertEquals(msg, msg2);
+
+        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg2).toByteArray());
         assertEquals(msg, actual);
     }
 

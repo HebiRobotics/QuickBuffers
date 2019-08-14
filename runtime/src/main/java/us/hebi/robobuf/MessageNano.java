@@ -38,7 +38,7 @@ import java.util.Arrays;
  *
  * @author wink@google.com Wink Saville
  */
-public abstract class MessageNano {
+public abstract class MessageNano<T extends MessageNano> {
     protected volatile int cachedSize = -1;
 
     /**
@@ -66,6 +66,23 @@ public abstract class MessageNano {
         cachedSize = size;
         return size;
     }
+
+    /**
+     * Copies all fields and data from another message of the same
+     * type into this message.
+     *
+     * @param other
+     * @return this
+     */
+    public abstract T copyFrom(T other);
+
+    /**
+     * Sets all fields and data to their default values. Does not
+     * get rid of memory that was allocated.
+     *
+     * @return this
+     */
+    public abstract T clear();
 
     /**
      * Computes the number of bytes required to encode this message. This does not update the
