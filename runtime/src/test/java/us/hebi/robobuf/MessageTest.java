@@ -3,13 +3,13 @@ package us.hebi.robobuf;
 import org.junit.Ignore;
 import org.junit.Test;
 import us.hebi.robobuf.robo.ForeignEnum;
+import us.hebi.robobuf.robo.ForeignMessage;
 import us.hebi.robobuf.robo.RepeatedPackables;
 import us.hebi.robobuf.robo.TestAllTypes;
 import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -20,6 +20,46 @@ import static us.hebi.robobuf.InternalNano.*;
  * @since 13 Aug 2019
  */
 public class MessageTest {
+
+    @Test
+    public void testDefaults() throws IOException {
+        TestAllTypes msg = new TestAllTypes();
+        for (int i = 0; i < 2; i++) {
+            assertTrue(msg.getDefaultBool());
+            assertEquals(41, msg.getDefaultInt32());
+            assertEquals(42, msg.getDefaultInt64());
+            assertEquals(43, msg.getDefaultUint32());
+            assertEquals(44, msg.getDefaultUint64());
+            assertEquals(-45, msg.getDefaultSint32());
+            assertEquals(46, msg.getDefaultSint64());
+            assertEquals(47, msg.getDefaultFixed32());
+            assertEquals(48, msg.getDefaultFixed64());
+            assertEquals(49, msg.getDefaultSfixed32());
+            assertEquals(-50, msg.getDefaultSfixed64());
+            assertEquals(51.5f, msg.getDefaultFloat(), 0);
+            assertEquals(52.0e3, msg.getDefaultDouble(), 0.0);
+            assertEquals("hello", msg.getDefaultString().toString());
+            assertEquals("world", new String(msg.getDefaultBytes().toArray(), UTF_8));
+            assertEquals("dünya", msg.getDefaultStringNonascii().toString());
+            assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), UTF_8));
+            assertEquals(NestedEnum.BAR, msg.getDefaultNestedEnum());
+            assertEquals(ForeignEnum.FOREIGN_BAR, msg.getDefaultForeignEnum());
+            assertEquals(ImportEnum.IMPORT_BAR, msg.getDefaultImportEnum());
+            assertEquals(Float.POSITIVE_INFINITY, msg.getDefaultFloatInf(), 0);
+            assertEquals(Float.NEGATIVE_INFINITY, msg.getDefaultFloatNegInf(), 0);
+            assertEquals(Float.NaN, msg.getDefaultFloatNan(), 0);
+            assertEquals(Double.POSITIVE_INFINITY, msg.getDefaultDoubleInf(), 0);
+            assertEquals(Double.NEGATIVE_INFINITY, msg.getDefaultDoubleNegInf(), 0);
+            assertEquals(Double.NaN, msg.getDefaultDoubleNan(), 0);
+
+            msg.setId(0); // required
+            byte[] result = msg.toByteArray();
+            int msgSerializedSize = msg.getSerializedSize();
+            assertEquals(3, msgSerializedSize);
+            assertEquals(result.length, msgSerializedSize);
+            msg.clear();
+        }
+    }
 
     @Test
     public void testOptionalPrimitives() throws IOException {
@@ -90,14 +130,13 @@ public class MessageTest {
         assertEquals(msg, manualMsg);
 
         // Test round-trip
-        byte[] output = MessageNano.toByteArray(manualMsg);
-        TestAllTypes msg3 = TestAllTypes.parseFrom(output);
+        TestAllTypes msg3 = TestAllTypes.parseFrom(manualMsg.toByteArray());
         assertEquals(msg, msg3);
 
     }
 
     @Test
-    public void testRepeatedPackables() throws IOException {
+    public void testRepeatedPrimitives() throws IOException {
         RepeatedPackables.Packed emptyMsg = new RepeatedPackables.Packed();
         assertFalse(emptyMsg.hasBools());
         assertFalse(emptyMsg.hasDoubles());
@@ -161,8 +200,8 @@ public class MessageTest {
         assertEquals(msg, manualMsg);
 
         // Make sure packed fields can be parsed from non-packed data to maintain forwards compatibility
-        byte[] packed = MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()));
-        byte[] nonPacked = MessageNano.toByteArray(RepeatedPackables.NonPacked.parseFrom(TestSamples.repeatedPackablesNonPacked()));
+        byte[] packed = RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()).toByteArray();
+        byte[] nonPacked = RepeatedPackables.NonPacked.parseFrom(TestSamples.repeatedPackablesNonPacked()).toByteArray();
 
         assertEquals(msg, RepeatedPackables.Packed.parseFrom(packed));
         assertEquals(RepeatedPackables.Packed.parseFrom(packed), RepeatedPackables.Packed.parseFrom(nonPacked));
@@ -203,54 +242,19 @@ public class MessageTest {
         }
 
         // Test round-trip
-        byte[] output = MessageNano.toByteArray(manualMsg);
-        TestAllTypes msg3 = TestAllTypes.parseFrom(output);
+        TestAllTypes msg3 = TestAllTypes.parseFrom(manualMsg.toByteArray());
         assertEquals(msg, msg3);
     }
 
+    @Ignore
     @Test
-    public void testDefaults() throws IOException {
-        TestAllTypes msg = new TestAllTypes();
-        for (int i = 0; i < 2; i++) {
-            assertTrue(msg.getDefaultBool());
-            assertEquals(41, msg.getDefaultInt32());
-            assertEquals(42, msg.getDefaultInt64());
-            assertEquals(43, msg.getDefaultUint32());
-            assertEquals(44, msg.getDefaultUint64());
-            assertEquals(-45, msg.getDefaultSint32());
-            assertEquals(46, msg.getDefaultSint64());
-            assertEquals(47, msg.getDefaultFixed32());
-            assertEquals(48, msg.getDefaultFixed64());
-            assertEquals(49, msg.getDefaultSfixed32());
-            assertEquals(-50, msg.getDefaultSfixed64());
-            assertEquals(51.5f, msg.getDefaultFloat(), 0);
-            assertEquals(52.0e3, msg.getDefaultDouble(), 0.0);
-            assertEquals("hello", msg.getDefaultString().toString());
-            assertEquals("world", new String(msg.getDefaultBytes().toArray(), UTF_8));
-            assertEquals("dünya", msg.getDefaultStringNonascii().toString());
-            assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), UTF_8));
-            assertEquals(NestedEnum.BAR, msg.getDefaultNestedEnum());
-            assertEquals(ForeignEnum.FOREIGN_BAR, msg.getDefaultForeignEnum());
-            assertEquals(ImportEnum.IMPORT_BAR, msg.getDefaultImportEnum());
-            assertEquals(Float.POSITIVE_INFINITY, msg.getDefaultFloatInf(), 0);
-            assertEquals(Float.NEGATIVE_INFINITY, msg.getDefaultFloatNegInf(), 0);
-            assertEquals(Float.NaN, msg.getDefaultFloatNan(), 0);
-            assertEquals(Double.POSITIVE_INFINITY, msg.getDefaultDoubleInf(), 0);
-            assertEquals(Double.NEGATIVE_INFINITY, msg.getDefaultDoubleNegInf(), 0);
-            assertEquals(Double.NaN, msg.getDefaultDoubleNan(), 0);
+    public void testRepeatedEnums() throws IOException {
 
-            msg.setId(0); // required
-            byte[] result = MessageNano.toByteArray(msg);
-            int msgSerializedSize = msg.getSerializedSize();
-            assertEquals(3, msgSerializedSize);
-            assertEquals(result.length, msgSerializedSize);
-            msg.clear();
-        }
     }
 
     @Test
     public void testStrings() throws IOException {
-        TestAllTypes msg = new TestAllTypes();
+        TestAllTypes msg = new TestAllTypes().setId(0);
 
         // Setter
         assertFalse(msg.hasOptionalString());
@@ -265,12 +269,16 @@ public class MessageTest {
         assertTrue(msg.hasOptionalCord());
 
         // Parse
-        byte[] result = MessageNano.toByteArray(msg.setId(0));
-        TestAllTypes actual = TestAllTypes.parseFrom(result);
+        TestAllTypes actual = TestAllTypes.parseFrom(msg.toByteArray());
         assertEquals(msg, actual);
 
         assertEquals("optionalString\uD83D\uDCA9", actual.getOptionalString().toString());
         assertEquals("hello!", actual.getOptionalCord().toString());
+    }
+
+    @Ignore
+    @Test
+    public void testRepeatedStrings() throws IOException {
 
     }
 
@@ -294,19 +302,47 @@ public class MessageTest {
         assertArrayEquals(randomBytes, msg.getDefaultBytes().toArray());
 
         // Parse
-        byte[] result = MessageNano.toByteArray(msg.setId(0));
-        TestAllTypes actual = TestAllTypes.parseFrom(result);
-        assertTrue(msg.equals(actual));
-        assertEquals(msg, actual);
+        TestAllTypes parsedMsg = TestAllTypes.parseFrom(msg.toByteArray());
+        assertEquals(msg, parsedMsg);
+        assertArrayEquals(utf8Bytes, parsedMsg.getOptionalBytes().toArray());
+        assertArrayEquals(randomBytes, parsedMsg.getDefaultBytes().toArray());
+    }
 
-        assertArrayEquals(utf8Bytes, actual.getOptionalBytes().toArray());
-        assertArrayEquals(randomBytes, actual.getDefaultBytes().toArray());
+    @Ignore
+    @Test
+    public void testRepeatedBytes() throws IOException {
+
+    }
+
+    @Test
+    public void testOptionalMessages() throws IOException {
+        TestAllTypes msg = new TestAllTypes().setId(0);
+
+        // Setter
+        assertFalse(msg.hasOptionalNestedMessage());
+        msg.getMutableOptionalNestedMessage()
+                .setBb(2);
+        assertTrue(msg.hasOptionalNestedMessage());
+
+        // Mutable getter
+        assertFalse(msg.hasOptionalForeignMessage());
+        msg.setOptionalForeignMessage(new ForeignMessage().setC(3));
+        assertTrue(msg.hasOptionalForeignMessage());
+
+        // Compare w/ gen-Java and round-trip parsing
+        assertEquals(msg, TestAllTypes.parseFrom(TestSamples.optionalMessages()));
+        assertEquals(msg, TestAllTypes.parseFrom(msg.toByteArray()));
+    }
+
+    @Ignore
+    @Test
+    public void testRepeatedMessages() throws IOException {
 
     }
 
     @Test(expected = IllegalStateException.class)
     public void testMissingRequiredField() {
-        MessageNano.toByteArray(new TestAllTypes());
+        new TestAllTypes().toByteArray();
     }
 
 }

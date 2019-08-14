@@ -71,10 +71,7 @@ public abstract class MessageNano {
      * Computes the number of bytes required to encode this message. This does not update the
      * cached size.
      */
-    protected int computeSerializedSize() {
-      // This is overridden if the generated message has serialized fields.
-      return 0;
-    }
+    protected abstract int computeSerializedSize();
 
     /**
      * Serializes the message and writes it to {@code output}.
@@ -82,9 +79,7 @@ public abstract class MessageNano {
      * @param output the output to receive the serialized form.
      * @throws IOException if an error occurred writing to {@code output}.
      */
-    public void writeTo(CodedOutputByteBufferNano output) throws IOException {
-        // Does nothing by default. Overridden by subclasses which have data to write.
-    }
+    public abstract void writeTo(CodedOutputByteBufferNano output) throws IOException;
 
     /**
      * Parse {@code input} as a message of this type and merge it with the
@@ -94,6 +89,16 @@ public abstract class MessageNano {
 
     /**
      * Serialize to a byte array.
+     *
+     * @return byte array with the serialized data.
+     */
+    public final byte[] toByteArray() {
+        return MessageNano.toByteArray(this);
+    }
+
+    /**
+     * Serialize to a byte array.
+     *
      * @return byte array with the serialized data.
      */
     public static final byte[] toByteArray(MessageNano msg) {
@@ -113,7 +118,7 @@ public abstract class MessageNano {
     public static final void toByteArray(MessageNano msg, byte[] data, int offset, int length) {
         try {
             final CodedOutputByteBufferNano output =
-                CodedOutputByteBufferNano.newInstance(data, offset, length);
+                    CodedOutputByteBufferNano.newInstance(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -127,7 +132,7 @@ public abstract class MessageNano {
      * message being built.
      */
     public static final <T extends MessageNano> T mergeFrom(T msg, final byte[] data)
-        throws InvalidProtocolBufferNanoException {
+            throws InvalidProtocolBufferNanoException {
         return mergeFrom(msg, data, 0, data.length);
     }
 
@@ -136,10 +141,10 @@ public abstract class MessageNano {
      * message being built.
      */
     public static final <T extends MessageNano> T mergeFrom(T msg, final byte[] data,
-            final int off, final int len) throws InvalidProtocolBufferNanoException {
+                                                            final int off, final int len) throws InvalidProtocolBufferNanoException {
         try {
             final CodedInputByteBufferNano input =
-                CodedInputByteBufferNano.newInstance(data, off, len);
+                    CodedInputByteBufferNano.newInstance(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;
@@ -163,7 +168,7 @@ public abstract class MessageNano {
             return false;
         }
         if (a.getClass() != b.getClass()) {
-          return false;
+            return false;
         }
         final int serializedSize = a.getSerializedSize();
         if (b.getSerializedSize() != serializedSize) {

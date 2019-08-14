@@ -2,9 +2,10 @@ package us.hebi.robobuf;
 
 import org.junit.Test;
 import us.hebi.robobuf.java.ForeignEnum;
+import us.hebi.robobuf.java.ForeignMessage;
+import us.hebi.robobuf.java.RepeatedPackables;
 import us.hebi.robobuf.java.TestAllTypes;
 import us.hebi.robobuf.java.TestAllTypes.NestedEnum;
-import us.hebi.robobuf.java.RepeatedPackables;
 import us.hebi.robobuf.java.external.ImportEnum;
 
 import java.io.IOException;
@@ -24,25 +25,25 @@ public class TestSamples {
      */
     @Test
     public void testCompatibility() throws IOException {
-        byte[] data;
-
         // primitives
-        data = MessageNano.toByteArray(us.hebi.robobuf.robo.TestAllTypes.parseFrom(optionalPrimitives()));
-        TestAllTypes.parseFrom(data);
+        TestAllTypes.parseFrom(us.hebi.robobuf.robo
+                .TestAllTypes.parseFrom(optionalPrimitives())
+                .toByteArray());
 
         // enum
-        data = MessageNano.toByteArray(us.hebi.robobuf.robo.TestAllTypes.parseFrom(optionalEnums()));
-        TestAllTypes.parseFrom(data);
+        TestAllTypes.parseFrom(us.hebi.robobuf.robo
+                .TestAllTypes.parseFrom(optionalEnums())
+                .toByteArray());
 
         // packed
-        data = MessageNano.toByteArray(us.hebi.robobuf.robo.RepeatedPackables.Packed.parseFrom(
-                repeatedPackablesPacked()));
-        RepeatedPackables.Packed.parseFrom(data);
+        RepeatedPackables.Packed.parseFrom(us.hebi.robobuf.robo.RepeatedPackables
+                .Packed.parseFrom(repeatedPackablesPacked())
+                .toByteArray());
 
         // non packed
-        data = MessageNano.toByteArray(us.hebi.robobuf.robo.RepeatedPackables.NonPacked.parseFrom(
-                repeatedPackablesNonPacked()));
-        RepeatedPackables.NonPacked.parseFrom(data);
+        RepeatedPackables.NonPacked.parseFrom(us.hebi.robobuf.robo.RepeatedPackables
+                .NonPacked.parseFrom(repeatedPackablesNonPacked())
+                .toByteArray());
 
     }
 
@@ -120,6 +121,15 @@ public class TestSamples {
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
                 .setOptionalImportEnum(ImportEnum.IMPORT_BAZ)
+                .build();
+        return msg.toByteArray();
+    }
+
+    static byte[] optionalMessages() {
+        TestAllTypes msg = TestAllTypes.newBuilder()
+                .setId(0)
+                .setOptionalNestedMessage(TestAllTypes.NestedMessage.newBuilder().setBb(2).build())
+                .setOptionalForeignMessage(ForeignMessage.newBuilder().setC(3).build())
                 .build();
         return msg.toByteArray();
     }
