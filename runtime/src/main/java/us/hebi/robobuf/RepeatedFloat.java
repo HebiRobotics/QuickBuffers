@@ -18,7 +18,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     @Override
-    public void clearRange(int fromIndex, int toIndex) {
+    protected void clearRange(int fromIndex, int toIndex) {
         Arrays.fill(array, fromIndex, toIndex, DEFAULT_VALUE);
     }
 
@@ -33,7 +33,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public void add(float value) {
-        ensureSpace(1);
+        requestSize(1);
         array[length++] = value;
     }
 
@@ -42,7 +42,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public void addAll(float[] buffer, int offset, int length) {
-        ensureSpace(length);
+        requestSize(length);
         System.arraycopy(buffer, offset, array, this.length, length);
         this.length += length;
     }

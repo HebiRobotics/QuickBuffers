@@ -112,7 +112,7 @@ public class FieldGenerator {
         if (info.isRepeated() && (info.isPrimitive() || info.isEnum())) {
             method
                     .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.ensureSpace(arrayLength);\n", m)
+                    .addNamedCode("$field:N.requestSize(arrayLength);\n", m)
                     .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
                     .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
                     .addStatement("input.readTag()")
@@ -123,7 +123,7 @@ public class FieldGenerator {
         } else if (info.isRepeated()) {
             method
                     .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.ensureSpace(arrayLength);\n", m)
+                    .addNamedCode("$field:N.requestSize(arrayLength);\n", m)
                     .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
                     .addNamedCode("input.read$capitalizedType:L($field:N.getAndAdd()$secondArgs:L);\n", m)
                     .addStatement("input.readTag()")
@@ -180,7 +180,7 @@ public class FieldGenerator {
                     .addStatement("numEntries++")
                     .endControlFlow()
                     .addStatement("input.rewindToPosition(position)")
-                    .addNamedCode("$field:N.ensureSpace(numEntries);\n", m)
+                    .addNamedCode("$field:N.requestSize(numEntries);\n", m)
                     .endControlFlow()
 
                     // Add data
@@ -303,7 +303,7 @@ public class FieldGenerator {
                 addAll.addNamedCode("$field:N.addAll(values);\n", m);
             } else {
                 addAll.addNamedCode("" +
-                        "$field:N.ensureSpace(values.length);\n" +
+                        "$field:N.requestSize(values.length);\n" +
                         "for ($type:T value : values) {$>\n" +
                         "$field:N.add($valueOrNumber:L);\n" +
                         "$<}\n", m);

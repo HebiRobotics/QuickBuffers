@@ -14,7 +14,7 @@ abstract class RepeatedField<T extends RepeatedField> {
         return capacity() - length;
     }
 
-    public final void ensureSpace(int numEntries) {
+    public final void requestSize(int numEntries) {
         final int desiredSize = length + numEntries;
         if (desiredSize > capacity()) {
             growCapacity(desiredSize);
