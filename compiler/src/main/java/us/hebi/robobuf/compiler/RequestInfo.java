@@ -5,6 +5,7 @@ import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
@@ -264,8 +265,14 @@ public class RequestInfo {
             return "_default" + getUpperName();
         }
 
-        public boolean isPrimitiveOrEnum() {
-            return isPrimitive() || isEnum();
+        public TypeName getInputParameterType() {
+            switch (descriptor.getType()) {
+                case TYPE_STRING:
+                    return TypeName.get(CharSequence.class);
+                case TYPE_BYTES:
+                    return isRepeated() ? ArrayTypeName.of(TypeName.BYTE) : TypeName.BYTE;
+            }
+            return getTypeName();
         }
 
         public boolean isGroup() {
@@ -286,10 +293,6 @@ public class RequestInfo {
 
         public boolean isEnum() {
             return descriptor.getType() == FieldDescriptorProto.Type.TYPE_ENUM;
-        }
-
-        public boolean isNonRepeatedPrimitiveOrEnum() {
-            return !isRepeated() && (isPrimitive || isEnum());
         }
 
         public boolean isRequired() {

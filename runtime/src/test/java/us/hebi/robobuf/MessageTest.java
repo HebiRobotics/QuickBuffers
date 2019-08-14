@@ -279,7 +279,8 @@ public class MessageTest {
     @Ignore
     @Test
     public void testRepeatedStrings() throws IOException {
-
+        /*TestAllTypes msg = new TestAllTypes().setId(0)
+                .addAllREpeated*/
     }
 
     @Test
@@ -291,7 +292,7 @@ public class MessageTest {
         TestAllTypes msg = new TestAllTypes().setId(0);
 
         assertFalse(msg.hasOptionalBytes());
-        msg.setOptionalBytes(utf8Bytes);
+        msg.addAllOptionalBytes(utf8Bytes);
         assertTrue(msg.hasOptionalBytes());
         assertArrayEquals(utf8Bytes, msg.getOptionalBytes().toArray());
 

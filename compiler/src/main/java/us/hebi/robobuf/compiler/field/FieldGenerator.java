@@ -18,20 +18,24 @@ public class FieldGenerator {
     }
 
     public final void generateMemberFields(TypeSpec.Builder type) {
-        FieldSpec.Builder value = FieldSpec.builder(storeType, info.getFieldName())
+        FieldSpec.Builder field = FieldSpec.builder(storeType, info.getFieldName())
                 .addJavadoc(info.getJavadoc())
                 .addModifiers(Modifier.PRIVATE);
 
+        if (info.isDeprecated()) {
+            field.addAnnotation(Deprecated.class);
+        }
+
         if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
-            value.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
+            field.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
         } else if (info.isString()) {
-            value.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);
+            field.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);
         } else if (info.isPrimitive() || info.isEnum()) {
             // do nothing
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
-        type.addField(value.build());
+        type.addField(field.build());
 
         if (info.isBytes() && info.hasDefaultValue()) {
             // byte[] default values are stored as utf8 strings, so we need to convert it first
@@ -261,11 +265,11 @@ public class FieldGenerator {
 
     protected void generateSetMethods(TypeSpec.Builder type) {
 
-        if (info.isRepeated()) {
+        if (info.isRepeated() || info.isBytes()) {
 
             type.addMethod(MethodSpec.methodBuilder("add" + info.getUpperName())
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(info.getTypeName(), "value", Modifier.FINAL)
+                    .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +
@@ -273,35 +277,32 @@ public class FieldGenerator {
                             "return this;\n", m)
                     .build());
 
-            if (info.isPrimitive()) {
-                type.addMethod(MethodSpec.methodBuilder("addAll" + info.getUpperName())
-                        .addModifiers(Modifier.PUBLIC)
-                        .addParameter(ArrayTypeName.of(info.getTypeName()), "values", Modifier.FINAL)
-                        .varargs(true)
-                        .returns(info.getParentType())
-                        .addNamedCode("" +
-                                "$setHas:L;\n" +
-                                "$field:N.addAll(values);\n" +
-                                "return this;\n", m)
-                        .build());
-            }
+            type.addMethod(MethodSpec.methodBuilder("addAll" + info.getUpperName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
+                    .varargs(true)
+                    .returns(info.getParentType())
+                    .addNamedCode("" +
+                            "$setHas:L;\n" +
+                            "$field:N.addAll(values);\n" +
+                            "return this;\n", m)
+                    .build());
 
         } else if (info.isMessageOrGroup()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(info.getParentType())
                     .addParameter(typeName, "value")
-                    .addNamedCode("$field:N.copyFrom(value);\n", m)
                     .addNamedCode("$setHas:L;\n", m)
+                    .addNamedCode("$field:N.copyFrom(value);\n", m)
                     .addStatement("return this")
                     .build();
             type.addMethod(setter);
 
-
         } else if (info.isString()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(CharSequence.class, "value")
+                    .addParameter(info.getInputParameterType(), "value")
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +

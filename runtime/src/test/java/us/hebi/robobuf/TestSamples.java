@@ -1,5 +1,6 @@
 package us.hebi.robobuf;
 
+import com.google.protobuf.ByteString;
 import org.junit.Test;
 import us.hebi.robobuf.java.ForeignEnum;
 import us.hebi.robobuf.java.ForeignMessage;
@@ -138,6 +139,14 @@ public class TestSamples {
         return TestAllTypes.newBuilder()
                 .setId(0)
                 .addAllRepeatedString(Arrays.asList("hello", "world", "ascii", "utf8\uD83D\uDCA9"))
+                .build()
+                .toByteArray();
+    }
+
+    static byte[] optionalBytes() {
+        return TestAllTypes.newBuilder()
+                .setId(0)
+                .setDefaultBytes(ByteString.copyFromUtf8("utf8\uD83D\uDCA9"))
                 .build()
                 .toByteArray();
     }

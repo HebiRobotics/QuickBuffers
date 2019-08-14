@@ -37,4 +37,12 @@ public class RepeatedBytes extends RepeatedField<RepeatedBytes> {
 
     }
 
+    public void add(byte[] value) {
+
+    }
+
+    public void addAll(byte[][] values) {
+
+    }
+
 }
