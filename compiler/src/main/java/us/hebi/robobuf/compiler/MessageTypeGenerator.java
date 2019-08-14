@@ -70,6 +70,7 @@ public class MessageTypeGenerator implements TypeGenerator {
 
         // Static utilities
         generateParseFrom(type);
+        generateMessageFactory(type);
 
         return type.build();
     }
@@ -258,6 +259,34 @@ public class MessageTypeGenerator implements TypeGenerator {
                 .returns(info.getTypeName())
                 .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.BASE_MESSAGE, info.getTypeName())
                 .build());
+    }
+
+    private void generateMessageFactory(TypeSpec.Builder type) {
+        ParameterizedTypeName factoryReturnType = ParameterizedTypeName.get(RuntimeClasses.MESSAGE_FACTORY, info.getTypeName());
+        ClassName factoryTypeName = info.getTypeName().nestedClass(info.getTypeName().simpleName() + "Factory");
+
+        MethodSpec factoryMethod = MethodSpec.methodBuilder("create")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(info.getTypeName())
+                .addStatement("return new $T()", info.getTypeName())
+                .build();
+
+        TypeSpec factoryEnum = TypeSpec.enumBuilder(factoryTypeName.simpleName())
+                .addModifiers(Modifier.PRIVATE)
+                .addSuperinterface(factoryReturnType)
+                .addEnumConstant("INSTANCE")
+                .addMethod(factoryMethod)
+                .build();
+
+        type.addType(factoryEnum);
+
+        type.addMethod(MethodSpec.methodBuilder("getFactory")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(factoryReturnType)
+                .addStatement("return $T.INSTANCE", factoryTypeName)
+                .build());
+
     }
 
     final MessageInfo info;

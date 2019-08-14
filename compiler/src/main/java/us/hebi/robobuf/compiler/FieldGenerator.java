@@ -27,7 +27,7 @@ public class FieldGenerator {
                 .addModifiers(Modifier.PRIVATE);
 
         if (info.isRepeated() && info.isMessageOrGroup()) {
-            field.addModifiers(Modifier.FINAL).initializer("new $T($T.class)", RuntimeClasses.REPEATED_MESSAGE, info.getTypeName());
+            field.addModifiers(Modifier.FINAL).initializer("new $T($T.getFactory())", RuntimeClasses.REPEATED_MESSAGE, info.getTypeName());
         } else if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
         } else if (info.isString()) {

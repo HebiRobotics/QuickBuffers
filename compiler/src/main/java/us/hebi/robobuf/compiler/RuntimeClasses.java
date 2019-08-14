@@ -19,6 +19,7 @@ public class RuntimeClasses {
     public static final ClassName WIRE_FORMAT = ClassName.get(API_PACKAGE, "WireFormatNano");
     public static final ClassName INTERNAL = ClassName.get(API_PACKAGE, "InternalNano");
     public static final ClassName REPEATED_MESSAGE = ClassName.get(API_PACKAGE, "RepeatedMessage");
+    public static final ClassName MESSAGE_FACTORY = ClassName.get(API_PACKAGE, "MessageFactory");
 
     private static final int WIRETYPE_VARINT = 0;
     private static final int WIRETYPE_FIXED64 = 1;

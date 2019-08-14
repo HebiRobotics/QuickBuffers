@@ -27,7 +27,7 @@ public class TestSamples {
      * Make sure Java bindings are still equal after doing a round-trip
      */
     @Test
-    public void testFullCompatibility() throws IOException {
+    public void testCompatibilityWithProtobufJava() throws IOException {
         TestAllTypes msg = TestAllTypes.newBuilder()
                 .mergeFrom(optionalPrimitives())
                 .mergeFrom(optionalMessages())
