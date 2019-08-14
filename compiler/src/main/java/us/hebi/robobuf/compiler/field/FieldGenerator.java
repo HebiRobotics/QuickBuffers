@@ -256,43 +256,50 @@ public class FieldGenerator {
 
     }
 
-    public void generateMemberMethods(TypeSpec.Builder type) {
+    public final void generateMemberMethods(TypeSpec.Builder type) {
         generateHasMethod(type);
         generateGetMethods(type);
         generateSetMethods(type);
         generateClearMethod(type);
     }
 
-    protected void generateSetMethods(TypeSpec.Builder type) {
-
+    private void generateSetMethods(TypeSpec.Builder type) {
         if (info.isRepeated() || info.isBytes()) {
 
-            type.addMethod(MethodSpec.methodBuilder("add" + info.getUpperName())
+            MethodSpec adder = MethodSpec.methodBuilder(info.getAdderName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +
-                            "$field:N.add(value);\n" +
+                            "$field:N.add($valueOrNumber:L);\n" +
                             "return this;\n", m)
-                    .build());
+                    .build();
+            type.addMethod(adder);
 
-            type.addMethod(MethodSpec.methodBuilder("addAll" + info.getUpperName())
+            MethodSpec.Builder addAll = MethodSpec.methodBuilder("addAll" + info.getUpperName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
                     .varargs(true)
                     .returns(info.getParentType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.addAll(values);\n" +
-                            "return this;\n", m)
-                    .build());
+                    .addNamedCode("$setHas:L;\n", m);
+            if (!info.isEnum()) {
+                addAll.addNamedCode("$field:N.addAll(values);\n", m);
+            } else {
+                addAll.addNamedCode("" +
+                        "$field:N.ensureSpace(values.length);\n" +
+                        "for ($type:T value : values) {$>\n" +
+                        "$field:N.add($valueOrNumber:L);\n" +
+                        "$<}\n", m);
+            }
+            addAll.addStatement("return this");
+            type.addMethod(addAll.build());
 
         } else if (info.isMessageOrGroup()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(info.getParentType())
-                    .addParameter(typeName, "value")
+                    .addParameter(typeName, "value", Modifier.FINAL)
                     .addNamedCode("$setHas:L;\n", m)
                     .addNamedCode("$field:N.copyFrom(value);\n", m)
                     .addStatement("return this")
@@ -302,7 +309,7 @@ public class FieldGenerator {
         } else if (info.isString()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(info.getInputParameterType(), "value")
+                    .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +
@@ -312,14 +319,14 @@ public class FieldGenerator {
                     .build();
             type.addMethod(setter);
 
-        } else if (info.isPrimitive()) {
+        } else if (info.isPrimitive() || info.isEnum()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getTypeName(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +
-                            "$field:N = value;\n" +
+                            "$field:N = $valueOrNumber:L;\n" +
                             "return this;\n", m)
                     .build();
             type.addMethod(setter);
@@ -372,6 +379,10 @@ public class FieldGenerator {
         // Common-variable map for named arguments
         m.put("field", info.getFieldName());
         m.put("default", info.getDefaultValue());
+        if (info.isEnum()) {
+            m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + ".getNumber()" : "0");
+            m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
+        }
         m.put("hasMethod", info.getHazzerName());
         m.put("setMethod", info.getSetterName());
         m.put("addMethod", info.getAdderName());
@@ -390,6 +401,7 @@ public class FieldGenerator {
         m.put("secondArgs", info.isGroup() ? ", " + info.getNumber() : "");
         m.put("defaultField", info.getDefaultFieldName());
         m.put("bytesPerTag", info.getBytesPerTag());
+        m.put("valueOrNumber", info.isEnum() ? "value.getNumber()" : "value");
         if (info.isPackable()) m.put("packedTag", info.getPackedTag());
         if (info.isFixedWidth()) m.put("fixedWidth", info.getFixedWidth());
 
