@@ -292,10 +292,6 @@ public class RequestInfo {
             return !isRepeated() && (isPrimitive || isEnum());
         }
 
-        public boolean isMutableReferenceObject() {
-            return !isNonRepeatedPrimitiveOrEnum();
-        }
-
         public boolean isRequired() {
             return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REQUIRED;
         }

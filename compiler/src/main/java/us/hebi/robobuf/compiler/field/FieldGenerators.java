@@ -6,12 +6,6 @@ import us.hebi.robobuf.compiler.field.BytesField.OptionalBytesField;
 import us.hebi.robobuf.compiler.field.BytesField.RepeatedBytesField;
 import us.hebi.robobuf.compiler.field.EnumField.OptionalEnumField;
 import us.hebi.robobuf.compiler.field.EnumField.RepeatedEnumField;
-import us.hebi.robobuf.compiler.field.MessageField.OptionalMessageField;
-import us.hebi.robobuf.compiler.field.MessageField.RepeatedMessageField;
-import us.hebi.robobuf.compiler.field.PrimitiveField.OptionalPrimitiveField;
-import us.hebi.robobuf.compiler.field.PrimitiveField.RepeatedPrimitiveField;
-import us.hebi.robobuf.compiler.field.StringField.OptionalStringField;
-import us.hebi.robobuf.compiler.field.StringField.RepeatedStringField;
 
 /**
  * @author Florian Enner
@@ -36,17 +30,17 @@ public class FieldGenerators {
             case TYPE_SINT32:
             case TYPE_SINT64:
             case TYPE_BOOL:
-                return field.isRepeated() ? new RepeatedPrimitiveField(field) : new OptionalPrimitiveField(field);
+                return field.isRepeated() ? new FieldGenerator(field) : new FieldGenerator(field);
 
             case TYPE_GROUP:
             case TYPE_MESSAGE:
-                return field.isRepeated() ? new RepeatedMessageField(field) : new OptionalMessageField(field);
+                return field.isRepeated() ? new FieldGenerator(field) : new FieldGenerator(field);
 
             case TYPE_ENUM:
                 return field.isRepeated() ? new RepeatedEnumField(field) : new OptionalEnumField(field);
 
             case TYPE_STRING:
-                return field.isRepeated() ? new RepeatedStringField(field) : new OptionalStringField(field);
+                return field.isRepeated() ? new FieldGenerator(field) : new FieldGenerator(field);
 
             case TYPE_BYTES:
                 return field.isRepeated() ? new RepeatedBytesField(field) : new OptionalBytesField(field);

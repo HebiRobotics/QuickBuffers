@@ -26,10 +26,10 @@ class EnumField {
         }
 
         @Override
-        protected void generateGetter(TypeSpec.Builder type) {
+        protected void generateGetMethods(TypeSpec.Builder type) {
             MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(fieldType);
+                    .returns(typeName);
             if (!hasDefaultValue()) {
                 getter.addNamedCode("return $type:T.forNumber($field:N);\n", m);
             } else {
@@ -41,7 +41,7 @@ class EnumField {
         }
 
         @Override
-        protected void generateSetter(TypeSpec.Builder type) {
+        protected void generateSetMethods(TypeSpec.Builder type) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getTypeName(), "value")
@@ -56,7 +56,7 @@ class EnumField {
 
     }
 
-    static class RepeatedEnumField extends PrimitiveField.RepeatedPrimitiveField {
+    static class RepeatedEnumField extends FieldGenerator {
 
         protected RepeatedEnumField(RequestInfo.FieldInfo info) {
             super(info);
@@ -70,11 +70,11 @@ class EnumField {
         }
 
         @Override
-        protected void generateGetter(TypeSpec.Builder type) {
+        protected void generateGetMethods(TypeSpec.Builder type) {
             MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(int.class, "index", Modifier.FINAL)
-                    .returns(fieldType);
+                    .returns(typeName);
             if (!hasDefaultValue()) {
                 getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
             } else {
@@ -85,7 +85,7 @@ class EnumField {
         }
 
         @Override
-        protected void generateSetter(TypeSpec.Builder type) {
+        protected void generateSetMethods(TypeSpec.Builder type) {
             type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(int.class, "index", Modifier.FINAL)

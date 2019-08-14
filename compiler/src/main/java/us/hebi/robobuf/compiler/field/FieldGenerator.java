@@ -11,7 +11,7 @@ import java.util.HashMap;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-public abstract class FieldGenerator {
+public class FieldGenerator {
 
     public RequestInfo.FieldInfo getInfo() {
         return info;
@@ -88,10 +88,10 @@ public abstract class FieldGenerator {
         } else if (info.isString()) {
             method.addNamedCode("$roboUtil:T.equals($field:N, other.$field:N)", m);
 
-        } else if (fieldType == TypeName.DOUBLE) {
+        } else if (typeName == TypeName.DOUBLE) {
             method.addNamedCode("Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N)", m);
 
-        } else if (fieldType == TypeName.FLOAT) {
+        } else if (typeName == TypeName.FLOAT) {
             method.addNamedCode("Float.floatToIntBits($field:N) == Float.floatToIntBits(other.$field:N)", m);
 
         } else if (info.isPrimitive() || info.isEnum()) {
@@ -140,7 +140,7 @@ public abstract class FieldGenerator {
         } else if (info.isEnum()) {
             method
                     .addStatement("final int value = input.readInt32()")
-                    .beginControlFlow("if ($T.forNumber(value) != null)", fieldType)
+                    .beginControlFlow("if ($T.forNumber(value) != null)", typeName)
                     .addNamedCode("$field:N = value;\n", m)
                     .addNamedCode("$setHas:L;\n", m)
                     .endControlFlow();
@@ -215,7 +215,7 @@ public abstract class FieldGenerator {
                     "$<}\n", m);
 
         } else {
-            method.addNamedCode("output.write$capitalizedType:L($number:L, $serializableValue:L);\n", m); // non-repeated
+            method.addNamedCode("output.write$capitalizedType:L($number:L, $field:N);\n", m); // non-repeated
         }
     }
 
@@ -247,21 +247,87 @@ public abstract class FieldGenerator {
                     "size += $bytesPerTag:L * $field:N.length();\n", m);
 
         } else {
-            method.addNamedCode("size += $computeClass:T.compute$capitalizedType:LSize($number:L, $serializableValue:L);\n", m); // non-repeated
+            method.addNamedCode("size += $computeClass:T.compute$capitalizedType:LSize($number:L, $field:N);\n", m); // non-repeated
         }
 
     }
 
-    protected abstract void generateSetter(TypeSpec.Builder type);
-
     public void generateMemberMethods(TypeSpec.Builder type) {
-        generateHazzer(type);
-        generateGetter(type);
-        generateSetter(type);
-        generateClearer(type);
+        generateHasMethod(type);
+        generateGetMethods(type);
+        generateSetMethods(type);
+        generateClearMethod(type);
     }
 
-    protected void generateHazzer(TypeSpec.Builder type) {
+    protected void generateSetMethods(TypeSpec.Builder type) {
+
+        if (info.isRepeated()) {
+
+            type.addMethod(MethodSpec.methodBuilder("add" + info.getUpperName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(info.getTypeName(), "value", Modifier.FINAL)
+                    .returns(info.getParentType())
+                    .addNamedCode("" +
+                            "$setHas:L;\n" +
+                            "$field:N.add(value);\n" +
+                            "return this;\n", m)
+                    .build());
+
+            if (info.isPrimitive()) {
+                type.addMethod(MethodSpec.methodBuilder("addAll" + info.getUpperName())
+                        .addModifiers(Modifier.PUBLIC)
+                        .addParameter(ArrayTypeName.of(info.getTypeName()), "values", Modifier.FINAL)
+                        .varargs(true)
+                        .returns(info.getParentType())
+                        .addNamedCode("" +
+                                "$setHas:L;\n" +
+                                "$field:N.addAll(values);\n" +
+                                "return this;\n", m)
+                        .build());
+            }
+
+        } else if (info.isMessageOrGroup()) {
+            MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(info.getParentType())
+                    .addParameter(typeName, "value")
+                    .addNamedCode("$field:N.copyFrom(value);\n", m)
+                    .addNamedCode("$setHas:L;\n", m)
+                    .addStatement("return this")
+                    .build();
+            type.addMethod(setter);
+
+
+        } else if (info.isString()) {
+            MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(CharSequence.class, "value")
+                    .returns(info.getParentType())
+                    .addNamedCode("" +
+                            "$setHas:L;\n" +
+                            "$field:N.setLength(0);\n" +
+                            "$field:N.append(value);\n" +
+                            "return this;\n", m)
+                    .build();
+            type.addMethod(setter);
+
+        } else if (info.isPrimitive()) {
+            MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(info.getTypeName(), "value", Modifier.FINAL)
+                    .returns(info.getParentType())
+                    .addNamedCode("" +
+                            "$setHas:L;\n" +
+                            "$field:N = value;\n" +
+                            "return this;\n", m)
+                    .build();
+            type.addMethod(setter);
+
+        }
+
+    }
+
+    private void generateHasMethod(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getHazzerName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(TypeName.BOOLEAN)
@@ -269,17 +335,17 @@ public abstract class FieldGenerator {
                 .build());
     }
 
-    protected void generateGetter(TypeSpec.Builder type) {
+    protected void generateGetMethods(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
                 .addModifiers(Modifier.PUBLIC)
-                .returns(fieldType)
+                .returns(storeType)
                 .addNamedCode("return $field:N;\n", m)
                 .build());
 
-        if (info.isMutableReferenceObject()) {
+        if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes() || info.isString()) {
             MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(fieldType)
+                    .returns(storeType)
                     .addNamedCode("$setHas:L;\n", m)
                     .addNamedCode("return $field:N;\n", m)
                     .build();
@@ -287,7 +353,7 @@ public abstract class FieldGenerator {
         }
     }
 
-    protected void generateClearer(TypeSpec.Builder type) {
+    private void generateClearMethod(TypeSpec.Builder type) {
         MethodSpec.Builder method = MethodSpec.methodBuilder(info.getClearName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
@@ -299,7 +365,7 @@ public abstract class FieldGenerator {
 
     protected FieldGenerator(RequestInfo.FieldInfo info) {
         this.info = info;
-        fieldType = info.getTypeName();
+        typeName = info.getTypeName();
         storeType = info.getStoreType();
 
         // Common-variable map for named arguments
@@ -312,11 +378,10 @@ public abstract class FieldGenerator {
         m.put("setHas", info.getSetBit());
         m.put("clearHas", info.getClearBit());
         m.put("message", info.getParentType());
-        m.put("type", fieldType);
+        m.put("type", typeName);
         m.put("number", info.getNumber());
         m.put("tag", info.getTag());
         m.put("capitalizedType", RuntimeClasses.getCapitalizedType(info.getDescriptor().getType()));
-        m.put("serializableValue", info.getFieldName());
         m.put("computeClass", RuntimeClasses.PROTO_DEST);
         m.put("roboUtil", RuntimeClasses.ROBO_UTIL);
         m.put("wireFormat", RuntimeClasses.WIRE_FORMAT);
@@ -330,7 +395,7 @@ public abstract class FieldGenerator {
     }
 
     protected final RequestInfo.FieldInfo info;
-    protected final TypeName fieldType;
+    protected final TypeName typeName;
     protected final TypeName storeType;
 
     protected final HashMap<String, Object> m = new HashMap<>();

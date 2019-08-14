@@ -23,7 +23,7 @@ class BytesField {
         }
 
         @Override
-        protected void generateSetter(TypeSpec.Builder type) {
+        protected void generateSetMethods(TypeSpec.Builder type) {
             // setField(byte[])
             type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
                     .addModifiers(Modifier.PUBLIC)
@@ -49,14 +49,14 @@ class BytesField {
 
     }
 
-    static class RepeatedBytesField extends RepeatedField {
+    static class RepeatedBytesField extends FieldGenerator {
 
         protected RepeatedBytesField(RequestInfo.FieldInfo info) {
             super(info);
         }
 
         @Override
-        protected void generateSetter(TypeSpec.Builder type) {
+        protected void generateSetMethods(TypeSpec.Builder type) {
             // addField(byte[])
             type.addMethod(MethodSpec.methodBuilder(info.getAdderName())
                     .addModifiers(Modifier.PUBLIC)
