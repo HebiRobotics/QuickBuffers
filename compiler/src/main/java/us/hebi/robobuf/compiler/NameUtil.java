@@ -1,7 +1,5 @@
 package us.hebi.robobuf.compiler;
 
-import com.google.common.base.CaseFormat;
-
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -11,12 +9,47 @@ import java.util.HashSet;
  */
 public class NameUtil {
 
-    public static String toUpperCamel(String name) {
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
+    static String toUpperCamel(String name) {
+        return underscoresToCamelCaseImpl(name, true);
     }
 
-    public static String toLowerCamel(String name) {
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
+    /**
+     * Port of JavaNano's "UnderscoresToCamelCaseImpl". Guava's CaseFormat doesn't
+     * write upper case after numbers, so the names wouldn't be consistent.
+     *
+     * @param input
+     * @param cap_next_letter
+     * @return
+     */
+    private static String underscoresToCamelCaseImpl(CharSequence input, boolean cap_next_letter) {
+        StringBuilder result = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++) {
+            final char c = input.charAt(i);
+            if ('a' <= c && c <= 'z') {
+                if (cap_next_letter) {
+                    result.append(Character.toUpperCase(c));
+                } else {
+                    result.append(c);
+                }
+                cap_next_letter = false;
+            } else if ('A' <= c && c <= 'Z') {
+                if (i == 0 && !cap_next_letter) {
+                    // Force first letter to lower-case unless explicitly told to
+                    // capitalize it.
+                    result.append(Character.toLowerCase(c));
+                } else {
+                    // Capital letters after the first are left as-is.
+                    result.append(c);
+                }
+                cap_next_letter = false;
+            } else if ('0' <= c && c <= '9') {
+                result.append(c);
+                cap_next_letter = true;
+            } else {
+                cap_next_letter = true;
+            }
+        }
+        return result.toString();
     }
 
     public static String filterKeyword(String name) {

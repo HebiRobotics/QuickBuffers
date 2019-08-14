@@ -1,6 +1,5 @@
 package us.hebi.robobuf.compiler;
 
-import com.google.common.collect.Lists;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import com.squareup.javapoet.JavaFile;
@@ -13,6 +12,7 @@ import us.hebi.robobuf.parser.ParserUtil;
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -54,7 +54,7 @@ public class CompilerPlugin {
         for (FileInfo file : request.getFiles()) {
 
             // Generate type specifications
-            List<TypeSpec> topLevelTypes = Lists.newArrayList();
+            List<TypeSpec> topLevelTypes = new ArrayList<>();
             TypeSpec.Builder outerClassSpec = TypeSpec.classBuilder(file.getOuterClassName())
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
             Consumer<TypeSpec> list = file.isGenerateMultipleFiles() ? topLevelTypes::add : outerClassSpec::addType;

@@ -11,6 +11,12 @@
 
     <artifactId>runtime</artifactId>
 
+    <properties>
+        <apiDirectory>us/hebi/robobuf</apiDirectory>
+        <copyFromDir>${basedir}/src/main/java/${apiDirectory}</copyFromDir>
+        <copyToDir>${basedir}/target/generated-sources/${apiDirectory}</copyToDir>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -20,11 +26,70 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+
+            <!-- Copy RepeatedFloat implementation to other types. Use float because it's unlikely to collide -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-repeated-primitives</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="${copyToDir}"/>
+
+                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedDouble.java" />
+                                <replace file="${copyToDir}/RepeatedDouble.java" token="RepeatedFloat" value="RepeatedDouble"/>
+                                <replace file="${copyToDir}/RepeatedDouble.java" token="float" value="double"/>
+
+                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedLong.java" />
+                                <replace file="${copyToDir}/RepeatedLong.java" token="RepeatedFloat" value="RepeatedLong"/>
+                                <replace file="${copyToDir}/RepeatedLong.java" token="float" value="long"/>
+
+                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedInt.java" />
+                                <replace file="${copyToDir}/RepeatedInt.java" token="RepeatedFloat" value="RepeatedInt"/>
+                                <replace file="${copyToDir}/RepeatedInt.java" token="float" value="int"/>
+
+                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedBoolean.java" />
+                                <replace file="${copyToDir}/RepeatedBoolean.java" token="RepeatedFloat" value="RepeatedBoolean"/>
+                                <replace file="${copyToDir}/RepeatedBoolean.java" token="float" value="boolean"/>
+
+                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/ByteStore.java" />
+                                <replace file="${copyToDir}/ByteStore.java" token="RepeatedFloat" value="ByteStore"/>
+                                <replace file="${copyToDir}/ByteStore.java" token="float" value="byte"/>
+
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${copyToDir}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Generate sources via plugin -->
             <plugin>
@@ -46,7 +111,7 @@
 
                             <outputTargets>
 
-                                <!-- Generate sources (override java package so we don't have name collisions with java) -->
+                                <!-- Generate sources (override package so we don't have name collisions with gen-java) -->
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}</pluginPath>
                                     <type>robobuf</type>

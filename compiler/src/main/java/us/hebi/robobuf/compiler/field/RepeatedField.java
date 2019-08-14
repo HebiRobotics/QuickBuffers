@@ -1,5 +1,6 @@
 package us.hebi.robobuf.compiler.field;
 
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -78,17 +79,6 @@ public abstract class RepeatedField extends FieldGenerator {
 
     @Override
     protected void generateSetter(TypeSpec.Builder type) {
-        type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(int.class, "index", Modifier.FINAL)
-                .addParameter(info.getTypeName(), "value", Modifier.FINAL)
-                .returns(info.getParentType())
-                .addNamedCode("" +
-                        "$setHas:L;\n" +
-                        "$field:N.set(index, value);\n" +
-                        "return this;\n", m)
-                .build());
-
         type.addMethod(MethodSpec.methodBuilder("add" + info.getUpperName())
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(info.getTypeName(), "value", Modifier.FINAL)
@@ -98,6 +88,19 @@ public abstract class RepeatedField extends FieldGenerator {
                         "$field:N.add(value);\n" +
                         "return this;\n", m)
                 .build());
+
+        if (info.isPrimitive()) {
+            type.addMethod(MethodSpec.methodBuilder("addAll" + info.getUpperName())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(ArrayTypeName.of(info.getTypeName()), "values", Modifier.FINAL)
+                    .varargs(true)
+                    .returns(info.getParentType())
+                    .addNamedCode("" +
+                            "$setHas:L;\n" +
+                            "$field:N.addAll(values);\n" +
+                            "return this;\n", m)
+                    .build());
+        }
     }
 
 }

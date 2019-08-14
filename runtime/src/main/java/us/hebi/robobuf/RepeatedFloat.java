@@ -21,19 +21,37 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public float get(int index) {
+        checkIndex(index);
         return array[index];
     }
 
     public void set(int index, float value) {
-        if (index >= length) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        checkIndex(index);
         array[index] = value;
     }
 
     public void add(float value) {
         ensureSpace(1);
         array[length++] = value;
+    }
+
+    public void addAll(float[] values) {
+        addAll(values, 0, values.length);
+    }
+
+    public void addAll(float[] buffer, int offset, int length) {
+        ensureSpace(length);
+        System.arraycopy(buffer, offset, array, this.length, length);
+        this.length += length;
+    }
+
+    public void copyFrom(float[] buffer) {
+        copyFrom(buffer, 0, buffer.length);
+    }
+
+    public void copyFrom(float[] buffer, int offset, int length) {
+        this.length = 0;
+        addAll(buffer, offset, length);
     }
 
     @Override
@@ -75,7 +93,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
             return false;
 
         for (int i = 0; i < length; i++) {
-            if (Float.floatToIntBits(array[i]) != Float.floatToIntBits(other.array[i]))
+            if (!RoboUtil.equals(array[i], other.array[i]))
                 return false;
         }
         return true;
@@ -83,6 +101,6 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
 
     float[] array = EMPTY;
     private static final float[] EMPTY = new float[0];
-    private static final float DEFAULT_VALUE = 0;
+    private static final float DEFAULT_VALUE = RoboUtil._floatDefault;
 
 }

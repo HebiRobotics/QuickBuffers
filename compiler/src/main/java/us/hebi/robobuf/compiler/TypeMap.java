@@ -1,6 +1,5 @@
 package us.hebi.robobuf.compiler;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
@@ -11,6 +10,7 @@ import us.hebi.robobuf.compiler.RequestInfo.FileInfo;
 import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
 import us.hebi.robobuf.compiler.RequestInfo.TypeInfo;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -286,7 +286,7 @@ public class TypeMap {
     }
 
     public Map<String, ClassName> getMap() {
-        return ImmutableMap.copyOf(typeMap);
+        return Collections.unmodifiableMap(typeMap);
     }
 
     TypeMap buildTypeMap(RequestInfo info) {

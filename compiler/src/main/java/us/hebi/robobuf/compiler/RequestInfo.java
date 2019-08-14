@@ -214,11 +214,10 @@ public class RequestInfo {
                 String name = descriptor.getTypeName();
                 int packageEndIndex = name.lastIndexOf('.');
                 upperName = packageEndIndex > 0 ? name.substring(packageEndIndex + 1, name.length()) : name;
-                lowerName = Character.toLowerCase(upperName.charAt(0)) + upperName.substring(1);
             } else {
-                lowerName = NameUtil.toLowerCamel(descriptor.getName());
                 upperName = NameUtil.toUpperCamel(descriptor.getName());
             }
+            lowerName = Character.toLowerCase(upperName.charAt(0)) + upperName.substring(1);
             hazzerName = "has" + upperName;
             setterName = "set" + upperName;
             getterName = "get" + upperName;

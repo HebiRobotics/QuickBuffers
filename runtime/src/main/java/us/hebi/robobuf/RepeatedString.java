@@ -33,6 +33,10 @@ public class RepeatedString extends RepeatedField<RepeatedString> {
 
     }
 
+    public void addAll(CharSequence... values){
+
+    }
+
     public void set(int index, CharSequence value) {
 
     }

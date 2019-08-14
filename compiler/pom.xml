@@ -13,7 +13,7 @@
 
     <dependencies>
 
-        <!-- stores request input as binary that we can load in unit tsts -->
+        <!-- stores request input as binary that we can load in unit tests -->
         <dependency>
             <groupId>us.hebi.robobuf</groupId>
             <artifactId>parser</artifactId>
@@ -23,11 +23,6 @@
         <dependency>
             <groupId>com.squareup</groupId>
             <artifactId>javapoet</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
         </dependency>
 
         <dependency>

@@ -14,6 +14,10 @@ public class RepeatedMessage<T extends MessageNano> extends RepeatedField<Repeat
 
     }
 
+    public void addAll(T... messages) {
+
+    }
+
     public T get(int index) {
         return null;
     }

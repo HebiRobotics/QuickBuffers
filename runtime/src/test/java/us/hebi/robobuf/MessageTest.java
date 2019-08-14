@@ -9,6 +9,7 @@ import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -101,16 +102,16 @@ public class MessageTest {
         assertFalse(emptyMsg.hasBools());
         assertFalse(emptyMsg.hasDoubles());
         assertFalse(emptyMsg.hasFloats());
-        assertFalse(emptyMsg.hasFixed32s());
-        assertFalse(emptyMsg.hasFixed64s());
-        assertFalse(emptyMsg.hasSfixed32s());
-        assertFalse(emptyMsg.hasSfixed64s());
-        assertFalse(emptyMsg.hasSint32s());
-        assertFalse(emptyMsg.hasSint64s());
-        assertFalse(emptyMsg.hasInt32s());
-        assertFalse(emptyMsg.hasInt64s());
-        assertFalse(emptyMsg.hasUint32s());
-        assertFalse(emptyMsg.hasUint64s());
+        assertFalse(emptyMsg.hasFixed32S());
+        assertFalse(emptyMsg.hasFixed64S());
+        assertFalse(emptyMsg.hasSfixed32S());
+        assertFalse(emptyMsg.hasSfixed64S());
+        assertFalse(emptyMsg.hasSint32S());
+        assertFalse(emptyMsg.hasSint64S());
+        assertFalse(emptyMsg.hasInt32S());
+        assertFalse(emptyMsg.hasInt64S());
+        assertFalse(emptyMsg.hasUint32S());
+        assertFalse(emptyMsg.hasUint64S());
 
         RepeatedPackables.Packed msg = RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked());
         assertNotEquals(msg, emptyMsg);
@@ -118,30 +119,46 @@ public class MessageTest {
         assertTrue(msg.hasBools());
         assertTrue(msg.hasDoubles());
         assertTrue(msg.hasFloats());
-        assertTrue(msg.hasFixed32s());
-        assertTrue(msg.hasFixed64s());
-        assertTrue(msg.hasSfixed32s());
-        assertTrue(msg.hasSfixed64s());
-        assertTrue(msg.hasSint32s());
-        assertTrue(msg.hasSint64s());
-        assertTrue(msg.hasInt32s());
-        assertTrue(msg.hasInt64s());
-        assertTrue(msg.hasUint32s());
-        assertTrue(msg.hasUint64s());
+        assertTrue(msg.hasFixed32S());
+        assertTrue(msg.hasFixed64S());
+        assertTrue(msg.hasSfixed32S());
+        assertTrue(msg.hasSfixed64S());
+        assertTrue(msg.hasSint32S());
+        assertTrue(msg.hasSint64S());
+        assertTrue(msg.hasInt32S());
+        assertTrue(msg.hasInt64S());
+        assertTrue(msg.hasUint32S());
+        assertTrue(msg.hasUint64S());
 
         assertArrayEquals(new boolean[]{true, false, true, true}, msg.getBools().toArray());
         assertArrayEquals(new double[]{Double.POSITIVE_INFINITY, -2d, 3d, 4d}, msg.getDoubles().toArray(), 0);
         assertArrayEquals(new float[]{10f, 20f, -30f, Float.NaN}, msg.getFloats().toArray(), 0);
-        assertArrayEquals(new int[]{2, -2, 4, 67423}, msg.getFixed32s().toArray());
-        assertArrayEquals(new long[]{3231313L, 6L, -7L, 8L}, msg.getFixed64s().toArray());
-        assertArrayEquals(new int[]{2, -3, 4, 5}, msg.getSfixed32s().toArray());
-        assertArrayEquals(new long[]{5L, -6L, 7L, -8L}, msg.getSfixed64s().toArray());
-        assertArrayEquals(new int[]{2, -3, 4, 5}, msg.getSint32s().toArray());
-        assertArrayEquals(new long[]{5L, 6L, -7L, 8L}, msg.getSint64s().toArray());
-        assertArrayEquals(new int[]{2, 3, -4, 5}, msg.getInt32s().toArray());
-        assertArrayEquals(new long[]{5L, -6L, 7L, 8L}, msg.getInt64s().toArray());
-        assertArrayEquals(new int[]{2, 300, 4, 5}, msg.getUint32s().toArray());
-        assertArrayEquals(new long[]{5L, 6L, 23L << 40, 8L}, msg.getUint64s().toArray());
+        assertArrayEquals(new int[]{2, -2, 4, 67423}, msg.getFixed32S().toArray());
+        assertArrayEquals(new long[]{3231313L, 6L, -7L, 8L}, msg.getFixed64S().toArray());
+        assertArrayEquals(new int[]{2, -3, 4, 5}, msg.getSfixed32S().toArray());
+        assertArrayEquals(new long[]{5L, -6L, 7L, -8L}, msg.getSfixed64S().toArray());
+        assertArrayEquals(new int[]{2, -3, 4, 5}, msg.getSint32S().toArray());
+        assertArrayEquals(new long[]{5L, 6L, -7L, 8L}, msg.getSint64S().toArray());
+        assertArrayEquals(new int[]{2, 3, -4, 5}, msg.getInt32S().toArray());
+        assertArrayEquals(new long[]{5L, -6L, 7L, 8L}, msg.getInt64S().toArray());
+        assertArrayEquals(new int[]{2, 300, 4, 5}, msg.getUint32S().toArray());
+        assertArrayEquals(new long[]{5L, 6L, 23L << 40, 8L}, msg.getUint64S().toArray());
+
+        RepeatedPackables.Packed manualMsg = new RepeatedPackables.Packed()
+                .addAllBools(true, false, true, true)
+                .addAllDoubles(Double.POSITIVE_INFINITY, -2d, 3d, 4d)
+                .addAllFloats(10f, 20f, -30f, Float.NaN)
+                .addAllFixed32S(2, -2, 4, 67423)
+                .addAllFixed64S(3231313L, 6L, -7L, 8L)
+                .addAllSfixed32S(2, -3, 4, 5)
+                .addAllSfixed64S(5L, -6L, 7L, -8L)
+                .addAllSint32S(2, -3, 4, 5)
+                .addAllSint64S(5L, 6L, -7L, 8L)
+                .addAllInt32S(2, 3, -4, 5)
+                .addAllInt64S(5L, -6L, 7L, 8L)
+                .addAllUint32S(2, 300, 4, 5)
+                .addAllUint64S(5L, 6L, 23L << 40, 8L);
+        assertEquals(msg, manualMsg);
 
         // Make sure packed fields can be parsed from non-packed data to maintain forwards compatibility
         byte[] packed = MessageNano.toByteArray(RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()));
@@ -259,7 +276,7 @@ public class MessageTest {
 
     @Test
     public void testBytes() throws IOException {
-        byte[] utf8Bytes = "optionalString\uD83D\uDCA9".getBytes(UTF_8);
+        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
 
@@ -279,6 +296,7 @@ public class MessageTest {
         // Parse
         byte[] result = MessageNano.toByteArray(msg.setId(0));
         TestAllTypes actual = TestAllTypes.parseFrom(result);
+        assertTrue(msg.equals(actual));
         assertEquals(msg, actual);
 
         assertArrayEquals(utf8Bytes, actual.getOptionalBytes().toArray());
