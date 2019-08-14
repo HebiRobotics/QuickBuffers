@@ -242,7 +242,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a {@code bytes} field, including tag, to the stream. */
-  public void writeBytes(final int fieldNumber, final ByteStore value)
+  public void writeBytes(final int fieldNumber, final RepeatedByte value)
                          throws IOException {
     writeTag(fieldNumber, WireFormatNano.WIRETYPE_LENGTH_DELIMITED);
     writeBytesNoTag(value);
@@ -587,7 +587,7 @@ public final class CodedOutputByteBufferNano {
   }
 
   /** Write a {@code bytes} field to the stream. */
-  public void writeBytesNoTag(final ByteStore value) throws IOException {
+  public void writeBytesNoTag(final RepeatedByte value) throws IOException {
     writeRawVarint32(value.length);
     writeRawBytes(value.array, 0, value.length);
   }
@@ -727,7 +727,7 @@ public final class CodedOutputByteBufferNano {
    * {@code bytes} field, including tag.
    */
   public static int computeBytesSize(final int fieldNumber,
-                                     final ByteStore value) {
+                                     final RepeatedByte value) {
     return computeTagSize(fieldNumber) + computeBytesSizeNoTag(value);
   }
 
@@ -883,7 +883,7 @@ public final class CodedOutputByteBufferNano {
    * Compute the number of bytes that would be needed to encode a
    * {@code bytes} field.
    */
-  public static int computeBytesSizeNoTag(final ByteStore value) {
+  public static int computeBytesSizeNoTag(final RepeatedByte value) {
     return computeRawVarint32Size(value.length) + value.length;
   }
 

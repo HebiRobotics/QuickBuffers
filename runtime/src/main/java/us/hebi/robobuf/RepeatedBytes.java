@@ -10,7 +10,7 @@ public class RepeatedBytes extends RepeatedField<RepeatedBytes> {
     public void copyFrom(RepeatedBytes other) {
     }
 
-    public ByteStore get(int index) {
+    public RepeatedByte get(int index) {
         return null;
     }
 
@@ -29,7 +29,7 @@ public class RepeatedBytes extends RepeatedField<RepeatedBytes> {
 
     }
 
-    public ByteStore getAndAdd() {
+    public RepeatedByte getAndAdd() {
         return null;
     }
 

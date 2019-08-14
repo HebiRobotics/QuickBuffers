@@ -63,9 +63,10 @@
                                 <replace file="${copyToDir}/RepeatedBoolean.java" token="RepeatedFloat" value="RepeatedBoolean"/>
                                 <replace file="${copyToDir}/RepeatedBoolean.java" token="float" value="boolean"/>
 
-                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/ByteStore.java" />
-                                <replace file="${copyToDir}/ByteStore.java" token="RepeatedFloat" value="ByteStore"/>
-                                <replace file="${copyToDir}/ByteStore.java" token="float" value="byte"/>
+                                <!-- the 'bytes' type is really the same as a repeated byte in disguise -->
+                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedByte.java" />
+                                <replace file="${copyToDir}/RepeatedByte.java" token="RepeatedFloat" value="RepeatedByte"/>
+                                <replace file="${copyToDir}/RepeatedByte.java" token="float" value="byte"/>
 
                             </tasks>
                         </configuration>

@@ -296,7 +296,7 @@ public final class CodedInputByteBufferNano {
   }
 
   /** Read a {@code bytes} field value from the stream. */
-  public void readBytes(ByteStore store) throws IOException {
+  public void readBytes(RepeatedByte store) throws IOException {
     final byte[] result; // TODO: get rid of allocations
     final int size = readRawVarint32();
     if (size <= (bufferSize - bufferPos) && size > 0) {
