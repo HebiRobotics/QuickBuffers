@@ -276,12 +276,22 @@ public class MessageTest {
         assertEquals("hello!", actual.getOptionalCord().toString());
     }
 
-    @Ignore
     @Test
     public void testRepeatedStrings() throws IOException {
-        /*TestAllTypes msg = new TestAllTypes().setId(0)
-                .addAllREpeated*/
-        new TestAllTypes().addAllRepeatedForeignEnum(ForeignEnum.FOREIGN_BAR, ForeignEnum.FOREIGN_BAZ);
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedStrings());
+        assertEquals(4, msg.getRepeatedString().length());
+        assertEquals("hello", msg.getRepeatedString().get(0).toString());
+        assertEquals("world", msg.getRepeatedString().get(1).toString());
+        assertEquals("ascii", msg.getRepeatedString().get(2).toString());
+        assertEquals("utf8\uD83D\uDCA9", msg.getRepeatedString().get(3).toString());
+
+        TestAllTypes msg2 = new TestAllTypes();
+        msg2.setId(0)
+                .getMutableRepeatedString()
+                .copyFrom(msg.getRepeatedString().toArray());
+
+        TestAllTypes actual = TestAllTypes.parseFrom(msg2.toByteArray());
+        assertEquals(msg, actual);
     }
 
     @Test
