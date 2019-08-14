@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
 
     @Override
-    protected void growCapacity(int desiredSize) {
+    protected void extendCapacityTo(int desiredSize) {
         final float[] newValues = new float[desiredSize];
         System.arraycopy(array, 0, newValues, 0, length);
         this.array = newValues;
@@ -59,7 +59,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     @Override
     public void copyFrom(RepeatedFloat other) {
         if (other.length > length) {
-            growCapacity(other.length);
+            extendCapacityTo(other.length);
         }
         System.arraycopy(other.array, 0, array, 0, other.length);
         length = other.length;

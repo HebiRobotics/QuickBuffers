@@ -17,7 +17,7 @@ abstract class RepeatedField<T extends RepeatedField> {
     public final void requestSize(int numEntries) {
         final int desiredSize = length + numEntries;
         if (desiredSize > capacity()) {
-            growCapacity(desiredSize);
+            extendCapacityTo(desiredSize);
         }
     }
 
@@ -36,7 +36,7 @@ abstract class RepeatedField<T extends RepeatedField> {
 
     public abstract int capacity();
 
-    protected abstract void growCapacity(int desiredSize);
+    protected abstract void extendCapacityTo(int desiredSize);
 
     protected abstract void clearRange(int fromIndex, int toIndex);
 

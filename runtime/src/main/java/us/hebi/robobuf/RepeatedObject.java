@@ -54,7 +54,7 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
     @Override
     public final void copyFrom(SubType other) {
         if (other.length > length) {
-            growCapacity(other.length);
+            extendCapacityTo(other.length);
         }
         copyDataFrom0(other);
         length = other.length;
@@ -104,7 +104,7 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
     }
 
     @Override
-    protected final void growCapacity(int desiredSize) {
+    protected final void extendCapacityTo(int desiredSize) {
         final T[] newValues = allocateArray0(desiredSize);
         System.arraycopy(array, 0, newValues, 0, length);
         this.array = newValues;
