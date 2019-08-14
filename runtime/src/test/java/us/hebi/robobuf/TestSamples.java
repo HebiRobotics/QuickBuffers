@@ -116,6 +116,17 @@ public class TestSamples {
         return msg.toByteArray();
     }
 
+    static byte[] repeatedEnums(){
+        return TestAllTypes.newBuilder()
+                .setId(0)
+                .addRepeatedNestedEnum(NestedEnum.FOO)
+                .addRepeatedNestedEnum(NestedEnum.BAR)
+                .addRepeatedNestedEnum(NestedEnum.BAZ)
+                .addRepeatedNestedEnum(NestedEnum.BAZ)
+                .build()
+                .toByteArray();
+    }
+
     static byte[] optionalString() {
         TestAllTypes msg = TestAllTypes.newBuilder()
                 .setId(0)
@@ -135,6 +146,16 @@ public class TestSamples {
         return msg.toByteArray();
     }
 
+    static byte[] repeatedMessages(){
+        return TestAllTypes.newBuilder()
+                .setId(0)
+                .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(0))
+                .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(1))
+                .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(2))
+                .build()
+                .toByteArray();
+    }
+
     static byte[] repeatedStrings() {
         return TestAllTypes.newBuilder()
                 .setId(0)
@@ -147,6 +168,15 @@ public class TestSamples {
         return TestAllTypes.newBuilder()
                 .setId(0)
                 .setDefaultBytes(ByteString.copyFromUtf8("utf8\uD83D\uDCA9"))
+                .build()
+                .toByteArray();
+    }
+
+    static byte[] repeatedBytes(){
+        return TestAllTypes.newBuilder()
+                .setId(0)
+                .addRepeatedBytes(ByteString.copyFromUtf8("ascii"))
+                .addRepeatedBytes(ByteString.copyFromUtf8("utf8\uD83D\uDCA9"))
                 .build()
                 .toByteArray();
     }

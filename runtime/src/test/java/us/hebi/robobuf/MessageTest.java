@@ -246,10 +246,16 @@ public class MessageTest {
         assertEquals(msg, msg3);
     }
 
-    @Ignore
     @Test
     public void testRepeatedEnums() throws IOException {
-
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedEnums());
+        assertEquals(4, msg.getRepeatedNestedEnumCount());
+        assertEquals(NestedEnum.FOO, msg.getRepeatedNestedEnum(0));
+        assertEquals(NestedEnum.BAR, msg.getRepeatedNestedEnum(1));
+        assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum(2));
+        assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum(3));
+        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
+        assertEquals(msg, actual);
     }
 
     @Test
@@ -323,7 +329,12 @@ public class MessageTest {
     @Ignore
     @Test
     public void testRepeatedBytes() throws IOException {
-
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedStrings());
+        assertEquals(2, msg.getRepeatedBytes().length());
+        assertEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
+        assertEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
+        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
+        assertEquals(msg, actual);
     }
 
     @Test
@@ -349,7 +360,13 @@ public class MessageTest {
     @Ignore
     @Test
     public void testRepeatedMessages() throws IOException {
-
+        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedStrings());
+        assertEquals(3, msg.getRepeatedForeignMessage().length());
+        assertEquals(new ForeignMessage().setC(0), msg.getRepeatedForeignMessage().get(0));
+        assertEquals(new ForeignMessage().setC(1), msg.getRepeatedForeignMessage().get(1));
+        assertEquals(new ForeignMessage().setC(2), msg.getRepeatedForeignMessage().get(2));
+        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
+        assertEquals(msg, actual);
     }
 
     @Test(expected = IllegalStateException.class)

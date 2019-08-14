@@ -371,7 +371,8 @@ public class FieldGenerator {
                         "final $type:T result = $type:T.forNumber($field:N);\n" +
                         "return result == null ? $defaultEnumValue:L : result;\n", m);
             }
-        } else { // get(index)
+
+        } else { // getCount() & get(index)
             getter.addParameter(int.class, "index", Modifier.FINAL);
             if (!info.hasDefaultValue()) {
                 getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
@@ -380,6 +381,14 @@ public class FieldGenerator {
                         "final $type:T result = $type:T.forNumber($field:N.get(index));\n" +
                         "return result == null ? $defaultEnumValue:L : result;\n", m);
             }
+
+            MethodSpec getCount = MethodSpec.methodBuilder(info.getGetterName() + "Count")
+                    .addAnnotations(info.getMethodAnnotations())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(int.class)
+                    .addNamedCode("return $field:N.length();\n", m)
+                    .build();
+            type.addMethod(getCount);
         }
         type.addMethod(getter.build());
     }
