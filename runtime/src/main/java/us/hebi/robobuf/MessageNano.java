@@ -96,13 +96,13 @@ public abstract class MessageNano<T extends MessageNano> {
      * @param output the output to receive the serialized form.
      * @throws IOException if an error occurred writing to {@code output}.
      */
-    public abstract void writeTo(CodedOutputByteBufferNano output) throws IOException;
+    public abstract void writeTo(ProtoOutputBuffer output) throws IOException;
 
     /**
      * Parse {@code input} as a message of this type and merge it with the
      * message being built.
      */
-    public abstract MessageNano mergeFrom(CodedInputByteBufferNano input) throws IOException;
+    public abstract MessageNano mergeFrom(ProtoInputBuffer input) throws IOException;
 
     /**
      * Serialize to a byte array.
@@ -134,8 +134,8 @@ public abstract class MessageNano<T extends MessageNano> {
      */
     public static final void toByteArray(MessageNano msg, byte[] data, int offset, int length) {
         try {
-            final CodedOutputByteBufferNano output =
-                    CodedOutputByteBufferNano.newInstance(data, offset, length);
+            final ProtoOutputBuffer output =
+                    ProtoOutputBuffer.newInstance(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -160,8 +160,8 @@ public abstract class MessageNano<T extends MessageNano> {
     public static final <T extends MessageNano> T mergeFrom(T msg, final byte[] data,
                                                             final int off, final int len) throws InvalidProtocolBufferNanoException {
         try {
-            final CodedInputByteBufferNano input =
-                    CodedInputByteBufferNano.newInstance(data, off, len);
+            final ProtoInputBuffer input =
+                    ProtoInputBuffer.newInstance(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;

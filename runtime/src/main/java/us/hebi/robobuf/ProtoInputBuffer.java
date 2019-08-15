@@ -36,6 +36,8 @@ import java.util.Arrays;
 import static us.hebi.robobuf.WireFormat.*;
 
 /**
+ * ----- NOTE: the code was modified from Javanano's CodedInputByteBufferNano ----
+ *
  * Reads and decodes protocol message fields.
  * <p>
  * This class contains two kinds of methods:  methods that read specific
@@ -47,17 +49,17 @@ import static us.hebi.robobuf.WireFormat.*;
  *
  * @author kenton@google.com Kenton Varda
  */
-public final class CodedInputByteBufferNano {
+public final class ProtoInputBuffer {
 
     /** Create a new CodedInputStream wrapping the given byte array. */
-    public static CodedInputByteBufferNano newInstance(final byte[] buf) {
+    public static ProtoInputBuffer newInstance(final byte[] buf) {
         return newInstance(buf, 0, buf.length);
     }
 
     /** Create a new CodedInputStream wrapping the given byte array slice. */
-    public static CodedInputByteBufferNano newInstance(final byte[] buf, final int off,
-                                                       final int len) {
-        return new CodedInputByteBufferNano(buf, off, len);
+    public static ProtoInputBuffer newInstance(final byte[] buf, final int off,
+                                               final int len) {
+        return new ProtoInputBuffer(buf, off, len);
     }
 
     // -----------------------------------------------------------------
@@ -462,7 +464,7 @@ public final class CodedInputByteBufferNano {
     private static final int DEFAULT_RECURSION_LIMIT = 64;
     private static final int DEFAULT_SIZE_LIMIT = 64 << 20;  // 64MB
 
-    private CodedInputByteBufferNano(final byte[] buffer, final int off, final int len) {
+    private ProtoInputBuffer(final byte[] buffer, final int off, final int len) {
         this.buffer = buffer;
         bufferStart = off;
         bufferSize = off + len;

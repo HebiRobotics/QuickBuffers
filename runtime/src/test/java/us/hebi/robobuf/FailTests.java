@@ -19,80 +19,80 @@ public class FailTests {
 
     // --------------------------------------------------------------------------------------
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceVarint32() throws IOException {
         // id is at the very end, so don't set it for other types
         writeToTruncated(new TestAllTypes().setId(Integer.MIN_VALUE));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceVarint64() throws IOException {
         writeToTruncated(new TestAllTypes().setDefaultInt64(Long.MIN_VALUE));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceFixed32() throws IOException {
         writeToTruncated(new TestAllTypes().setDefaultFixed32(Integer.MAX_VALUE));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceFixed64() throws IOException {
         writeToTruncated(new TestAllTypes().setDefaultFixed64(Long.MAX_VALUE));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceString() throws IOException {
         writeToTruncated(new TestAllTypes().setOptionalString("this should fail"));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceBytes() throws IOException {
         writeToTruncated(new TestAllTypes().addAllDefaultBytes(new byte[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpacePackedBoolean() throws IOException {
         writeToTruncated(new RepeatedPackables.Packed().addAllBools(new boolean[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpacePackedDouble() throws IOException {
         writeToTruncated(new RepeatedPackables.Packed().addAllDoubles(new double[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpacePackedFloat() throws IOException {
         writeToTruncated(new RepeatedPackables.Packed().addAllFloats(new float[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpacePackedVarint32() throws IOException {
         writeToTruncated(new RepeatedPackables.Packed().addAllInt32S(new int[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpacePackedFixed32() throws IOException {
         writeToTruncated(new RepeatedPackables.Packed().addAllFixed32S(new int[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpacePackedVarint64() throws IOException {
         writeToTruncated(new RepeatedPackables.Packed().addAllInt64S(new long[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpacePackedFixed64() throws IOException {
         writeToTruncated(new RepeatedPackables.Packed().addAllFixed64S(new long[213]));
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceMessage() throws IOException {
         TestAllTypes msg = new TestAllTypes();
         msg.getMutableOptionalNestedMessage().setBb(1);
         writeToTruncated(msg);
     }
 
-    @Test(expected = CodedOutputByteBufferNano.OutOfSpaceException.class)
+    @Test(expected = ProtoOutputBuffer.OutOfSpaceException.class)
     public void testOutOfSpaceGroup() throws IOException {
         TestAllTypes msg = new TestAllTypes();
         msg.getMutableOptionalGroup().setA(2);
@@ -101,7 +101,7 @@ public class FailTests {
 
     private void writeToTruncated(MessageNano msg) throws IOException {
         byte[] buffer = new byte[msg.getSerializedSize() - 1];
-        CodedOutputByteBufferNano output = CodedOutputByteBufferNano.newInstance(buffer);
+        ProtoOutputBuffer output = ProtoOutputBuffer.newInstance(buffer);
         msg.writeTo(output);
     }
 
@@ -197,7 +197,7 @@ public class FailTests {
         }
 
         byte[] data = msg.toByteArray();
-        CodedInputByteBufferNano input = CodedInputByteBufferNano.newInstance(data, 0, length);
+        ProtoInputBuffer input = ProtoInputBuffer.newInstance(data, 0, length);
         msg.clear().mergeFrom(input);
     }
 

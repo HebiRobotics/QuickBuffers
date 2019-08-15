@@ -35,6 +35,8 @@ import java.io.IOException;
 import static us.hebi.robobuf.WireFormat.*;
 
 /**
+ * ----- NOTE: the code was modified from Javanano's CodedOutputByteBufferNano ----
+ *
  * Encodes and writes protocol message fields.
  *
  * <p>This class contains two kinds of methods:  methods that write specific
@@ -48,7 +50,7 @@ import static us.hebi.robobuf.WireFormat.*;
  *
  * @author kneton@google.com Kenton Varda
  */
-public final class CodedOutputByteBufferNano {
+public final class ProtoOutputBuffer {
     /* max bytes per java UTF-16 char in UTF-8 */
     private static final int MAX_UTF8_EXPANSION = 3;
     private byte[] buffer;
@@ -56,8 +58,8 @@ public final class CodedOutputByteBufferNano {
     private int limit;
     private int position;
 
-    private CodedOutputByteBufferNano(final byte[] buffer, final int offset,
-                                      final int length) {
+    private ProtoOutputBuffer(final byte[] buffer, final int offset,
+                              final int length) {
         this.buffer = buffer;
         this.offset = offset;
         this.limit = offset + length;
@@ -70,7 +72,7 @@ public final class CodedOutputByteBufferNano {
      * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
      * array is faster than writing to an {@code OutputStream}.
      */
-    public static CodedOutputByteBufferNano newInstance(final byte[] flatArray) {
+    public static ProtoOutputBuffer newInstance(final byte[] flatArray) {
         return newInstance(flatArray, 0, flatArray.length);
     }
 
@@ -80,10 +82,10 @@ public final class CodedOutputByteBufferNano {
      * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
      * array is faster than writing to an {@code OutputStream}.
      */
-    public static CodedOutputByteBufferNano newInstance(final byte[] flatArray,
-                                                        final int offset,
-                                                        final int length) {
-        return new CodedOutputByteBufferNano(flatArray, offset, length);
+    public static ProtoOutputBuffer newInstance(final byte[] flatArray,
+                                                final int offset,
+                                                final int length) {
+        return new ProtoOutputBuffer(flatArray, offset, length);
     }
 
     // -----------------------------------------------------------------
