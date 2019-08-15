@@ -109,28 +109,22 @@ public class FieldGenerator {
     }
 
     protected void generateMergingCode(MethodSpec.Builder method) {
-        // non-packed fields still expected to be located together. Most repeated primitives should be
-        // packed, so optimizing this further is not a priority.
-        if (info.isRepeated() && (info.isPrimitive() || info.isEnum())) {
+        if (info.isRepeated()) {
             method
-                    .addNamedCode("final int arrayLength = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.requireCapacity(arrayLength);\n", m)
-                    .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
-                    .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
-                    .addStatement("input.readTag()")
-                    .endControlFlow()
-                    .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
-                    .addNamedCode("$setHas:L;\n", m);
-
-        } else if (info.isRepeated()) {
-            method
-                    .addNamedCode("final int arrayLength = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.requireCapacity(arrayLength);\n", m)
-                    .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
-                    .addNamedCode("input.read$capitalizedType:L($field:N.getAndAdd()$secondArgs:L);\n", m)
-                    .addStatement("input.readTag()")
-                    .endControlFlow()
-                    .addNamedCode("input.read$capitalizedType:L($field:N.getAndAdd()$secondArgs:L);\n", m)
+                    .addStatement("int nextTagPosition")
+                    .addNamedCode("do {$>\n" +
+                            "// Look ahead for more items so we don't resize every time\n" +
+                            "if ($field:N.remainingCapacity() == 0) {$>\n" +
+                            "int count = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n" +
+                            "$field:N.requireCapacity(count);\n" +
+                            "$<}\n", m)
+                    .addNamedCode(info.isPrimitive() || info.isEnum() ?
+                            "$field:N.add(input.read$capitalizedType:L());\n"
+                            : "input.read$capitalizedType:L($field:N.getAndAdd()$secondArgs:L);\n", m)
+                    .addNamedCode("" +
+                            "nextTagPosition = input.getPosition();\n" +
+                            "$<} while (input.readTag() == $tag:L);\n" +
+                            "input.rewindToPosition(nextTagPosition);\n", m)
                     .addNamedCode("$setHas:L;\n", m);
 
         } else if (info.isString() || info.isMessageOrGroup() || info.isBytes()) {
