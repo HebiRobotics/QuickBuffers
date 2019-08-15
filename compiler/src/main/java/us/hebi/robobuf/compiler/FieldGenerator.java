@@ -113,7 +113,7 @@ public class FieldGenerator {
             method
                     .addStatement("int nextTagPosition")
                     .addNamedCode("do {$>\n" +
-                            "// Look ahead for more items so we don't resize every time\n" +
+                            "// look ahead for more items so we resize only once\n" +
                             "if ($field:N.remainingCapacity() == 0) {$>\n" +
                             "int count = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n" +
                             "$field:N.requireCapacity(count);\n" +
@@ -167,16 +167,16 @@ public class FieldGenerator {
                     .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
 
                     // Defer count-checks until we run out of capacity
-                    .addComment("do a look-ahead to avoid unnecessary extra allocations")
+                    .addComment("look ahead for more items so we resize only once")
                     .beginControlFlow("if ($N.remainingCapacity() == 0)", info.getFieldName())
                     .addStatement("final int position = input.getPosition()")
-                    .addStatement("int numEntries = 0")
+                    .addStatement("int count = 0")
                     .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
                     .addNamedCode("input.read$capitalizedType:L();\n", m)
-                    .addStatement("numEntries++")
+                    .addStatement("count++")
                     .endControlFlow()
                     .addStatement("input.rewindToPosition(position)")
-                    .addNamedCode("$field:N.requireCapacity(numEntries);\n", m)
+                    .addNamedCode("$field:N.requireCapacity(count);\n", m)
                     .endControlFlow()
 
                     // Add data
