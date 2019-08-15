@@ -372,9 +372,4 @@ public class MessageTest {
         assertEquals(msg, actual);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testMissingRequiredField() {
-        new TestAllTypes().toByteArray();
-    }
-
 }

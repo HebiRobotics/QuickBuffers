@@ -31,6 +31,7 @@
 package us.hebi.robobuf;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static us.hebi.robobuf.WireFormat.*;
 
@@ -283,21 +284,15 @@ public final class CodedInputByteBufferNano {
 
     /**
      * Read a {@code string} field value from the stream.
+     * <p>
+     * TODO: get rid of allocations
      */
     public void readString(StringBuilder builder) throws IOException {
-        final String result;
         final int size = readRawVarint32();
-        if (size <= (bufferSize - bufferPos) && size > 0) {
-            // Fast path:  We already have the bytes in a contiguous buffer, so
-            //   just copy directly from it.
-            result = new String(buffer, bufferPos, size, InternalUtil.UTF_8); // TODO: get rid of allocations
-            bufferPos += size;
-        } else {
-            // Slow path:  Build a byte array first then copy it.
-            result = new String(readRawBytes(size), InternalUtil.UTF_8);
-        }
+        requireRemaining(size);
         builder.setLength(0);
-        builder.append(result);
+        builder.append(new String(buffer, bufferPos, size, InternalUtil.UTF_8));
+        bufferPos += size;
     }
 
     /**
@@ -310,8 +305,7 @@ public final class CodedInputByteBufferNano {
         }
         ++recursionDepth;
         msg.mergeFrom(this);
-        checkLastTagWas(
-                WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
+        checkLastTagWas(WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
         --recursionDepth;
     }
 
@@ -333,21 +327,10 @@ public final class CodedInputByteBufferNano {
      * Read a {@code bytes} field value from the stream.
      */
     public void readBytes(RepeatedByte store) throws IOException {
-        final byte[] result; // TODO: get rid of allocations
         final int size = readRawVarint32();
-        if (size <= (bufferSize - bufferPos) && size > 0) {
-            // Fast path:  We already have the bytes in a contiguous buffer, so
-            //   just copy directly from it.
-            result = new byte[size];
-            System.arraycopy(buffer, bufferPos, result, 0, size);
-            bufferPos += size;
-        } else if (size == 0) {
-            result = new byte[0];
-        } else {
-            // Slow path:  Build a byte array first then copy it.
-            result = readRawBytes(size);
-        }
-        store.copyFrom(result, 0, result.length);
+        requireRemaining(size);
+        store.copyFrom(buffer, bufferPos, size);
+        bufferPos += size;
     }
 
     /**
@@ -721,26 +704,10 @@ public final class CodedInputByteBufferNano {
      *                                            limit was reached.
      */
     public byte[] readRawBytes(final int size) throws IOException {
-        if (size < 0) {
-            throw InvalidProtocolBufferNanoException.negativeSize();
-        }
-
-        if (bufferPos + size > currentLimit) {
-            // Read to the end of the stream anyway.
-            skipRawBytes(currentLimit - bufferPos);
-            // Then fail.
-            throw InvalidProtocolBufferNanoException.truncatedMessage();
-        }
-
-        if (size <= bufferSize - bufferPos) {
-            // We have all the bytes we need already.
-            final byte[] bytes = new byte[size];
-            System.arraycopy(buffer, bufferPos, bytes, 0, size);
-            bufferPos += size;
-            return bytes;
-        } else {
-            throw InvalidProtocolBufferNanoException.truncatedMessage();
-        }
+        requireRemaining(size);
+        final byte[] bytes = Arrays.copyOfRange(buffer, bufferPos, bufferPos + size);
+        bufferPos += size;
+        return bytes;
     }
 
     /**
@@ -750,21 +717,23 @@ public final class CodedInputByteBufferNano {
      *                                            limit was reached.
      */
     public void skipRawBytes(final int size) throws IOException {
+        requireRemaining(size);
+        bufferPos += size;
+    }
+
+    protected void requireRemaining(int size) throws IOException {
         if (size < 0) {
             throw InvalidProtocolBufferNanoException.negativeSize();
         }
 
         if (bufferPos + size > currentLimit) {
             // Read to the end of the stream anyway.
-            skipRawBytes(currentLimit - bufferPos);
+            bufferPos = currentLimit;
             // Then fail.
             throw InvalidProtocolBufferNanoException.truncatedMessage();
         }
 
-        if (size <= bufferSize - bufferPos) {
-            // We have all the bytes we need already.
-            bufferPos += size;
-        } else {
+        if (size > (bufferSize - bufferPos)) {
             throw InvalidProtocolBufferNanoException.truncatedMessage();
         }
     }
