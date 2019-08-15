@@ -114,7 +114,7 @@ public class FieldGenerator {
         if (info.isRepeated() && (info.isPrimitive() || info.isEnum())) {
             method
                     .addNamedCode("final int arrayLength = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.requestSize(arrayLength);\n", m)
+                    .addNamedCode("$field:N.requireCapacity(arrayLength);\n", m)
                     .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
                     .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
                     .addStatement("input.readTag()")
@@ -125,7 +125,7 @@ public class FieldGenerator {
         } else if (info.isRepeated()) {
             method
                     .addNamedCode("final int arrayLength = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
-                    .addNamedCode("$field:N.requestSize(arrayLength);\n", m)
+                    .addNamedCode("$field:N.requireCapacity(arrayLength);\n", m)
                     .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
                     .addNamedCode("input.read$capitalizedType:L($field:N.getAndAdd()$secondArgs:L);\n", m)
                     .addStatement("input.readTag()")
@@ -173,7 +173,7 @@ public class FieldGenerator {
                     .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
 
                     // Defer count-checks until we run out of capacity
-                    .addComment("do a look-ahead to avoid unnecessary allocations")
+                    .addComment("do a look-ahead to avoid unnecessary extra allocations")
                     .beginControlFlow("if ($N.remainingCapacity() == 0)", info.getFieldName())
                     .addStatement("final int position = input.getPosition()")
                     .addStatement("int numEntries = 0")
@@ -182,7 +182,7 @@ public class FieldGenerator {
                     .addStatement("numEntries++")
                     .endControlFlow()
                     .addStatement("input.rewindToPosition(position)")
-                    .addNamedCode("$field:N.requestSize(numEntries);\n", m)
+                    .addNamedCode("$field:N.requireCapacity(numEntries);\n", m)
                     .endControlFlow()
 
                     // Add data
@@ -305,7 +305,7 @@ public class FieldGenerator {
                 addAll.addNamedCode("$field:N.addAll(values);\n", m);
             } else {
                 addAll.addNamedCode("" +
-                        "$field:N.requestSize(values.length);\n" +
+                        "$field:N.requireCapacity(values.length);\n" +
                         "for ($type:T value : values) {$>\n" +
                         "$field:N.add($valueOrNumber:L);\n" +
                         "$<}\n", m);

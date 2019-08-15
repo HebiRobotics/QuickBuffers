@@ -4,7 +4,7 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 10 Aug 2019
  */
-abstract class RepeatedField<T extends RepeatedField> {
+abstract class RepeatedField<RepeatedType extends RepeatedField> {
 
     public final int length() {
         return length;
@@ -14,7 +14,14 @@ abstract class RepeatedField<T extends RepeatedField> {
         return capacity() - length;
     }
 
-    public final void requestSize(int numEntries) {
+    /**
+     * Makes sure that the internal storage capacity has at least
+     * space for the requested number of entries. This method will
+     * increase the internal capacity if needed.
+     *
+     * @param numEntries number of entries to be added
+     */
+    public final void requireCapacity(int numEntries) {
         final int desiredSize = length + numEntries;
         if (desiredSize > capacity()) {
             extendCapacityTo(desiredSize);
@@ -32,7 +39,7 @@ abstract class RepeatedField<T extends RepeatedField> {
         }
     }
 
-    public abstract void copyFrom(T other);
+    public abstract void copyFrom(RepeatedType other);
 
     public abstract int capacity();
 

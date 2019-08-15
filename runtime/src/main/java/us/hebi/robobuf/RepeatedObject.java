@@ -13,7 +13,7 @@ import java.util.Iterator;
 abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends RepeatedField<SubType> implements Iterable<T> {
 
     public final T getAndAdd() {
-        requestSize(1);
+        requireCapacity(1);
         return array[length++];
     }
 
@@ -32,14 +32,14 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
     }
 
     public final void addAll(IN[] buffer, int offset, int length) {
-        requestSize(length);
+        requireCapacity(length);
         for (int i = offset; i < length; i++) {
             add(buffer[i]);
         }
     }
 
     public final void add(IN value) {
-        requestSize(1);
+        requireCapacity(1);
         setIndex0(length++, value);
     }
 

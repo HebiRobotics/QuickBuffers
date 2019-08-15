@@ -57,7 +57,8 @@ public final class ProtoSource {
     }
 
     /** Create a new CodedInputStream wrapping the given byte array slice. */
-    public static ProtoSource newInstance(final byte[] buf, final int off,
+    public static ProtoSource newInstance(final byte[] buf,
+                                          final int off,
                                           final int len) {
         return new ProtoSource(buf, off, len);
     }
@@ -149,7 +150,7 @@ public final class ProtoSource {
     /** Read a repeated (packed) {@code double} field value from the stream. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.requestSize(numEntries);
+        store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readDouble());
         }
@@ -158,7 +159,7 @@ public final class ProtoSource {
     /** Read a repeated (packed) {@code float} field value from the stream. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.requestSize(numEntries);
+        store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readFloat());
         }
@@ -167,7 +168,7 @@ public final class ProtoSource {
     /** Read a repeated (packed) {@code fixed64} field value from the stream. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.requestSize(numEntries);
+        store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readFixed64());
         }
@@ -176,7 +177,7 @@ public final class ProtoSource {
     /** Read a repeated (packed) {@code fixed32} field value from the stream. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.requestSize(numEntries);
+        store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readFixed32());
         }
@@ -185,7 +186,7 @@ public final class ProtoSource {
     /** Read a repeated (packed) {@code sfixed32} field value from the stream. */
     public void readPackedSFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.requestSize(numEntries);
+        store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readSFixed32());
         }
@@ -194,7 +195,7 @@ public final class ProtoSource {
     /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
     public void readPackedSFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.requestSize(numEntries);
+        store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readSFixed64());
         }
@@ -203,7 +204,7 @@ public final class ProtoSource {
     /** Read a repeated (packed) {@code bool} field value from the stream. */
     public void readPackedBool(RepeatedBoolean store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_BOOL;
-        store.requestSize(numEntries);
+        store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readBool());
         }
