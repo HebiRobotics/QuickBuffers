@@ -1,6 +1,7 @@
 package us.hebi.robobuf;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Base class for repeated fields of non-primitive values such as
@@ -9,7 +10,7 @@ import java.util.Arrays;
  * @author Florian Enner
  * @since 14 Aug 2019
  */
-abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends RepeatedField<SubType> {
+abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends RepeatedField<SubType> implements Iterable<T> {
 
     public final T getAndAdd() {
         requestSize(1);
@@ -94,6 +95,34 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
                 return false;
         }
         return true;
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayIterator<T>(array, length);
+    }
+
+    static class ArrayIterator<T> implements Iterator<T> {
+
+        ArrayIterator(T[] array, int length) {
+            this.array = array;
+            this.length = length;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return position < length;
+        }
+
+        @Override
+        public T next() {
+            return array[position++];
+        }
+
+        private int position = 0;
+        private final T[] array;
+        private final int length;
+
     }
 
     @Override

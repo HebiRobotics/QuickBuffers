@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
  * @author Florian Enner
  * @since 13 Aug 2019
  */
-public class ProtoMessageTest {
+public class ProtoTests {
 
     @Test
     public void testDefaults() throws IOException {
@@ -370,6 +370,18 @@ public class ProtoMessageTest {
 
         TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg2).toByteArray());
         assertEquals(msg, actual);
+
+
+    }
+
+    @Test
+    public void testRepeatableMessageIterator() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedMessages());
+        int sum = 0;
+        for (ForeignMessage foreignMessage : msg.getRepeatedForeignMessage()) {
+            sum += foreignMessage.getC();
+        }
+        assertEquals(3, sum);
     }
 
 }

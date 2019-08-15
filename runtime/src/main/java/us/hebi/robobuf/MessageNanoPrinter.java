@@ -38,7 +38,7 @@ import java.util.Map;
  *
  * @author flynn@google.com Andrew Flynn
  */
-public final class MessageNanoPrinter {
+final class MessageNanoPrinter {
     // Do not allow instantiation
     private MessageNanoPrinter() {
     }
