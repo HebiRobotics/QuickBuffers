@@ -49,17 +49,17 @@ import static us.hebi.robobuf.WireFormat.*;
  *
  * @author kenton@google.com Kenton Varda
  */
-public final class ProtoInputBuffer {
+public final class ProtoInput {
 
     /** Create a new CodedInputStream wrapping the given byte array. */
-    public static ProtoInputBuffer newInstance(final byte[] buf) {
+    public static ProtoInput newInstance(final byte[] buf) {
         return newInstance(buf, 0, buf.length);
     }
 
     /** Create a new CodedInputStream wrapping the given byte array slice. */
-    public static ProtoInputBuffer newInstance(final byte[] buf, final int off,
-                                               final int len) {
-        return new ProtoInputBuffer(buf, off, len);
+    public static ProtoInput newInstance(final byte[] buf, final int off,
+                                         final int len) {
+        return new ProtoInput(buf, off, len);
     }
 
     // -----------------------------------------------------------------
@@ -261,7 +261,7 @@ public final class ProtoInputBuffer {
     }
 
     /** Read a {@code group} field value from the stream. */
-    public void readGroup(final MessageNano msg, final int fieldNumber)
+    public void readGroup(final ProtoMessage msg, final int fieldNumber)
             throws IOException {
         if (recursionDepth >= recursionLimit) {
             throw InvalidProtocolBufferNanoException.recursionLimitExceeded();
@@ -272,7 +272,7 @@ public final class ProtoInputBuffer {
         --recursionDepth;
     }
 
-    public void readMessage(final MessageNano msg)
+    public void readMessage(final ProtoMessage msg)
             throws IOException {
         final int length = readRawVarint32();
         if (recursionDepth >= recursionLimit) {
@@ -464,7 +464,7 @@ public final class ProtoInputBuffer {
     private static final int DEFAULT_RECURSION_LIMIT = 64;
     private static final int DEFAULT_SIZE_LIMIT = 64 << 20;  // 64MB
 
-    private ProtoInputBuffer(final byte[] buffer, final int off, final int len) {
+    private ProtoInput(final byte[] buffer, final int off, final int len) {
         this.buffer = buffer;
         bufferStart = off;
         bufferSize = off + len;

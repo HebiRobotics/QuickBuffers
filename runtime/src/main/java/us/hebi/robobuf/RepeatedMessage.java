@@ -4,16 +4,16 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedMessage<T extends MessageNano<T>> extends RepeatedObject<RepeatedMessage<T>, T, T> {
+public class RepeatedMessage<MessageType extends ProtoMessage<MessageType>> extends RepeatedObject<RepeatedMessage<MessageType>, MessageType, MessageType> {
 
-    public RepeatedMessage(MessageFactory<T> factory) {
+    public RepeatedMessage(MessageFactory<MessageType> factory) {
         if (factory == null) throw new NullPointerException();
         this.factory = factory;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    protected final void copyDataFrom0(RepeatedMessage<T> other) {
+    protected final void copyDataFrom0(RepeatedMessage<MessageType> other) {
         for (int i = 0; i < other.length; i++) {
             array[i].copyFrom(other.array[i]);
         }
@@ -21,14 +21,14 @@ public class RepeatedMessage<T extends MessageNano<T>> extends RepeatedObject<Re
 
     @Override
     @SuppressWarnings("unchecked")
-    protected final void setIndex0(int index, T value) {
+    protected final void setIndex0(int index, MessageType value) {
         array[index].copyFrom(value);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    protected final T[] allocateArray0(int desiredSize) {
-        return (T[]) new MessageNano[desiredSize];
+    protected final MessageType[] allocateArray0(int desiredSize) {
+        return (MessageType[]) new ProtoMessage[desiredSize];
     }
 
     @Override
@@ -37,15 +37,15 @@ public class RepeatedMessage<T extends MessageNano<T>> extends RepeatedObject<Re
     }
 
     @Override
-    protected final boolean isEqual(T a, Object b) {
+    protected final boolean isEqual(MessageType a, Object b) {
         return a.equals(b);
     }
 
     @Override
-    protected T createEmpty() {
+    protected MessageType createEmpty() {
         return factory.create();
     }
 
-    final MessageFactory<T> factory;
+    final MessageFactory<MessageType> factory;
 
 }

@@ -13,10 +13,10 @@ class RuntimeApi {
 
     private static final String API_PACKAGE = "us.hebi.robobuf";
 
-    static final ClassName InputBuffer = ClassName.get(API_PACKAGE, "ProtoInputBuffer");
-    static final ClassName OutputBuffer = ClassName.get(API_PACKAGE, "ProtoOutputBuffer");
+    static final ClassName ProtoInput = ClassName.get(API_PACKAGE, "ProtoInput");
+    static final ClassName ProtoOutput = ClassName.get(API_PACKAGE, "ProtoOutput");
     static final ClassName InternalUtil = ClassName.get(API_PACKAGE, "InternalUtil");
-    static final ClassName Message = ClassName.get(API_PACKAGE, "MessageNano");
+    static final ClassName Message = ClassName.get(API_PACKAGE, "ProtoMessage");
     static final ClassName MessageFactory = ClassName.get(API_PACKAGE, "MessageFactory");
     static final ClassName StringType = ClassName.get(StringBuilder.class);
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");

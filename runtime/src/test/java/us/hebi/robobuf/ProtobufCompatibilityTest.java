@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
  * @author Florian Enner
  * @since 13 Aug 2019
  */
-public class TestSamples {
+public class ProtobufCompatibilityTest {
 
     /**
      * Make sure Java bindings are still equal after doing a round-trip

@@ -47,7 +47,7 @@ public final class MessageNanoPrinter {
     private static final int MAX_STRING_LEN = 200;
 
     /**
-     * Returns an text representation of a MessageNano suitable for debugging. The returned string
+     * Returns an text representation of a ProtoMessage suitable for debugging. The returned string
      * is mostly compatible with Protocol Buffer's TextFormat (as provided by non-nano protocol
      * buffers) -- groups (which are deprecated) are output with an underscore name (e.g. foo_bar
      * instead of FooBar) and will thus not parse.
@@ -55,7 +55,7 @@ public final class MessageNanoPrinter {
      * <p>Employs Java reflection on the given object and recursively prints primitive fields,
      * groups, and messages.</p>
      */
-    public static <T extends MessageNano> String print(T message) {
+    public static <T extends ProtoMessage> String print(T message) {
         if (message == null) {
             return "";
         }
@@ -91,7 +91,7 @@ public final class MessageNanoPrinter {
             //   - we're about to print a primitive, but "reftype" optional style is enabled, and
             //     the field is unset.
             // In both cases the appropriate behavior is to output nothing.
-        } else if (object instanceof MessageNano) {  // Nano proto message
+        } else if (object instanceof ProtoMessage) {  // Nano proto message
             int origIndentBufLength = indentBuf.length();
             if (identifier != null) {
                 buf.append(indentBuf).append(deCamelCaseify(identifier)).append(" <\n");

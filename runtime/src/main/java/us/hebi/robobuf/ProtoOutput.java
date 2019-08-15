@@ -50,7 +50,7 @@ import static us.hebi.robobuf.WireFormat.*;
  *
  * @author kneton@google.com Kenton Varda
  */
-public final class ProtoOutputBuffer {
+public final class ProtoOutput {
     /* max bytes per java UTF-16 char in UTF-8 */
     private static final int MAX_UTF8_EXPANSION = 3;
     private byte[] buffer;
@@ -58,8 +58,8 @@ public final class ProtoOutputBuffer {
     private int limit;
     private int position;
 
-    private ProtoOutputBuffer(final byte[] buffer, final int offset,
-                              final int length) {
+    private ProtoOutput(final byte[] buffer, final int offset,
+                        final int length) {
         this.buffer = buffer;
         this.offset = offset;
         this.limit = offset + length;
@@ -72,7 +72,7 @@ public final class ProtoOutputBuffer {
      * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
      * array is faster than writing to an {@code OutputStream}.
      */
-    public static ProtoOutputBuffer newInstance(final byte[] flatArray) {
+    public static ProtoOutput newInstance(final byte[] flatArray) {
         return newInstance(flatArray, 0, flatArray.length);
     }
 
@@ -82,10 +82,10 @@ public final class ProtoOutputBuffer {
      * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
      * array is faster than writing to an {@code OutputStream}.
      */
-    public static ProtoOutputBuffer newInstance(final byte[] flatArray,
-                                                final int offset,
-                                                final int length) {
-        return new ProtoOutputBuffer(flatArray, offset, length);
+    public static ProtoOutput newInstance(final byte[] flatArray,
+                                          final int offset,
+                                          final int length) {
+        return new ProtoOutput(flatArray, offset, length);
     }
 
     // -----------------------------------------------------------------
@@ -226,7 +226,7 @@ public final class ProtoOutputBuffer {
     }
 
     /** Write a {@code group} field, including tag, to the stream. */
-    public void writeGroup(final int fieldNumber, final MessageNano value)
+    public void writeGroup(final int fieldNumber, final ProtoMessage value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_START_GROUP);
         writeGroupNoTag(value);
@@ -234,7 +234,7 @@ public final class ProtoOutputBuffer {
     }
 
     /** Write an embedded message field, including tag, to the stream. */
-    public void writeMessage(final int fieldNumber, final MessageNano value)
+    public void writeMessage(final int fieldNumber, final ProtoMessage value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_LENGTH_DELIMITED);
         writeMessageNoTag(value);
@@ -517,12 +517,12 @@ public final class ProtoOutputBuffer {
 
 
     /** Write a {@code group} field to the stream. */
-    public void writeGroupNoTag(final MessageNano value) throws IOException {
+    public void writeGroupNoTag(final ProtoMessage value) throws IOException {
         value.writeTo(this);
     }
 
     /** Write an embedded message field to the stream. */
-    public void writeMessageNoTag(final MessageNano value) throws IOException {
+    public void writeMessageNoTag(final ProtoMessage value) throws IOException {
         writeRawVarint32(value.getCachedSize());
         value.writeTo(this);
     }
@@ -650,7 +650,7 @@ public final class ProtoOutputBuffer {
      * {@code group} field, including tag.
      */
     public static int computeGroupSize(final int fieldNumber,
-                                       final MessageNano value) {
+                                       final ProtoMessage value) {
         return computeTagSize(fieldNumber) * 2 + computeGroupSizeNoTag(value);
     }
 
@@ -659,7 +659,7 @@ public final class ProtoOutputBuffer {
      * embedded message field, including tag.
      */
     public static int computeMessageSize(final int fieldNumber,
-                                         final MessageNano value) {
+                                         final ProtoMessage value) {
         return computeTagSize(fieldNumber) + computeMessageSizeNoTag(value);
     }
 
@@ -807,7 +807,7 @@ public final class ProtoOutputBuffer {
      * Compute the number of bytes that would be needed to encode a
      * {@code group} field.
      */
-    public static int computeGroupSizeNoTag(final MessageNano value) {
+    public static int computeGroupSizeNoTag(final ProtoMessage value) {
         return value.getSerializedSize();
     }
 
@@ -815,7 +815,7 @@ public final class ProtoOutputBuffer {
      * Compute the number of bytes that would be needed to encode an embedded
      * message field.
      */
-    public static int computeMessageSizeNoTag(final MessageNano value) {
+    public static int computeMessageSizeNoTag(final ProtoMessage value) {
         final int size = value.getSerializedSize();
         return computeRawVarint32Size(size) + size;
     }
@@ -929,7 +929,7 @@ public final class ProtoOutputBuffer {
         private static final long serialVersionUID = -6947486886997889499L;
 
         OutOfSpaceException(int position, int limit) {
-            super("CodedOutputStream was writing to a flat byte array and ran " +
+            super("ProtoOutput was writing to a flat byte array and ran " +
                     "out of space (pos " + position + " limit " + limit + ").");
         }
     }
@@ -955,8 +955,7 @@ public final class ProtoOutputBuffer {
     }
 
     /** Write part of an array of bytes. */
-    public void writeRawBytes(final byte[] value, int offset, int length)
-            throws IOException {
+    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
         if (spaceLeft() >= length) {
             // We have room in the current buffer.
             System.arraycopy(value, offset, buffer, position, length);
@@ -968,8 +967,7 @@ public final class ProtoOutputBuffer {
     }
 
     /** Encode and write a tag. */
-    public void writeTag(final int fieldNumber, final int wireType)
-            throws IOException {
+    public void writeTag(final int fieldNumber, final int wireType) throws IOException {
         writeRawVarint32(WireFormat.makeTag(fieldNumber, wireType));
     }
 

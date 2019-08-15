@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
  * @author Florian Enner
  * @since 13 Aug 2019
  */
-public class MessageTest {
+public class ProtoMessageTest {
 
     @Test
     public void testDefaults() throws IOException {
@@ -77,7 +77,7 @@ public class MessageTest {
         assertFalse(emptyMsg.hasOptionalUint32());
         assertFalse(emptyMsg.hasOptionalUint64());
 
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.optionalPrimitives());
+        TestAllTypes msg = TestAllTypes.parseFrom(ProtobufCompatibilityTest.optionalPrimitives());
         assertNotEquals(msg, emptyMsg);
 
         assertTrue(msg.hasId());
@@ -150,7 +150,7 @@ public class MessageTest {
         assertFalse(emptyMsg.hasUint32S());
         assertFalse(emptyMsg.hasUint64S());
 
-        RepeatedPackables.Packed msg = RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesNonPacked());
+        RepeatedPackables.Packed msg = RepeatedPackables.Packed.parseFrom(ProtobufCompatibilityTest.repeatedPackablesNonPacked());
         assertNotEquals(msg, emptyMsg);
 
         assertTrue(msg.hasBools());
@@ -198,8 +198,8 @@ public class MessageTest {
         assertEquals(msg, manualMsg);
 
         // Make sure packed fields can be parsed from non-packed data to maintain forwards compatibility
-        byte[] packed = RepeatedPackables.Packed.parseFrom(TestSamples.repeatedPackablesPacked()).toByteArray();
-        byte[] nonPacked = RepeatedPackables.NonPacked.parseFrom(TestSamples.repeatedPackablesNonPacked()).toByteArray();
+        byte[] packed = RepeatedPackables.Packed.parseFrom(ProtobufCompatibilityTest.repeatedPackablesPacked()).toByteArray();
+        byte[] nonPacked = RepeatedPackables.NonPacked.parseFrom(ProtobufCompatibilityTest.repeatedPackablesNonPacked()).toByteArray();
 
         assertEquals(msg, RepeatedPackables.Packed.parseFrom(packed));
         assertEquals(RepeatedPackables.Packed.parseFrom(packed), RepeatedPackables.Packed.parseFrom(nonPacked));
@@ -214,7 +214,7 @@ public class MessageTest {
         assertFalse(emptyMsg.hasOptionalForeignEnum());
         assertFalse(emptyMsg.hasOptionalImportEnum());
 
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.optionalEnums());
+        TestAllTypes msg = TestAllTypes.parseFrom(ProtobufCompatibilityTest.optionalEnums());
         assertNotEquals(msg, emptyMsg);
         assertTrue(msg.hasOptionalNestedEnum());
         assertTrue(msg.hasOptionalForeignEnum());
@@ -246,7 +246,7 @@ public class MessageTest {
 
     @Test
     public void testRepeatedEnums() throws IOException {
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedEnums());
+        TestAllTypes msg = TestAllTypes.parseFrom(ProtobufCompatibilityTest.repeatedEnums());
         assertEquals(4, msg.getRepeatedNestedEnumCount());
         assertEquals(NestedEnum.FOO, msg.getRepeatedNestedEnum(0));
         assertEquals(NestedEnum.BAR, msg.getRepeatedNestedEnum(1));
@@ -282,7 +282,7 @@ public class MessageTest {
 
     @Test
     public void testRepeatedStrings() throws IOException {
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedStrings());
+        TestAllTypes msg = TestAllTypes.parseFrom(ProtobufCompatibilityTest.repeatedStrings());
         assertEquals(4, msg.getRepeatedString().length());
         assertEquals("hello", msg.getRepeatedString().get(0).toString());
         assertEquals("world", msg.getRepeatedString().get(1).toString());
@@ -326,7 +326,7 @@ public class MessageTest {
 
     @Test
     public void testRepeatedBytes() throws IOException {
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedBytes());
+        TestAllTypes msg = TestAllTypes.parseFrom(ProtobufCompatibilityTest.repeatedBytes());
         assertEquals(2, msg.getRepeatedBytes().length());
         assertArrayEquals("ascii".getBytes(InternalUtil.UTF_8), msg.getRepeatedBytes().get(0).toArray());
         assertArrayEquals("utf8\uD83D\uDCA9".getBytes(InternalUtil.UTF_8), msg.getRepeatedBytes().get(1).toArray());
@@ -350,13 +350,13 @@ public class MessageTest {
         assertTrue(msg.hasOptionalForeignMessage());
 
         // Compare w/ gen-Java and round-trip parsing
-        assertEquals(msg, TestAllTypes.parseFrom(TestSamples.optionalMessages()));
+        assertEquals(msg, TestAllTypes.parseFrom(ProtobufCompatibilityTest.optionalMessages()));
         assertEquals(msg, TestAllTypes.parseFrom(msg.toByteArray()));
     }
 
     @Test
     public void testRepeatedMessages() throws IOException {
-        TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedMessages());
+        TestAllTypes msg = TestAllTypes.parseFrom(ProtobufCompatibilityTest.repeatedMessages());
         assertEquals(3, msg.getRepeatedForeignMessage().length());
         assertEquals(new ForeignMessage().setC(0), msg.getRepeatedForeignMessage().get(0));
         assertEquals(new ForeignMessage().setC(1), msg.getRepeatedForeignMessage().get(1));

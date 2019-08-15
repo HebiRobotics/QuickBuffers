@@ -449,7 +449,7 @@ public class FieldGenerator {
         m.put("number", info.getNumber());
         m.put("tag", info.getTag());
         m.put("capitalizedType", ProtoUtil.getCapitalizedType(info.getDescriptor().getType()));
-        m.put("computeClass", RuntimeApi.OutputBuffer);
+        m.put("computeClass", RuntimeApi.ProtoOutput);
         m.put("internalUtil", RuntimeApi.InternalUtil);
         m.put("secondArgs", info.isGroup() ? ", " + info.getNumber() : "");
         m.put("defaultField", info.getDefaultFieldName());

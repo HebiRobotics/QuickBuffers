@@ -31,14 +31,15 @@
 package us.hebi.robobuf;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
+ * ---- Code below was adapted from Javanano's MessageNano ----
+ *
  * Abstract interface implemented by Protocol Message objects.
  *
  * @author wink@google.com Wink Saville
  */
-public abstract class MessageNano<T extends MessageNano> {
+public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     protected volatile int cachedSize = -1;
 
     /**
@@ -74,7 +75,7 @@ public abstract class MessageNano<T extends MessageNano> {
      * @param other
      * @return this
      */
-    public abstract T copyFrom(T other);
+    public abstract MessageType copyFrom(MessageType other);
 
     /**
      * Sets all fields and data to their default values. Does not
@@ -82,7 +83,7 @@ public abstract class MessageNano<T extends MessageNano> {
      *
      * @return this
      */
-    public abstract T clear();
+    public abstract MessageType clear();
 
     /**
      * Computes the number of bytes required to encode this message. This does not update the
@@ -96,13 +97,13 @@ public abstract class MessageNano<T extends MessageNano> {
      * @param output the output to receive the serialized form.
      * @throws IOException if an error occurred writing to {@code output}.
      */
-    public abstract void writeTo(ProtoOutputBuffer output) throws IOException;
+    public abstract void writeTo(ProtoOutput output) throws IOException;
 
     /**
      * Parse {@code input} as a message of this type and merge it with the
      * message being built.
      */
-    public abstract MessageNano mergeFrom(ProtoInputBuffer input) throws IOException;
+    public abstract ProtoMessage mergeFrom(ProtoInput input) throws IOException;
 
     /**
      * Serialize to a byte array.
@@ -110,7 +111,7 @@ public abstract class MessageNano<T extends MessageNano> {
      * @return byte array with the serialized data.
      */
     public final byte[] toByteArray() {
-        return MessageNano.toByteArray(this);
+        return ProtoMessage.toByteArray(this);
     }
 
     /**
@@ -118,7 +119,7 @@ public abstract class MessageNano<T extends MessageNano> {
      *
      * @return byte array with the serialized data.
      */
-    public static final byte[] toByteArray(MessageNano msg) {
+    public static final byte[] toByteArray(ProtoMessage msg) {
         final byte[] result = new byte[msg.getSerializedSize()];
         toByteArray(msg, result, 0, result.length);
         return result;
@@ -132,10 +133,9 @@ public abstract class MessageNano<T extends MessageNano> {
      * and if length bytes are not written then IllegalStateException
      * is thrown.
      */
-    public static final void toByteArray(MessageNano msg, byte[] data, int offset, int length) {
+    public static final void toByteArray(ProtoMessage msg, byte[] data, int offset, int length) {
         try {
-            final ProtoOutputBuffer output =
-                    ProtoOutputBuffer.newInstance(data, offset, length);
+            final ProtoOutput output = ProtoOutput.newInstance(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -148,7 +148,7 @@ public abstract class MessageNano<T extends MessageNano> {
      * Parse {@code data} as a message of this type and merge it with the
      * message being built.
      */
-    public static final <T extends MessageNano> T mergeFrom(T msg, final byte[] data)
+    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data)
             throws InvalidProtocolBufferNanoException {
         return mergeFrom(msg, data, 0, data.length);
     }
@@ -157,11 +157,11 @@ public abstract class MessageNano<T extends MessageNano> {
      * Parse {@code data} as a message of this type and merge it with the
      * message being built.
      */
-    public static final <T extends MessageNano> T mergeFrom(T msg, final byte[] data,
-                                                            final int off, final int len) throws InvalidProtocolBufferNanoException {
+    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data,
+                                                             final int off, final int len) throws InvalidProtocolBufferNanoException {
         try {
-            final ProtoInputBuffer input =
-                    ProtoInputBuffer.newInstance(data, off, len);
+            final ProtoInput input =
+                    ProtoInput.newInstance(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;
@@ -171,31 +171,6 @@ public abstract class MessageNano<T extends MessageNano> {
             throw new RuntimeException("Reading from a byte array threw an IOException (should "
                     + "never happen).");
         }
-    }
-
-    /**
-     * Compares two {@code MessageNano}s and returns true if the message's are the same class and
-     * have serialized form equality (i.e. all of the field values are the same).
-     */
-    public static final boolean messageNanoEquals(MessageNano a, MessageNano b) {
-        if (a == b) {
-            return true;
-        }
-        if (a == null || b == null) {
-            return false;
-        }
-        if (a.getClass() != b.getClass()) {
-            return false;
-        }
-        final int serializedSize = a.getSerializedSize();
-        if (b.getSerializedSize() != serializedSize) {
-            return false;
-        }
-        final byte[] aByteArray = new byte[serializedSize];
-        final byte[] bByteArray = new byte[serializedSize];
-        toByteArray(a, aByteArray, 0, serializedSize);
-        toByteArray(b, bByteArray, 0, serializedSize);
-        return Arrays.equals(aByteArray, bByteArray);
     }
 
     /**
@@ -212,7 +187,8 @@ public abstract class MessageNano<T extends MessageNano> {
 
     /** Provides support for cloning. This only works if you specify the generate_clone method. */
     @Override
-    public MessageNano clone() throws CloneNotSupportedException {
-        return (MessageNano) super.clone();
+    public ProtoMessage clone() throws CloneNotSupportedException {
+        return (ProtoMessage) super.clone();
     }
+
 }

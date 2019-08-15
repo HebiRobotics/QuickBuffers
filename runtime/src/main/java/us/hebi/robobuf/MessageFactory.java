@@ -6,7 +6,7 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 15 Aug 2019
  */
-public interface MessageFactory<T extends MessageNano<T>> {
+public interface MessageFactory<T extends ProtoMessage<T>> {
 
     T create();
 
