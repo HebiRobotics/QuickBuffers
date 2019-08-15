@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.*;
-import static us.hebi.robobuf.InternalNano.*;
 
 /**
  * @author Florian Enner
@@ -38,9 +37,9 @@ public class MessageTest {
             assertEquals(51.5f, msg.getDefaultFloat(), 0);
             assertEquals(52.0e3, msg.getDefaultDouble(), 0.0);
             assertEquals("hello", msg.getDefaultString().toString());
-            assertEquals("world", new String(msg.getDefaultBytes().toArray(), UTF_8));
+            assertEquals("world", new String(msg.getDefaultBytes().toArray(), InternalUtil.UTF_8));
             assertEquals("dünya", msg.getDefaultStringNonascii().toString());
-            assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), UTF_8));
+            assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), InternalUtil.UTF_8));
             assertEquals(NestedEnum.BAR, msg.getDefaultNestedEnum());
             assertEquals(ForeignEnum.FOREIGN_BAR, msg.getDefaultForeignEnum());
             assertEquals(ImportEnum.IMPORT_BAR, msg.getDefaultImportEnum());
@@ -301,7 +300,7 @@ public class MessageTest {
 
     @Test
     public void testBytes() throws IOException {
-        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
+        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(InternalUtil.UTF_8);
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
 
@@ -329,8 +328,8 @@ public class MessageTest {
     public void testRepeatedBytes() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(TestSamples.repeatedBytes());
         assertEquals(2, msg.getRepeatedBytes().length());
-        assertArrayEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
-        assertArrayEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
+        assertArrayEquals("ascii".getBytes(InternalUtil.UTF_8), msg.getRepeatedBytes().get(0).toArray());
+        assertArrayEquals("utf8\uD83D\uDCA9".getBytes(InternalUtil.UTF_8), msg.getRepeatedBytes().get(1).toArray());
         TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }

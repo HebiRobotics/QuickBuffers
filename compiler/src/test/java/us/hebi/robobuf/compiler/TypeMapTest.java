@@ -13,17 +13,17 @@ public class TypeMapTest {
 
     @Test
     public void testSimpleTypeMap() {
-        TypeMap map = TypeMap.fromRequest(TestRequestLoader.getSimpleRequest());
-        assertEquals(1, map.getMap().entrySet().size());
+        TypeMap map = RequestInfo.withTypeMap(TestRequestLoader.getSimpleRequest()).getTypeMap();
+        assertEquals(1, map.typeMap.entrySet().size());
         assertEquals("us.hebi.robobuf.java.Simple.SimpleMessage", map.resolveClassName(".robobuf_unittest_import.SimpleMessage").toString());
     }
 
     @Test
     public void testImportTypeMap() {
         CodeGeneratorRequest request = TestRequestLoader.getImportRequest();
-        TypeMap map = TypeMap.fromRequest(request);
+        TypeMap map = RequestInfo.withTypeMap(request).getTypeMap();
 
-        assertEquals(8, map.getMap().entrySet().size());
+        assertEquals(8, map.typeMap.entrySet().size());
         assertEquals("us.hebi.robobuf.java.ContainerMessage", map.resolveClassName(".robobuf_unittest.ContainerMessage").toString());
         assertEquals("us.hebi.robobuf.java.ForeignEnum", map.resolveClassName(".robobuf_unittest.ForeignEnum").toString());
 
@@ -40,9 +40,9 @@ public class TypeMapTest {
     @Test
     public void testAllTypesTypeMap() {
         CodeGeneratorRequest request = TestRequestLoader.getAllTypesRequest();
-        TypeMap map = TypeMap.fromRequest(request);
+        TypeMap map = RequestInfo.withTypeMap(request).getTypeMap();
 
-        assertEquals(10, map.getMap().entrySet().size());
+        assertEquals(10, map.typeMap.entrySet().size());
 
         assertEquals("us.hebi.robobuf.test.external.ImportMessage", map.resolveClassName(".robobuf_unittest_import.ImportMessage").toString());
         assertEquals("us.hebi.robobuf.test.ForeignEnum", map.resolveClassName(".robobuf_unittest.ForeignEnum").toString());

@@ -95,7 +95,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
             return false;
 
         for (int i = 0; i < length; i++) {
-            if (!RoboUtil.equals(array[i], other.array[i]))
+            if (!InternalUtil.equals(array[i], other.array[i]))
                 return false;
         }
         return true;
@@ -103,6 +103,6 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
 
     float[] array = EMPTY;
     private static final float[] EMPTY = new float[0];
-    private static final float DEFAULT_VALUE = RoboUtil._floatDefault;
+    private static final float DEFAULT_VALUE = InternalUtil._floatDefault;
 
 }

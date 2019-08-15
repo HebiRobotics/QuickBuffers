@@ -9,25 +9,25 @@ import java.util.HashMap;
  * This class generates all serialization logic and field related accessors.
  * It is a bit of a mess due to lots of switch statements, but I found that
  * splitting the types up similarly to how the protobuf-generator code is
- * organized makes it really difficult to find duplicate code or synergies
- * and was more difficult to work with overall.
+ * organized makes it really difficult to find and manage duplicate code,
+ * and to keep track of where things are being called.
  *
  * @author Florian Enner
  * @since 07 Aug 2019
  */
 public class FieldGenerator {
 
-    public RequestInfo.FieldInfo getInfo() {
+    protected RequestInfo.FieldInfo getInfo() {
         return info;
     }
 
-    public final void generateMemberFields(TypeSpec.Builder type) {
+    protected void generateMemberFields(TypeSpec.Builder type) {
         FieldSpec.Builder field = FieldSpec.builder(storeType, info.getFieldName())
                 .addJavadoc(info.getJavadoc())
                 .addModifiers(Modifier.PRIVATE);
 
         if (info.isRepeated() && info.isMessageOrGroup()) {
-            field.addModifiers(Modifier.FINAL).initializer("new $T($T.getFactory())", RuntimeClasses.REPEATED_MESSAGE, info.getTypeName());
+            field.addModifiers(Modifier.FINAL).initializer("new $T($T.getFactory())", storeType, info.getTypeName());
         } else if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
         } else if (info.isString()) {
@@ -43,12 +43,12 @@ public class FieldGenerator {
             // byte[] default values are stored as utf8 strings, so we need to convert it first
             type.addField(FieldSpec.builder(ArrayTypeName.get(byte[].class), info.getDefaultFieldName())
                     .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer(CodeBlock.builder().addNamed("$internal:T.bytesDefaultValue(\"$default:L\")", m).build())
+                    .initializer(CodeBlock.builder().addNamed("$internalUtil:T.bytesDefaultValue(\"$default:L\")", m).build())
                     .build());
         }
     }
 
-    public final void generateClearCode(MethodSpec.Builder method) {
+    protected void generateClearCode(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isMessageOrGroup()) {
             method.addNamedCode("$field:N.clear();\n", m);
 
@@ -71,7 +71,7 @@ public class FieldGenerator {
         }
     }
 
-    public final void generateCopyFromCode(MethodSpec.Builder method) {
+    protected void generateCopyFromCode(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup()) {
             method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m);
 
@@ -87,12 +87,12 @@ public class FieldGenerator {
         }
     }
 
-    public final void generateEqualsStatement(MethodSpec.Builder method) {
+    protected void generateEqualsStatement(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup()) {
             method.addNamedCode("$field:N.equals(other.$field:N)", m);
 
         } else if (info.isString()) {
-            method.addNamedCode("$roboUtil:T.equals($field:N, other.$field:N)", m);
+            method.addNamedCode("$internalUtil:T.equals($field:N, other.$field:N)", m);
 
         } else if (typeName == TypeName.DOUBLE) {
             method.addNamedCode("Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N)", m);
@@ -108,12 +108,12 @@ public class FieldGenerator {
         }
     }
 
-    public final void generateMergingCode(MethodSpec.Builder method) {
+    protected void generateMergingCode(MethodSpec.Builder method) {
         // non-packed fields still expected to be located together. Most repeated primitives should be
         // packed, so optimizing this further is not a priority.
         if (info.isRepeated() && (info.isPrimitive() || info.isEnum())) {
             method
-                    .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
+                    .addNamedCode("final int arrayLength = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
                     .addNamedCode("$field:N.requestSize(arrayLength);\n", m)
                     .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
                     .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
@@ -124,7 +124,7 @@ public class FieldGenerator {
 
         } else if (info.isRepeated()) {
             method
-                    .addNamedCode("final int arrayLength = $wireFormat:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
+                    .addNamedCode("final int arrayLength = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n", m)
                     .addNamedCode("$field:N.requestSize(arrayLength);\n", m)
                     .beginControlFlow("for (int i = 0; i < arrayLength - 1; i++)")
                     .addNamedCode("input.read$capitalizedType:L($field:N.getAndAdd()$secondArgs:L);\n", m)
@@ -156,7 +156,7 @@ public class FieldGenerator {
         }
     }
 
-    public final void generateMergingCodeFromPacked(MethodSpec.Builder method) {
+    protected void generateMergingCodeFromPacked(MethodSpec.Builder method) {
         if (info.isFixedWidth()) {
 
             // For fixed width types we can copy the raw memory
@@ -198,7 +198,7 @@ public class FieldGenerator {
         }
     }
 
-    public final void generateSerializationCode(MethodSpec.Builder method) {
+    protected void generateSerializationCode(MethodSpec.Builder method) {
         if (info.isPacked() && info.isFixedWidth()) {
             method.addNamedCode("output.writePacked$capitalizedType:L($number:L, $field:N);\n", m);
 
@@ -225,7 +225,7 @@ public class FieldGenerator {
         }
     }
 
-    public final void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
+    protected void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
         if (info.isPacked() && info.isFixedWidth()) {
             method.addNamedCode("" +
                     "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
@@ -258,7 +258,7 @@ public class FieldGenerator {
 
     }
 
-    public final void generateMemberMethods(TypeSpec.Builder type) {
+    protected void generateMemberMethods(TypeSpec.Builder type) {
         generateHasMethod(type);
         if (info.isEnum()) {
             generateGetEnumMethods(type);
@@ -270,7 +270,7 @@ public class FieldGenerator {
     }
 
 
-    private void generateHasMethod(TypeSpec.Builder type) {
+    protected void generateHasMethod(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getHazzerName())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
@@ -279,7 +279,7 @@ public class FieldGenerator {
                 .build());
     }
 
-    private void generateSetMethods(TypeSpec.Builder type) {
+    protected void generateSetMethods(TypeSpec.Builder type) {
         if (info.isRepeated() || info.isBytes()) {
 
             MethodSpec adder = MethodSpec.methodBuilder(info.getAdderName())
@@ -356,7 +356,7 @@ public class FieldGenerator {
 
     }
 
-    private void generateGetEnumMethods(TypeSpec.Builder type) {
+    protected void generateGetEnumMethods(TypeSpec.Builder type) {
         // Enums are weird because they need to be converter back and forth
         // and we can't just expose the repeated store. Maybe we should switch
         // to using either fully int or fully enum.
@@ -415,7 +415,7 @@ public class FieldGenerator {
         }
     }
 
-    private void generateClearMethod(TypeSpec.Builder type) {
+    protected void generateClearMethod(TypeSpec.Builder type) {
         MethodSpec.Builder method = MethodSpec.methodBuilder(info.getClearName())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
@@ -426,7 +426,7 @@ public class FieldGenerator {
         type.addMethod(method.build());
     }
 
-    public FieldGenerator(RequestInfo.FieldInfo info) {
+    protected FieldGenerator(RequestInfo.FieldInfo info) {
         this.info = info;
         typeName = info.getTypeName();
         storeType = info.getStoreType();
@@ -448,11 +448,9 @@ public class FieldGenerator {
         m.put("type", typeName);
         m.put("number", info.getNumber());
         m.put("tag", info.getTag());
-        m.put("capitalizedType", RuntimeClasses.getCapitalizedType(info.getDescriptor().getType()));
-        m.put("computeClass", RuntimeClasses.PROTO_DEST);
-        m.put("roboUtil", RuntimeClasses.ROBO_UTIL);
-        m.put("wireFormat", RuntimeClasses.WIRE_FORMAT);
-        m.put("internal", RuntimeClasses.INTERNAL);
+        m.put("capitalizedType", ProtoUtil.getCapitalizedType(info.getDescriptor().getType()));
+        m.put("computeClass", RuntimeApi.OutputBuffer);
+        m.put("internalUtil", RuntimeApi.InternalUtil);
         m.put("secondArgs", info.isGroup() ? ", " + info.getNumber() : "");
         m.put("defaultField", info.getDefaultFieldName());
         m.put("bytesPerTag", info.getBytesPerTag());

@@ -1,13 +1,67 @@
 package us.hebi.robobuf.compiler;
 
+import com.google.protobuf.DescriptorProtos;
+
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 
 /**
+ * Utilities for dealing with names
+ *
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-public class NameUtil {
+class NameUtil {
+
+    static String getJavaPackage(DescriptorProtos.FileDescriptorProto descriptor) {
+        if (descriptor.getOptions().hasJavaPackage())
+            return descriptor.getOptions().getJavaPackage();
+        return getProtoPackage(descriptor);
+    }
+
+    static String getProtoPackage(DescriptorProtos.FileDescriptorProto descriptor) {
+        if (descriptor.hasPackage())
+            return descriptor.getPackage();
+        return DEFAULT_PACKAGE;
+    }
+
+    static String getJavaOuterClassname(DescriptorProtos.FileDescriptorProto descriptor) {
+        if (descriptor.getOptions().hasJavaOuterClassname())
+            return descriptor.getOptions().getJavaOuterClassname();
+
+        String nameWithoutPath = new File(descriptor.getName()).getName(); // removes slashes etc.
+        String defaultOuterClassName = toUpperCamel(stripSuffixString(nameWithoutPath));
+
+        // add suffix on collisions to match gen-java behavior
+        if (!hasConflictingClassName(descriptor, defaultOuterClassName))
+            return defaultOuterClassName;
+        return defaultOuterClassName + OUTER_CLASS_SUFFIX;
+
+    }
+
+    private static boolean hasConflictingClassName(DescriptorProtos.FileDescriptorProto descriptor, String outerClassName) {
+        for (DescriptorProtos.DescriptorProto messageDescriptor : descriptor.getMessageTypeList()) {
+            if (outerClassName.equals(toUpperCamel(messageDescriptor.getName())))
+                return true;
+        }
+        for (DescriptorProtos.EnumDescriptorProto enumDescriptor : descriptor.getEnumTypeList()) {
+            if (outerClassName.equals(toUpperCamel(enumDescriptor.getName())))
+                return true;
+        }
+        return false;
+    }
+
+    private static String stripSuffixString(String fileName) {
+        if (fileName.endsWith(".proto"))
+            return fileName.substring(0, fileName.length() - ".proto".length());
+        if (fileName.endsWith(".protodevel"))
+            return fileName.substring(0, fileName.length() - ".protodevel".length());
+        return fileName;
+    }
+
+    private static String DEFAULT_PACKAGE = "";
+    private static String OUTER_CLASS_SUFFIX = "OuterClass";
 
     static String toUpperCamel(String name) {
         return underscoresToCamelCaseImpl(name, true);
@@ -53,11 +107,7 @@ public class NameUtil {
     }
 
     public static String filterKeyword(String name) {
-        return isReservedKeyword(name) ? name + "_" : name;
-    }
-
-    private static boolean isReservedKeyword(String key) {
-        return keywordSet.contains(key);
+        return keywordSet.contains(name) ? name + "_" : name;
     }
 
     private static final HashSet<String> keywordSet = new HashSet<>(Arrays.asList(

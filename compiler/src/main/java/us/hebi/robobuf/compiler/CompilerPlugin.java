@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
+ * Protoc plugin that gets called by the protoc executable. The communication happens
+ * via protobuf messages on System.in / System.out
+ *
  * @author Florian Enner
  * @since 05 Aug 2019
  */
@@ -30,22 +33,17 @@ public class CompilerPlugin {
         handleRequest(System.in).writeTo(System.out);
     }
 
-    public static CodeGeneratorResponse handleRequest(InputStream input) throws IOException {
+    static CodeGeneratorResponse handleRequest(InputStream input) throws IOException {
         try {
-
-            // Compile files
-            CodeGeneratorRequest request = CodeGeneratorRequest.parseFrom(input);
-            return handleRequest(request);
-
+            return handleRequest(CodeGeneratorRequest.parseFrom(input));
         } catch (GeneratorException ge) {
             return ParserUtil.asError(ge.getMessage());
         } catch (Exception ex) {
             return ParserUtil.asErrorWithStackTrace(ex);
         }
-
     }
 
-    public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest requestProto) {
+    static CodeGeneratorResponse handleRequest(CodeGeneratorRequest requestProto) {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
         RequestInfo request = RequestInfo.withTypeMap(requestProto);
 

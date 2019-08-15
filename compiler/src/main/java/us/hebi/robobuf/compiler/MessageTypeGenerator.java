@@ -12,18 +12,16 @@ import java.util.List;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-public class MessageTypeGenerator implements TypeGenerator {
+class MessageTypeGenerator {
 
-    public MessageTypeGenerator(MessageInfo info) {
+    MessageTypeGenerator(MessageInfo info) {
         this.info = info;
-        info.getNestedEnums().forEach(t -> nestedTypes.add(new EnumTypeGenerator(t)));
-        info.getNestedTypes().forEach(t -> nestedTypes.add(new MessageTypeGenerator(t)));
         info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
     }
 
-    public TypeSpec generate() {
+    TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.classBuilder(info.getTypeName())
-                .superclass(ParameterizedTypeName.get(RuntimeClasses.BASE_MESSAGE, info.getTypeName()))
+                .superclass(ParameterizedTypeName.get(RuntimeApi.Message, info.getTypeName()))
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
         if (info.isNested()) {
@@ -40,9 +38,16 @@ public class MessageTypeGenerator implements TypeGenerator {
                     .build());
         }
 
-        // Types
-        nestedTypes.stream()
-                .map(TypeGenerator::generate)
+        // Nested Enums
+        info.getNestedEnums().stream()
+                .map(EnumTypeGenerator::new)
+                .map(EnumTypeGenerator::generate)
+                .forEach(type::addType);
+
+        // Nested Types
+        info.getNestedTypes().stream()
+                .map(MessageTypeGenerator::new)
+                .map(MessageTypeGenerator::generate)
                 .forEach(type::addType);
 
         // Constructor
@@ -147,7 +152,7 @@ public class MessageTypeGenerator implements TypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
-                .addParameter(RuntimeClasses.PROTO_SOURCE, "input")
+                .addParameter(RuntimeApi.InputBuffer, "input")
                 .addException(IOException.class);
 
         mergeFrom.beginControlFlow("while (true)");
@@ -194,7 +199,7 @@ public class MessageTypeGenerator implements TypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(void.class)
-                .addParameter(RuntimeClasses.PROTO_DEST, "output")
+                .addParameter(RuntimeApi.OutputBuffer, "output")
                 .addException(IOException.class);
         fields.forEach(f -> {
             writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
@@ -257,12 +262,12 @@ public class MessageTypeGenerator implements TypeGenerator {
                 .addException(IOException.class)
                 .addParameter(byte[].class, "data")
                 .returns(info.getTypeName())
-                .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.BASE_MESSAGE, info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeApi.Message, info.getTypeName())
                 .build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {
-        ParameterizedTypeName factoryReturnType = ParameterizedTypeName.get(RuntimeClasses.MESSAGE_FACTORY, info.getTypeName());
+        ParameterizedTypeName factoryReturnType = ParameterizedTypeName.get(RuntimeApi.MessageFactory, info.getTypeName());
         ClassName factoryTypeName = info.getTypeName().nestedClass(info.getTypeName().simpleName() + "Factory");
 
         MethodSpec factoryMethod = MethodSpec.methodBuilder("create")
@@ -290,7 +295,6 @@ public class MessageTypeGenerator implements TypeGenerator {
     }
 
     final MessageInfo info;
-    final List<TypeGenerator> nestedTypes = new ArrayList<>();
     final List<FieldGenerator> fields = new ArrayList<>();
 
 }

@@ -100,12 +100,12 @@ public class RequestInfo {
             this.descriptor = descriptor;
 
             fileName = descriptor.getName();
-            protoPackage = NameResolver.getProtoPackage(descriptor);
+            protoPackage = NameUtil.getProtoPackage(descriptor);
 
             javaPackage = getParentRequest().applyJavaPackageReplace(
-                    NameResolver.getJavaPackage(descriptor));
+                    NameUtil.getJavaPackage(descriptor));
 
-            outerClassName = ClassName.get(javaPackage, NameResolver.getJavaOuterClassname(descriptor));
+            outerClassName = ClassName.get(javaPackage, NameUtil.getJavaOuterClassname(descriptor));
 
             outputDirectory = javaPackage.isEmpty() ? "" : javaPackage.replaceAll("\\.", "/") + "/";
 
@@ -220,15 +220,15 @@ public class RequestInfo {
             mutableGetterName = "getMutable" + upperName;
             adderName = "add" + upperName;
             clearName = "clear" + upperName;
-            isPrimitive = TypeMap.isPrimitive(descriptor.getType());
-            tag = RuntimeClasses.makeTag(descriptor);
-            bytesPerTag = RuntimeClasses.computeRawVarint32Size(tag);
-            packedTag = RuntimeClasses.makePackedTag(descriptor);
+            isPrimitive = ProtoUtil.isPrimitive(descriptor.getType());
+            tag = ProtoUtil.makeTag(descriptor);
+            bytesPerTag = ProtoUtil.computeRawVarint32Size(tag);
+            packedTag = ProtoUtil.makePackedTag(descriptor);
             number = descriptor.getNumber();
             fieldName = NameUtil.filterKeyword(lowerName);
-            final String defValue = TypeMap.getDefaultValue(descriptor);
+            final String defValue = ProtoUtil.getDefaultValue(descriptor);
             defaultValue = isEnum() ? NameUtil.filterKeyword(defValue) : defValue;
-            repeatedStoreType = RuntimeClasses.getArrayStoreType(descriptor.getType());
+            repeatedStoreType = RuntimeApi.getRepeatedStoreType(descriptor.getType());
             methodAnnotations = isDeprecated() ?
                     Collections.singletonList(AnnotationSpec.builder(Deprecated.class).build()) :
                     Collections.emptyList();
@@ -246,12 +246,12 @@ public class RequestInfo {
         }
 
         public boolean isFixedWidth() {
-            return TypeMap.isFixedWidth(descriptor.getType());
+            return ProtoUtil.isFixedWidth(descriptor.getType());
         }
 
         public int getFixedWidth() {
             checkState(isFixedWidth(), "not a fixed width type");
-            return TypeMap.getFixedWidth(descriptor.getType());
+            return ProtoUtil.getFixedWidth(descriptor.getType());
         }
 
         public boolean isMessageOrGroup() {
@@ -340,7 +340,7 @@ public class RequestInfo {
             if (isRepeated())
                 return getRepeatedStoreType();
             if (isString())
-                return RuntimeClasses.STRING_CLASS;
+                return RuntimeApi.StringType;
             if (isEnum())
                 return TypeName.INT;
             return getTypeName();

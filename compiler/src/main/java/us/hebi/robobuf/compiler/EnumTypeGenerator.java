@@ -10,13 +10,13 @@ import javax.lang.model.element.Modifier;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-public class EnumTypeGenerator implements TypeGenerator {
+class EnumTypeGenerator {
 
-    public EnumTypeGenerator(EnumInfo info) {
+    EnumTypeGenerator(EnumInfo info) {
         this.info = info;
     }
 
-    public TypeSpec generate() {
+    TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.enumBuilder(info.getTypeName())
                 .addModifiers(Modifier.PUBLIC);
 

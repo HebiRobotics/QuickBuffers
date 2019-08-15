@@ -40,8 +40,8 @@ public class CompilerPluginTest {
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 
-    @Ignore
     @Test
+    @Ignore("manual debugging info")
     public void printRequestPackages() throws IOException {
         CodeGeneratorRequest request = TestRequestLoader.getAllTypesRequest();
         RequestInfo info = RequestInfo.withoutTypeMap(request);
@@ -53,8 +53,6 @@ public class CompilerPluginTest {
         request.getProtoFileList().forEach(file -> {
             System.out.println(file.toBuilder()
                     .clearSourceCodeInfo()
-//                    .clearMessageType()
-//                    .clearEnumType()
                     .build());
         });
 
