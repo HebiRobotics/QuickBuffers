@@ -50,7 +50,7 @@ import static us.hebi.robobuf.WireFormat.*;
  *
  * @author kneton@google.com Kenton Varda
  */
-public final class ProtoOutput {
+public final class ProtoSink {
     /* max bytes per java UTF-16 char in UTF-8 */
     private static final int MAX_UTF8_EXPANSION = 3;
     private byte[] buffer;
@@ -58,8 +58,8 @@ public final class ProtoOutput {
     private int limit;
     private int position;
 
-    private ProtoOutput(final byte[] buffer, final int offset,
-                        final int length) {
+    private ProtoSink(final byte[] buffer, final int offset,
+                      final int length) {
         this.buffer = buffer;
         this.offset = offset;
         this.limit = offset + length;
@@ -72,7 +72,7 @@ public final class ProtoOutput {
      * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
      * array is faster than writing to an {@code OutputStream}.
      */
-    public static ProtoOutput newInstance(final byte[] flatArray) {
+    public static ProtoSink newInstance(final byte[] flatArray) {
         return newInstance(flatArray, 0, flatArray.length);
     }
 
@@ -82,10 +82,10 @@ public final class ProtoOutput {
      * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
      * array is faster than writing to an {@code OutputStream}.
      */
-    public static ProtoOutput newInstance(final byte[] flatArray,
-                                          final int offset,
-                                          final int length) {
-        return new ProtoOutput(flatArray, offset, length);
+    public static ProtoSink newInstance(final byte[] flatArray,
+                                        final int offset,
+                                        final int length) {
+        return new ProtoSink(flatArray, offset, length);
     }
 
     // -----------------------------------------------------------------
@@ -929,7 +929,7 @@ public final class ProtoOutput {
         private static final long serialVersionUID = -6947486886997889499L;
 
         OutOfSpaceException(int position, int limit) {
-            super("ProtoOutput was writing to a flat byte array and ran " +
+            super("ProtoSink was writing to a flat byte array and ran " +
                     "out of space (pos " + position + " limit " + limit + ").");
         }
     }

@@ -21,14 +21,14 @@ import static org.junit.Assert.*;
  * @author Florian Enner
  * @since 13 Aug 2019
  */
-public class ProtobufCompatibilityTest {
+public class CompatibilityTest {
 
     /**
      * Make sure Java bindings are still equal after doing a round-trip
      */
     @Test
     public void testCompatibilityWithProtobufJava() throws IOException {
-        TestAllTypes msg = TestAllTypes.newBuilder()
+        byte[] serializedMsg = TestAllTypes.newBuilder()
                 .mergeFrom(optionalPrimitives())
                 .mergeFrom(optionalMessages())
                 .mergeFrom(optionalBytes())
@@ -40,14 +40,20 @@ public class ProtobufCompatibilityTest {
                 .mergeFrom(repeatedBytes())
                 .addAllRepeatedPackedInt32(Arrays.asList(-1, 0, 1, 2, 3, 4, 5))
                 .addAllRepeatedInt32(Arrays.asList(-2, -1, 0, 1, 2, 3, 4, 5))
-                .build();
-
-        byte[] output = us.hebi.robobuf.robo
-                .TestAllTypes.parseFrom(msg.toByteArray())
+                .build()
                 .toByteArray();
 
-        TestAllTypes actual = TestAllTypes.parseFrom(output);
-        assertEquals(msg, actual);
+        TestAllTypes.Builder expected = TestAllTypes.newBuilder();
+        us.hebi.robobuf.robo.TestAllTypes msg = new us.hebi.robobuf.robo.TestAllTypes();
+
+        // multiple merges to check expanding repeated behavior
+        for (int i = 0; i < 3; i++) {
+            expected.mergeFrom(serializedMsg);
+            msg.mergeFrom(ProtoSource.newInstance(serializedMsg));
+        }
+
+        assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
+        assertEquals(msg, us.hebi.robobuf.robo.TestAllTypes.parseFrom(msg.toByteArray()));
 
     }
 

@@ -152,7 +152,7 @@ class MessageTypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
-                .addParameter(RuntimeApi.ProtoInput, "input")
+                .addParameter(RuntimeApi.ProtoSource, "input")
                 .addException(IOException.class);
 
         mergeFrom.beginControlFlow("while (true)");
@@ -199,7 +199,7 @@ class MessageTypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(void.class)
-                .addParameter(RuntimeApi.ProtoOutput, "output")
+                .addParameter(RuntimeApi.ProtoSink, "output")
                 .addException(IOException.class);
         fields.forEach(f -> {
             writeTo.beginControlFlow("if " + f.getInfo().getHasBit());

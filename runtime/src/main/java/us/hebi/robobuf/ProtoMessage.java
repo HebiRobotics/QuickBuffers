@@ -97,13 +97,13 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * @param output the output to receive the serialized form.
      * @throws IOException if an error occurred writing to {@code output}.
      */
-    public abstract void writeTo(ProtoOutput output) throws IOException;
+    public abstract void writeTo(ProtoSink output) throws IOException;
 
     /**
      * Parse {@code input} as a message of this type and merge it with the
      * message being built.
      */
-    public abstract ProtoMessage mergeFrom(ProtoInput input) throws IOException;
+    public abstract ProtoMessage mergeFrom(ProtoSource input) throws IOException;
 
     /**
      * Serialize to a byte array.
@@ -135,7 +135,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      */
     public static final void toByteArray(ProtoMessage msg, byte[] data, int offset, int length) {
         try {
-            final ProtoOutput output = ProtoOutput.newInstance(data, offset, length);
+            final ProtoSink output = ProtoSink.newInstance(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -160,8 +160,8 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data,
                                                              final int off, final int len) throws InvalidProtocolBufferNanoException {
         try {
-            final ProtoInput input =
-                    ProtoInput.newInstance(data, off, len);
+            final ProtoSource input =
+                    ProtoSource.newInstance(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;

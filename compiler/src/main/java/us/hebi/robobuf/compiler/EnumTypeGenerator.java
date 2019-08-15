@@ -87,6 +87,15 @@ class EnumTypeGenerator {
 
         typeSpec.addMethod(forNumber.build());
 
+        typeSpec.addMethod(MethodSpec.methodBuilder("forNumberOr")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(info.getTypeName())
+                .addParameter(int.class, "number")
+                .addParameter(info.getTypeName(), "other")
+                .addStatement("$T value = forNumber(number)", info.getTypeName())
+                .addStatement("return value == null ? other : value")
+                .build());
+
     }
 
     final EnumInfo info;

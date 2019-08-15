@@ -49,17 +49,17 @@ import static us.hebi.robobuf.WireFormat.*;
  *
  * @author kenton@google.com Kenton Varda
  */
-public final class ProtoInput {
+public final class ProtoSource {
 
     /** Create a new CodedInputStream wrapping the given byte array. */
-    public static ProtoInput newInstance(final byte[] buf) {
+    public static ProtoSource newInstance(final byte[] buf) {
         return newInstance(buf, 0, buf.length);
     }
 
     /** Create a new CodedInputStream wrapping the given byte array slice. */
-    public static ProtoInput newInstance(final byte[] buf, final int off,
-                                         final int len) {
-        return new ProtoInput(buf, off, len);
+    public static ProtoSource newInstance(final byte[] buf, final int off,
+                                          final int len) {
+        return new ProtoSource(buf, off, len);
     }
 
     // -----------------------------------------------------------------
@@ -464,7 +464,7 @@ public final class ProtoInput {
     private static final int DEFAULT_RECURSION_LIMIT = 64;
     private static final int DEFAULT_SIZE_LIMIT = 64 << 20;  // 64MB
 
-    private ProtoInput(final byte[] buffer, final int off, final int len) {
+    private ProtoSource(final byte[] buffer, final int off, final int len) {
         this.buffer = buffer;
         bufferStart = off;
         bufferSize = off + len;

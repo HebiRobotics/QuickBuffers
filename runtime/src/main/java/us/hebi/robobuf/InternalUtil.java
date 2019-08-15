@@ -102,7 +102,7 @@ public interface InternalUtil {
      * @throws IOException
      */
     public static int getRepeatedFieldArrayLength(
-            final ProtoInput input,
+            final ProtoSource input,
             final int tag) throws IOException {
         int arrayLength = 1;
         int startPos = input.getPosition();

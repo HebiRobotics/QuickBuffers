@@ -357,9 +357,9 @@ public class FieldGenerator {
     }
 
     protected void generateGetEnumMethods(TypeSpec.Builder type) {
-        // Enums are weird because they need to be converter back and forth
-        // and we can't just expose the repeated store. Maybe we should switch
-        // to using either fully int or fully enum.
+        // Enums are odd because they need to be converter back and forth and they
+        // don't have the same type as the repeated store. Maybe we should switch
+        // to using either fully int or fully enum?
         MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
@@ -369,20 +369,12 @@ public class FieldGenerator {
             if (!info.hasDefaultValue()) {
                 getter.addNamedCode("return $type:T.forNumber($field:N);\n", m);
             } else {
-                getter.addNamedCode("" +
-                        "final $type:T result = $type:T.forNumber($field:N);\n" +
-                        "return result == null ? $defaultEnumValue:L : result;\n", m);
+                getter.addNamedCode("return $type:T.forNumberOr($field:N, $defaultEnumValue:L);\n", m);
             }
 
         } else { // getCount() & get(index)
             getter.addParameter(int.class, "index", Modifier.FINAL);
-            if (!info.hasDefaultValue()) {
-                getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
-            } else {
-                getter.addNamedCode("" +
-                        "final $type:T result = $type:T.forNumber($field:N.get(index));\n" +
-                        "return result == null ? $defaultEnumValue:L : result;\n", m);
-            }
+            getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
 
             MethodSpec getCount = MethodSpec.methodBuilder(info.getGetterName() + "Count")
                     .addAnnotations(info.getMethodAnnotations())
@@ -449,7 +441,7 @@ public class FieldGenerator {
         m.put("number", info.getNumber());
         m.put("tag", info.getTag());
         m.put("capitalizedType", ProtoUtil.getCapitalizedType(info.getDescriptor().getType()));
-        m.put("computeClass", RuntimeApi.ProtoOutput);
+        m.put("computeClass", RuntimeApi.ProtoSink);
         m.put("internalUtil", RuntimeApi.InternalUtil);
         m.put("secondArgs", info.isGroup() ? ", " + info.getNumber() : "");
         m.put("defaultField", info.getDefaultFieldName());
