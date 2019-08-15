@@ -61,23 +61,17 @@ final class WireFormat {
     static final int SIZEOF_FIXED_32 = 4;
     static final int SIZEOF_FIXED_BOOL = 1;
 
-    /**
-     * Given a tag value, determines the wire type (the lower 3 bits).
-     */
+    /** Given a tag value, determines the wire type (the lower 3 bits). */
     static int getTagWireType(final int tag) {
         return tag & TAG_TYPE_MASK;
     }
 
-    /**
-     * Given a tag value, determines the field number (the upper 29 bits).
-     */
+    /** Given a tag value, determines the field number (the upper 29 bits). */
     static int getTagFieldNumber(final int tag) {
         return tag >>> TAG_TYPE_BITS;
     }
 
-    /**
-     * Makes a tag value given a field number and wire type.
-     */
+    /** Makes a tag value given a field number and wire type. */
     static int makeTag(final int fieldNumber, final int wireType) {
         return (fieldNumber << TAG_TYPE_BITS) | wireType;
     }

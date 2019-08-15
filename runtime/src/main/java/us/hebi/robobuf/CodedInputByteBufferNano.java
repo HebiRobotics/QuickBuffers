@@ -48,16 +48,13 @@ import static us.hebi.robobuf.WireFormat.*;
  * @author kenton@google.com Kenton Varda
  */
 public final class CodedInputByteBufferNano {
-    /**
-     * Create a new CodedInputStream wrapping the given byte array.
-     */
+
+    /** Create a new CodedInputStream wrapping the given byte array. */
     public static CodedInputByteBufferNano newInstance(final byte[] buf) {
         return newInstance(buf, 0, buf.length);
     }
 
-    /**
-     * Create a new CodedInputStream wrapping the given byte array slice.
-     */
+    /** Create a new CodedInputStream wrapping the given byte array slice. */
     public static CodedInputByteBufferNano newInstance(final byte[] buf, final int off,
                                                        final int len) {
         return new CodedInputByteBufferNano(buf, off, len);
@@ -147,9 +144,7 @@ public final class CodedInputByteBufferNano {
 
     // -----------------------------------------------------------------
 
-    /**
-     * Read a repeated (packed) {@code double} field value from the stream.
-     */
+    /** Read a repeated (packed) {@code double} field value from the stream. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.requestSize(numEntries);
@@ -158,9 +153,7 @@ public final class CodedInputByteBufferNano {
         }
     }
 
-    /**
-     * Read a repeated (packed) {@code float} field value from the stream.
-     */
+    /** Read a repeated (packed) {@code float} field value from the stream. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.requestSize(numEntries);
@@ -169,9 +162,7 @@ public final class CodedInputByteBufferNano {
         }
     }
 
-    /**
-     * Read a repeated (packed) {@code fixed64} field value from the stream.
-     */
+    /** Read a repeated (packed) {@code fixed64} field value from the stream. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.requestSize(numEntries);
@@ -180,9 +171,7 @@ public final class CodedInputByteBufferNano {
         }
     }
 
-    /**
-     * Read a repeated (packed) {@code fixed32} field value from the stream.
-     */
+    /** Read a repeated (packed) {@code fixed32} field value from the stream. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.requestSize(numEntries);
@@ -191,9 +180,7 @@ public final class CodedInputByteBufferNano {
         }
     }
 
-    /**
-     * Read a repeated (packed) {@code sfixed32} field value from the stream.
-     */
+    /** Read a repeated (packed) {@code sfixed32} field value from the stream. */
     public void readPackedSFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.requestSize(numEntries);
@@ -202,9 +189,7 @@ public final class CodedInputByteBufferNano {
         }
     }
 
-    /**
-     * Read a repeated (packed) {@code sfixed64} field value from the stream.
-     */
+    /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
     public void readPackedSFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.requestSize(numEntries);
@@ -213,9 +198,7 @@ public final class CodedInputByteBufferNano {
         }
     }
 
-    /**
-     * Read a repeated (packed) {@code bool} field value from the stream.
-     */
+    /** Read a repeated (packed) {@code bool} field value from the stream. */
     public void readPackedBool(RepeatedBoolean store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_BOOL;
         store.requestSize(numEntries);
@@ -226,67 +209,47 @@ public final class CodedInputByteBufferNano {
 
     // -----------------------------------------------------------------
 
-    /**
-     * Read a {@code double} field value from the stream.
-     */
+    /** Read a {@code double} field value from the stream. */
     public double readDouble() throws IOException {
         return Double.longBitsToDouble(readRawLittleEndian64());
     }
 
-    /**
-     * Read a {@code float} field value from the stream.
-     */
+    /** Read a {@code float} field value from the stream. */
     public float readFloat() throws IOException {
         return Float.intBitsToFloat(readRawLittleEndian32());
     }
 
-    /**
-     * Read a {@code uint64} field value from the stream.
-     */
+    /** Read a {@code uint64} field value from the stream. */
     public long readUInt64() throws IOException {
         return readRawVarint64();
     }
 
-    /**
-     * Read an {@code int64} field value from the stream.
-     */
+    /** Read an {@code int64} field value from the stream. */
     public long readInt64() throws IOException {
         return readRawVarint64();
     }
 
-    /**
-     * Read an {@code int32} field value from the stream.
-     */
+    /** Read an {@code int32} field value from the stream. */
     public int readInt32() throws IOException {
         return readRawVarint32();
     }
 
-    /**
-     * Read a {@code fixed64} field value from the stream.
-     */
+    /** Read a {@code fixed64} field value from the stream. */
     public long readFixed64() throws IOException {
         return readRawLittleEndian64();
     }
 
-    /**
-     * Read a {@code fixed32} field value from the stream.
-     */
+    /** Read a {@code fixed32} field value from the stream. */
     public int readFixed32() throws IOException {
         return readRawLittleEndian32();
     }
 
-    /**
-     * Read a {@code bool} field value from the stream.
-     */
+    /** Read a {@code bool} field value from the stream. */
     public boolean readBool() throws IOException {
         return readRawVarint32() != 0;
     }
 
-    /**
-     * Read a {@code string} field value from the stream.
-     * <p>
-     * TODO: get rid of allocations
-     */
+    /** Read a {@code string} field value from the stream. */ // TODO: remove allocations
     public void readString(StringBuilder builder) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
@@ -295,9 +258,7 @@ public final class CodedInputByteBufferNano {
         bufferPos += size;
     }
 
-    /**
-     * Read a {@code group} field value from the stream.
-     */
+    /** Read a {@code group} field value from the stream. */
     public void readGroup(final MessageNano msg, final int fieldNumber)
             throws IOException {
         if (recursionDepth >= recursionLimit) {
@@ -323,9 +284,7 @@ public final class CodedInputByteBufferNano {
         popLimit(oldLimit);
     }
 
-    /**
-     * Read a {@code bytes} field value from the stream.
-     */
+    /** Read a {@code bytes} field value from the stream. */
     public void readBytes(RepeatedByte store) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
@@ -333,9 +292,7 @@ public final class CodedInputByteBufferNano {
         bufferPos += size;
     }
 
-    /**
-     * Read a {@code uint32} field value from the stream.
-     */
+    /** Read a {@code uint32} field value from the stream. */
     public int readUInt32() throws IOException {
         return readRawVarint32();
     }
@@ -348,30 +305,22 @@ public final class CodedInputByteBufferNano {
         return readRawVarint32();
     }
 
-    /**
-     * Read an {@code sfixed32} field value from the stream.
-     */
+    /** Read an {@code sfixed32} field value from the stream. */
     public int readSFixed32() throws IOException {
         return readRawLittleEndian32();
     }
 
-    /**
-     * Read an {@code sfixed64} field value from the stream.
-     */
+    /** Read an {@code sfixed64} field value from the stream. */
     public long readSFixed64() throws IOException {
         return readRawLittleEndian64();
     }
 
-    /**
-     * Read an {@code sint32} field value from the stream.
-     */
+    /** Read an {@code sint32} field value from the stream. */
     public int readSInt32() throws IOException {
         return decodeZigZag32(readRawVarint32());
     }
 
-    /**
-     * Read an {@code sint64} field value from the stream.
-     */
+    /** Read an {@code sint64} field value from the stream. */
     public long readSInt64() throws IOException {
         return decodeZigZag64(readRawVarint64());
     }
@@ -416,9 +365,7 @@ public final class CodedInputByteBufferNano {
         return result;
     }
 
-    /**
-     * Read a raw Varint from the stream.
-     */
+    /** Read a raw Varint from the stream. */
     public long readRawVarint64() throws IOException {
         int shift = 0;
         long result = 0;
@@ -433,9 +380,7 @@ public final class CodedInputByteBufferNano {
         throw InvalidProtocolBufferNanoException.malformedVarint();
     }
 
-    /**
-     * Read a 32-bit little-endian integer from the stream.
-     */
+    /** Read a 32-bit little-endian integer from the stream. */
     public int readRawLittleEndian32() throws IOException {
         final byte b1 = readRawByte();
         final byte b2 = readRawByte();
@@ -447,9 +392,7 @@ public final class CodedInputByteBufferNano {
                 ((b4 & 0xff) << 24);
     }
 
-    /**
-     * Read a 64-bit little-endian integer from the stream.
-     */
+    /** Read a 64-bit little-endian integer from the stream. */
     public long readRawLittleEndian64() throws IOException {
         final byte b1 = readRawByte();
         final byte b2 = readRawByte();
@@ -506,20 +449,14 @@ public final class CodedInputByteBufferNano {
     private int bufferPos;
     private int lastTag;
 
-    /**
-     * The absolute position of the end of the current message.
-     */
+    /** The absolute position of the end of the current message. */
     private int currentLimit = Integer.MAX_VALUE;
 
-    /**
-     * See setRecursionLimit()
-     */
+    /** See setRecursionLimit() */
     private int recursionDepth;
     private int recursionLimit = DEFAULT_RECURSION_LIMIT;
 
-    /**
-     * See setSizeLimit()
-     */
+    /** See setSizeLimit() */
     private int sizeLimit = DEFAULT_SIZE_LIMIT;
 
     private static final int DEFAULT_RECURSION_LIMIT = 64;
@@ -574,9 +511,7 @@ public final class CodedInputByteBufferNano {
         return oldLimit;
     }
 
-    /**
-     * Resets the current size counter to zero (see {@link #setSizeLimit(int)}).
-     */
+    /** Resets the current size counter to zero (see {@link #setSizeLimit(int)}). */
     public void resetSizeCounter() {
     }
 
@@ -646,9 +581,7 @@ public final class CodedInputByteBufferNano {
         return bufferPos == bufferSize;
     }
 
-    /**
-     * Get current position in buffer relative to beginning offset.
-     */
+    /** Get current position in buffer relative to beginning offset. */
     public int getPosition() {
         return bufferPos - bufferStart;
     }
@@ -670,9 +603,7 @@ public final class CodedInputByteBufferNano {
         return copy;
     }
 
-    /**
-     * Rewind to previous position. Cannot go forward.
-     */
+    /** Rewind to previous position. Cannot go forward. */
     public void rewindToPosition(int position) {
         if (position > bufferPos - bufferStart) {
             throw new IllegalArgumentException(

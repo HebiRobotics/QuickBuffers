@@ -40,7 +40,8 @@ import java.util.Map;
  */
 public final class MessageNanoPrinter {
     // Do not allow instantiation
-    private MessageNanoPrinter() {}
+    private MessageNanoPrinter() {
+    }
 
     private static final String INDENT = "  ";
     private static final int MAX_STRING_LEN = 200;
@@ -75,14 +76,14 @@ public final class MessageNanoPrinter {
      * Meant to be called recursively.
      *
      * @param identifier the identifier to use, or {@code null} if this is the root message to
-     *        print.
-     * @param object the value to print. May in fact be a primitive value or byte array and not a
-     *        message.
-     * @param indentBuf the indentation each line should begin with.
-     * @param buf the output buffer.
+     *                   print.
+     * @param object     the value to print. May in fact be a primitive value or byte array and not a
+     *                   message.
+     * @param indentBuf  the indentation each line should begin with.
+     * @param buf        the output buffer.
      */
     private static void print(String identifier, Object object,
-            StringBuffer indentBuf, StringBuffer buf) throws IllegalAccessException,
+                              StringBuffer indentBuf, StringBuffer buf) throws IllegalAccessException,
             InvocationTargetException {
         if (object == null) {
             // This can happen if...
@@ -172,18 +173,18 @@ public final class MessageNanoPrinter {
                 buf.append(indentBuf).append(">\n");
             }
         } else if (object instanceof Map) {
-          Map<?,?> map = (Map<?,?>) object;
-          identifier = deCamelCaseify(identifier);
+            Map<?, ?> map = (Map<?, ?>) object;
+            identifier = deCamelCaseify(identifier);
 
-          for (Map.Entry<?,?> entry : map.entrySet()) {
-            buf.append(indentBuf).append(identifier).append(" <\n");
-            int origIndentBufLength = indentBuf.length();
-            indentBuf.append(INDENT);
-            print("key", entry.getKey(), indentBuf, buf);
-            print("value", entry.getValue(), indentBuf, buf);
-            indentBuf.setLength(origIndentBufLength);
-            buf.append(indentBuf).append(">\n");
-          }
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                buf.append(indentBuf).append(identifier).append(" <\n");
+                int origIndentBufLength = indentBuf.length();
+                indentBuf.append(INDENT);
+                print("key", entry.getKey(), indentBuf, buf);
+                print("value", entry.getValue(), indentBuf, buf);
+                indentBuf.setLength(origIndentBufLength);
+                buf.append(indentBuf).append(">\n");
+            }
         } else {
             // Non-null primitive value
             identifier = deCamelCaseify(identifier);
