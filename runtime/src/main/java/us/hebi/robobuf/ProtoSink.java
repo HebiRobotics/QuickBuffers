@@ -147,15 +147,15 @@ public abstract class ProtoSink {
         writeRawBooleans(values.array, values.length);
     }
 
-    protected void writeRawFloats(final float[] values, int length) throws IOException {
+    protected void writeRawDoubles(final double[] values, int length) throws IOException {
         for (int i = 0; i < length; i++) {
-            writeRawLittleEndian32(Float.floatToIntBits(values[i]));
+            writeRawLittleEndian64(Double.doubleToLongBits(values[i]));
         }
     }
 
-    protected void writeRawFixed32s(final int[] values, int length) throws IOException {
+    protected void writeRawFloats(final float[] values, int length) throws IOException {
         for (int i = 0; i < length; i++) {
-            writeRawLittleEndian32(values[i]);
+            writeRawLittleEndian32(Float.floatToIntBits(values[i]));
         }
     }
 
@@ -165,9 +165,9 @@ public abstract class ProtoSink {
         }
     }
 
-    protected void writeRawDoubles(final double[] values, int length) throws IOException {
+    protected void writeRawFixed32s(final int[] values, int length) throws IOException {
         for (int i = 0; i < length; i++) {
-            writeRawLittleEndian64(Double.doubleToLongBits(values[i]));
+            writeRawLittleEndian32(values[i]);
         }
     }
 
