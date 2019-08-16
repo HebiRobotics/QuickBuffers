@@ -50,20 +50,11 @@ import static us.hebi.robobuf.WireFormat.*;
  *
  * @author kneton@google.com Kenton Varda
  */
-public final class ProtoSink {
+public abstract class ProtoSink {
     /* max bytes per java UTF-16 char in UTF-8 */
-    private static final int MAX_UTF8_EXPANSION = 3;
-    private byte[] buffer;
-    private int offset;
-    private int limit;
-    private int position;
+    protected static final int MAX_UTF8_EXPANSION = 3;
 
-    private ProtoSink(final byte[] buffer, final int offset,
-                      final int length) {
-        this.buffer = buffer;
-        this.offset = offset;
-        this.limit = offset + length;
-        this.position = offset;
+    protected ProtoSink() {
     }
 
     /**
@@ -85,7 +76,7 @@ public final class ProtoSink {
     public static ProtoSink newInstance(final byte[] flatArray,
                                         final int offset,
                                         final int length) {
-        return new ProtoSink(flatArray, offset, length);
+        return new ArraySink(flatArray, offset, length);
     }
 
     // -----------------------------------------------------------------
@@ -340,28 +331,7 @@ public final class ProtoSink {
     }
 
     /** Write a {@code string} field to the stream. */
-    public void writeStringNoTag(final CharSequence value) throws IOException {
-        // UTF-8 byte length of the string is at least its UTF-16 code unit length (value.length()),
-        // and at most 3 times of it. Optimize for the case where we know this length results in a
-        // constant varint length - saves measuring length of the string.
-        try {
-            final int minLengthVarIntSize = computeRawVarint32Size(value.length());
-            final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * MAX_UTF8_EXPANSION);
-            if (minLengthVarIntSize == maxLengthVarIntSize) {
-                int startPosition = position + minLengthVarIntSize;
-                int endPosition = encode(value, buffer, startPosition, spaceLeft());
-                writeRawVarint32(endPosition - startPosition);
-                position = endPosition;
-            } else {
-                writeRawVarint32(encodedLength(value));
-                position = encode(value, buffer, position, spaceLeft());
-            }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            final OutOfSpaceException outOfSpaceException = new OutOfSpaceException(position, limit);
-            outOfSpaceException.initCause(e);
-            throw outOfSpaceException;
-        }
-    }
+    public abstract void writeStringNoTag(final CharSequence value) throws IOException;
 
     // These UTF-8 handling methods are copied from Guava's Utf8 class.
 
@@ -373,7 +343,7 @@ public final class ProtoSink {
      * @throws IllegalArgumentException if {@code sequence} contains ill-formed UTF-16 (unpaired
      *                                  surrogates)
      */
-    private static int encodedLength(CharSequence sequence) {
+    protected static int encodedLength(CharSequence sequence) {
         // Warning to maintainers: this implementation is highly optimized.
         int utf16Length = sequence.length();
         int utf8Length = utf16Length;
@@ -403,7 +373,7 @@ public final class ProtoSink {
         return utf8Length;
     }
 
-    private static int encodedLengthGeneral(CharSequence sequence, int start) {
+    protected static int encodedLengthGeneral(CharSequence sequence, int start) {
         int utf16Length = sequence.length();
         int utf8Length = 0;
         for (int i = start; i < utf16Length; i++) {
@@ -442,7 +412,7 @@ public final class ProtoSink {
      * @throws ArrayIndexOutOfBoundsException if {@code sequence} encoded in UTF-8 does not fit in
      *                                        {@code bytes}' remaining space.
      */
-    private static int encode(CharSequence sequence, byte[] bytes, int offset, int length) {
+    protected static int encode(CharSequence sequence, byte[] bytes, int offset, int length) {
         int utf16Length = sequence.length();
         int j = offset;
         int i = 0;
@@ -856,9 +826,7 @@ public final class ProtoSink {
      * If writing to a flat array, return the space left in the array.
      * Otherwise, throws {@code UnsupportedOperationException}.
      */
-    public int spaceLeft() {
-        return limit - position;
-    }
+    public abstract int spaceLeft();
 
     /**
      * Verifies that {@link #spaceLeft()} returns zero.  It's common to create
@@ -877,12 +845,7 @@ public final class ProtoSink {
     /**
      * Returns the position within the internal buffer.
      */
-    public int position() {
-        // This used to return ByteBuffer.position(), which is
-        // the number of written bytes, and not the index within
-        // the array.
-        return position - offset;
-    }
+    public abstract int position();
 
     /**
      * Resets the position within the internal buffer to zero.
@@ -890,9 +853,7 @@ public final class ProtoSink {
      * @see #position
      * @see #spaceLeft
      */
-    public void reset() {
-        position = offset;
-    }
+    public abstract void reset();
 
     /**
      * If you create a CodedOutputStream around a simple flat array, you must
@@ -909,14 +870,7 @@ public final class ProtoSink {
     }
 
     /** Write a single byte. */
-    public void writeRawByte(final byte value) throws IOException {
-        if (position >= limit) {
-            // We're writing to a single buffer.
-            throw new OutOfSpaceException(position, limit);
-        }
-
-        buffer[position++] = value;
-    }
+    public abstract void writeRawByte(final byte value) throws IOException;
 
     /** Write a single byte, represented by an integer value. */
     public void writeRawByte(final int value) throws IOException {
@@ -929,16 +883,7 @@ public final class ProtoSink {
     }
 
     /** Write part of an array of bytes. */
-    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
-        if (spaceLeft() >= length) {
-            // We have room in the current buffer.
-            System.arraycopy(value, offset, buffer, position, length);
-            position += length;
-        } else {
-            // We're writing to a single buffer.
-            throw new OutOfSpaceException(position, limit);
-        }
-    }
+    public abstract void writeRawBytes(final byte[] value, int offset, int length) throws IOException;
 
     /** Encode and write a tag. */
     public void writeTag(final int fieldNumber, final int wireType) throws IOException {
