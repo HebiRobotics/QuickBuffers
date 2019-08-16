@@ -108,79 +108,79 @@ public class ProtoFailTests {
 
     // --------------------------------------------------------------------------------------
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedVarint32() throws IOException {
         readFromTruncated(new TestAllTypes().setId(Integer.MIN_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedVarint64() throws IOException {
         readFromTruncated(new TestAllTypes().setDefaultInt64(Long.MIN_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedFixed32() throws IOException {
         readFromTruncated(new TestAllTypes().setDefaultFixed32(Integer.MAX_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedFixed64() throws IOException {
         readFromTruncated(new TestAllTypes().setDefaultFixed64(Long.MAX_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedString() throws IOException {
         readFromTruncated(new TestAllTypes().setOptionalString("this should fail"));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedBytes() throws IOException {
         readFromTruncated(new TestAllTypes().addAllDefaultBytes(new byte[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedPackedBoolean() throws IOException {
         readFromTruncated(new RepeatedPackables.Packed().addAllBools(new boolean[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedPackedDouble() throws IOException {
         readFromTruncated(new RepeatedPackables.Packed().addAllDoubles(new double[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedPackedFloat() throws IOException {
         readFromTruncated(new RepeatedPackables.Packed().addAllFloats(new float[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedPackedVarint32() throws IOException {
         readFromTruncated(new RepeatedPackables.Packed().addAllInt32S(new int[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedPackedFixed32() throws IOException {
         readFromTruncated(new RepeatedPackables.Packed().addAllFixed32S(new int[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedPackedVarint64() throws IOException {
         readFromTruncated(new RepeatedPackables.Packed().addAllInt64S(new long[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedPackedFixed64() throws IOException {
         readFromTruncated(new RepeatedPackables.Packed().addAllFixed64S(new long[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedMessage() throws IOException {
         TestAllTypes msg = new TestAllTypes();
         msg.getMutableOptionalNestedMessage().setBb(1);
         readFromTruncated(msg);
     }
 
-    @Test(expected = InvalidProtocolBufferNanoException.class)
+    @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedGroup() throws IOException {
         TestAllTypes msg = new TestAllTypes();
         msg.getMutableOptionalGroup().setA(2);

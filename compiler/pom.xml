@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>parent</artifactId>
+        <artifactId>robobuf-parent</artifactId>
         <groupId>us.hebi.robobuf</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
@@ -57,25 +57,25 @@
                                 <mkdir dir="target/test-classes/us/hebi/robobuf/compiler"/>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--request_out=requestFile=simple.request,indent=tab:target/test-classes/us/hebi/robobuf/compiler"/>
-                                    <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
-                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf//simple.proto"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/simple.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--request_out=requestFile=import.request,indent=2:target/test-classes/us/hebi/robobuf/compiler"/>
-                                    <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
-                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces.proto"/>
-                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces_import.proto"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/namespaces.proto"/>
+                                    <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--request_out=requestFile=allTypes.request,replacePackage=robobuf.java=robobuf.test:target/test-classes/us/hebi/robobuf/compiler"/>
-                                    <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
-                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/namespaces.proto"/>
-                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/unittest_all_types.proto"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/namespaces.proto"/>
+                                    <arg value="${proto.dir}/unittest_all_types.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=robobuf.java=robobuf.test:target/test-classes/us/hebi/robobuf/compiler"/>
-                                    <arg value="--proto_path=../runtime/src/test/resources/us/hebi/robobuf/"/>
-                                    <arg value="../runtime/src/test/resources/us/hebi/robobuf/unittest_repeated_packables.proto"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
                                 </exec>
                             </tasks>
                             <testSourceRoot>target/generated-test-sources</testSourceRoot>

@@ -1,8 +1,6 @@
 package us.hebi.robobuf;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.openjdk.jol.info.ClassLayout;
 import us.hebi.robobuf.robo.ForeignEnum;
 import us.hebi.robobuf.robo.ForeignMessage;
 import us.hebi.robobuf.robo.RepeatedPackables;
@@ -377,12 +375,6 @@ public class ProtoTests {
             sum += foreignMessage.getC();
         }
         assertEquals(3, sum);
-    }
-
-    @Test
-    @Ignore("Prints class field memory layout. For manual testing.")
-    public void testAllTypesLayout() throws IOException {
-        System.out.println(ClassLayout.parseClass(us.hebi.robobuf.robo.TestAllTypes.class).toPrintable());
     }
 
 }

@@ -156,7 +156,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * message being built.
      */
     public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data)
-            throws InvalidProtocolBufferNanoException {
+            throws InvalidProtocolBufferException {
         return mergeFrom(msg, data, 0, data.length);
     }
 
@@ -165,13 +165,13 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * message being built.
      */
     public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data,
-                                                             final int off, final int len) throws InvalidProtocolBufferNanoException {
+                                                             final int off, final int len) throws InvalidProtocolBufferException {
         try {
             final ProtoSource input = ProtoSource.newInstance(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;
-        } catch (InvalidProtocolBufferNanoException e) {
+        } catch (InvalidProtocolBufferException e) {
             throw e;
         } catch (IOException e) {
             throw new RuntimeException("Reading from a byte array threw an IOException (should "

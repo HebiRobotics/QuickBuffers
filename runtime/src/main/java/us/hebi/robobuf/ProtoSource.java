@@ -79,7 +79,7 @@ public final class ProtoSource {
         lastTag = readRawVarint32();
         if (lastTag == 0) {
             // If we actually read zero, that's not a valid tag.
-            throw InvalidProtocolBufferNanoException.invalidTag();
+            throw InvalidProtocolBufferException.invalidTag();
         }
         return lastTag;
     }
@@ -89,13 +89,13 @@ public final class ProtoSource {
      * This is used to verify that a nested group ended with the correct
      * end tag.
      *
-     * @throws InvalidProtocolBufferNanoException {@code value} does not match the
+     * @throws InvalidProtocolBufferException {@code value} does not match the
      *                                            last tag.
      */
     public void checkLastTagWas(final int value)
-            throws InvalidProtocolBufferNanoException {
+            throws InvalidProtocolBufferException {
         if (lastTag != value) {
-            throw InvalidProtocolBufferNanoException.invalidEndTag();
+            throw InvalidProtocolBufferException.invalidEndTag();
         }
     }
 
@@ -128,7 +128,7 @@ public final class ProtoSource {
                 readRawLittleEndian32();
                 return true;
             default:
-                throw InvalidProtocolBufferNanoException.invalidWireType();
+                throw InvalidProtocolBufferException.invalidWireType();
         }
     }
 
@@ -265,7 +265,7 @@ public final class ProtoSource {
     public void readGroup(final ProtoMessage msg, final int fieldNumber)
             throws IOException {
         if (recursionDepth >= recursionLimit) {
-            throw InvalidProtocolBufferNanoException.recursionLimitExceeded();
+            throw InvalidProtocolBufferException.recursionLimitExceeded();
         }
         ++recursionDepth;
         msg.mergeFrom(this);
@@ -277,7 +277,7 @@ public final class ProtoSource {
             throws IOException {
         final int length = readRawVarint32();
         if (recursionDepth >= recursionLimit) {
-            throw InvalidProtocolBufferNanoException.recursionLimitExceeded();
+            throw InvalidProtocolBufferException.recursionLimitExceeded();
         }
         final int oldLimit = pushLimit(length);
         ++recursionDepth;
@@ -360,7 +360,7 @@ public final class ProtoSource {
                                 return result;
                             }
                         }
-                        throw InvalidProtocolBufferNanoException.malformedVarint();
+                        throw InvalidProtocolBufferException.malformedVarint();
                     }
                 }
             }
@@ -380,7 +380,7 @@ public final class ProtoSource {
             }
             shift += 7;
         }
-        throw InvalidProtocolBufferNanoException.malformedVarint();
+        throw InvalidProtocolBufferException.malformedVarint();
     }
 
     /** Read a 32-bit little-endian integer from the stream. */
@@ -524,14 +524,14 @@ public final class ProtoSource {
      *
      * @return the old limit.
      */
-    public int pushLimit(int byteLimit) throws InvalidProtocolBufferNanoException {
+    public int pushLimit(int byteLimit) throws InvalidProtocolBufferException {
         if (byteLimit < 0) {
-            throw InvalidProtocolBufferNanoException.negativeSize();
+            throw InvalidProtocolBufferException.negativeSize();
         }
         byteLimit += bufferPos;
         final int oldLimit = currentLimit;
         if (byteLimit > oldLimit) {
-            throw InvalidProtocolBufferNanoException.truncatedMessage();
+            throw InvalidProtocolBufferException.truncatedMessage();
         }
         currentLimit = byteLimit;
 
@@ -621,12 +621,12 @@ public final class ProtoSource {
     /**
      * Read one byte from the input.
      *
-     * @throws InvalidProtocolBufferNanoException The end of the stream or the current
+     * @throws InvalidProtocolBufferException The end of the stream or the current
      *                                            limit was reached.
      */
     public byte readRawByte() throws IOException {
         if (bufferPos == bufferSize) {
-            throw InvalidProtocolBufferNanoException.truncatedMessage();
+            throw InvalidProtocolBufferException.truncatedMessage();
         }
         return buffer[bufferPos++];
     }
@@ -634,7 +634,7 @@ public final class ProtoSource {
     /**
      * Read a fixed size of bytes from the input.
      *
-     * @throws InvalidProtocolBufferNanoException The end of the stream or the current
+     * @throws InvalidProtocolBufferException The end of the stream or the current
      *                                            limit was reached.
      */
     public byte[] readRawBytes(final int size) throws IOException {
@@ -647,7 +647,7 @@ public final class ProtoSource {
     /**
      * Reads and discards {@code size} bytes.
      *
-     * @throws InvalidProtocolBufferNanoException The end of the stream or the current
+     * @throws InvalidProtocolBufferException The end of the stream or the current
      *                                            limit was reached.
      */
     public void skipRawBytes(final int size) throws IOException {
@@ -657,18 +657,18 @@ public final class ProtoSource {
 
     protected void requireRemaining(int size) throws IOException {
         if (size < 0) {
-            throw InvalidProtocolBufferNanoException.negativeSize();
+            throw InvalidProtocolBufferException.negativeSize();
         }
 
         if (bufferPos + size > currentLimit) {
             // Read to the end of the stream anyway.
             bufferPos = currentLimit;
             // Then fail.
-            throw InvalidProtocolBufferNanoException.truncatedMessage();
+            throw InvalidProtocolBufferException.truncatedMessage();
         }
 
         if (size > (bufferSize - bufferPos)) {
-            throw InvalidProtocolBufferNanoException.truncatedMessage();
+            throw InvalidProtocolBufferException.truncatedMessage();
         }
     }
 
