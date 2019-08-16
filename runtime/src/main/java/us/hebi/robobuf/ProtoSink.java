@@ -292,32 +292,6 @@ public final class ProtoSink {
         writeSInt64NoTag(value);
     }
 
-    /**
-     * Write a MessageSet extension field to the stream.  For historical reasons,
-     * the wire format differs from normal fields.
-     */
-//  public void writeMessageSetExtension(final int fieldNumber,
-//                                       final MessageMicro value)
-//                                       throws IOException {
-//    writeTag(WireFormatMicro.MESSAGE_SET_ITEM, WireFormatMicro.WIRETYPE_START_GROUP);
-//    writeUInt32(WireFormatMicro.MESSAGE_SET_TYPE_ID, fieldNumber);
-//    writeMessage(WireFormatMicro.MESSAGE_SET_MESSAGE, value);
-//    writeTag(WireFormatMicro.MESSAGE_SET_ITEM, WireFormatMicro.WIRETYPE_END_GROUP);
-//  }
-
-    /**
-     * Write an unparsed MessageSet extension field to the stream.  For
-     * historical reasons, the wire format differs from normal fields.
-     */
-//  public void writeRawMessageSetExtension(final int fieldNumber,
-//                                          final ByteStringMicro value)
-//                                          throws IOException {
-//    writeTag(WireFormatMicro.MESSAGE_SET_ITEM, WireFormatMicro.WIRETYPE_START_GROUP);
-//    writeUInt32(WireFormatMicro.MESSAGE_SET_TYPE_ID, fieldNumber);
-//    writeBytes(WireFormatMicro.MESSAGE_SET_MESSAGE, value);
-//    writeTag(WireFormatMicro.MESSAGE_SET_ITEM, WireFormatMicro.WIRETYPE_END_GROUP);
-//  }
-
     // -----------------------------------------------------------------
 
     /** Write a {@code double} field to the stream. */
