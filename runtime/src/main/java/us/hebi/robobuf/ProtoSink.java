@@ -399,7 +399,7 @@ public abstract class ProtoSink {
         return utf8Length;
     }
 
-    protected static int encodedLengthGeneral(CharSequence sequence, int start) {
+    private static int encodedLengthGeneral(CharSequence sequence, int start) {
         int utf16Length = sequence.length();
         int utf8Length = 0;
         for (int i = start; i < utf16Length; i++) {

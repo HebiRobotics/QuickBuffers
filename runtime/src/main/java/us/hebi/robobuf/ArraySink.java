@@ -3,6 +3,8 @@ package us.hebi.robobuf;
 import java.io.IOException;
 
 /**
+ * Sink that writes to a flat array
+ *
  * @author Florian Enner
  * @since 16 Aug 2019
  */
