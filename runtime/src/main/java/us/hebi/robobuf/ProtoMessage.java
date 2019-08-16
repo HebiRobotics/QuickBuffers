@@ -41,6 +41,7 @@ import java.io.IOException;
  */
 public abstract class ProtoMessage<MessageType extends ProtoMessage> {
 
+    private static final long serialVersionUID = 0L;
     protected volatile int cachedSize = -1;
 
     // Keep the first two bitfields in the parent class so that they

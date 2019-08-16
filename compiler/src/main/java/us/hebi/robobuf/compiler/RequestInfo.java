@@ -12,7 +12,10 @@ import lombok.ToString;
 import lombok.Value;
 import us.hebi.robobuf.parser.ParserUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static us.hebi.robobuf.compiler.Preconditions.*;
@@ -244,7 +247,7 @@ public class RequestInfo {
         }
 
         public String getJavadoc() {
-            return descriptor.toBuilder().clearJsonName().toString();
+            return ProtoUtil.getFieldDefinition(descriptor) + "\n";
         }
 
         public boolean isFixedWidth() {

@@ -76,6 +76,10 @@ class MessageTypeGenerator {
         // Static utilities
         generateParseFrom(type);
         generateMessageFactory(type);
+        type.addField(FieldSpec.builder(TypeName.LONG, "serialVersionUID")
+                .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                .initializer("0L")
+                .build());
 
         return type.build();
     }
