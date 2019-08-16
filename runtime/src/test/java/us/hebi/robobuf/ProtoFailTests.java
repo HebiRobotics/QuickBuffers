@@ -2,6 +2,7 @@ package us.hebi.robobuf;
 
 import org.junit.Test;
 import us.hebi.robobuf.robo.RepeatedPackables;
+import us.hebi.robobuf.robo.Simple;
 import us.hebi.robobuf.robo.TestAllTypes;
 
 import java.io.IOException;
@@ -14,7 +15,7 @@ public class ProtoFailTests {
 
     @Test(expected = IllegalStateException.class)
     public void testMissingRequiredField() {
-        new TestAllTypes().toByteArray();
+        new Simple.SimpleMessage().toByteArray();
     }
 
     // --------------------------------------------------------------------------------------
@@ -187,21 +188,10 @@ public class ProtoFailTests {
     }
 
     private void readFromTruncated(ProtoMessage msg) throws IOException {
-        int length = msg.computeSerializedSize() - 1; // without id field
-        if (msg instanceof TestAllTypes) {
-            // Required field needs to be set, but it's at the end
-            TestAllTypes allTypes = ((TestAllTypes) msg);
-            if (!allTypes.hasId()) {
-                allTypes.setId(0);
-            }
-        }
-
         byte[] data = msg.toByteArray();
-        ProtoSource input = ProtoSource.newInstance(data, 0, length);
+        ProtoSource input = ProtoSource.newInstance(data, 0, data.length - 1);
         msg.clear().mergeFrom(input);
     }
-
-    private static final int RequiredIdLength = new TestAllTypes().setId(0).getSerializedSize();
 
     // --------------------------------------------------------------------------------------
 

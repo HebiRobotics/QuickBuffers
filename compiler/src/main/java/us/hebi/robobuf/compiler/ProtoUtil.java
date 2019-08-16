@@ -100,17 +100,16 @@ class ProtoUtil {
 
             case TYPE_MESSAGE:
                 weight++;
-
             case TYPE_GROUP:
+                weight++;
+
+            case TYPE_BYTES:
                 weight++;
 
             case TYPE_STRING:
                 weight++;
 
-            case TYPE_BYTES:
-                weight++;
                 return weight;
-
             default:
                 throw new IllegalStateException("Unexpected value: " + descriptor.getType());
         }

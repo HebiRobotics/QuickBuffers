@@ -125,7 +125,7 @@ message TestAllTypes {
   optional string default_string_piece = 84 [ctype=STRING_PIECE,default="abc"];
   optional string default_cord = 85 [ctype=CORD,default="123"];
 
-  required int32 id = 86;
+  optional int32 id = 86;
 
   // Try to cause conflicts.
   optional int32 tag = 93;

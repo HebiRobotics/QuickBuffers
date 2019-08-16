@@ -3,7 +3,6 @@ package us.hebi.robobuf;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.openjdk.jol.info.ClassLayout;
-import org.openjdk.jol.vm.VM;
 import us.hebi.robobuf.robo.ForeignEnum;
 import us.hebi.robobuf.robo.ForeignMessage;
 import us.hebi.robobuf.robo.RepeatedPackables;
@@ -53,10 +52,9 @@ public class ProtoTests {
             assertEquals(Double.NEGATIVE_INFINITY, msg.getDefaultDoubleNegInf(), 0);
             assertEquals(Double.NaN, msg.getDefaultDoubleNan(), 0);
 
-            msg.setId(0); // required
             byte[] result = msg.toByteArray();
             int msgSerializedSize = msg.getSerializedSize();
-            assertEquals(3, msgSerializedSize);
+            assertEquals(0, msgSerializedSize);
             assertEquals(result.length, msgSerializedSize);
             msg.clear();
         }
@@ -65,7 +63,6 @@ public class ProtoTests {
     @Test
     public void testOptionalPrimitives() throws IOException {
         TestAllTypes emptyMsg = new TestAllTypes();
-        assertFalse(emptyMsg.hasId());
         assertFalse(emptyMsg.hasOptionalBool());
         assertFalse(emptyMsg.hasOptionalDouble());
         assertFalse(emptyMsg.hasOptionalFloat());
@@ -83,7 +80,6 @@ public class ProtoTests {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.optionalPrimitives());
         assertNotEquals(msg, emptyMsg);
 
-        assertTrue(msg.hasId());
         assertTrue(msg.hasOptionalBool());
         assertTrue(msg.hasOptionalDouble());
         assertTrue(msg.hasOptionalFloat());
@@ -99,7 +95,6 @@ public class ProtoTests {
         assertTrue(msg.hasOptionalUint64());
 
         assertTrue(msg.getOptionalBool());
-        assertEquals(99, msg.getId());
         assertEquals(100.0d, msg.getOptionalDouble(), 0);
         assertEquals(101.0f, msg.getOptionalFloat(), 0);
         assertEquals(102, msg.getOptionalFixed32());
@@ -114,7 +109,6 @@ public class ProtoTests {
         assertEquals(111, msg.getOptionalUint64());
 
         TestAllTypes manualMsg = new TestAllTypes()
-                .setId(99)
                 .setOptionalBool(true)
                 .setOptionalDouble(100.0d)
                 .setOptionalFloat(101.0f)
@@ -228,7 +222,6 @@ public class ProtoTests {
         assertEquals(ImportEnum.IMPORT_BAZ, msg.getOptionalImportEnum());
 
         TestAllTypes manualMsg = new TestAllTypes()
-                .setId(0)
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
                 .setOptionalImportEnum(ImportEnum.IMPORT_BAZ);
@@ -261,7 +254,7 @@ public class ProtoTests {
 
     @Test
     public void testStrings() throws IOException {
-        TestAllTypes msg = new TestAllTypes().setId(0);
+        TestAllTypes msg = new TestAllTypes();
 
         // Setter
         assertFalse(msg.hasOptionalString());
@@ -293,8 +286,7 @@ public class ProtoTests {
         assertEquals("utf8\uD83D\uDCA9", msg.getRepeatedString().get(3).toString());
 
         TestAllTypes msg2 = new TestAllTypes();
-        msg2.setId(0)
-                .getMutableRepeatedString()
+        msg2.getMutableRepeatedString()
                 .copyFrom(msg.getRepeatedString().toArray());
 
         TestAllTypes actual = TestAllTypes.parseFrom(msg2.toByteArray());
@@ -307,7 +299,7 @@ public class ProtoTests {
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
 
-        TestAllTypes msg = new TestAllTypes().setId(0);
+        TestAllTypes msg = new TestAllTypes();
 
         assertFalse(msg.hasOptionalBytes());
         msg.addAllOptionalBytes(utf8Bytes);
@@ -339,7 +331,7 @@ public class ProtoTests {
 
     @Test
     public void testOptionalMessages() throws IOException {
-        TestAllTypes msg = new TestAllTypes().setId(0);
+        TestAllTypes msg = new TestAllTypes();
 
         // Setter
         assertFalse(msg.hasOptionalNestedMessage());
@@ -365,7 +357,7 @@ public class ProtoTests {
         assertEquals(new ForeignMessage().setC(1), msg.getRepeatedForeignMessage().get(1));
         assertEquals(new ForeignMessage().setC(2), msg.getRepeatedForeignMessage().get(2));
 
-        TestAllTypes msg2 = new TestAllTypes().setId(0)
+        TestAllTypes msg2 = new TestAllTypes()
                 .addRepeatedForeignMessage(new ForeignMessage().setC(0))
                 .addRepeatedForeignMessage(new ForeignMessage().setC(1))
                 .addRepeatedForeignMessage(new ForeignMessage().setC(2));
@@ -390,8 +382,7 @@ public class ProtoTests {
     @Test
     @Ignore("Prints class field memory layout. For manual testing.")
     public void testAllTypesLayout() throws IOException {
-        System.out.println(VM.current());
-        System.out.println(ClassLayout.parseClass(TestAllTypes.class).toPrintable());
+        System.out.println(ClassLayout.parseClass(us.hebi.robobuf.robo.TestAllTypes.class).toPrintable());
     }
 
 }

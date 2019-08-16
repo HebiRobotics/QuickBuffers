@@ -59,7 +59,6 @@ public class CompatibilityTest {
 
     static byte[] optionalPrimitives() {
         TestAllTypes msg = TestAllTypes.newBuilder()
-                .setId(99) // needs to be set
                 .setOptionalBool(true)
                 .setOptionalDouble(100.0d)
                 .setOptionalFloat(101.0f)
@@ -117,7 +116,6 @@ public class CompatibilityTest {
 
     static byte[] optionalEnums() {
         TestAllTypes msg = TestAllTypes.newBuilder()
-                .setId(0)
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
                 .setOptionalImportEnum(ImportEnum.IMPORT_BAZ)
@@ -127,7 +125,6 @@ public class CompatibilityTest {
 
     static byte[] repeatedEnums() {
         return TestAllTypes.newBuilder()
-                .setId(0)
                 .addRepeatedNestedEnum(NestedEnum.FOO)
                 .addRepeatedNestedEnum(NestedEnum.BAR)
                 .addRepeatedNestedEnum(NestedEnum.BAZ)
@@ -138,7 +135,6 @@ public class CompatibilityTest {
 
     static byte[] optionalString() {
         TestAllTypes msg = TestAllTypes.newBuilder()
-                .setId(0)
                 .setOptionalString("optionalString\uD83D\uDCA9")
                 .setOptionalCord("hello!")
                 .build();
@@ -147,7 +143,6 @@ public class CompatibilityTest {
 
     static byte[] optionalMessages() {
         TestAllTypes msg = TestAllTypes.newBuilder()
-                .setId(0)
                 .setOptionalNestedMessage(TestAllTypes.NestedMessage.newBuilder().setBb(2).build())
                 .setOptionalForeignMessage(ForeignMessage.newBuilder().setC(3).build())
                 .build();
@@ -156,7 +151,6 @@ public class CompatibilityTest {
 
     static byte[] repeatedMessages() {
         return TestAllTypes.newBuilder()
-                .setId(0)
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(0))
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(1))
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(2))
@@ -166,7 +160,6 @@ public class CompatibilityTest {
 
     static byte[] repeatedStrings() {
         return TestAllTypes.newBuilder()
-                .setId(0)
                 .addAllRepeatedString(Arrays.asList("hello", "world", "ascii", "utf8\uD83D\uDCA9"))
                 .build()
                 .toByteArray();
@@ -176,7 +169,6 @@ public class CompatibilityTest {
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
         return TestAllTypes.newBuilder()
-                .setId(0)
                 .setOptionalBytes(ByteString.copyFromUtf8("utf8\uD83D\uDCA9"))
                 .setDefaultBytes(ByteString.copyFrom(randomBytes))
                 .build()
@@ -185,7 +177,6 @@ public class CompatibilityTest {
 
     static byte[] repeatedBytes() {
         return TestAllTypes.newBuilder()
-                .setId(0)
                 .addRepeatedBytes(ByteString.copyFromUtf8("ascii"))
                 .addRepeatedBytes(ByteString.copyFromUtf8("utf8\uD83D\uDCA9"))
                 .build()

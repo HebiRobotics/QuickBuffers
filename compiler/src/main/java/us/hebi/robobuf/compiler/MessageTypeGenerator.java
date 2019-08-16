@@ -56,8 +56,8 @@ class MessageTypeGenerator {
                 .addStatement("clear()")
                 .build());
 
-        // Member state
-        for (int i = 0; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
+        // Member state (the first two bitfields are in the parent class)
+        for (int i = 2; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
         fields.forEach(f -> f.generateMemberFields(type));
