@@ -171,7 +171,9 @@ public class RequestInfo {
             this.fieldCount = descriptor.getFieldCount();
 
             int fieldIndex = 0;
-            for (FieldDescriptorProto desc : descriptor.getFieldList()) {
+            for (FieldDescriptorProto desc : descriptor.getFieldList().stream()
+                    .sorted(ProtoUtil.MemoryLayoutSorter)
+                    .collect(Collectors.toList())) {
                 fields.add(new FieldInfo(parentFile, typeName, desc, fieldIndex++));
             }
 

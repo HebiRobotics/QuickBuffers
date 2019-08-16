@@ -87,7 +87,7 @@ class MessageTypeGenerator {
                 .returns(info.getTypeName());
         clear.addStatement("cachedSize = -1");
         for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
-            clear.addStatement("$L = 0", BitField.fieldName(0));
+            clear.addStatement("$L = 0", BitField.fieldName(i));
         }
         fields.forEach(field -> field.generateClearCode(clear));
         clear.addStatement("return this");
@@ -152,7 +152,7 @@ class MessageTypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
-                .addParameter(RuntimeApi.ProtoSource, "input")
+                .addParameter(RuntimeApi.ProtoSource, "input", Modifier.FINAL)
                 .addException(IOException.class);
 
         mergeFrom.beginControlFlow("while (true)");
@@ -199,7 +199,7 @@ class MessageTypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(void.class)
-                .addParameter(RuntimeApi.ProtoSink, "output")
+                .addParameter(RuntimeApi.ProtoSink, "output", Modifier.FINAL)
                 .addException(IOException.class);
         fields.forEach(f -> {
             writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
@@ -260,7 +260,7 @@ class MessageTypeGenerator {
         type.addMethod(MethodSpec.methodBuilder("parseFrom")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .addException(IOException.class)
-                .addParameter(byte[].class, "data")
+                .addParameter(byte[].class, "data", Modifier.FINAL)
                 .returns(info.getTypeName())
                 .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeApi.Message, info.getTypeName())
                 .build());

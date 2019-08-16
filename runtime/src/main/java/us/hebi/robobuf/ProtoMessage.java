@@ -42,6 +42,7 @@ import java.io.IOException;
 public abstract class ProtoMessage<MessageType extends ProtoMessage> {
 
     protected volatile int cachedSize = -1;
+    private final int wasted_space = 0; // waste 4 bytes so that the first bitfield moves up in memory layout
 
     /**
      * Get the number of bytes required to encode this message.

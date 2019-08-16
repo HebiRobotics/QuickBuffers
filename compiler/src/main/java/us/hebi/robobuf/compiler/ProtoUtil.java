@@ -1,6 +1,9 @@
 package us.hebi.robobuf.compiler;
 
-import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Label;
+
+import java.util.Comparator;
 
 /**
  * @author Florian Enner
@@ -8,11 +11,11 @@ import com.google.protobuf.DescriptorProtos;
  */
 class ProtoUtil {
 
-    static int makeTag(DescriptorProtos.FieldDescriptorProto descriptor) {
+    static int makeTag(FieldDescriptorProto descriptor) {
         return descriptor.getNumber() << TAG_TYPE_BITS | getWireType(descriptor.getType());
     }
 
-    static int makePackedTag(DescriptorProtos.FieldDescriptorProto descriptor) {
+    static int makePackedTag(FieldDescriptorProto descriptor) {
         return descriptor.getNumber() << 3 | WIRETYPE_LENGTH_DELIMITED;
     }
 
@@ -29,7 +32,91 @@ class ProtoUtil {
         return 5;
     }
 
-    private static int getWireType(DescriptorProtos.FieldDescriptorProto.Type type) {
+    /**
+     * Sort the fields according to their layout in memory.
+     *
+     * Summary:
+     * - Objects are 8 bytes aligned in memory (address A is K aligned if A % K == 0)
+     * - All fields are type aligned (long/double is 8 aligned, integer/float 4, short/char 2)
+     * - Fields are packed in the order of their size, except for references which are last
+     * - Classes fields are never mixed, so if B extends A, A's fields will be laid out first
+     * - Sub class fields start at a 4 byte alignment
+     * - If the first field of a class is long/double and the class starting point (after header, or after super) is not 8 aligned then a smaller field may be swapped to fill in the 4 bytes gap.
+     *
+     * For more info, see
+     * http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html
+     */
+    static final Comparator<FieldDescriptorProto> MemoryLayoutSorter = new Comparator<FieldDescriptorProto>() {
+        @Override
+        public int compare(FieldDescriptorProto o1, FieldDescriptorProto o2) {
+            // The higher the number, the closer to the beginning
+            int weightA = getSortingWeight(o1) + (o1.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+            int weightB = getSortingWeight(o2) + (o2.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+            return weightB - weightA;
+        }
+    };
+
+    private static int getSortingWeight(FieldDescriptorProto descriptor) {
+        // Start with largest width and get smaller. References come at the end.
+        // For memory layout we only need to look at the base type, but it
+        // can't hurt to sort by exact type to maybe keep the serialization code
+        // in cache hot.
+        int weight = 0;
+        switch (descriptor.getType()) {
+
+            case TYPE_DOUBLE:
+                weight++;
+            case TYPE_FIXED64:
+                weight++;
+            case TYPE_SFIXED64:
+                weight++;
+
+            case TYPE_INT64:
+                weight++;
+            case TYPE_UINT64:
+                weight++;
+            case TYPE_SINT64:
+                weight++;
+
+            case TYPE_FLOAT:
+                weight++;
+            case TYPE_FIXED32:
+                weight++;
+            case TYPE_SFIXED32:
+                weight++;
+
+            case TYPE_INT32:
+                weight++;
+            case TYPE_UINT32:
+                weight++;
+            case TYPE_SINT32:
+                weight++;
+
+            case TYPE_ENUM:
+                weight++;
+
+            case TYPE_BOOL:
+                weight++;
+
+            case TYPE_MESSAGE:
+                weight++;
+
+            case TYPE_GROUP:
+                weight++;
+
+            case TYPE_STRING:
+                weight++;
+
+            case TYPE_BYTES:
+                weight++;
+                return weight;
+
+            default:
+                throw new IllegalStateException("Unexpected value: " + descriptor.getType());
+        }
+    }
+
+    private static int getWireType(FieldDescriptorProto.Type type) {
         switch (type) {
 
             case TYPE_UINT64:
@@ -70,7 +157,7 @@ class ProtoUtil {
      * @param type
      * @return
      */
-    static String getCapitalizedType(DescriptorProtos.FieldDescriptorProto.Type type) {
+    static String getCapitalizedType(FieldDescriptorProto.Type type) {
         switch (type) {
             case TYPE_DOUBLE:
                 return "Double";
@@ -121,11 +208,11 @@ class ProtoUtil {
     private static final int TAG_TYPE_BITS = 3;
     private static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
 
-    static boolean isFixedWidth(DescriptorProtos.FieldDescriptorProto.Type type) {
+    static boolean isFixedWidth(FieldDescriptorProto.Type type) {
         return getFixedWidth(type) > 0;
     }
 
-    static int getFixedWidth(DescriptorProtos.FieldDescriptorProto.Type type) {
+    static int getFixedWidth(FieldDescriptorProto.Type type) {
         switch (type) {
 
             // 64 bit
@@ -150,7 +237,7 @@ class ProtoUtil {
         }
     }
 
-    static boolean isPrimitive(DescriptorProtos.FieldDescriptorProto.Type type) {
+    static boolean isPrimitive(FieldDescriptorProto.Type type) {
         switch (type) {
             case TYPE_DOUBLE:
             case TYPE_FLOAT:
@@ -177,7 +264,7 @@ class ProtoUtil {
         throw new GeneratorException("Unsupported type: " + type);
     }
 
-    static String getDefaultValue(DescriptorProtos.FieldDescriptorProto descriptor) {
+    static String getDefaultValue(FieldDescriptorProto descriptor) {
         final String value = descriptor.getDefaultValue();
         if (value.isEmpty())
             return getEmptyDefaultValue(descriptor.getType());
@@ -185,7 +272,7 @@ class ProtoUtil {
         if (isPrimitive(descriptor.getType())) {
 
             // Convert special floating point values
-            boolean isFloat = (descriptor.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT);
+            boolean isFloat = (descriptor.getType() == FieldDescriptorProto.Type.TYPE_FLOAT);
             String constantClass = isFloat ? "Float" : "Double";
             switch (value) {
                 case "nan":
@@ -219,7 +306,7 @@ class ProtoUtil {
 
     }
 
-    private static String getEmptyDefaultValue(DescriptorProtos.FieldDescriptorProto.Type type) {
+    private static String getEmptyDefaultValue(FieldDescriptorProto.Type type) {
         switch (type) {
 
             case TYPE_DOUBLE:
@@ -255,7 +342,7 @@ class ProtoUtil {
         }
     }
 
-    private static String getPrimitiveModifier(DescriptorProtos.FieldDescriptorProto.Type type) {
+    private static String getPrimitiveModifier(FieldDescriptorProto.Type type) {
         switch (type) {
 
             case TYPE_DOUBLE:
