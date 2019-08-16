@@ -49,10 +49,14 @@ class ProtoUtil {
      */
     static final Comparator<FieldDescriptorProto> MemoryLayoutSorter = new Comparator<FieldDescriptorProto>() {
         @Override
-        public int compare(FieldDescriptorProto o1, FieldDescriptorProto o2) {
+        public int compare(FieldDescriptorProto objA, FieldDescriptorProto objB) {
             // The higher the number, the closer to the beginning
-            int weightA = getSortingWeight(o1) + (o1.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
-            int weightB = getSortingWeight(o2) + (o2.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+            int weightA = getSortingWeight(objA) + (objA.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+            int weightB = getSortingWeight(objB) + (objB.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+            if (weightA == weightB) {
+                // Higher field number -> lower ranking
+                return objA.getNumber() - objB.getNumber();
+            }
             return weightB - weightA;
         }
     };

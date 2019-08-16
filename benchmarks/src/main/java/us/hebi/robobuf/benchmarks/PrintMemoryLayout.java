@@ -14,7 +14,7 @@ import java.util.stream.Stream;
  * @author Florian Enner
  * @since 16 Aug 2019
  */
-public class VerifyFieldLayout {
+public class PrintMemoryLayout {
 
     public static void main(String[] args) {
         Class<?> clazz = us.hebi.robobuf.robo.TestAllTypes.class;
@@ -30,7 +30,7 @@ public class VerifyFieldLayout {
         int i = 0;
         for (Field field : fields) {
             long offset = offsetMap.getOffset(field);
-            long cacheLine = offset / CACHE_LINE_SIZE;
+            long cacheLine = offset / CACHE_LINE_SIZE; // assumes alignment with cache line boundary, which may not be true
             System.out.println(String.format("[%3d => %3d (%1d)] %s", (i++), offset, cacheLine, field.getName()));
         }
 
