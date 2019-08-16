@@ -25,14 +25,14 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Fork(2)
-@Warmup(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 public class MessageBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + MessageBenchmark.class.getSimpleName() + ".*")
+                .include(".*" + MessageBenchmark.class.getSimpleName() + ".*write.*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();
@@ -74,6 +74,63 @@ public class MessageBenchmark {
         int serializedSize = outputMsg.getSerializedSize();
         ProtoSink sink = ProtoSink.newInstance(outputBuffer, 0, serializedSize);
         outputMsg.writeTo(sink);
+        return sink.position();
+    }
+
+    final TestAllTypes stringMessage = new TestAllTypes()
+            .setOptionalString("" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n" +
+                    "this is a pretty long ascii string \n")
+            .setDefaultString("" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n" +
+                    "this is a pretty long \uD83D\uDCA9 string \n");
+    byte[] stringOutput = new byte[stringMessage.getSerializedSize()];
+
+    /**
+     * Benchmark                      Mode  Cnt  Score   Error  Units
+     * MessageBenchmark.writeMessage  avgt   10  0.308 ± 0.005  us/op
+     * MessageBenchmark.writeString   avgt   10  1.380 ± 0.089  us/op
+     *
+     * @return
+     * @throws IOException
+     */
+    @Benchmark
+    public int writeString() throws IOException {
+        ProtoSink sink = ProtoSink.newInstance(stringOutput);
+        stringMessage.writeTo(sink);
         return sink.position();
     }
 

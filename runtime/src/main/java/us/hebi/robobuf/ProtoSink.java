@@ -30,6 +30,8 @@
 
 package us.hebi.robobuf;
 
+import sun.misc.Unsafe;
+
 import java.io.IOException;
 
 import static us.hebi.robobuf.WireFormat.*;
@@ -77,6 +79,16 @@ public abstract class ProtoSink {
                                         final int offset,
                                         final int length) {
         return new ArraySink(flatArray, offset, length);
+    }
+
+    public static ProtoSink newUnsafeInstance(final byte[] flatArray) {
+        return newUnsafeInstance(flatArray, 0, flatArray.length);
+    }
+
+    public static ProtoSink newUnsafeInstance(final byte[] flatArray,
+                                        final int offset,
+                                        final int length) {
+        return new UnsafeArraySink(flatArray, offset, length);
     }
 
     // -----------------------------------------------------------------

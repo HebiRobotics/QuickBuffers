@@ -17,10 +17,10 @@ class ArraySink extends ProtoSink {
         this.position = offset;
     }
 
-    private int position;
-    private byte[] buffer;
-    private int offset;
-    private int limit;
+    protected int position;
+    protected byte[] buffer;
+    protected int offset;
+    protected int limit;
 
     public int position() {
         // This used to return ByteBuffer.position(), which is
@@ -46,10 +46,8 @@ class ArraySink extends ProtoSink {
     /** Write a single byte. */
     public void writeRawByte(final byte value) throws IOException {
         if (position >= limit) {
-            // We're writing to a single buffer.
             throw new OutOfSpaceException(position, limit);
         }
-
         buffer[position++] = value;
     }
 
@@ -60,7 +58,6 @@ class ArraySink extends ProtoSink {
             System.arraycopy(value, offset, buffer, position, length);
             position += length;
         } else {
-            // We're writing to a single buffer.
             throw new OutOfSpaceException(position, limit);
         }
     }
