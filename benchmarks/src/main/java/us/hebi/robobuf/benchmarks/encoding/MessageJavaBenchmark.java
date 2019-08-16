@@ -16,9 +16,9 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Benchmark                      Mode  Cnt  Score   Error  Units
- * MessageBenchmark.readMessage   avgt   10  0.858 ± 0.040  us/op
- * MessageBenchmark.writeMessage  avgt   10  0.678 ± 0.091  us/op
+ * Benchmark                          Mode  Cnt  Score   Error  Units
+ * MessageJavaBenchmark.readMessage   avgt   10  1.018 ± 0.043  us/op
+ * MessageJavaBenchmark.writeMessage  avgt   10  0.757 ± 0.062  us/op
  *
  * @author Florian Enner
  * @since 16 Aug 2019
@@ -53,6 +53,8 @@ public class MessageJavaBenchmark {
             .setOptionalInt64(109)
             .setOptionalUint32(110)
             .setOptionalUint64(111)
+            .setDefaultString("ascii string")
+            .setOptionalString("non-ascii \uD83D\uDCA9 string")
             .setDefaultNestedEnum(TestAllTypes.NestedEnum.FOO)
             .addAllRepeatedFixed32(Arrays.asList(0, 0, 0, 0))
             .addAllRepeatedDouble(Arrays.asList(0d, 0d, 0d, 0d))

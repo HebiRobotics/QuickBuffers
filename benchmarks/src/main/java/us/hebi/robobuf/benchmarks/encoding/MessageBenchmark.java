@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Benchmark                      Mode  Cnt  Score   Error  Units
- * MessageBenchmark.readMessage   avgt   10  0.433 ± 0.043  us/op
- * MessageBenchmark.writeMessage  avgt   10  0.211 ± 0.005  us/op
+ * MessageBenchmark.readMessage   avgt   10  0.536 ± 0.024  us/op
+ * MessageBenchmark.writeMessage  avgt   10  0.310 ± 0.008  us/op
  *
  * @author Florian Enner
  * @since 16 Aug 2019
@@ -52,6 +52,8 @@ public class MessageBenchmark {
             .setOptionalInt64(109)
             .setOptionalUint32(110)
             .setOptionalUint64(111)
+            .setDefaultString("ascii string")
+            .setOptionalString("non-ascii \uD83D\uDCA9 string")
             .setDefaultNestedEnum(TestAllTypes.NestedEnum.FOO)
             .addAllRepeatedFixed32(new int[5])
             .addAllRepeatedDouble(new double[5])
