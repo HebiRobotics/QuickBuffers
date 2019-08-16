@@ -15,6 +15,37 @@ import java.util.concurrent.TimeUnit;
 import static us.hebi.robobuf.benchmarks.UnsafeUtil.*;
 
 /**
+ * ==== Note 1 ====
+ * This benchmark measures the performance difference between iterating an array member field
+ * vs using a wrapper class that abstracts access. It seems that the JIT inlines wrappers
+ * and that it can optimize loops the same way as iterating a standard array.
+ *
+ * // baseline
+ * SequentialIterationBenchmark.iterateArray              avgt   20  129.479 ± 1.348  us/op
+ *
+ * // 1 byte at a time
+ * SequentialIterationBenchmark.iterateArrayWrapper       avgt   20  128.926 ± 1.754  us/op
+ * SequentialIterationBenchmark.iterateHeapWrapper        avgt   20  137.475 ± 3.327  us/op
+ * SequentialIterationBenchmark.iterateOffHeapWrapper     avgt   20  129.735 ± 3.364  us/op
+ *
+ * // 4 bytes at a time
+ * SequentialIterationBenchmark.iterateArrayWrapperInt    avgt   20  123.921 ± 2.214  us/op
+ * SequentialIterationBenchmark.iterateHeapWrapperInt     avgt   20   32.392 ± 0.654  us/op
+ * SequentialIterationBenchmark.iterateOffHeapWrapperInt  avgt   20   31.602 ± 0.192  us/op
+ *
+ * ==== Note 2 ====
+ * With the above code the unsafe loop is optimized the same as a standard array iteration,
+ * but there are non-obvious modifications that can have huge performance impacts, e.g.,
+ * if the 'remaining' variable changes from int to long, the performance goes down 50%. I
+ * assume that this causes the JIT to not pick up on the array pattern and optimize it
+ * differently.
+ *
+ * Benchmark                                              Mode  Cnt    Score   Error  Units
+ * SequentialIterationBenchmark.iterateHeapWrapper        avgt   20  298.005 ± 4.628  us/op
+ * SequentialIterationBenchmark.iterateOffHeapWrapper     avgt   20  215.658 ± 3.641  us/op
+ * SequentialIterationBenchmark.iterateHeapWrapperInt     avgt   20   72.876 ± 0.904  us/op
+ * SequentialIterationBenchmark.iterateOffHeapWrapperInt  avgt   20   65.007 ± 1.134  us/op
+ *
  * @author Florian Enner
  * @since 31 Jul 2019
  */
@@ -25,40 +56,6 @@ import static us.hebi.robobuf.benchmarks.UnsafeUtil.*;
 @Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Thread)
 public class SequentialIterationBenchmark {
-
-    /*
-     * ==== Note ====
-     * This benchmark measures the performance difference between iterating an array member field
-     * vs using a wrapper class that abstracts access. It seems that the JIT inlines wrappers
-     * and that it can optimize loops the same way as iterating a standard array.
-     *
-     * // baseline
-     * SequentialIterationBenchmark.iterateArray              avgt   20  129.479 ± 1.348  us/op
-     *
-     * // single byte at a time
-     * SequentialIterationBenchmark.iterateArrayWrapper       avgt   20  128.926 ± 1.754  us/op
-     * SequentialIterationBenchmark.iterateHeapWrapper        avgt   20  137.475 ± 3.327  us/op
-     * SequentialIterationBenchmark.iterateOffHeapWrapper     avgt   20  129.735 ± 3.364  us/op
-     *
-     * // 4 bytes at a time
-     * SequentialIterationBenchmark.iterateArrayWrapperInt    avgt   20  123.921 ± 2.214  us/op
-     * SequentialIterationBenchmark.iterateHeapWrapperInt     avgt   20   32.392 ± 0.654  us/op
-     * SequentialIterationBenchmark.iterateOffHeapWrapperInt  avgt   20   31.602 ± 0.192  us/op
-     *
-     * ==== Note ====
-     * With the above code the unsafe loop is optimized the same as a standard array iteration,
-     * but there are non-obvious modifications that can have huge performance impacts, e.g.,
-     * if the 'remaining' variable changes from int to long, the performance goes down 50%. I
-     * assume that this causes the JIT to not pick up on the array pattern and optimize it
-     * differently.
-     *
-     * Benchmark                                              Mode  Cnt    Score   Error  Units
-     * SequentialIterationBenchmark.iterateHeapWrapper        avgt   20  298.005 ± 4.628  us/op
-     * SequentialIterationBenchmark.iterateOffHeapWrapper     avgt   20  215.658 ± 3.641  us/op
-     * SequentialIterationBenchmark.iterateHeapWrapperInt     avgt   20   72.876 ± 0.904  us/op
-     * SequentialIterationBenchmark.iterateOffHeapWrapperInt  avgt   20   65.007 ± 1.134  us/op
-     *
-     */
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
