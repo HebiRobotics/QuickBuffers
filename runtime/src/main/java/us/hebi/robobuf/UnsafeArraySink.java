@@ -16,15 +16,35 @@ import static us.hebi.robobuf.WireFormat.*;
  */
 class UnsafeArraySink extends ArraySink {
 
-    UnsafeArraySink(final byte[] buffer,
-                    final int offset, // TODO: support long offsets
-                    final int length) {
-        super(buffer, offset, length);
-        UnsafeAccess.requireUnsafe();
+    static boolean isAvailable() {
+        return Platform.getJavaVersion() >= 8 && UnsafeAccess.isAvailable();
+    }
+
+
+    UnsafeArraySink(boolean enableDirect) {
+        if (!isAvailable())
+            throw new AssertionError("UnsafeArraySink requires Java >= 8 and access to sun.misc.Unsafe");
+        this.enableDirect = enableDirect;
+    }
+
+    @Override
+    public ProtoSink setOutput(byte[] buffer, long offset, int length) {
+        if (!enableDirect || buffer != null) {
+            return super.setOutput(buffer, offset, length);
+        }
+        if (offset == 0) {
+            throw new NullPointerException("null reference with 0 direct offset");
+        }
+        this.baseOffset = offset;
+        this.offset = 0;
+        this.position = 0;
+        this.limit = length;
+        return this;
     }
 
     // offset to bytes in memory
-    long baseOffset = BYTE_ARRAY_OFFSET;
+    private final boolean enableDirect;
+    private long baseOffset = BYTE_ARRAY_OFFSET;
 
     private void requireSpace(final int numBytes) throws OutOfSpaceException {
         if (spaceLeft() < numBytes)
@@ -138,7 +158,7 @@ class UnsafeArraySink extends ArraySink {
      * (Modified from Guava's UTF-8)
      *
      * Encodes {@code sequence} into UTF-8, in {@code bytes}. For a string, this method is
-     * equivalent to {@code ByteBuffer.wrap(buffer, offset, length).put(string.getBytes(UTF_8))},
+     * equivalent to {@code ByteBuffer.setOutput(buffer, offset, length).put(string.getBytes(UTF_8))},
      * but is more efficient in both time and space. Bytes are written starting at the offset.
      * This method requires paired surrogates, and therefore does not support chunking.
      *

@@ -102,7 +102,7 @@ public class ProtoFailTests {
 
     private void writeToTruncated(ProtoMessage msg) throws IOException {
         byte[] buffer = new byte[msg.getSerializedSize() - 1];
-        ProtoSink output = ProtoSink.newInstance(buffer);
+        ProtoSink output = ProtoSink.wrapArray(buffer);
         msg.writeTo(output);
     }
 

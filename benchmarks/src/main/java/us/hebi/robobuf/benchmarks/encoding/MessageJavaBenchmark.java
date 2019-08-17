@@ -63,7 +63,7 @@ public class MessageJavaBenchmark {
 
     //    final TestAllTypes inputMsg = new TestAllTypes();
     byte[] outputBuffer = new byte[inputData.length];
-    final ProtoSink sink = ProtoSink.newInstance(outputBuffer);
+    final ProtoSink sink = ProtoSink.wrapArray(outputBuffer);
 
     @Benchmark
     public TestAllTypes readMessage() throws IOException {

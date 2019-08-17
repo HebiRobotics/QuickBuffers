@@ -68,7 +68,7 @@ public class RepeatedWriteBenchmark {
     final Random rnd = new Random();
     final TestAllTypes msg = new TestAllTypes();
     byte[] outputBuffer = new byte[10 * 1024];
-    final ProtoSink sink = ProtoSink.newInstance(outputBuffer);
+    final ProtoSink sink = ProtoSink.wrapArray(outputBuffer);
     final static int size = 256;
     final double[] doubleArray = new double[size];
     final float[] floatArray = new float[size];

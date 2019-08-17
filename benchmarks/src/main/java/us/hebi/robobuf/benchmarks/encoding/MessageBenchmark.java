@@ -62,7 +62,7 @@ public class MessageBenchmark {
 
     final TestAllTypes inputMsg = new TestAllTypes();
     byte[] outputBuffer = new byte[inputData.length];
-    final ProtoSink sink = ProtoSink.newInstance(outputBuffer);
+    final ProtoSink sink = ProtoSink.wrapArray(outputBuffer);
 
     @Benchmark
     public TestAllTypes readMessage() throws IOException {
@@ -72,7 +72,7 @@ public class MessageBenchmark {
     @Benchmark
     public int writeMessage() throws IOException {
         int serializedSize = outputMsg.getSerializedSize();
-        ProtoSink sink = ProtoSink.newInstance(outputBuffer, 0, serializedSize);
+        ProtoSink sink = ProtoSink.wrapArray(outputBuffer, 0, serializedSize);
         outputMsg.writeTo(sink);
         return sink.position();
     }
@@ -129,7 +129,7 @@ public class MessageBenchmark {
      */
     @Benchmark
     public int writeString() throws IOException {
-        ProtoSink sink = ProtoSink.newInstance(stringOutput);
+        ProtoSink sink = ProtoSink.wrapArray(stringOutput);
         stringMessage.writeTo(sink);
         return sink.position();
     }

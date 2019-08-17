@@ -10,13 +10,15 @@ import java.io.IOException;
  */
 class ArraySink extends ProtoSink {
 
-    ArraySink(final byte[] buffer,
-              final int offset,
-              final int length) {
+    @Override
+    public ProtoSink setOutput(byte[] buffer, long offset, int length) {
+        if (offset < 0 || length < 0 || offset > buffer.length || offset + length > buffer.length)
+            throw new ArrayIndexOutOfBoundsException();
         this.buffer = buffer;
-        this.offset = offset;
-        this.limit = offset + length;
-        this.position = offset;
+        this.offset = (int) offset;
+        this.limit = this.offset + length;
+        this.position = this.offset;
+        return this;
     }
 
     protected int position;
@@ -92,7 +94,7 @@ class ArraySink extends ProtoSink {
      * (Copied from Guava's UTF-8)
      *
      * Encodes {@code sequence} into UTF-8, in {@code bytes}. For a string, this method is
-     * equivalent to {@code ByteBuffer.wrap(buffer, offset, length).put(string.getBytes(UTF_8))},
+     * equivalent to {@code ByteBuffer.setOutput(buffer, offset, length).put(string.getBytes(UTF_8))},
      * but is more efficient in both time and space. Bytes are written starting at the offset.
      * This method requires paired surrogates, and therefore does not support chunking.
      *

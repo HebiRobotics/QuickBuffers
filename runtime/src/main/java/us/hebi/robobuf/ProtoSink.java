@@ -58,35 +58,77 @@ public abstract class ProtoSink {
     }
 
     /**
-     * Create a new {@code CodedOutputStream} that writes directly to the given
+     * Create a new {@code ProtoSink} that writes directly to the given
      * byte array.  If more bytes are written than fit in the array,
-     * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
-     * array is faster than writing to an {@code OutputStream}.
+     * {@link OutOfSpaceException} will be thrown.  Writing directly to a
+     * flat array is faster than writing to an {@code OutputStream}.
      */
-    public static ProtoSink newInstance(final byte[] flatArray) {
-        return newInstance(flatArray, 0, flatArray.length);
+    public static ProtoSink wrapArray(final byte[] flatArray) {
+        return createInstance().setOutput(flatArray);
     }
 
     /**
-     * Create a new {@code CodedOutputStream} that writes directly to the given
+     * Create a new {@code ProtoSink} that writes directly to the given
      * byte array slice.  If more bytes are written than fit in the slice,
      * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
      * array is faster than writing to an {@code OutputStream}.
      */
-    public static ProtoSink newInstance(final byte[] flatArray,
-                                        final int offset,
-                                        final int length) {
-        return new ArraySink(flatArray, offset, length);
+    public static ProtoSink wrapArray(final byte[] flatArray,
+                                      final int offset,
+                                      final int length) {
+        return createInstance().setOutput(flatArray, offset, length);
     }
 
-    public static ProtoSink newUnsafeInstance(final byte[] flatArray) {
-        return newUnsafeInstance(flatArray, 0, flatArray.length);
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array.
+     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
+     * be thrown.  Writing directly to a flat array is faster than writing
+     * to an {@code OutputStream}.
+     */
+    public static ProtoSink createInstance() {
+        return new ArraySink();
     }
 
-    public static ProtoSink newUnsafeInstance(final byte[] flatArray,
-                                              final int offset,
-                                              final int length) {
-        return new UnsafeArraySink(flatArray, offset, length);
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array.
+     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
+     * be thrown.  Writing directly to a flat array is faster than writing
+     * to an {@code OutputStream}.
+     *
+     * The returned sink may leverage features from sun.misc.Unsafe if
+     * available on the current platform.
+     */
+    public static ProtoSink createFastest() {
+        if (UnsafeArraySink.isAvailable())
+            return new UnsafeArraySink(false);
+        return createInstance();
+    }
+
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array or
+     * direct memory. If more bytes are written than fit in the array, an
+     * {@link OutOfSpaceException} will be thrown.
+     *
+     * This sink requires availability of sun.misc.Unsafe and Java 8 or higher.
+     */
+    public static ProtoSink createUnsafe() {
+        return new UnsafeArraySink(true);
+    }
+
+    /**
+     * Changes the output to the given array. This resets any
+     * existing internal state such as position and is
+     * equivalent to creating a new instance.
+     *
+     * @param buffer
+     * @param offset
+     * @param length
+     * @return
+     */
+    public abstract ProtoSink setOutput(byte[] buffer, long offset, int length);
+
+    public ProtoSink setOutput(byte[] buffer) {
+        return setOutput(buffer, 0, buffer.length);
     }
 
     // -----------------------------------------------------------------
@@ -796,7 +838,7 @@ public abstract class ProtoSink {
     /**
      * Verifies that {@link #spaceLeft()} returns zero.  It's common to create
      * a byte array that is exactly big enough to hold a message, then write to
-     * it with a {@code CodedOutputStream}.  Calling {@code checkNoSpaceLeft()}
+     * it with a {@code ProtoSink}.  Calling {@code checkNoSpaceLeft()}
      * after writing verifies that the message was actually as big as expected,
      * which can help catch bugs.
      */
@@ -821,7 +863,7 @@ public abstract class ProtoSink {
     public abstract void reset();
 
     /**
-     * If you create a CodedOutputStream around a simple flat array, you must
+     * If you create a ProtoSink around a simple flat array, you must
      * not attempt to write more bytes than the array has space.  Otherwise,
      * this exception will be thrown.
      */

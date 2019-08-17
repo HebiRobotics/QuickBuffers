@@ -33,12 +33,6 @@ import java.security.PrivilegedExceptionAction;
  */
 class UnsafeAccess {
 
-    public static void requireUnsafe() {
-        // throws an exception if not available
-        if (!isAvailable())
-            throw new AssertionError("Unsafe is not available on this platform");
-    }
-
     public static boolean isAvailable() {
         return UNSAFE != null;
     }
