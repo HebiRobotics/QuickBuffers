@@ -148,20 +148,11 @@ public final class ProtoSource {
     // -----------------------------------------------------------------
 
     /** Read a repeated (packed) {@code double} field value from the stream. */
-    public void readPackedDouble(RepeatedDouble store) throws IOException {
+    public final void readPackedDouble(RepeatedDouble store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readDouble());
-        }
-    }
-
-    /** Read a repeated (packed) {@code float} field value from the stream. */
-    public void readPackedFloat(RepeatedFloat store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readFloat());
         }
     }
 
@@ -171,6 +162,24 @@ public final class ProtoSource {
         store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readFixed64());
+        }
+    }
+
+    /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
+    public void readPackedSFixed64(RepeatedLong store) throws IOException {
+        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
+        store.requireCapacity(numEntries);
+        for (int i = 0; i < numEntries; i++) {
+            store.add(readSFixed64());
+        }
+    }
+
+    /** Read a repeated (packed) {@code float} field value from the stream. */
+    public void readPackedFloat(RepeatedFloat store) throws IOException {
+        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
+        store.requireCapacity(numEntries);
+        for (int i = 0; i < numEntries; i++) {
+            store.add(readFloat());
         }
     }
 
@@ -189,15 +198,6 @@ public final class ProtoSource {
         store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readSFixed32());
-        }
-    }
-
-    /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
-    public void readPackedSFixed64(RepeatedLong store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readSFixed64());
         }
     }
 
@@ -289,10 +289,10 @@ public final class ProtoSource {
 
     /** Read a {@code bytes} field value from the stream. */
     public void readBytes(RepeatedByte store) throws IOException {
-        final int size = readRawVarint32();
-        requireRemaining(size);
-        store.copyFrom(buffer, bufferPos, size);
-        bufferPos += size;
+        final int numBytes = readRawVarint32();
+        requireRemaining(numBytes);
+        store.copyFrom(buffer, bufferPos, numBytes);
+        bufferPos += numBytes;
     }
 
     /** Read a {@code uint32} field value from the stream. */
@@ -458,12 +458,7 @@ public final class ProtoSource {
     /** See setRecursionLimit() */
     private int recursionDepth;
     private int recursionLimit = DEFAULT_RECURSION_LIMIT;
-
-    /** See setSizeLimit() */
-    private int sizeLimit = DEFAULT_SIZE_LIMIT;
-
     private static final int DEFAULT_RECURSION_LIMIT = 64;
-    private static final int DEFAULT_SIZE_LIMIT = 64 << 20;  // 64MB
 
     private ProtoSource(final byte[] buffer, final int off, final int len) {
         this.buffer = buffer;
@@ -487,35 +482,6 @@ public final class ProtoSource {
         final int oldLimit = recursionLimit;
         recursionLimit = limit;
         return oldLimit;
-    }
-
-    /**
-     * Set the maximum message size.  In order to prevent malicious
-     * messages from exhausting memory or causing integer overflows,
-     * {@code CodedInputStream} limits how large a message may be.
-     * The default limit is 64MB.  You should set this limit as small
-     * as you can without harming your app's functionality.  Note that
-     * size limits only apply when reading from an {@code InputStream}, not
-     * when constructed around a raw byte array.
-     * <p>
-     * If you want to read several messages from a single CodedInputStream, you
-     * could call {@link #resetSizeCounter()} after each one to avoid hitting the
-     * size limit.
-     *
-     * @return the old limit.
-     */
-    public int setSizeLimit(final int limit) {
-        if (limit < 0) {
-            throw new IllegalArgumentException(
-                    "Size limit cannot be negative: " + limit);
-        }
-        final int oldLimit = sizeLimit;
-        sizeLimit = limit;
-        return oldLimit;
-    }
-
-    /** Resets the current size counter to zero (see {@link #setSizeLimit(int)}). */
-    public void resetSizeCounter() {
     }
 
     /**
@@ -589,23 +555,6 @@ public final class ProtoSource {
         return bufferPos - bufferStart;
     }
 
-    /**
-     * Retrieves a subset of data in the buffer. The returned array is not backed by the original
-     * buffer array.
-     *
-     * @param offset the position (relative to the buffer start position) to start at.
-     * @param length the number of bytes to retrieve.
-     */
-    public byte[] getData(int offset, int length) {
-        if (length == 0) {
-            return new byte[0];
-        }
-        byte[] copy = new byte[length];
-        int start = bufferStart + offset;
-        System.arraycopy(buffer, start, copy, 0, length);
-        return copy;
-    }
-
     /** Rewind to previous position. Cannot go forward. */
     public void rewindToPosition(int position) {
         if (position > bufferPos - bufferStart) {
@@ -629,19 +578,6 @@ public final class ProtoSource {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
         return buffer[bufferPos++];
-    }
-
-    /**
-     * Read a fixed size of bytes from the input.
-     *
-     * @throws InvalidProtocolBufferException The end of the stream or the current
-     *                                            limit was reached.
-     */
-    public byte[] readRawBytes(final int size) throws IOException {
-        requireRemaining(size);
-        final byte[] bytes = Arrays.copyOfRange(buffer, bufferPos, bufferPos + size);
-        bufferPos += size;
-        return bytes;
     }
 
     /**
