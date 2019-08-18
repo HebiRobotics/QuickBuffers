@@ -62,7 +62,7 @@ public class MessageBenchmark {
 
     final TestAllTypes inputMsg = new TestAllTypes();
     byte[] outputBuffer = new byte[inputData.length];
-    final ProtoSink sink = ProtoSink.wrapArray(outputBuffer);
+    final ProtoSink sink = ProtoSink.createInstance();
 
     @Benchmark
     public TestAllTypes readMessage() throws IOException {
@@ -72,8 +72,7 @@ public class MessageBenchmark {
     @Benchmark
     public int writeMessage() throws IOException {
         int serializedSize = outputMsg.getSerializedSize();
-        ProtoSink sink = ProtoSink.wrapArray(outputBuffer, 0, serializedSize);
-        outputMsg.writeTo(sink);
+        outputMsg.writeTo(sink.setOutput(outputBuffer));
         return sink.position();
     }
 
@@ -118,18 +117,24 @@ public class MessageBenchmark {
                     "this is a pretty long \uD83D\uDCA9 string \n" +
                     "this is a pretty long \uD83D\uDCA9 string \n");
     byte[] stringOutput = new byte[stringMessage.getSerializedSize()];
+    ProtoSink stringSink = ProtoSink.createInstance();
 
     /**
      * Benchmark                      Mode  Cnt  Score   Error  Units
      * MessageBenchmark.writeMessage  avgt   10  0.308 ± 0.005  us/op
      * MessageBenchmark.writeString   avgt   10  1.380 ± 0.089  us/op
      *
+     *
+     * Benchmark                      Mode  Cnt  Score   Error  Units
+     * MessageBenchmark.writeMessage  avgt   10  0.236 ± 0.039  us/op
+     * MessageBenchmark.writeString   avgt   10  1.240 ± 0.072  us/op
+     *
      * @return
      * @throws IOException
      */
     @Benchmark
     public int writeString() throws IOException {
-        ProtoSink sink = ProtoSink.wrapArray(stringOutput);
+        ProtoSink sink = this.stringSink.setOutput(stringOutput);
         stringMessage.writeTo(sink);
         return sink.position();
     }
