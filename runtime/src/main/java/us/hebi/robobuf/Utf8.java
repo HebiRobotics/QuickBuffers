@@ -278,8 +278,9 @@ class Utf8 {
                     String.format("buffer length=%d, index=%d, size=%d", bufferSize, index, size));
         }
 
-        int offset = index;
-        final int limit = offset + size;
+        // keep separate int/long counters so we don't have to convert types at every call
+        int remaining = size;
+        long offset = baseOffset + index;
 
         // The longest possible resulting String is the same as the number of input bytes, when it is
         // all ASCII. For other cases, this over-allocates and we will truncate in the end.
@@ -288,56 +289,62 @@ class Utf8 {
 
         // Optimize for 100% ASCII (Hotspot loves small simple top-level loops like this).
         // This simple loop stops when we encounter a byte >= 0x80 (i.e. non-ASCII).
-        while (offset < limit) {
-            byte b = UNSAFE.getByte(bytes, baseOffset + offset);
+        while (remaining > 0) {
+            byte b = UNSAFE.getByte(bytes, offset);
             if (!DecodeUtil.isOneByte(b)) {
                 break;
             }
             offset++;
+            remaining--;
             DecodeUtil.handleOneByte(b, result, resultPos++);
         }
 
-        while (offset < limit) {
-            byte byte1 = UNSAFE.getByte(bytes, baseOffset + offset++);
+        while (remaining > 0) {
+            byte byte1 = UNSAFE.getByte(bytes, offset++);
+            remaining--;
             if (DecodeUtil.isOneByte(byte1)) {
                 DecodeUtil.handleOneByte(byte1, result, resultPos++);
                 // It's common for there to be multiple ASCII characters in a run mixed in, so add an
                 // extra optimized loop to take care of these runs.
-                while (offset < limit) {
-                    byte b = UNSAFE.getByte(bytes, baseOffset + offset);
+                while (remaining > 0) {
+                    byte b = UNSAFE.getByte(bytes, offset);
                     if (!DecodeUtil.isOneByte(b)) {
                         break;
                     }
                     offset++;
+                    remaining--;
                     DecodeUtil.handleOneByte(b, result, resultPos++);
                 }
             } else if (DecodeUtil.isTwoBytes(byte1)) {
-                if (offset >= limit) {
+                if (remaining < 1) {
                     throw new IllegalArgumentException("Invalid UTF-8");
                 }
-                byte byte2 = UNSAFE.getByte(bytes, baseOffset + offset++);
+                byte byte2 = UNSAFE.getByte(bytes, offset++);
+                remaining--;
                 DecodeUtil.handleTwoBytes(byte1, byte2, result, resultPos++);
             } else if (DecodeUtil.isThreeBytes(byte1)) {
-                if (offset >= limit - 1) {
+                if (remaining < 2) {
                     throw new IllegalArgumentException("Invalid UTF-8");
                 }
                 DecodeUtil.handleThreeBytes(
                         byte1,
-                        /* byte2 */ UNSAFE.getByte(bytes, baseOffset + offset++),
-                        /* byte3 */ UNSAFE.getByte(bytes, baseOffset + offset++),
+                        /* byte2 */ UNSAFE.getByte(bytes, offset++),
+                        /* byte3 */ UNSAFE.getByte(bytes, offset++),
                         result,
                         resultPos++);
+                remaining -= 2;
             } else {
-                if (offset >= limit - 2) {
+                if (remaining < 3) {
                     throw new IllegalArgumentException("Invalid UTF-8");
                 }
                 DecodeUtil.handleFourBytes(
                         byte1,
-                        /* byte2 */ UNSAFE.getByte(bytes, baseOffset + offset++),
-                        /* byte3 */ UNSAFE.getByte(bytes, baseOffset + offset++),
-                        /* byte4 */ UNSAFE.getByte(bytes, baseOffset + offset++),
+                        /* byte2 */ UNSAFE.getByte(bytes, offset++),
+                        /* byte3 */ UNSAFE.getByte(bytes, offset++),
+                        /* byte4 */ UNSAFE.getByte(bytes, offset++),
                         result,
                         resultPos++);
+                remaining -= 3;
                 // 4-byte case requires two chars.
                 resultPos++;
             }
