@@ -49,7 +49,7 @@ public class CompatibilityTest {
         // multiple merges to check expanding repeated behavior
         for (int i = 0; i < 3; i++) {
             expected.mergeFrom(serializedMsg);
-            msg.mergeFrom(ProtoSource.newInstance(serializedMsg));
+            msg.mergeFrom(ProtoSource.wrapArray(serializedMsg));
         }
 
         assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));

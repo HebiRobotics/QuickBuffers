@@ -32,9 +32,10 @@ class UnsafeArraySink extends ArraySink {
             baseOffset = BYTE_ARRAY_OFFSET;
             return super.setOutput(buffer, offset, length);
         }
-        if (offset == 0) {
-            throw new NullPointerException("null reference with 0 direct offset");
+        if (offset <= 0) {
+            throw new NullPointerException("null reference with invalid address offset");
         }
+        this.buffer = null;
         this.baseOffset = offset;
         this.offset = 0;
         this.position = 0;

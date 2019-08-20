@@ -189,7 +189,7 @@ public class ProtoFailTests {
 
     private void readFromTruncated(ProtoMessage msg) throws IOException {
         byte[] data = msg.toByteArray();
-        ProtoSource input = ProtoSource.newInstance(data, 0, data.length - 1);
+        ProtoSource input = ProtoSource.wrapArray(data, 0, data.length - 1);
         msg.clear().mergeFrom(input);
     }
 

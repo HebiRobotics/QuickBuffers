@@ -42,24 +42,42 @@ import static us.hebi.robobuf.WireFormat.*;
  * This class contains two kinds of methods:  methods that read specific
  * protocol message constructs and field types (e.g. {@link #readTag()} and
  * {@link #readInt32()}) and methods that read low-level values (e.g.
- * {@link #readRawVarint32()} and {@link #readRawBytes}).  If you are reading
+ * {@link #readRawVarint32()} and {@link #readRawVarint64()}).  If you are reading
  * encoded protocol messages, you should use the former methods, but if you are
  * reading some other format of your own design, use the latter.
  *
  * @author kenton@google.com Kenton Varda
  */
-public final class ProtoSource {
+public class ProtoSource {
 
     /** Create a new CodedInputStream wrapping the given byte array. */
-    public static ProtoSource newInstance(final byte[] buf) {
-        return newInstance(buf, 0, buf.length);
+    public static ProtoSource wrapArray(final byte[] buf) {
+        return createInstance().setInput(buf);
     }
 
     /** Create a new CodedInputStream wrapping the given byte array slice. */
-    public static ProtoSource newInstance(final byte[] buf,
-                                          final int off,
-                                          final int len) {
-        return new ProtoSource(buf, off, len);
+    public static ProtoSource wrapArray(final byte[] buf,
+                                        final int off,
+                                        final int len) {
+        return createInstance().setInput(buf, off, len);
+    }
+
+    public static ProtoSource createInstance() {
+        return new ProtoSource();
+    }
+
+    public static ProtoSource createFastest() {
+        if (UnsafeArraySource.isAvailable())
+            return new UnsafeArraySource(false);
+        return createInstance();
+    }
+
+    public static ProtoSource createUnsafe() {
+        return new UnsafeArraySource(true);
+    }
+
+    public final ProtoSource setInput(byte[] buffer) {
+        return setInput(buffer, 0, buffer.length);
     }
 
     // -----------------------------------------------------------------
@@ -89,7 +107,7 @@ public final class ProtoSource {
      * end tag.
      *
      * @throws InvalidProtocolBufferException {@code value} does not match the
-     *                                            last tag.
+     *                                        last tag.
      */
     public void checkLastTagWas(final int value)
             throws InvalidProtocolBufferException {
@@ -251,12 +269,11 @@ public final class ProtoSource {
         return readRawVarint32() != 0;
     }
 
-    /** Read a {@code string} field value from the stream. */ // TODO: remove allocations
-    public void readString(StringBuilder builder) throws IOException {
+    /** Read a {@code string} field value from the stream. */
+    public void readString(StringBuilder output) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
-        builder.setLength(0);
-        Utf8.decodeArray(buffer, bufferPos, size, builder);
+        Utf8.decodeArray(buffer, bufferPos, size, output);
         bufferPos += size;
     }
 
@@ -444,11 +461,11 @@ public final class ProtoSource {
 
     // -----------------------------------------------------------------
 
-    private final byte[] buffer;
-    private int bufferStart;
-    private int bufferSize;
+    protected byte[] buffer;
+    protected int bufferStart;
+    protected int bufferSize;
     private int bufferSizeAfterLimit;
-    private int bufferPos;
+    protected int bufferPos;
     private int lastTag;
 
     /** The absolute position of the end of the current message. */
@@ -459,11 +476,35 @@ public final class ProtoSource {
     private int recursionLimit = DEFAULT_RECURSION_LIMIT;
     private static final int DEFAULT_RECURSION_LIMIT = 64;
 
-    private ProtoSource(final byte[] buffer, final int off, final int len) {
+    /**
+     * Changes the input to the given array. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     *
+     * @param buffer
+     * @param off
+     * @param len
+     * @return this
+     */
+    public ProtoSource setInput(byte[] buffer, long off, int len) {
+        if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
+            throw new ArrayIndexOutOfBoundsException();
         this.buffer = buffer;
-        bufferStart = off;
-        bufferSize = off + len;
-        bufferPos = off;
+        bufferStart = (int) off;
+        bufferSize = bufferStart + len;
+        bufferPos = bufferStart;
+        return resetInternalState();
+    }
+
+    protected ProtoSource resetInternalState() {
+        currentLimit = Integer.MAX_VALUE;
+        bufferSizeAfterLimit = 0;
+        lastTag = 0;
+        recursionDepth = 0;
+        return this;
+    }
+
+    protected ProtoSource() {
     }
 
     /**
@@ -570,7 +611,7 @@ public final class ProtoSource {
      * Read one byte from the input.
      *
      * @throws InvalidProtocolBufferException The end of the stream or the current
-     *                                            limit was reached.
+     *                                        limit was reached.
      */
     public byte readRawByte() throws IOException {
         if (bufferPos == bufferSize) {
@@ -583,7 +624,7 @@ public final class ProtoSource {
      * Reads and discards {@code size} bytes.
      *
      * @throws InvalidProtocolBufferException The end of the stream or the current
-     *                                            limit was reached.
+     *                                        limit was reached.
      */
     public void skipRawBytes(final int size) throws IOException {
         requireRemaining(size);

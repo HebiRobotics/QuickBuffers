@@ -19,6 +19,11 @@ import java.util.concurrent.TimeUnit;
  * MessageBenchmark.readMessage   avgt   10  0.536 ± 0.024  us/op
  * MessageBenchmark.writeMessage  avgt   10  0.310 ± 0.008  us/op
  *
+ * Benchmark                     Mode  Cnt  Score   Error  Units
+ * MessageBenchmark.readMessage  avgt   10  0.515 ± 0.015  us/op
+ * MessageBenchmark.readString   avgt   10  1.114 ± 0.069  us/op - new String()
+ * MessageBenchmark.readString   avgt   10  0.863 ± 0.009  us/op - decodeUtf8Array()
+ *
  * @author Florian Enner
  * @since 16 Aug 2019
  */
@@ -32,7 +37,7 @@ public class MessageBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + MessageBenchmark.class.getSimpleName() + ".*write.*")
+                .include(".*" + MessageBenchmark.class.getSimpleName() + ".*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();
@@ -63,10 +68,11 @@ public class MessageBenchmark {
     final TestAllTypes inputMsg = new TestAllTypes();
     byte[] outputBuffer = new byte[inputData.length];
     final ProtoSink sink = ProtoSink.createInstance();
+    final ProtoSource source = ProtoSource.createInstance();
 
     @Benchmark
     public TestAllTypes readMessage() throws IOException {
-        return inputMsg.clear().mergeFrom(ProtoSource.newInstance(inputData));
+        return inputMsg.clear().mergeFrom(source.setInput(inputData));
     }
 
     @Benchmark
@@ -116,6 +122,8 @@ public class MessageBenchmark {
                     "this is a pretty long \uD83D\uDCA9 string \n" +
                     "this is a pretty long \uD83D\uDCA9 string \n" +
                     "this is a pretty long \uD83D\uDCA9 string \n");
+    byte[] stringInput = stringMessage.toByteArray();
+    ProtoSource stringSource = ProtoSource.wrapArray(stringInput);
     byte[] stringOutput = new byte[stringMessage.getSerializedSize()];
     ProtoSink stringSink = ProtoSink.createInstance();
 
@@ -137,6 +145,11 @@ public class MessageBenchmark {
         ProtoSink sink = this.stringSink.setOutput(stringOutput);
         stringMessage.writeTo(sink);
         return sink.position();
+    }
+
+    @Benchmark
+    public TestAllTypes readString() throws IOException {
+        return stringMessage.clear().mergeFrom(stringSource.setInput(stringInput));
     }
 
 }

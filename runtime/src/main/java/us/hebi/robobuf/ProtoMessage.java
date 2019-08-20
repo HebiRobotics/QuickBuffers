@@ -167,7 +167,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data,
                                                              final int off, final int len) throws InvalidProtocolBufferException {
         try {
-            final ProtoSource input = ProtoSource.newInstance(data, off, len);
+            final ProtoSource input = ProtoSource.wrapArray(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;

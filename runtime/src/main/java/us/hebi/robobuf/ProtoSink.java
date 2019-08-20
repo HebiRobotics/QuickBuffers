@@ -127,7 +127,7 @@ public abstract class ProtoSink {
      */
     public abstract ProtoSink setOutput(byte[] buffer, long offset, int length);
 
-    public ProtoSink setOutput(byte[] buffer) {
+    public final ProtoSink setOutput(byte[] buffer) {
         return setOutput(buffer, 0, buffer.length);
     }
 
@@ -900,8 +900,6 @@ public abstract class ProtoSink {
         writeRawByte((value >> 24) & 0xFF);
     }
 
-    public static final int LITTLE_ENDIAN_32_SIZE = 4;
-
     /** Write a little-endian 64-bit integer. */
     public void writeRawLittleEndian64(final long value) throws IOException {
         writeRawByte((int) (value) & 0xFF);
@@ -913,8 +911,6 @@ public abstract class ProtoSink {
         writeRawByte((int) (value >> 48) & 0xFF);
         writeRawByte((int) (value >> 56) & 0xFF);
     }
-
-    public static final int LITTLE_ENDIAN_64_SIZE = 8;
 
     /**
      * Encode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers
