@@ -401,72 +401,6 @@ public abstract class ProtoSink {
     /** Write a {@code string} field to the stream. */
     public abstract void writeStringNoTag(final CharSequence value) throws IOException;
 
-    // These UTF-8 handling methods are copied from Guava's Utf8 class.
-
-    /**
-     * Returns the number of bytes in the UTF-8-encoded form of {@code sequence}. For a string,
-     * this method is equivalent to {@code string.getBytes(UTF_8).length}, but is more efficient in
-     * both time and space.
-     *
-     * @throws IllegalArgumentException if {@code sequence} contains ill-formed UTF-16 (unpaired
-     *                                  surrogates)
-     */
-    protected static int encodedLength(CharSequence sequence) {
-        // Warning to maintainers: this implementation is highly optimized.
-        int utf16Length = sequence.length();
-        int utf8Length = utf16Length;
-        int i = 0;
-
-        // This loop optimizes for pure ASCII.
-        while (i < utf16Length && sequence.charAt(i) < 0x80) {
-            i++;
-        }
-
-        // This loop optimizes for chars less than 0x800.
-        for (; i < utf16Length; i++) {
-            char c = sequence.charAt(i);
-            if (c < 0x800) {
-                utf8Length += ((0x7f - c) >>> 31);  // branch free!
-            } else {
-                utf8Length += encodedLengthGeneral(sequence, i);
-                break;
-            }
-        }
-
-        if (utf8Length < utf16Length) {
-            // Necessary and sufficient condition for overflow because of maximum 3x expansion
-            throw new IllegalArgumentException("UTF-8 length does not fit in int: "
-                    + (utf8Length + (1L << 32)));
-        }
-        return utf8Length;
-    }
-
-    private static int encodedLengthGeneral(CharSequence sequence, int start) {
-        int utf16Length = sequence.length();
-        int utf8Length = 0;
-        for (int i = start; i < utf16Length; i++) {
-            char c = sequence.charAt(i);
-            if (c < 0x800) {
-                utf8Length += (0x7f - c) >>> 31; // branch free!
-            } else {
-                utf8Length += 2;
-                // jdk7+: if (Character.isSurrogate(c)) {
-                if (Character.MIN_SURROGATE <= c && c <= Character.MAX_SURROGATE) {
-                    // Check that we have a well-formed surrogate pair.
-                    int cp = Character.codePointAt(sequence, i);
-                    if (cp < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
-                        throw new IllegalArgumentException("Unpaired surrogate at index " + i);
-                    }
-                    i++;
-                }
-            }
-        }
-        return utf8Length;
-    }
-
-    // End guava UTF-8 methods
-
-
     /** Write a {@code group} field to the stream. */
     public void writeGroupNoTag(final ProtoMessage value) throws IOException {
         value.writeTo(this);
@@ -750,7 +684,7 @@ public abstract class ProtoSink {
      * {@code string} field.
      */
     public static int computeStringSizeNoTag(final CharSequence value) {
-        final int length = encodedLength(value);
+        final int length = Utf8.encodedLength(value);
         return computeRawVarint32Size(length) + length;
     }
 
