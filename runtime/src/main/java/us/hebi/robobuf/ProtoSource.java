@@ -31,7 +31,6 @@
 package us.hebi.robobuf;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import static us.hebi.robobuf.WireFormat.*;
 
@@ -257,7 +256,7 @@ public final class ProtoSource {
         final int size = readRawVarint32();
         requireRemaining(size);
         builder.setLength(0);
-        builder.append(new String(buffer, bufferPos, size, InternalUtil.UTF_8));
+        Utf8.decodeArray(buffer, bufferPos, size, builder);
         bufferPos += size;
     }
 

@@ -76,12 +76,12 @@ class ArraySink extends ProtoSink {
             final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * MAX_UTF8_EXPANSION);
             if (minLengthVarIntSize == maxLengthVarIntSize) {
                 int startPosition = position + minLengthVarIntSize;
-                int endPosition = Utf8.encode(value, buffer, startPosition, spaceLeft() - minLengthVarIntSize);
+                int endPosition = Utf8.encodeArray(value, buffer, startPosition, spaceLeft() - minLengthVarIntSize);
                 writeRawVarint32(endPosition - startPosition);
                 position = endPosition;
             } else {
                 writeRawVarint32(Utf8.encodedLength(value));
-                position = Utf8.encode(value, buffer, position, spaceLeft());
+                position = Utf8.encodeArray(value, buffer, position, spaceLeft());
             }
         } catch (ArrayIndexOutOfBoundsException e) {
             final OutOfSpaceException outOfSpaceException = new OutOfSpaceException(position, limit);

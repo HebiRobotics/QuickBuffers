@@ -5,7 +5,8 @@ import static us.hebi.robobuf.UnsafeAccess.*;
 
 /**
  * Methods for dealing with UTF-8 copied from Guava and Protobuf,
- * and in some cases slightly modified to work with Unsafe.
+ * and in some cases slightly modified to work with Unsafe and
+ * StringBuilder.
  */
 class Utf8 {
 
@@ -86,7 +87,7 @@ class Utf8 {
      * @throws ArrayIndexOutOfBoundsException if {@code sequence} encoded in UTF-8 does not fit in
      *                                        {@code bytes}' remaining space.
      */
-    static int encode(CharSequence sequence, byte[] bytes, int offset, int length) {
+    static int encodeArray(final CharSequence sequence, final byte[] bytes, final int offset, final int length) {
         final int utf16Length = sequence.length();
         int j = offset;
         int i = 0;
@@ -196,7 +197,7 @@ class Utf8 {
         return j;
     }
 
-    private static String decodeUtf8Array(byte[] bytes, int index, int size) {
+    static void decodeArray(byte[] bytes, int index, int size, StringBuilder result) {
         // Bitwise OR combines the sign bits so any negative value fails the check.
         if ((index | size | bytes.length - index - size) < 0) {
             throw new ArrayIndexOutOfBoundsException(
@@ -208,7 +209,7 @@ class Utf8 {
 
         // The longest possible resulting String is the same as the number of input bytes, when it is
         // all ASCII. For other cases, this over-allocates and we will truncate in the end.
-        char[] resultArr = new char[size];
+        result.setLength(size);
         int resultPos = 0;
 
         // Optimize for 100% ASCII (Hotspot loves small simple top-level loops like this).
@@ -219,13 +220,13 @@ class Utf8 {
                 break;
             }
             offset++;
-            DecodeUtil.handleOneByte(b, resultArr, resultPos++);
+            DecodeUtil.handleOneByte(b, result, resultPos++);
         }
 
         while (offset < limit) {
             byte byte1 = bytes[offset++];
             if (DecodeUtil.isOneByte(byte1)) {
-                DecodeUtil.handleOneByte(byte1, resultArr, resultPos++);
+                DecodeUtil.handleOneByte(byte1, result, resultPos++);
                 // It's common for there to be multiple ASCII characters in a run mixed in, so add an
                 // extra optimized loop to take care of these runs.
                 while (offset < limit) {
@@ -234,13 +235,13 @@ class Utf8 {
                         break;
                     }
                     offset++;
-                    DecodeUtil.handleOneByte(b, resultArr, resultPos++);
+                    DecodeUtil.handleOneByte(b, result, resultPos++);
                 }
             } else if (DecodeUtil.isTwoBytes(byte1)) {
                 if (offset >= limit) {
                     throw new IllegalArgumentException("Invalid UTF-8");
                 }
-                DecodeUtil.handleTwoBytes(byte1, /* byte2 */ bytes[offset++], resultArr, resultPos++);
+                DecodeUtil.handleTwoBytes(byte1, /* byte2 */ bytes[offset++], result, resultPos++);
             } else if (DecodeUtil.isThreeBytes(byte1)) {
                 if (offset >= limit - 1) {
                     throw new IllegalArgumentException("Invalid UTF-8");
@@ -249,7 +250,7 @@ class Utf8 {
                         byte1,
                         /* byte2 */ bytes[offset++],
                         /* byte3 */ bytes[offset++],
-                        resultArr,
+                        result,
                         resultPos++);
             } else {
                 if (offset >= limit - 2) {
@@ -260,14 +261,89 @@ class Utf8 {
                         /* byte2 */ bytes[offset++],
                         /* byte3 */ bytes[offset++],
                         /* byte4 */ bytes[offset++],
-                        resultArr,
+                        result,
                         resultPos++);
                 // 4-byte case requires two chars.
                 resultPos++;
             }
         }
 
-        return new String(resultArr, 0, resultPos);
+        result.setLength(resultPos);
+    }
+
+    static void decodeUnsafe(byte[] bytes, long baseOffset, int index, int size, StringBuilder result) {
+        // Bitwise OR combines the sign bits so any negative value fails the check.
+        if ((index | size | bytes.length - index - size) < 0) {
+            throw new ArrayIndexOutOfBoundsException(
+                    String.format("buffer length=%d, index=%d, size=%d", bytes.length, index, size));
+        }
+
+        int offset = index;
+        final int limit = offset + size;
+
+        // The longest possible resulting String is the same as the number of input bytes, when it is
+        // all ASCII. For other cases, this over-allocates and we will truncate in the end.
+        result.setLength(size);
+        int resultPos = 0;
+
+        // Optimize for 100% ASCII (Hotspot loves small simple top-level loops like this).
+        // This simple loop stops when we encounter a byte >= 0x80 (i.e. non-ASCII).
+        while (offset < limit) {
+            byte b = UNSAFE.getByte(bytes, baseOffset + offset);
+            if (!DecodeUtil.isOneByte(b)) {
+                break;
+            }
+            offset++;
+            DecodeUtil.handleOneByte(b, result, resultPos++);
+        }
+
+        while (offset < limit) {
+            byte byte1 = UNSAFE.getByte(bytes, baseOffset + offset++);
+            if (DecodeUtil.isOneByte(byte1)) {
+                DecodeUtil.handleOneByte(byte1, result, resultPos++);
+                // It's common for there to be multiple ASCII characters in a run mixed in, so add an
+                // extra optimized loop to take care of these runs.
+                while (offset < limit) {
+                    byte b = UNSAFE.getByte(bytes, baseOffset + offset);
+                    if (!DecodeUtil.isOneByte(b)) {
+                        break;
+                    }
+                    offset++;
+                    DecodeUtil.handleOneByte(b, result, resultPos++);
+                }
+            } else if (DecodeUtil.isTwoBytes(byte1)) {
+                if (offset >= limit) {
+                    throw new IllegalArgumentException("Invalid UTF-8");
+                }
+                byte byte2 = UNSAFE.getByte(bytes, baseOffset + offset++);
+                DecodeUtil.handleTwoBytes(byte1, byte2, result, resultPos++);
+            } else if (DecodeUtil.isThreeBytes(byte1)) {
+                if (offset >= limit - 1) {
+                    throw new IllegalArgumentException("Invalid UTF-8");
+                }
+                DecodeUtil.handleThreeBytes(
+                        byte1,
+                        /* byte2 */ UNSAFE.getByte(bytes, baseOffset + offset++),
+                        /* byte3 */ UNSAFE.getByte(bytes, baseOffset + offset++),
+                        result,
+                        resultPos++);
+            } else {
+                if (offset >= limit - 2) {
+                    throw new IllegalArgumentException("Invalid UTF-8");
+                }
+                DecodeUtil.handleFourBytes(
+                        byte1,
+                        /* byte2 */ UNSAFE.getByte(bytes, baseOffset + offset++),
+                        /* byte3 */ UNSAFE.getByte(bytes, baseOffset + offset++),
+                        /* byte4 */ UNSAFE.getByte(bytes, baseOffset + offset++),
+                        result,
+                        resultPos++);
+                // 4-byte case requires two chars.
+                resultPos++;
+            }
+        }
+
+        result.setLength(resultPos);
     }
 
     /**
@@ -298,12 +374,12 @@ class Utf8 {
             return b < (byte) 0xF0;
         }
 
-        static void handleOneByte(byte byte1, char[] resultArr, int resultPos) {
-            resultArr[resultPos] = (char) byte1;
+        static void handleOneByte(byte byte1, StringBuilder result, int resultPos) {
+            result.setCharAt(resultPos, (char) byte1);
         }
 
         static void handleTwoBytes(
-                byte byte1, byte byte2, char[] resultArr, int resultPos)
+                byte byte1, byte byte2, StringBuilder result, int resultPos)
                 throws IllegalArgumentException {
             // Simultaneously checks for illegal trailing-byte in leading position (<= '11000000') and
             // overlong 2-byte, '11000001'.
@@ -313,11 +389,11 @@ class Utf8 {
             if (isNotTrailingByte(byte2)) {
                 throw new IllegalArgumentException("Invalid UTF-8: Illegal trailing byte in 2 bytes utf");
             }
-            resultArr[resultPos] = (char) (((byte1 & 0x1F) << 6) | trailingByteValue(byte2));
+            result.setCharAt(resultPos, (char) (((byte1 & 0x1F) << 6) | trailingByteValue(byte2)));
         }
 
         static void handleThreeBytes(
-                byte byte1, byte byte2, byte byte3, char[] resultArr, int resultPos)
+                byte byte1, byte byte2, byte byte3, StringBuilder result, int resultPos)
                 throws IllegalArgumentException {
             if (isNotTrailingByte(byte2)
                     // overlong? 5 most significant bits must not all be zero
@@ -327,12 +403,12 @@ class Utf8 {
                     || isNotTrailingByte(byte3)) {
                 throw new IllegalArgumentException("Invalid UTF-8");
             }
-            resultArr[resultPos] = (char)
-                    (((byte1 & 0x0F) << 12) | (trailingByteValue(byte2) << 6) | trailingByteValue(byte3));
+            result.setCharAt(resultPos, (char)
+                    (((byte1 & 0x0F) << 12) | (trailingByteValue(byte2) << 6) | trailingByteValue(byte3)));
         }
 
         static void handleFourBytes(
-                byte byte1, byte byte2, byte byte3, byte byte4, char[] resultArr, int resultPos)
+                byte byte1, byte byte2, byte byte3, byte byte4, StringBuilder result, int resultPos)
                 throws IllegalArgumentException {
             if (isNotTrailingByte(byte2)
                     // Check that 1 <= plane <= 16.  Tricky optimized form of:
@@ -351,8 +427,8 @@ class Utf8 {
                     | (trailingByteValue(byte2) << 12)
                     | (trailingByteValue(byte3) << 6)
                     | trailingByteValue(byte4);
-            resultArr[resultPos] = DecodeUtil.highSurrogate(codepoint);
-            resultArr[resultPos + 1] = DecodeUtil.lowSurrogate(codepoint);
+            result.setCharAt(resultPos, DecodeUtil.highSurrogate(codepoint));
+            result.setCharAt(resultPos + 1, DecodeUtil.lowSurrogate(codepoint));
         }
 
         /**
