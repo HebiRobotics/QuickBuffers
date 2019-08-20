@@ -1,2 +1,2 @@
 #!/bin/bash
-java -jar ../parser/target/parser-shaded.jar
+java -jar ../parser/target/protoc-gen-request.jar
