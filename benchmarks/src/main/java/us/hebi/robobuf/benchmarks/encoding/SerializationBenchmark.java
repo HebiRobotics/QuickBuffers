@@ -17,16 +17,16 @@ import java.util.concurrent.TimeUnit;
 /**
  * ==== Array Input/Output ====
  * Benchmark                                            Mode  Cnt  Score   Error  Units
- * SerializationBenchmark.computeMessageSerializedSize  avgt   10  0.066 ± 0.013  us/op
- * SerializationBenchmark.computeStringSerializedSize   avgt   10  0.884 ± 0.036  us/op
- * SerializationBenchmark.readMessage                   avgt   10  0.510 ± 0.035  us/op
- * SerializationBenchmark.readMessageUnsafe             avgt   10  0.456 ± 0.033  us/op
- * SerializationBenchmark.readString                    avgt   10  0.889 ± 0.025  us/op
- * SerializationBenchmark.readStringUnsafe              avgt   10  0.765 ± 0.026  us/op
- * SerializationBenchmark.writeMessage                  avgt   10  0.264 ± 0.016  us/op
- * SerializationBenchmark.writeMessageUnsafe            avgt   10  0.125 ± 0.003  us/op
- * SerializationBenchmark.writeString                   avgt   10  1.327 ± 0.015  us/op
- * SerializationBenchmark.writeStringUnsafe             avgt   10  1.274 ± 0.023  us/op
+ * SerializationBenchmark.computeMessageSerializedSize  avgt   10  0.059 ± 0.003  us/op
+ * SerializationBenchmark.computeStringSerializedSize   avgt   10  0.853 ± 0.028  us/op
+ * SerializationBenchmark.readMessage                   avgt   10  0.500 ± 0.042  us/op
+ * SerializationBenchmark.readMessageUnsafe             avgt   10  0.421 ± 0.021  us/op
+ * SerializationBenchmark.readString                    avgt   10  0.856 ± 0.024  us/op
+ * SerializationBenchmark.readStringUnsafe              avgt   10  0.726 ± 0.025  us/op
+ * SerializationBenchmark.writeMessage                  avgt   10  0.247 ± 0.006  us/op
+ * SerializationBenchmark.writeMessageUnsafe            avgt   10  0.123 ± 0.009  us/op
+ * SerializationBenchmark.writeString                   avgt   10  1.294 ± 0.038  us/op
+ * SerializationBenchmark.writeStringUnsafe             avgt   10  1.235 ± 0.029  us/op
  *
  * @author Florian Enner
  * @since 16 Aug 2019
