@@ -26,6 +26,22 @@ class BitField {
         return String.format("bitField%d_ = (bitField%d_ & ~0x%08x)", intSlot, intSlot, 1 << indexInSlot);
     }
 
+    /**
+     * string that results in 1 if the bit is set, or zero if it is not set
+     *
+     * Initial tests for using this as an optimization for removing if statements
+     * for fixed width types had no effect. The JIT probably already spits out
+     * similar code anyways.
+     *
+     * @param hasBitIndex
+     * @return
+     */
+    static String oneOrZeroBit(int hasBitIndex) {
+        int intSlot = hasBitIndex / 32;
+        int indexInSlot = hasBitIndex - (intSlot * 32);
+        return String.format("((bitField%d_ & 0x%08x) >>> %d)", intSlot, 1 << indexInSlot, indexInSlot);
+    }
+
     static String fieldName(int intIndex) {
         return String.format("bitField%d_", intIndex);
     }
