@@ -159,6 +159,24 @@ class UnsafeArraySink extends ArraySink {
     }
 
     @Override
+    public void writeRawByte(final byte value) throws IOException {
+        if (position >= limit) {
+            throw new OutOfSpaceException(position, limit);
+        }
+        UNSAFE.putByte(buffer, baseOffset + position++, value);
+    }
+
+    @Override
+    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
+        if (spaceLeft() >= length) {
+            UNSAFE.copyMemory(value, BYTE_ARRAY_OFFSET + offset, buffer, baseOffset + position, length);
+            position += length;
+        } else {
+            throw new OutOfSpaceException(position, limit);
+        }
+    }
+
+    @Override
     public void writeStringNoTag(final CharSequence value) throws IOException {
         // UTF-8 byte length of the string is at least its UTF-16 code unit length (value.length()),
         // and at most 3 times of it. Optimize for the case where we know this length results in a

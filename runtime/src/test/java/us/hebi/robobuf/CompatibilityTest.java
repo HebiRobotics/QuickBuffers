@@ -28,7 +28,23 @@ public class CompatibilityTest {
      */
     @Test
     public void testCompatibilityWithProtobufJava() throws IOException {
-        byte[] serializedMsg = TestAllTypes.newBuilder()
+        byte[] serializedMsg = getCombinedMessage();
+        TestAllTypes.Builder expected = TestAllTypes.newBuilder();
+        us.hebi.robobuf.robo.TestAllTypes msg = new us.hebi.robobuf.robo.TestAllTypes();
+
+        // multiple merges to check expanding repeated behavior
+        for (int i = 0; i < 3; i++) {
+            expected.mergeFrom(serializedMsg);
+            msg.mergeFrom(ProtoSource.wrapArray(serializedMsg));
+        }
+
+        assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
+        assertEquals(msg, us.hebi.robobuf.robo.TestAllTypes.parseFrom(msg.toByteArray()));
+
+    }
+
+    static byte[] getCombinedMessage() throws IOException {
+        return TestAllTypes.newBuilder()
                 .mergeFrom(optionalPrimitives())
                 .mergeFrom(optionalMessages())
                 .mergeFrom(optionalBytes())
@@ -42,19 +58,6 @@ public class CompatibilityTest {
                 .addAllRepeatedInt32(Arrays.asList(-2, -1, 0, 1, 2, 3, 4, 5))
                 .build()
                 .toByteArray();
-
-        TestAllTypes.Builder expected = TestAllTypes.newBuilder();
-        us.hebi.robobuf.robo.TestAllTypes msg = new us.hebi.robobuf.robo.TestAllTypes();
-
-        // multiple merges to check expanding repeated behavior
-        for (int i = 0; i < 3; i++) {
-            expected.mergeFrom(serializedMsg);
-            msg.mergeFrom(ProtoSource.wrapArray(serializedMsg));
-        }
-
-        assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
-        assertEquals(msg, us.hebi.robobuf.robo.TestAllTypes.parseFrom(msg.toByteArray()));
-
     }
 
     static byte[] optionalPrimitives() {

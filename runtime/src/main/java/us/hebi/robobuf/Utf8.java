@@ -271,11 +271,11 @@ class Utf8 {
         result.setLength(resultPos);
     }
 
-    static void decodeUnsafe(byte[] bytes, long baseOffset, int index, int size, StringBuilder result) {
+    static void decodeUnsafe(byte[] bytes, int bufferSize, long baseOffset, int index, int size, StringBuilder result) {
         // Bitwise OR combines the sign bits so any negative value fails the check.
-        if ((index | size | bytes.length - index - size) < 0) {
+        if ((index | size | bufferSize - index - size) < 0) {
             throw new ArrayIndexOutOfBoundsException(
-                    String.format("buffer length=%d, index=%d, size=%d", bytes.length, index, size));
+                    String.format("buffer length=%d, index=%d, size=%d", bufferSize, index, size));
         }
 
         int offset = index;

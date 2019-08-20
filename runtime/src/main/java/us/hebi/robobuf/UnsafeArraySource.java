@@ -118,7 +118,7 @@ class UnsafeArraySource extends ProtoSource {
     public void readString(StringBuilder output) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
-        Utf8.decodeUnsafe(buffer, baseOffset, bufferPos, size, output);
+        Utf8.decodeUnsafe(buffer, bufferSize, baseOffset, bufferPos, size, output);
         bufferPos += size;
     }
 
