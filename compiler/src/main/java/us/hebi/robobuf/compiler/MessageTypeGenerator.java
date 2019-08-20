@@ -131,7 +131,7 @@ class MessageTypeGenerator {
 
             equals.addCode(";$<\n");
         } else {
-            equals.addCode("return true");
+            equals.addCode("return true;\n");
         }
 
         type.addMethod(equals.build());

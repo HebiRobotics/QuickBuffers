@@ -11,7 +11,7 @@ import java.nio.charset.Charset;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public interface InternalUtil {
+public class InternalUtil {
 
     /*
     --------------------------------------------------------------------------------------------------------------------
@@ -52,8 +52,8 @@ public interface InternalUtil {
     --------------------------------------------------------------------------------------------------------------------
     */
 
-    Charset UTF_8 = Charset.forName("UTF-8");
-    Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
+    static final Charset UTF_8 = Charset.forName("UTF-8");
+    static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
 
     static boolean equals(float a, float b) {
         return Float.floatToIntBits(a) == Float.floatToIntBits(b);
@@ -113,6 +113,9 @@ public interface InternalUtil {
         }
         input.rewindToPosition(startPos);
         return arrayLength;
+    }
+
+    private InternalUtil(){
     }
 
 }
