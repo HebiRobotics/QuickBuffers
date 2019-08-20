@@ -150,34 +150,34 @@ class Utf8 {
      */
     static int encodeUnsafe(final CharSequence sequence,
                             final byte[] bytes,
-                            final long arrayOffset,
+                            final long baseOffset,
                             final int offset,
                             final int length) throws ProtoSink.OutOfSpaceException {
         int utf16Length = sequence.length();
-        int j = offset;
+        long j = baseOffset + offset;
         int i = 0;
-        int limit = offset + length;
+        long limit = baseOffset + offset + length;
         // Designed to take advantage of
         // https://wikis.oracle.com/display/HotSpotInternals/RangeCheckElimination
         for (char c; i < utf16Length && i + j < limit && (c = sequence.charAt(i)) < 0x80; i++) {
-            UNSAFE.putByte(bytes, arrayOffset + j + i, (byte) c);
+            UNSAFE.putByte(bytes, j + i, (byte) c);
         }
         if (i == utf16Length) {
-            return j + utf16Length;
+            return offset + utf16Length;
         }
         j += i;
         for (char c; i < utf16Length; i++) {
             c = sequence.charAt(i);
             if (c < 0x80 && j < limit) {
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) c);
+                UNSAFE.putByte(bytes, j++, (byte) c);
             } else if (c < 0x800 && j <= limit - 2) { // 11 bits, two UTF-8 bytes
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) ((0xF << 6) | (c >>> 6)));
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & c)));
+                UNSAFE.putByte(bytes, j++, (byte) ((0xF << 6) | (c >>> 6)));
+                UNSAFE.putByte(bytes, j++, (byte) (0x80 | (0x3F & c)));
             } else if ((c < Character.MIN_SURROGATE || Character.MAX_SURROGATE < c) && j <= limit - 3) {
                 // Maximum single-char code point is 0xFFFF, 16 bits, three UTF-8 bytes
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) ((0xF << 5) | (c >>> 12)));
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & (c >>> 6))));
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & c)));
+                UNSAFE.putByte(bytes, j++, (byte) ((0xF << 5) | (c >>> 12)));
+                UNSAFE.putByte(bytes, j++, (byte) (0x80 | (0x3F & (c >>> 6))));
+                UNSAFE.putByte(bytes, j++, (byte) (0x80 | (0x3F & c)));
             } else if (j <= limit - 4) {
                 // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
                 final char low;
@@ -186,15 +186,15 @@ class Utf8 {
                     throw new IllegalArgumentException("Unpaired surrogate at index " + (i - 1));
                 }
                 int codePoint = Character.toCodePoint(c, low);
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) ((0xF << 4) | (codePoint >>> 18)));
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & (codePoint >>> 12))));
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & (codePoint >>> 6))));
-                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & codePoint)));
+                UNSAFE.putByte(bytes, j++, (byte) ((0xF << 4) | (codePoint >>> 18)));
+                UNSAFE.putByte(bytes, j++, (byte) (0x80 | (0x3F & (codePoint >>> 12))));
+                UNSAFE.putByte(bytes, j++, (byte) (0x80 | (0x3F & (codePoint >>> 6))));
+                UNSAFE.putByte(bytes, j++, (byte) (0x80 | (0x3F & codePoint)));
             } else {
                 throw new ArrayIndexOutOfBoundsException("Failed writing " + c + " at index " + j);
             }
         }
-        return j;
+        return (int) (j - baseOffset);
     }
 
     static void decodeArray(byte[] bytes, int index, int size, StringBuilder result) {
