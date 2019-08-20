@@ -123,6 +123,28 @@ class UnsafeArraySink extends ArraySink {
     }
 
     @Override
+    public void writeDoubleNoTag(double value) throws IOException {
+        if (IS_LITTLE_ENDIAN) {
+            requireSpace(LITTLE_ENDIAN_64_SIZE);
+            UNSAFE.putDouble(buffer, baseOffset + position, value);
+            position += LITTLE_ENDIAN_64_SIZE;
+        } else {
+            writeRawLittleEndian64(Double.doubleToLongBits(value));
+        }
+    }
+
+    @Override
+    public void writeFloatNoTag(float value) throws IOException {
+        if (IS_LITTLE_ENDIAN) {
+            requireSpace(LITTLE_ENDIAN_32_SIZE);
+            UNSAFE.putFloat(buffer, baseOffset + position, value);
+            position += LITTLE_ENDIAN_32_SIZE;
+        } else {
+            writeRawLittleEndian32(Float.floatToIntBits(value));
+        }
+    }
+
+    @Override
     public final void writeRawLittleEndian32(final int value) throws IOException {
         requireSpace(LITTLE_ENDIAN_32_SIZE);
         UNSAFE.putInt(buffer, baseOffset + position, IS_LITTLE_ENDIAN ? value : Integer.reverseBytes(value));

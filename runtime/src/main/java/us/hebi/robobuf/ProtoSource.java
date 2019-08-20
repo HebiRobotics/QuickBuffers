@@ -52,7 +52,7 @@ public class ProtoSource {
 
     /** Create a new CodedInputStream wrapping the given byte array. */
     public static ProtoSource wrapArray(final byte[] buf) {
-        return createInstance().setInput(buf);
+        return wrapArray(buf, 0, buf.length);
     }
 
     /** Create a new CodedInputStream wrapping the given byte array slice. */
@@ -165,57 +165,51 @@ public class ProtoSource {
     // -----------------------------------------------------------------
 
     /** Read a repeated (packed) {@code double} field value from the stream. */
-    public final void readPackedDouble(RepeatedDouble store) throws IOException {
+    public void readPackedDouble(RepeatedDouble store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readDouble());
-        }
+        readRawDoubles(store.array, store.length, numEntries);
+        store.length += numEntries;
     }
 
     /** Read a repeated (packed) {@code fixed64} field value from the stream. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readFixed64());
-        }
+        readRawFixed64s(store.array, store.length, numEntries);
+        store.length += numEntries;
     }
 
     /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
     public void readPackedSFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readSFixed64());
-        }
+        readRawFixed64s(store.array, store.length, numEntries);
+        store.length += numEntries;
     }
 
     /** Read a repeated (packed) {@code float} field value from the stream. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readFloat());
-        }
+        readRawFloats(store.array, store.length, numEntries);
+        store.length += numEntries;
     }
 
     /** Read a repeated (packed) {@code fixed32} field value from the stream. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readFixed32());
-        }
+        readRawFixed32s(store.array, store.length, numEntries);
+        store.length += numEntries;
     }
 
     /** Read a repeated (packed) {@code sfixed32} field value from the stream. */
     public void readPackedSFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.requireCapacity(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readSFixed32());
-        }
+        readRawFixed32s(store.array, store.length, numEntries);
+        store.length += numEntries;
     }
 
     /** Read a repeated (packed) {@code bool} field value from the stream. */
@@ -224,6 +218,34 @@ public class ProtoSource {
         store.requireCapacity(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readBool());
+        }
+    }
+
+    protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
+        final int limit = offset + length;
+        for (int i = offset; i < limit; i++) {
+            values[i] = readDouble();
+        }
+    }
+
+    protected void readRawFloats(float[] values, int offset, int length) throws IOException {
+        final int limit = offset + length;
+        for (int i = offset; i < limit; i++) {
+            values[i] = readFloat();
+        }
+    }
+
+    protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
+        final int limit = offset + length;
+        for (int i = offset; i < limit; i++) {
+            values[i] = readRawLittleEndian64();
+        }
+    }
+
+    protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
+        final int limit = offset + length;
+        for (int i = offset; i < limit; i++) {
+            values[i] = readRawLittleEndian32();
         }
     }
 
