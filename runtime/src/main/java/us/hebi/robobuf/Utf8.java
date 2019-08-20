@@ -1,5 +1,6 @@
 package us.hebi.robobuf;
 
+import static java.lang.Character.*;
 import static us.hebi.robobuf.UnsafeAccess.*;
 
 /**
@@ -147,18 +148,18 @@ class Utf8 {
      *                                        {@code bytes}' remaining space.
      */
     static int encodeUnsafe(final CharSequence sequence,
-                            final byte[] buffer,
-                            final long offset,
-                            final int position,
+                            final byte[] bytes,
+                            final long arrayOffset,
+                            final int offset,
                             final int length) throws ProtoSink.OutOfSpaceException {
         int utf16Length = sequence.length();
-        int j = position;
+        int j = offset;
         int i = 0;
-        int limit = position + length;
+        int limit = offset + length;
         // Designed to take advantage of
         // https://wikis.oracle.com/display/HotSpotInternals/RangeCheckElimination
         for (char c; i < utf16Length && i + j < limit && (c = sequence.charAt(i)) < 0x80; i++) {
-            UNSAFE.putByte(buffer, offset + j + i, (byte) c);
+            UNSAFE.putByte(bytes, arrayOffset + j + i, (byte) c);
         }
         if (i == utf16Length) {
             return j + utf16Length;
@@ -167,15 +168,15 @@ class Utf8 {
         for (char c; i < utf16Length; i++) {
             c = sequence.charAt(i);
             if (c < 0x80 && j < limit) {
-                UNSAFE.putByte(buffer, offset + j++, (byte) c);
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) c);
             } else if (c < 0x800 && j <= limit - 2) { // 11 bits, two UTF-8 bytes
-                UNSAFE.putByte(buffer, offset + j++, (byte) ((0xF << 6) | (c >>> 6)));
-                UNSAFE.putByte(buffer, offset + j++, (byte) (0x80 | (0x3F & c)));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) ((0xF << 6) | (c >>> 6)));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & c)));
             } else if ((c < Character.MIN_SURROGATE || Character.MAX_SURROGATE < c) && j <= limit - 3) {
                 // Maximum single-char code point is 0xFFFF, 16 bits, three UTF-8 bytes
-                UNSAFE.putByte(buffer, offset + j++, (byte) ((0xF << 5) | (c >>> 12)));
-                UNSAFE.putByte(buffer, offset + j++, (byte) (0x80 | (0x3F & (c >>> 6))));
-                UNSAFE.putByte(buffer, offset + j++, (byte) (0x80 | (0x3F & c)));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) ((0xF << 5) | (c >>> 12)));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & (c >>> 6))));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & c)));
             } else if (j <= limit - 4) {
                 // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
                 final char low;
@@ -184,14 +185,206 @@ class Utf8 {
                     throw new IllegalArgumentException("Unpaired surrogate at index " + (i - 1));
                 }
                 int codePoint = Character.toCodePoint(c, low);
-                UNSAFE.putByte(buffer, offset + j++, (byte) ((0xF << 4) | (codePoint >>> 18)));
-                UNSAFE.putByte(buffer, offset + j++, (byte) (0x80 | (0x3F & (codePoint >>> 12))));
-                UNSAFE.putByte(buffer, offset + j++, (byte) (0x80 | (0x3F & (codePoint >>> 6))));
-                UNSAFE.putByte(buffer, offset + j++, (byte) (0x80 | (0x3F & codePoint)));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) ((0xF << 4) | (codePoint >>> 18)));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & (codePoint >>> 12))));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & (codePoint >>> 6))));
+                UNSAFE.putByte(bytes, arrayOffset + j++, (byte) (0x80 | (0x3F & codePoint)));
             } else {
-                throw new ProtoSink.OutOfSpaceException(position + j, position + length);
+                throw new ArrayIndexOutOfBoundsException("Failed writing " + c + " at index " + j);
             }
         }
         return j;
+    }
+
+    private static String decodeUtf8Array(byte[] bytes, int index, int size) {
+        // Bitwise OR combines the sign bits so any negative value fails the check.
+        if ((index | size | bytes.length - index - size) < 0) {
+            throw new ArrayIndexOutOfBoundsException(
+                    String.format("buffer length=%d, index=%d, size=%d", bytes.length, index, size));
+        }
+
+        int offset = index;
+        final int limit = offset + size;
+
+        // The longest possible resulting String is the same as the number of input bytes, when it is
+        // all ASCII. For other cases, this over-allocates and we will truncate in the end.
+        char[] resultArr = new char[size];
+        int resultPos = 0;
+
+        // Optimize for 100% ASCII (Hotspot loves small simple top-level loops like this).
+        // This simple loop stops when we encounter a byte >= 0x80 (i.e. non-ASCII).
+        while (offset < limit) {
+            byte b = bytes[offset];
+            if (!DecodeUtil.isOneByte(b)) {
+                break;
+            }
+            offset++;
+            DecodeUtil.handleOneByte(b, resultArr, resultPos++);
+        }
+
+        while (offset < limit) {
+            byte byte1 = bytes[offset++];
+            if (DecodeUtil.isOneByte(byte1)) {
+                DecodeUtil.handleOneByte(byte1, resultArr, resultPos++);
+                // It's common for there to be multiple ASCII characters in a run mixed in, so add an
+                // extra optimized loop to take care of these runs.
+                while (offset < limit) {
+                    byte b = bytes[offset];
+                    if (!DecodeUtil.isOneByte(b)) {
+                        break;
+                    }
+                    offset++;
+                    DecodeUtil.handleOneByte(b, resultArr, resultPos++);
+                }
+            } else if (DecodeUtil.isTwoBytes(byte1)) {
+                if (offset >= limit) {
+                    throw new IllegalArgumentException("Invalid UTF-8");
+                }
+                DecodeUtil.handleTwoBytes(byte1, /* byte2 */ bytes[offset++], resultArr, resultPos++);
+            } else if (DecodeUtil.isThreeBytes(byte1)) {
+                if (offset >= limit - 1) {
+                    throw new IllegalArgumentException("Invalid UTF-8");
+                }
+                DecodeUtil.handleThreeBytes(
+                        byte1,
+                        /* byte2 */ bytes[offset++],
+                        /* byte3 */ bytes[offset++],
+                        resultArr,
+                        resultPos++);
+            } else {
+                if (offset >= limit - 2) {
+                    throw new IllegalArgumentException("Invalid UTF-8");
+                }
+                DecodeUtil.handleFourBytes(
+                        byte1,
+                        /* byte2 */ bytes[offset++],
+                        /* byte3 */ bytes[offset++],
+                        /* byte4 */ bytes[offset++],
+                        resultArr,
+                        resultPos++);
+                // 4-byte case requires two chars.
+                resultPos++;
+            }
+        }
+
+        return new String(resultArr, 0, resultPos);
+    }
+
+    /**
+     * Utility methods for decoding bytes into {@link String}. Callers are responsible for extracting
+     * bytes (possibly using Unsafe methods), and checking remaining bytes. All other UTF-8 validity
+     * checks and codepoint conversion happen in this class.
+     */
+    static class DecodeUtil {
+
+        /**
+         * Returns whether this is a single-byte codepoint (i.e., ASCII) with the form '0XXXXXXX'.
+         */
+        static boolean isOneByte(byte b) {
+            return b >= 0;
+        }
+
+        /**
+         * Returns whether this is a two-byte codepoint with the form '10XXXXXX'.
+         */
+        static boolean isTwoBytes(byte b) {
+            return b < (byte) 0xE0;
+        }
+
+        /**
+         * Returns whether this is a three-byte codepoint with the form '110XXXXX'.
+         */
+        static boolean isThreeBytes(byte b) {
+            return b < (byte) 0xF0;
+        }
+
+        static void handleOneByte(byte byte1, char[] resultArr, int resultPos) {
+            resultArr[resultPos] = (char) byte1;
+        }
+
+        static void handleTwoBytes(
+                byte byte1, byte byte2, char[] resultArr, int resultPos)
+                throws IllegalArgumentException {
+            // Simultaneously checks for illegal trailing-byte in leading position (<= '11000000') and
+            // overlong 2-byte, '11000001'.
+            if (byte1 < (byte) 0xC2) {
+                throw new IllegalArgumentException("Invalid UTF-8: Illegal leading byte in 2 bytes utf");
+            }
+            if (isNotTrailingByte(byte2)) {
+                throw new IllegalArgumentException("Invalid UTF-8: Illegal trailing byte in 2 bytes utf");
+            }
+            resultArr[resultPos] = (char) (((byte1 & 0x1F) << 6) | trailingByteValue(byte2));
+        }
+
+        static void handleThreeBytes(
+                byte byte1, byte byte2, byte byte3, char[] resultArr, int resultPos)
+                throws IllegalArgumentException {
+            if (isNotTrailingByte(byte2)
+                    // overlong? 5 most significant bits must not all be zero
+                    || (byte1 == (byte) 0xE0 && byte2 < (byte) 0xA0)
+                    // check for illegal surrogate codepoints
+                    || (byte1 == (byte) 0xED && byte2 >= (byte) 0xA0)
+                    || isNotTrailingByte(byte3)) {
+                throw new IllegalArgumentException("Invalid UTF-8");
+            }
+            resultArr[resultPos] = (char)
+                    (((byte1 & 0x0F) << 12) | (trailingByteValue(byte2) << 6) | trailingByteValue(byte3));
+        }
+
+        static void handleFourBytes(
+                byte byte1, byte byte2, byte byte3, byte byte4, char[] resultArr, int resultPos)
+                throws IllegalArgumentException {
+            if (isNotTrailingByte(byte2)
+                    // Check that 1 <= plane <= 16.  Tricky optimized form of:
+                    //   valid 4-byte leading byte?
+                    // if (byte1 > (byte) 0xF4 ||
+                    //   overlong? 4 most significant bits must not all be zero
+                    //     byte1 == (byte) 0xF0 && byte2 < (byte) 0x90 ||
+                    //   codepoint larger than the highest code point (U+10FFFF)?
+                    //     byte1 == (byte) 0xF4 && byte2 > (byte) 0x8F)
+                    || (((byte1 << 28) + (byte2 - (byte) 0x90)) >> 30) != 0
+                    || isNotTrailingByte(byte3)
+                    || isNotTrailingByte(byte4)) {
+                throw new IllegalArgumentException("Invalid UTF-8");
+            }
+            int codepoint = ((byte1 & 0x07) << 18)
+                    | (trailingByteValue(byte2) << 12)
+                    | (trailingByteValue(byte3) << 6)
+                    | trailingByteValue(byte4);
+            resultArr[resultPos] = DecodeUtil.highSurrogate(codepoint);
+            resultArr[resultPos + 1] = DecodeUtil.lowSurrogate(codepoint);
+        }
+
+        /**
+         * Returns whether the byte is not a valid continuation of the form '10XXXXXX'.
+         */
+        private static boolean isNotTrailingByte(byte b) {
+            return b > (byte) 0xBF;
+        }
+
+        /**
+         * Returns the actual value of the trailing byte (removes the prefix '10') for composition.
+         */
+        private static int trailingByteValue(byte b) {
+            return b & 0x3F;
+        }
+
+        private static char highSurrogate(int codePoint) {
+            return (char) ((MIN_HIGH_SURROGATE - (MIN_SUPPLEMENTARY_CODE_POINT >>> 10))
+                    + (codePoint >>> 10));
+        }
+
+        private static char lowSurrogate(int codePoint) {
+            return (char) (MIN_LOW_SURROGATE + (codePoint & 0x3ff));
+        }
+    }
+
+    // These UTF-8 handling methods are copied from Guava's Utf8Unsafe class with a modification to throw
+    // a protocol buffer local exception. This exception is then caught in CodedOutputStream so it can
+    // fallback to more lenient behavior.
+    static class UnpairedSurrogateException extends IllegalArgumentException {
+        UnpairedSurrogateException(int index, int length) {
+            super("Unpaired surrogate at index " + index + " of " + length);
+        }
     }
 }

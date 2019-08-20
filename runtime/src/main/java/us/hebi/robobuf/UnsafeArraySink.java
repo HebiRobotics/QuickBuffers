@@ -140,16 +140,22 @@ class UnsafeArraySink extends ArraySink {
         // UTF-8 byte length of the string is at least its UTF-16 code unit length (value.length()),
         // and at most 3 times of it. Optimize for the case where we know this length results in a
         // constant varint length - saves measuring length of the string.
-        final int minLengthVarIntSize = computeRawVarint32Size(value.length());
-        final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * MAX_UTF8_EXPANSION);
-        if (minLengthVarIntSize == maxLengthVarIntSize) {
-            int startPosition = position + minLengthVarIntSize;
-            int endPosition = Utf8.encodeUnsafe(value, buffer, baseOffset, startPosition, spaceLeft() - minLengthVarIntSize);
-            writeRawVarint32(endPosition - startPosition);
-            position = endPosition;
-        } else {
-            writeRawVarint32(Utf8.encodedLength(value));
-            position = Utf8.encodeUnsafe(value, buffer, baseOffset, position, spaceLeft());
+        try {
+            final int minLengthVarIntSize = computeRawVarint32Size(value.length());
+            final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * MAX_UTF8_EXPANSION);
+            if (minLengthVarIntSize == maxLengthVarIntSize) {
+                int startPosition = position + minLengthVarIntSize;
+                int endPosition = Utf8.encodeUnsafe(value, buffer, baseOffset, startPosition, spaceLeft() - minLengthVarIntSize);
+                writeRawVarint32(endPosition - startPosition);
+                position = endPosition;
+            } else {
+                writeRawVarint32(Utf8.encodedLength(value));
+                position = Utf8.encodeUnsafe(value, buffer, baseOffset, position, spaceLeft());
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            final OutOfSpaceException outOfSpaceException = new OutOfSpaceException(position, limit);
+            outOfSpaceException.initCause(e);
+            throw outOfSpaceException;
         }
     }
 
