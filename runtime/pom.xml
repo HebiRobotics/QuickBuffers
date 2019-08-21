@@ -114,7 +114,7 @@
 
                                 <!-- Generate sources (override package so we don't have name collisions with gen-java) -->
                                 <outputTarget>
-                                    <pluginPath>${project.parent.basedir}</pluginPath> <!-- for whatever reason path argument gets omitted if full file location is used :( -->
+                                    <pluginPath>${project.parent.basedir}</pluginPath> <!-- for some reason full file paths get omitted, so we rely on forwarding scripts that are in the path :( -->
                                     <type>robobuf</type>
                                     <outputOptions>replacePackage=us.hebi.robobuf.java=us.hebi.robobuf.robo,indent=4</outputOptions>
                                     <addSources>test</addSources>
