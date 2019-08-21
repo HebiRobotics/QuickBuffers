@@ -57,6 +57,7 @@
             <!-- Add scripts that can be executed by protoc -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
                 <executions>
                     <execution>
                         <id>copy-plugin-scripts</id>

@@ -14,12 +14,19 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
- * ==== Array Input/Output ====
- * Benchmark                                                Mode  Cnt  Score   Error  Units
- * SerializationJavaBenchmark.readMessage                   avgt   10  1.115 ±  0.159  us/op
- * SerializationJavaBenchmark.readString                    avgt   10  1.555 ±  0.567  us/op
- * SerializationJavaBenchmark.writeMessage                  avgt   10  0.776 ±  0.091  us/op
- * SerializationJavaBenchmark.writeString                   avgt   10  1.602 ±  0.047  us/op
+ * ==== Protobuf-Javalite (3.9.1) ====
+ * Benchmark                                Mode  Cnt  Score   Error  Units
+ * SerializationJavaBenchmark.readMessage   avgt   10  1.139 ± 0.170  us/op
+ * SerializationJavaBenchmark.readString    avgt   10  1.321 ± 0.053  us/op
+ * SerializationJavaBenchmark.writeMessage  avgt   10  0.763 ± 0.106  us/op
+ * SerializationJavaBenchmark.writeString   avgt   10  1.548 ± 0.093  us/op
+ *
+ * ==== Protobuf-Java (3.9.1) ====
+ * Benchmark                                Mode  Cnt  Score   Error  Units
+ * SerializationJavaBenchmark.readMessage   avgt   10  0.705 ± 0.049  us/op (probably has some unparsed lazy fields)
+ * SerializationJavaBenchmark.readString    avgt   10  1.614 ± 0.121  us/op
+ * SerializationJavaBenchmark.writeMessage  avgt   10  0.303 ± 0.055  us/op
+ * SerializationJavaBenchmark.writeString   avgt   10  1.317 ± 0.050  us/op
  *
  * @author Florian Enner
  * @since 16 Aug 2019
@@ -114,8 +121,10 @@ public class SerializationJavaBenchmark {
     }
 
     @Benchmark
-    public TestAllTypes readString() throws IOException {
-        return TestAllTypes.parseFrom(stringMsgBytes);
+    public int readString() throws IOException {
+        // Actually access strings because protobuf does lazy parsing
+        TestAllTypes msg = TestAllTypes.parseFrom(stringMsgBytes);
+        return msg.getDefaultString().length() + msg.getOptionalString().length();
     }
 
     @Benchmark

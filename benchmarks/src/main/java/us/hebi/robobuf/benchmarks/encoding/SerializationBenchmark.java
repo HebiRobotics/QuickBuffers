@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
  * SerializationBenchmark.computeStringSerializedSize   avgt   10  0.853 ± 0.028  us/op
  * SerializationBenchmark.readMessage                   avgt   10  0.500 ± 0.042  us/op
  * SerializationBenchmark.readMessageUnsafe             avgt   10  0.421 ± 0.021  us/op
- * SerializationBenchmark.readString                    avgt   10  0.856 ± 0.024  us/op
- * SerializationBenchmark.readStringUnsafe              avgt   10  0.726 ± 0.025  us/op
+ * SerializationBenchmark.readString                    avgt   10  0.920 ± 0.110  us/op
+ * SerializationBenchmark.readStringUnsafe              avgt   10  0.756 ± 0.023  us/op
  * SerializationBenchmark.writeMessage                  avgt   10  0.247 ± 0.006  us/op
  * SerializationBenchmark.writeMessageUnsafe            avgt   10  0.123 ± 0.009  us/op
  * SerializationBenchmark.writeString                   avgt   10  1.294 ± 0.038  us/op
@@ -126,8 +126,9 @@ public class SerializationBenchmark {
     }
 
     @Benchmark
-    public TestAllTypes readString() throws IOException {
-        return stringMessage.clear().mergeFrom(source.setInput(stringMsgBytes));
+    public int readString() throws IOException {
+        stringMessage.clear().mergeFrom(source.setInput(stringMsgBytes));
+        return stringMessage.getDefaultString().length() + stringMessage.getOptionalString().length();
     }
 
     @Benchmark
@@ -158,8 +159,9 @@ public class SerializationBenchmark {
     }
 
     @Benchmark
-    public TestAllTypes readStringUnsafe() throws IOException {
-        return stringMessage.clear().mergeFrom(unsafeSource.setInput(stringMsgBytes));
+    public int readStringUnsafe() throws IOException {
+        stringMessage.clear().mergeFrom(unsafeSource.setInput(stringMsgBytes));
+        return stringMessage.getDefaultString().length() + stringMessage.getOptionalString().length();
     }
 
     @Benchmark

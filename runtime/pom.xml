@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-javalite</artifactId>
+            <artifactId>protobuf-java</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -123,7 +123,6 @@
                                 <!-- Generate Java sources for sanity checks -->
                                 <outputTarget>
                                     <type>java</type>
-                                    <outputOptions>lite</outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>
 
