@@ -83,6 +83,13 @@ public class InternalUtil {
     static final long _longDefault = 0L;
     static final byte _byteDefault = (byte) 0;
 
+    static final boolean[] _booleanEmpty = new boolean[0];
+    static final float[] _floatEmpty = new float[0];
+    static final double[] _doubleEmpty = new double[0];;
+    static final int[] _intEmpty = new int[0];
+    static final long[] _longEmpty = new long[0];
+    static final byte[] _byteEmpty = new byte[0];
+
     /*
     --------------------------------------------------------------------------------------------------------------------
     The parts below were copied from Google's no longer supported Protobuf-Javanano project.

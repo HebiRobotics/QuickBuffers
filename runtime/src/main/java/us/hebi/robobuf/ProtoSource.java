@@ -80,6 +80,15 @@ public class ProtoSource {
         return setInput(buffer, 0, buffer.length);
     }
 
+    /**
+     * Clears internal state and removes any references to previous inputs.
+     *
+     * @return this
+     */
+    public ProtoSource clear(){
+        return setInput(InternalUtil._byteEmpty);
+    }
+
     // -----------------------------------------------------------------
 
     /**

@@ -131,6 +131,15 @@ public abstract class ProtoSink {
         return setOutput(buffer, 0, buffer.length);
     }
 
+    /**
+     * Clears internal state and removes any references to previous outputs.
+     *
+     * @return this
+     */
+    public ProtoSink clear(){
+        return setOutput(InternalUtil._byteEmpty);
+    }
+
     // -----------------------------------------------------------------
 
     /** Write a repeated (non-packed) {@code double} field, including tag, to the stream. */

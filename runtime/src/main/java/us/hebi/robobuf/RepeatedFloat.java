@@ -71,7 +71,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public float[] toArray() {
-        if (length == 0) return EMPTY;
+        if (length == 0) return InternalUtil._floatEmpty;
         return Arrays.copyOf(array, length);
     }
 
@@ -101,8 +101,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
         return true;
     }
 
-    float[] array = EMPTY;
-    private static final float[] EMPTY = new float[0];
+    float[] array = InternalUtil._floatEmpty;
     private static final float DEFAULT_VALUE = InternalUtil._floatDefault;
 
 }
