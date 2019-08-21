@@ -42,3 +42,8 @@ Protoc plugins get called by `protoc` and exchange information via protobuf mess
 To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development.
 
 The `compiler` module contains the actual protoc-plugin and code generator. The `runtime` module contains the runtime libraries needed when using the generated messages. The `benchmark` module contains performance benchmarks in order to test performance implications of different strategies.
+
+
+## Acknowledgements
+
+The serialization and deserialization code is heavily based on Google's no longer supported `Protobuf-JavaNano` implementation. The Utf8 related methods were adapted from `Guava/Flatbuffers`.
