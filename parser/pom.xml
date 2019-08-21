@@ -11,6 +11,11 @@
 
     <artifactId>parser</artifactId>
 
+    <properties>
+        <protocPluginName>protoc-gen-request</protocPluginName>
+        <finalName>${protocPluginName}-${project.version}</finalName>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -24,6 +29,8 @@
 
     <build>
         <plugins>
+
+            <!-- Create uber-jar that we can call as a plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -35,9 +42,10 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>protoc-gen-request</finalName>
+                            <finalName>${finalName}</finalName>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>us.hebi.robobuf.parser.ParserPlugin</mainClass>
                                 </transformer>
                             </transformers>
@@ -45,6 +53,35 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Add scripts that can be executed by protoc -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-plugin-scripts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <!-- Windows Script-->
+                                <mkdir dir="target"/>
+                                <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
+                                <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${finalName}"/>
+                                <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
+
+                                <!-- Unix Script -->
+                                <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
+                                <replace file="target/${protocPluginName}" token="{jarfile}" value="${finalName}"/>
+                                <fixcrlf file="target/${protocPluginName}" eol="unix"/>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

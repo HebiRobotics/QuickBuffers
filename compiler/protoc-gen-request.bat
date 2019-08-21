@@ -1,2 +1,2 @@
 @echo off
-java -jar ../parser/target/protoc-gen-request.jar
+../parser/target/protoc-gen-request.bat

@@ -1,2 +1,2 @@
 @echo off
-java -jar ./compiler/target/protoc-gen-robobuf.jar
+.\compiler\target\protoc-gen-robobuf.bat
