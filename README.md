@@ -9,6 +9,8 @@ The code generator is setup as a `protoc` plugin. In order to call it, you need 
 * Place `protoc-gen-robobuf`, `protoc-gen-robobuf.bat`, and `protoc-gen-robobuf-<version>.jar` in a directory on the `$PATH`
 * Call `protoc` with `--robobuf_out=<options>:./path/to/generate`
 
+It has been tested with `protoc-3.7.0` through `protoc-3.9.2`.
+
 ### Generator Options
 
 Currently available options are
@@ -46,4 +48,4 @@ The `compiler` module contains the actual protoc-plugin and code generator. The 
 
 ## Acknowledgements
 
-The serialization and deserialization code is heavily based on Google's no longer supported `Protobuf-JavaNano` implementation. The Utf8 related methods were adapted from `Guava/Flatbuffers`.
+The serialization and deserialization code is heavily based on Google's never-really-released, and now no-longer-supported `Protobuf-JavaNano` implementation. The Utf8 related methods were adapted from `Guava/Protobuf-Java`.

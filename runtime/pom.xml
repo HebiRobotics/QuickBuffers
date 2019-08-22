@@ -9,9 +9,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>runtime</artifactId>
+    <artifactId>robobuf-runtime</artifactId>
 
     <properties>
+        <maven.compiler.source>6</maven.compiler.source>
+        <maven.compiler.target>6</maven.compiler.target>
         <apiDirectory>us/hebi/robobuf</apiDirectory>
         <copyFromDir>${basedir}/src/main/java/${apiDirectory}</copyFromDir>
         <copyToDir>${basedir}/target/generated-sources/${apiDirectory}</copyToDir>
