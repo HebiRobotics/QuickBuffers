@@ -17,12 +17,12 @@ import static us.hebi.robobuf.WireFormat.*;
 class UnsafeArraySource extends ProtoSource {
 
     static boolean isAvailable() {
-        return Platform.getJavaVersion() >= 8 && UnsafeAccess.isAvailable();
+        return Platform.getJavaVersion() >= 7 && UnsafeAccess.isAvailable();
     }
 
     UnsafeArraySource(boolean enableDirect) {
         if (!isAvailable())
-            throw new AssertionError("UnsafeArraySource requires Java >= 8 and access to sun.misc.Unsafe");
+            throw new AssertionError("UnsafeArraySource requires Java >= 7 and access to sun.misc.Unsafe");
         this.enableDirect = enableDirect;
     }
 
