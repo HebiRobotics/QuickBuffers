@@ -10,9 +10,9 @@ import javax.lang.model.element.Modifier;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-class EnumTypeGenerator {
+class EnumGenerator {
 
-    EnumTypeGenerator(EnumInfo info) {
+    EnumGenerator(EnumInfo info) {
         this.info = info;
     }
 
@@ -21,7 +21,7 @@ class EnumTypeGenerator {
                 .addModifiers(Modifier.PUBLIC);
 
         for (EnumValueDescriptorProto value : info.getValues()) {
-            type.addEnumConstant(NameUtil.filterKeyword(value.getName()), TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
+            type.addEnumConstant(NamingUtil.filterKeyword(value.getName()), TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
         }
 
         generateGetValue(type);
@@ -69,7 +69,7 @@ class EnumTypeGenerator {
 
             CodeBlock.Builder initBlock = CodeBlock.builder();
             for (EnumValueDescriptorProto value : info.getValues()) {
-                initBlock.addStatement("lookup[$L] = $L", value.getNumber(), NameUtil.filterKeyword(value.getName()));
+                initBlock.addStatement("lookup[$L] = $L", value.getNumber(), NamingUtil.filterKeyword(value.getName()));
             }
             typeSpec.addStaticBlock(initBlock.build());
 
@@ -78,7 +78,7 @@ class EnumTypeGenerator {
             // lookup using switch statement
             forNumber.beginControlFlow("switch(value)");
             for (EnumValueDescriptorProto value : info.getValues()) {
-                forNumber.addStatement("case $L: return $L", value.getNumber(), NameUtil.filterKeyword(value.getName()));
+                forNumber.addStatement("case $L: return $L", value.getNumber(), NamingUtil.filterKeyword(value.getName()));
             }
             forNumber.addStatement("default: return null");
             forNumber.endControlFlow();

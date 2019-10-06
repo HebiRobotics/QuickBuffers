@@ -10,7 +10,16 @@ import java.util.Locale;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-class ProtoUtil {
+class FieldUtil {
+
+    private static final int WIRETYPE_VARINT = 0;
+    private static final int WIRETYPE_FIXED64 = 1;
+    private static final int WIRETYPE_LENGTH_DELIMITED = 2;
+    private static final int WIRETYPE_START_GROUP = 3;
+    private static final int WIRETYPE_END_GROUP = 4;
+    private static final int WIRETYPE_FIXED32 = 5;
+    private static final int TAG_TYPE_BITS = 3;
+    private static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
 
     static int makeTag(FieldDescriptorProto descriptor) {
         return descriptor.getNumber() << TAG_TYPE_BITS | getWireType(descriptor.getType());
@@ -120,7 +129,7 @@ class ProtoUtil {
         }
     }
 
-    static String getFieldDefinition(FieldDescriptorProto descriptor) {
+    static String getProtoDefinitionLine(FieldDescriptorProto descriptor) {
         // optional int32 my_field = 2 [default = 1];
         final String label = descriptor.getLabel().toString()
                 .substring("LABEL_".length())
@@ -223,15 +232,6 @@ class ProtoUtil {
         }
         throw new GeneratorException("Unsupported type: " + type);
     }
-
-    private static final int WIRETYPE_VARINT = 0;
-    private static final int WIRETYPE_FIXED64 = 1;
-    private static final int WIRETYPE_LENGTH_DELIMITED = 2;
-    private static final int WIRETYPE_START_GROUP = 3;
-    private static final int WIRETYPE_END_GROUP = 4;
-    private static final int WIRETYPE_FIXED32 = 5;
-    private static final int TAG_TYPE_BITS = 3;
-    private static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
 
     static boolean isFixedWidth(FieldDescriptorProto.Type type) {
         return getFixedWidth(type) > 0;

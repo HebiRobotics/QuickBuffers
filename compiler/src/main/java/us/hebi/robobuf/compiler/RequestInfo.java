@@ -35,9 +35,9 @@ public class RequestInfo {
         return new RequestInfo(request);
     }
 
-    public static RequestInfo withTypeMap(CodeGeneratorRequest request) {
+    public static RequestInfo withTypeRegistry(CodeGeneratorRequest request) {
         RequestInfo info = new RequestInfo(request);
-        info.typeMap.buildTypeMap(info);
+        info.typeRegistry.registerContainedTypes(info);
         return info;
     }
 
@@ -47,10 +47,6 @@ public class RequestInfo {
         this.files = descriptor.getProtoFileList().stream()
                 .map(desc -> new FileInfo(this, desc))
                 .collect(Collectors.toList());
-    }
-
-    public ClassName resolveClassName(String typeId) {
-        return checkNotNull(typeMap.resolveClassName(typeId), "Unable to resolve type id: " + typeId);
     }
 
     /**
@@ -93,7 +89,7 @@ public class RequestInfo {
     private final CodeGeneratorRequest descriptor;
     private final Map<String, String> generatorParameters;
     private final List<FileInfo> files;
-    private final TypeMap typeMap = TypeMap.empty();
+    private final TypeRegistry typeRegistry = TypeRegistry.empty();
 
     @Value
     public static class FileInfo {
@@ -103,12 +99,12 @@ public class RequestInfo {
             this.descriptor = descriptor;
 
             fileName = descriptor.getName();
-            protoPackage = NameUtil.getProtoPackage(descriptor);
+            protoPackage = NamingUtil.getProtoPackage(descriptor);
 
             javaPackage = getParentRequest().applyJavaPackageReplace(
-                    NameUtil.getJavaPackage(descriptor));
+                    NamingUtil.getJavaPackage(descriptor));
 
-            outerClassName = ClassName.get(javaPackage, NameUtil.getJavaOuterClassname(descriptor));
+            outerClassName = ClassName.get(javaPackage, NamingUtil.getJavaOuterClassname(descriptor));
 
             outputDirectory = javaPackage.isEmpty() ? "" : javaPackage.replaceAll("\\.", "/") + "/";
 
@@ -175,7 +171,7 @@ public class RequestInfo {
 
             int fieldIndex = 0;
             for (FieldDescriptorProto desc : descriptor.getFieldList().stream()
-                    .sorted(ProtoUtil.MemoryLayoutSorter)
+                    .sorted(FieldUtil.MemoryLayoutSorter)
                     .collect(Collectors.toList())) {
                 fields.add(new FieldInfo(parentFile, typeName, desc, fieldIndex++));
             }
@@ -216,7 +212,7 @@ public class RequestInfo {
                 int packageEndIndex = name.lastIndexOf('.');
                 upperName = packageEndIndex > 0 ? name.substring(packageEndIndex + 1, name.length()) : name;
             } else {
-                upperName = NameUtil.toUpperCamel(descriptor.getName());
+                upperName = NamingUtil.toUpperCamel(descriptor.getName());
             }
             lowerName = Character.toLowerCase(upperName.charAt(0)) + upperName.substring(1);
             hazzerName = "has" + upperName;
@@ -225,15 +221,15 @@ public class RequestInfo {
             mutableGetterName = "getMutable" + upperName;
             adderName = "add" + upperName;
             clearName = "clear" + upperName;
-            isPrimitive = ProtoUtil.isPrimitive(descriptor.getType());
-            tag = ProtoUtil.makeTag(descriptor);
-            bytesPerTag = ProtoUtil.computeRawVarint32Size(tag);
-            packedTag = ProtoUtil.makePackedTag(descriptor);
+            isPrimitive = FieldUtil.isPrimitive(descriptor.getType());
+            tag = FieldUtil.makeTag(descriptor);
+            bytesPerTag = FieldUtil.computeRawVarint32Size(tag);
+            packedTag = FieldUtil.makePackedTag(descriptor);
             number = descriptor.getNumber();
-            fieldName = NameUtil.filterKeyword(lowerName);
-            final String defValue = ProtoUtil.getDefaultValue(descriptor);
-            defaultValue = isEnum() ? NameUtil.filterKeyword(defValue) : defValue;
-            repeatedStoreType = RuntimeApi.getRepeatedStoreType(descriptor.getType());
+            fieldName = NamingUtil.filterKeyword(lowerName);
+            final String defValue = FieldUtil.getDefaultValue(descriptor);
+            defaultValue = isEnum() ? NamingUtil.filterKeyword(defValue) : defValue;
+            repeatedStoreType = RuntimeClasses.getRepeatedStoreType(descriptor.getType());
             methodAnnotations = isDeprecated() ?
                     Collections.singletonList(AnnotationSpec.builder(Deprecated.class).build()) :
                     Collections.emptyList();
@@ -247,16 +243,16 @@ public class RequestInfo {
         }
 
         public String getJavadoc() {
-            return ProtoUtil.getFieldDefinition(descriptor) + "\n";
+            return FieldUtil.getProtoDefinitionLine(descriptor) + "\n";
         }
 
         public boolean isFixedWidth() {
-            return ProtoUtil.isFixedWidth(descriptor.getType());
+            return FieldUtil.isFixedWidth(descriptor.getType());
         }
 
         public int getFixedWidth() {
             checkState(isFixedWidth(), "not a fixed width type");
-            return ProtoUtil.getFixedWidth(descriptor.getType());
+            return FieldUtil.getFixedWidth(descriptor.getType());
         }
 
         public boolean isMessageOrGroup() {
@@ -337,15 +333,15 @@ public class RequestInfo {
         }
 
         public TypeName getTypeName() {
-            // Lazy because type map is not constructed at creation time
-            return getParentFile().getParentRequest().getTypeMap().resolveFieldType(descriptor);
+            // Lazy because type registry is not constructed at creation time
+            return getParentFile().getParentRequest().getTypeRegistry().resolveJavaTypeFromProto(descriptor);
         }
 
         public TypeName getStoreType() {
             if (isRepeated())
                 return getRepeatedStoreType();
             if (isString())
-                return RuntimeApi.StringType;
+                return RuntimeClasses.StringType;
             if (isEnum())
                 return TypeName.INT;
             return getTypeName();

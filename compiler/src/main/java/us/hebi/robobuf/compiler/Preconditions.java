@@ -79,7 +79,7 @@ package us.hebi.robobuf.compiler;
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
  */
-public class Preconditions {
+class Preconditions {
 
     private Preconditions() {}
 

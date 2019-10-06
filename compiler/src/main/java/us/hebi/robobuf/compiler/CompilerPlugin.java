@@ -45,7 +45,7 @@ public class CompilerPlugin {
 
     static CodeGeneratorResponse handleRequest(CodeGeneratorRequest requestProto) {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
-        RequestInfo request = RequestInfo.withTypeMap(requestProto);
+        RequestInfo request = RequestInfo.withTypeRegistry(requestProto);
 
         for (FileInfo file : request.getFiles()) {
 
@@ -56,11 +56,11 @@ public class CompilerPlugin {
             Consumer<TypeSpec> list = file.isGenerateMultipleFiles() ? topLevelTypes::add : outerClassSpec::addType;
 
             for (RequestInfo.EnumInfo type : file.getEnumTypes()) {
-                list.accept(new EnumTypeGenerator(type).generate());
+                list.accept(new EnumGenerator(type).generate());
             }
 
             for (RequestInfo.MessageInfo type : file.getMessageTypes()) {
-                list.accept(new MessageTypeGenerator(type).generate());
+                list.accept(new MessageGenerator(type).generate());
             }
 
             // Omitt completely empty outer classes

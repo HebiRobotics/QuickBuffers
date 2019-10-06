@@ -12,16 +12,16 @@ import java.util.List;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-class MessageTypeGenerator {
+class MessageGenerator {
 
-    MessageTypeGenerator(MessageInfo info) {
+    MessageGenerator(MessageInfo info) {
         this.info = info;
         info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
     }
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.classBuilder(info.getTypeName())
-                .superclass(ParameterizedTypeName.get(RuntimeApi.Message, info.getTypeName()))
+                .superclass(ParameterizedTypeName.get(RuntimeClasses.AbstractMessage, info.getTypeName()))
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
         if (info.isNested()) {
@@ -40,14 +40,14 @@ class MessageTypeGenerator {
 
         // Nested Enums
         info.getNestedEnums().stream()
-                .map(EnumTypeGenerator::new)
-                .map(EnumTypeGenerator::generate)
+                .map(EnumGenerator::new)
+                .map(EnumGenerator::generate)
                 .forEach(type::addType);
 
         // Nested Types
         info.getNestedTypes().stream()
-                .map(MessageTypeGenerator::new)
-                .map(MessageTypeGenerator::generate)
+                .map(MessageGenerator::new)
+                .map(MessageGenerator::generate)
                 .forEach(type::addType);
 
         // Constructor
@@ -156,7 +156,7 @@ class MessageTypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
-                .addParameter(RuntimeApi.ProtoSource, "input", Modifier.FINAL)
+                .addParameter(RuntimeClasses.ProtoSource, "input", Modifier.FINAL)
                 .addException(IOException.class);
 
         mergeFrom.beginControlFlow("while (true)");
@@ -203,7 +203,7 @@ class MessageTypeGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(void.class)
-                .addParameter(RuntimeApi.ProtoSink, "output", Modifier.FINAL)
+                .addParameter(RuntimeClasses.ProtoSink, "output", Modifier.FINAL)
                 .addException(IOException.class);
         fields.forEach(f -> {
             writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
@@ -266,12 +266,12 @@ class MessageTypeGenerator {
                 .addException(IOException.class)
                 .addParameter(byte[].class, "data", Modifier.FINAL)
                 .returns(info.getTypeName())
-                .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeApi.Message, info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.AbstractMessage, info.getTypeName())
                 .build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {
-        ParameterizedTypeName factoryReturnType = ParameterizedTypeName.get(RuntimeApi.MessageFactory, info.getTypeName());
+        ParameterizedTypeName factoryReturnType = ParameterizedTypeName.get(RuntimeClasses.MessageFactory, info.getTypeName());
         ClassName factoryTypeName = info.getTypeName().nestedClass(info.getTypeName().simpleName() + "Factory");
 
         MethodSpec factoryMethod = MethodSpec.methodBuilder("create")

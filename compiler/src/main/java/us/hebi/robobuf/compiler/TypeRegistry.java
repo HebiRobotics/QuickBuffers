@@ -14,19 +14,21 @@ import java.util.Map;
 import static us.hebi.robobuf.compiler.Preconditions.*;
 
 /**
- * Maps proto type ids to Java class names
+ * Maps proto type ids to Java class names, e.g.,
+ *
+ * .proto.package.Message.SubMessage -> us.hebi.robobuf.OuterMessage.Message.SubMessage
  *
  * @author Florian Enner
  * @since 07 Aug 2019
  */
 @ToString
-class TypeMap {
+class TypeRegistry {
 
-    static TypeMap empty() {
-        return new TypeMap();
+    static TypeRegistry empty() {
+        return new TypeRegistry();
     }
 
-    TypeName resolveFieldType(FieldDescriptorProto descriptor) {
+    TypeName resolveJavaTypeFromProto(FieldDescriptorProto descriptor) {
         switch (descriptor.getType()) {
 
             case TYPE_DOUBLE:
@@ -48,43 +50,44 @@ class TypeMap {
             case TYPE_BOOL:
                 return TypeName.BOOLEAN;
             case TYPE_STRING:
-                return RuntimeApi.StringType;
+                return RuntimeClasses.StringType;
             case TYPE_ENUM:
             case TYPE_GROUP:
             case TYPE_MESSAGE:
-                return resolveClassName(descriptor.getTypeName());
+                return resolveMessageType(descriptor.getTypeName());
             case TYPE_BYTES:
-                return RuntimeApi.BytesType;
+                return RuntimeClasses.BytesType;
 
         }
         throw new GeneratorException("Unsupported type: " + descriptor);
     }
 
-    ClassName resolveClassName(String typeId) {
+    // package-private for unit tests
+    TypeName resolveMessageType(String typeId) {
         return checkNotNull(typeMap.get(typeId), "Unable to resolve type id: " + typeId);
     }
 
-    void buildTypeMap(RequestInfo info) {
+    void registerContainedTypes(RequestInfo info) {
         typeMap.clear();
         for (FileInfo file : info.getFiles()) {
-            file.getMessageTypes().forEach(this::addType);
-            file.getEnumTypes().forEach(this::addType);
+            file.getMessageTypes().forEach(this::registerType);
+            file.getEnumTypes().forEach(this::registerType);
         }
     }
 
-    private void addType(TypeInfo typeInfo) {
-        if (typeMap.values().contains(typeInfo.getTypeName()))
+    private void registerType(TypeInfo typeInfo) {
+        if (typeMap.containsValue(typeInfo.getTypeName()))
             throw new GeneratorException("Duplicate class name: " + typeInfo.getTypeName());
         if (typeMap.put(typeInfo.getTypeId(), typeInfo.getTypeName()) != null)
             throw new GeneratorException("Duplicate type id: " + typeInfo.getTypeId());
 
         if (typeInfo instanceof MessageInfo) {
-            ((MessageInfo) typeInfo).getNestedTypes().forEach(this::addType);
-            ((MessageInfo) typeInfo).getNestedEnums().forEach(this::addType);
+            ((MessageInfo) typeInfo).getNestedTypes().forEach(this::registerType);
+            ((MessageInfo) typeInfo).getNestedEnums().forEach(this::registerType);
         }
     }
 
-    private TypeMap() {
+    private TypeRegistry() {
     }
 
     final Map<String, ClassName> typeMap = new HashMap<>();

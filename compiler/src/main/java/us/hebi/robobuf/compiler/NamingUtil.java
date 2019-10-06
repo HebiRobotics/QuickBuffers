@@ -12,7 +12,7 @@ import java.util.HashSet;
  * @author Florian Enner
  * @since 07 Aug 2019
  */
-class NameUtil {
+class NamingUtil {
 
     static String getJavaPackage(DescriptorProtos.FileDescriptorProto descriptor) {
         if (descriptor.getOptions().hasJavaPackage())
