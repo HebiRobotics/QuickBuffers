@@ -70,7 +70,10 @@ Because the unit tests in the `compiler` module require the packaged output of t
 The code generator is setup as a `protoc` plugin. In order to call it, you need to
 
 * Download `protoc` and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.2`)
-* Place from (`./compiler/target/`) `protoc-gen-robobuf`, `protoc-gen-robobuf.bat`, and `protoc-gen-robobuf-<version>.jar` in the same directory or somewhere else on the `$PATH`. Protoc does have an option to define a plugin path, but we've never gotten that to work properly.
+* Place the files below in the same directory or somewhere else on the `$PATH`. Protoc does have an option to define a plugin path, but it does not seem to work with scripts.
+  * `compiler/target/protoc-gen-robobuf`
+  * `compiler/target/protoc-gen-robobuf.bat`
+  * `compiler/target/protoc-gen-robobuf-<version>.jar`
 * Call `protoc` with `--robobuf_out=<options>:./path/to/generate`
 
 Currently available options are
@@ -86,7 +89,7 @@ We tried to keep the public API as close to Google's official Java bindings as p
 
 ### Primitive Fields
 
-All primitive values generate the same accessors as in Protobuf-Java's `Builder` classes
+All primitive values generate the same accessors and behavior as Protobuf-Java's `Builder` classes
 
 ```proto
 // .proto
@@ -96,47 +99,56 @@ message SimpleMessage {
 ```
 
 ```Java
-// generated code
+// simplified generated code
 public final class SimpleMessage {
     public SimpleMessage setPrimitiveValue(int value);
     public SimpleMessage clearPrimitiveValue();
     public boolean hasPrimitiveValue();
     public int getPrimitiveValue();
+
+    private int primitiveValue;
 }
 ```
 
 ### Message Fields
 
-All nested message types are `final` and allocated beforehand. They can be accessed via `getNestedMessage()` or `getMutableNestedMessage()` accessors. `getMutableField()` returns the internal field, and also sets the appropriate has-bit.
+Nested message types are `final` and allocated during construction time. Setting the field copies the internal data, but does not change the reference, so the best way to set nested message content is by directly accessing the internal store with `getMutableNestedMessage()`.
 
 ```proto
 // .proto
-message SimpleMessage {
+message NestedMessage {
     optional int32 primitive_value = 1;
 }
 message RootMessage {
-    optional SimpleMessage nested_message = 1;
+    optional NestedMessage nested_message = 1;
 }
 ```
 
 ```Java
-// Set a field in the nested message
+// simplified generated code
+public final class RootMessage {
+    public RootMessage setNestedMessage(NestedMessage value); // copies contents to internal message
+    public RootMessage clearNestedMessage(); // clears has bit as well as the backing object
+    public boolean hasNestedMessage();
+    public NestedMessage getNestedMessage(); // internal message
+    public NestedMessage getMutableNestedMessage(); // also sets has bit
+
+    private final NestedMessage nestedMessage = new NestedMessage();
+}
+```
+
+```Java
+// (1) setting nested values via 'set' (does a data copy!)
+msg.setNestedMessage(new NestedMessage().setPrimitiveValue(0));
+
+// (2) modify the internal store directly (recommended)
 RootMessage msg = new RootMessage();
 msg.getMutableNestedMessage().setPrimitiveValue(0);
 ```
 
-You can also call `setNestedMessage(nestedMessage)`, but be aware that it will do a copy of the contained data rather than storing the reference.
-
-```Java
-// Set a field in the nested message
-msg.setNestedMessage(new NestedMessage().setPrimitiveValue(0)); // does a copy!
-```
-
-The `clearNestedMessage()` method clears the has bit as well the backing data.
-
 ### String Fields
 
-Since `String` objects are immutable, we use the built-in `CharSequence` and `StringBuilder` classes instead.
+`String` objects are immutable, so we use the built-in `CharSequence` and `StringBuilder` classes instead.
 
 ```proto
 // .proto
@@ -146,7 +158,7 @@ message SimpleMessage {
 ```
 
 ```Java
-// generated code
+// simplified generated code
 public final class SimpleMessage {
     public SimpleMessage setOptionalString(CharSequence value); // copies data
     public SimpleMessage clearOptionalString(); // sets length = 0
@@ -180,7 +192,7 @@ message SimpleMessage {
 ```
 
 ```Java
-// generated code
+// simplified generated code
 public final class SimpleMessage {
     public SimpleMessage addRepeatedDouble(double value); // adds one value
     public SimpleMessage addAllRepeatedDouble(double... values); // adds N values
