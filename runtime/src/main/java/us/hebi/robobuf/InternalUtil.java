@@ -55,12 +55,12 @@ public class InternalUtil {
     static final Charset UTF_8 = Charset.forName("UTF-8");
     static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
 
-    static boolean equals(float a, float b) {
-        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
+    static boolean equals(boolean a, boolean b) {
+        return a == b;
     }
 
-    static boolean equals(double a, double b) {
-        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
+    static boolean equals(byte a, byte b) {
+        return a == b;
     }
 
     static boolean equals(int a, int b) {
@@ -71,24 +71,28 @@ public class InternalUtil {
         return a == b;
     }
 
-    static boolean equals(boolean a, boolean b) {
-        return a == b;
+    static boolean equals(float a, float b) {
+        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
+    }
+
+    static boolean equals(double a, double b) {
+        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
     }
 
     // constants for generated RepeatedPrimitive fields
     static final boolean _booleanDefault = false;
-    static final float _floatDefault = 0f;
-    static final double _doubleDefault = 0d;
+    static final byte _byteDefault = (byte) 0;
     static final int _intDefault = 0;
     static final long _longDefault = 0L;
-    static final byte _byteDefault = (byte) 0;
+    static final float _floatDefault = 0f;
+    static final double _doubleDefault = 0d;
 
     static final boolean[] _booleanEmpty = new boolean[0];
-    static final float[] _floatEmpty = new float[0];
-    static final double[] _doubleEmpty = new double[0];;
+    static final byte[] _byteEmpty = new byte[0];
     static final int[] _intEmpty = new int[0];
     static final long[] _longEmpty = new long[0];
-    static final byte[] _byteEmpty = new byte[0];
+    static final float[] _floatEmpty = new float[0];
+    static final double[] _doubleEmpty = new double[0];;
 
     /*
     --------------------------------------------------------------------------------------------------------------------
