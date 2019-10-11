@@ -88,11 +88,11 @@ We recommend reading [Know Thy Java Object Memory Layout](http://psy-lob-saw.blo
 
 **Eager Allocation**
 
-All object types inside a messages are `final` and are being allocated immediately at object instantiation. The primary reason for this is that nested messages are likely to be allocated directly after the parent, resulting in a more predictable layout and improved sequential access of nested messages. Given that all objects likely have the same lifecycle, the objects are also expected to stay together after a GC.
+All object types inside a messages are `final` and are allocated immediately at object instantiation. This pre-allocates all potentially used memory, and likely results in nested types being allocated together, improving the chance for a sequential access pattern during serialization.
 
-Some of the drawbacks are that the system may allocate memory for nested types that won't be used, and that this prevents the definition of cyclic nested messages.
+One of the drawbacks is that this prevents the definition of cyclic nested messages.
 
-Repeated fields are currently allocated with the backing array being empty and may grow over time as necessary. At some point, we may add a custom option to initialize the repeated store to a user settable default or max size. (`TODO`)
+Repeated fields are currently allocated with the backing array being empty and may grow over time. In the future, we may add a custom option to initialize the repeated store to a user settable default or max size. (`TODO`)
 
 ## Getting Started
 
