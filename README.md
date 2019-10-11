@@ -1,13 +1,13 @@
 # RoboBuffers - Protocol Buffers without Allocations
 
-RoboBuffers is a Java implementation of Google's Protocol Buffers v2 that is designed to be allocation-free in steady-state. It has been designed for real-time communications in allocation-constrained environments such as often found in the robotics or banking world.
+RoboBuffers is a Java implementation of Google's Protocol Buffers v2 that is designed to be allocation-free in steady-state. It has been designed for real-time communications in allocation-constrained environments such as often found in robotics and other low-latency applications.
 
 It currently supports all of the Proto2 syntax, with the exception of
-* ~~Extensions~~ (ignored)
-* ~~Maps~~ ([workaround](https://developers.google.com/protocol-buffers/docs/proto#simple))
-* ~~OneOf~~ (ignored)
-* ~~Services~~ (ignored)
-* ~~Recursive Message Definitions~~ (runtime error)
+* Extensions (ignored)
+* Maps ([workaround](https://developers.google.com/protocol-buffers/docs/proto#simple))
+* OneOf (ignored)
+* Services (ignored)
+* Recursive Message Definitions (runtime error)
 
 This library hasn't gone through an official release yet, so the public API should be considered a work-in-progress that is subject to change. That being said, the internals are partly based on Google's abandoned Protobuf-JavaNano library and we have been using the precursor of this project in production for several years, so we are quite confident that the serialization works correctly.
 
@@ -15,47 +15,98 @@ We realize that GPLv3 is not suitable for all use cases. Please contact us at in
 
 ## Differentiators to Protobuf-Java
 
+**Mutability**
+
+The main issue with using available Protobuf implementations (Java, JavaLite, Wire) for our use case is that all messages are considered immutable, and that any changes result in significant amounts of allocations. While this is not a problem for most applications, the GC pressure becomes an issue when working with complex nested messages at very high rates and with very low deadlines. Allocations can also become a performance bottleneck when iterating over large files with millions or more protobuf entries.
+
+RoboBuffers instead considers all message contents to be mutable and reusable. As with everything, there is a trade-off between performance and the usability benefits that immutable messages have. Among other things, you should be aware that
+
+* Messages should not be used as keys in Hashing structures (e.g. `HashMap`)
+* When sharing messages across threads, you should copy the contents via `message.copyFrom(other)` to prevent concurrent modifications
+
 **Field Ordering according to Memory Layout**
 
-The JVM is allowed to re-order the location of fields in memory. For example, the class below may actually be laid out as `[aLong][anInt][reference]`. Please see [Know Thy Java Object Memory Layout](http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html) for more information on this topic.
+The JVM is allowed to do many optimizations, including re-ordering the location of fields in memory. For example,
 
 ```Java
 class Example { 
-    Object reference;
-    int anInt;
-    long aLong;
+    int field1;
+    int field2;
+    Object field3;
+    float field4;
+    long field5;
 }
 ``` 
 
-Typically the field order follows the `.proto` file definition, but this can cause serialization code to walk the memory in a semi-random pattern. Since the ordering is not part of the protobuf specification, RoboBuffers chose to order the fields such that the access is as sequential as possible.
+While the typical assumption is that the memory layout matches the declaration order,  i.e., `field [1,2,3,4,5]`, on JDK8 it would actually be changed to `field [1,5,2,4,3]`.
+
+```text
+us.hebi.robobuf.benchmarks.PrintMemoryLayout$Example object internals:
+ OFFSET  SIZE               TYPE DESCRIPTION                               VALUE
+      0    12                    (object header)                           N/A
+     12     4                int Example.field1                            N/A
+     16     8               long Example.field5                            N/A
+     24     4                int Example.field2                            N/A
+     28     4              float Example.field4                            N/A
+     32     4   java.lang.Object Example.field3                            N/A
+     36     4                    (loss due to the next object alignment)
+Instance size: 40 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+```
+
+The field ordering in most Protobuf implementations follows the `.proto` file definition, but this can cause serialization code to walk the memory and follow references in a semi-random pattern. 
+
+```Java
+class Example {
+    writeTo(ProtoSink sink) {
+        // looks sequential, but isn't!
+        sink.write(field1); // offset 12
+        sink.write(field2); // offset 24
+        sink.write(field3); // offset 32 and ref jump
+        sink.write(field4); // offset 28
+        sink.write(field5); // offset 16
+    }
+}
+```
+
+RoboBuffers instead orders fields in a way that results in sequential memory access as well as reuse of code paths for as long as possible.
+
+```Java
+class Example {
+    writeTo(ProtoSink sink) {
+        // looks random, but is sequential
+        sink.write(field1); // offset 12
+        sink.write(field5); // offset 16
+        sink.write(field2); // offset 24
+        sink.write(field4); // offset 28
+        sink.write(field3); // offset 32 and ref jump
+    }
+}
+```
+
+We recommend reading [Know Thy Java Object Memory Layout](http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html) for more information on this topic.
 
 **Eager Allocation**
 
-All object types inside a messages are `final` and are being allocated immediately at object instantiation. The reasoning behind this is that nested messages are likely to be allocated directly after the parent, resulting in a quasi-contiguous layout and improved sequential access of nested messages. Given that all objects likely have the same lifecycle, the objects are also expected to stay together after a GC.
+All object types inside a messages are `final` and are being allocated immediately at object instantiation. The primary reason for this is that nested messages are likely to be allocated directly after the parent, resulting in a more predictable layout and improved sequential access of nested messages. Given that all objects likely have the same lifecycle, the objects are also expected to stay together after a GC.
 
-Note that this prevents recursive object definitions and allocates memory even for messages that won't end up being used.
+Some of the drawbacks are that the system may allocate memory for nested types that won't be used, and that this prevents the definition of cyclic nested messages.
 
-Repeated fields are currently allocated with the backing array being empty and may grow over time as necessary. `TODO:` At some point, we may add a custom option to initialize the repeated store to a user settable default or max size.
-
-**Mutability**
-
-In order to get rid of memory allocations all message contents are considered mutable. Among other things, you should be aware that
-
-* Protobuf's `String` type maps to the reusable `StringBuilder` Java type
-* When sharing messages across threads, you should copy the contents via `message.copyFrom(other)` to prevent concurrent modifications
-* Messages should not be used as keys in Hashing structures (e.g. `HashMap`)
+Repeated fields are currently allocated with the backing array being empty and may grow over time as necessary. At some point, we may add a custom option to initialize the repeated store to a user settable default or max size. (`TODO`)
 
 ## Getting Started
 
 There have been no releases yet, so currently users need to build from source.
 
-### Developer Info
+### Project Info
 
-Protoc plugins get called by `protoc` and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to debug plugins or setup unit tests.
+Protoc plugins get executed by the `protoc` process and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult setup unit tests and debug plugins during development.
 
 To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development.
 
-The `compiler` module contains the actual protoc-plugin and code generator. The `runtime` module contains the runtime libraries needed when using the generated messages. The `benchmark` module contains performance benchmarks in order to test performance implications of different strategies.
+The `compiler` module contains the protoc-plugin that will actually generate the messages. The `runtime` module contains the runtime libraries needed for using the generated messages.
+
+The `benchmark` module contains performance benchmarks in order to test performance implications of different strategies.
 
 ### Building from Source
 
@@ -178,6 +229,8 @@ msg.getMutableOptionalString()
     .append("text"); // field is now 'my-text'
 ```
 
+If you receive messages with many identical Strings, you may want to use a `StringInterner` to share already existing references.
+
 ### Repeated Fields
 
 Note: Our own use cases make very little use of repeated fields, so we expect that the API can probably be improved significantly. (i.e. please let us know if you have any better ideas)
@@ -235,11 +288,11 @@ Depending on platform support, the implementation may make use of `sun.misc.Unsa
 are familiar with Unsafe, you may also request an UnsafeSource instance that will allow you to use off-heap addresses. Use with caution!
 
 ```Java
-long address = /* ... */;
+long address = /* DirectBuffer::address */;
 ProtoSource source = ProtoSource.createUnsafe();
 source.setInput(null, address, length)
 ```
 
 ## Acknowledgements
 
-The serialization and deserialization code is heavily based on Google's abandoned `Protobuf-JavaNano` implementation. The Utf8 related methods were adapted from `Guava/Protobuf-Java`.
+The serialization and deserialization code was based on Google's abandoned `Protobuf-JavaNano` implementation. The Utf8 related methods were adapted from `Guava` and `Protobuf-Java`.
