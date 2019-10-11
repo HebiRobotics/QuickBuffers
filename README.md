@@ -100,13 +100,11 @@ There have been no releases yet, so currently users need to build from source.
 
 ### Project Info
 
-Protoc plugins get executed by the `protoc` process and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult setup unit tests and debug plugins during development.
+Protoc plugins get executed by the `protoc` process and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development.
 
-To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development.
+To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development. The `compiler` module contains the 'real' protoc-plugin that will generate the messages. 
 
-The `compiler` module contains the protoc-plugin that will actually generate the messages. The `runtime` module contains the runtime libraries needed for using the generated messages.
-
-The `benchmark` module contains performance benchmarks in order to test performance implications of different strategies.
+The `runtime` module contains the runtime libraries needed for using the generated messages, and the `benchmark` module contains performance benchmarks in order to test performance implications of different strategies.
 
 ### Building from Source
 
