@@ -70,18 +70,18 @@
 
                                 <mkdir dir="target/test-classes/us/hebi/robobuf/compiler"/>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=simple.request,indent=tab:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=simple.request,indent=tab,input_order=robobuf:target/test-classes/us/hebi/robobuf/compiler"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/simple.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request,indent=2:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number:target/test-classes/us/hebi/robobuf/compiler"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=robobuf.java=robobuf.test:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=robobuf.java=robobuf.test,input_order=random:target/test-classes/us/hebi/robobuf/compiler"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>

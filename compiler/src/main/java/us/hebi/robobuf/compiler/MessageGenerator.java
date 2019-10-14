@@ -1,6 +1,7 @@
 package us.hebi.robobuf.compiler;
 
 import com.squareup.javapoet.*;
+import us.hebi.robobuf.compiler.RequestInfo.ExpectedIncomingOrder;
 import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
 
 import javax.lang.model.element.Modifier;
@@ -159,9 +160,60 @@ class MessageGenerator {
                 .addParameter(RuntimeClasses.ProtoSource, "input", Modifier.FINAL)
                 .addException(IOException.class);
 
-        mergeFrom.beginControlFlow("while (true)");
-        mergeFrom.addStatement("int tag = input.readTag()");
+        // Fallthrough optimization:
+        //
+        // Reads tag after case parser and checks if it can fall-through. In the ideal case if all fields are set
+        // and the expected order matches the incoming data, the switch would only need to be executed once
+        // for the first field.
+        //
+        // Packable fields make this a bit more complex since they need to generate two cases to preserve
+        // backwards compatibility. However, any production proto file should already be using the packed
+        // option whenever possible, so we don't need to optimize the non-packed case.
+        final boolean enableFallthroughOptimization = info.getExpectedIncomingOrder() != ExpectedIncomingOrder.Random;
+        final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
+        switch (info.getExpectedIncomingOrder()) {
+            case AscendingNumber:
+                sortedFields.sort(FieldUtil.AscendingNumberSorter);
+                break;
+            case Robobuf: // keep existing order
+            case Random: // no optimization
+                break;
+        }
+
+        if (enableFallthroughOptimization) {
+            mergeFrom.addStatement("int tag = input.readTag()");
+            mergeFrom.beginControlFlow("while (true)");
+        } else {
+            mergeFrom.beginControlFlow("while (true)");
+            mergeFrom.addStatement("int tag = input.readTag()");
+        }
         mergeFrom.beginControlFlow("switch (tag)");
+
+        // Add fields by the expected order and type
+        for (int i = 0; i < sortedFields.size(); i++) {
+            FieldGenerator field = sortedFields.get(i);
+
+            // Assume all packable fields are written packed. Add non-packed cases to the end.
+            if (field.getInfo().isPackable()) {
+                mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
+                field.generateMergingCodeFromPacked(mergeFrom);
+            } else {
+                mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
+                field.generateMergingCode(mergeFrom);
+            }
+
+            if (enableFallthroughOptimization) {
+                // try falling to 0 (exit) at last field
+                final int nextCase = (i == sortedFields.size() - 1) ? 0 : getPackedTagOrTag(sortedFields.get(i + 1));
+                mergeFrom.beginControlFlow("if((tag = input.readTag()) != $L)", nextCase);
+                mergeFrom.addStatement("break");
+                mergeFrom.endControlFlow();
+            } else {
+                mergeFrom.addStatement("break");
+            }
+            mergeFrom.endControlFlow();
+
+        }
 
         // zero means invalid tag / end of data
         mergeFrom.beginControlFlow("case 0:")
@@ -176,26 +228,28 @@ class MessageGenerator {
                 .addStatement("break")
                 .endControlFlow();
 
-        // individual fields
-        fields.forEach(field -> {
-            // Non-packed
-            mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
-            field.generateMergingCode(mergeFrom);
-            mergeFrom.addStatement("break");
-            mergeFrom.endControlFlow();
-
-            // Packed code (needs to be generated even for non packed fields for forwards compatibility)
+        // Generate missing non-packed cases for packable fields for compatibility reasons
+        for (FieldGenerator field : sortedFields) {
             if (field.getInfo().isPackable()) {
-                mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
-                field.generateMergingCodeFromPacked(mergeFrom);
+                mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
+                field.generateMergingCode(mergeFrom);
+                if (enableFallthroughOptimization) {
+                    mergeFrom.addStatement("tag = input.readTag()");
+                }
                 mergeFrom.addStatement("break");
                 mergeFrom.endControlFlow();
             }
-        });
+        }
 
         mergeFrom.endControlFlow();
         mergeFrom.endControlFlow();
         type.addMethod(mergeFrom.build());
+    }
+
+    private int getPackedTagOrTag(FieldGenerator field) {
+        if (field.getInfo().isPackable())
+            return field.getInfo().getPackedTag();
+        return field.getInfo().getTag();
     }
 
     private void generateWriteTo(TypeSpec.Builder type) {

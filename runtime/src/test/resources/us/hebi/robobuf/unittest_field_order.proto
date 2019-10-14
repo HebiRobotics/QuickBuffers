@@ -1,0 +1,59 @@
+// A message with all types in random order and randomized ids
+// to check how Google orders items
+
+syntax = "proto2";
+package robobuf_unittest;
+
+option java_package = "us.hebi.robobuf.java";
+option java_multiple_files = false;
+
+message TestFieldOrder {
+
+    message NestedMessage {
+        optional int32 bb = 1;
+    }
+
+    enum NestedEnum {
+        FOO = 1;
+        BAR = 2;
+        BAZ = 3;
+    }
+
+    repeated int32 field_01_id31 = 31;
+    repeated int64 field_02_id32 = 32;
+    optional double field_03_id12 = 12;
+    repeated NestedMessage field_04_id48 = 48;
+    optional int32 field_05_id01 = 1;
+    optional NestedMessage field_06_id18 = 18;
+    repeated float field_07_id41 = 41;
+    optional int64 field_08_id02 = 2;
+    repeated sint64 field_09_id36 = 36;
+    repeated NestedEnum field_10_id51 = 51;
+    repeated sfixed32 field_11_id39 = 39;
+    repeated uint32 field_12_id33 = 33;
+    optional uint32 field_13_id03 = 3;
+    optional uint64 field_14_id04 = 4;
+    optional NestedEnum field_15_id21 = 21;
+    repeated sint32 field_16_id35 = 35;
+    optional sint32 field_17_id05 = 5;
+    optional sint64 field_18_id06 = 6;
+    optional fixed32 field_19_id07 = 7;
+    repeated int32 field_20_id87 = 87 [packed = true];
+    optional bytes field_21_id15 = 15;
+    optional fixed64 field_22_id08 = 8;
+    repeated fixed64 field_23_id38 = 38;
+    optional sfixed32 field_24_id09 = 9;
+    repeated sfixed64 field_25_id88 = 88 [packed = true];
+    optional sfixed64 field_26_id10 = 10;
+    repeated bool field_27_id43 = 43;
+    repeated fixed32 field_28_id37 = 37;
+    repeated sfixed64 field_29_id40 = 40;
+    repeated uint64 field_30_id34 = 34;
+    optional float field_31_id11 = 11;
+    repeated bytes field_32_id45 = 45;
+    repeated string field_33_id44 = 44;
+    repeated double field_34_id42 = 42;
+    optional bool field_35_id13 = 13;
+    optional string field_36_id14 = 14;
+
+}
