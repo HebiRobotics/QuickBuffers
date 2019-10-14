@@ -193,8 +193,15 @@ public class FieldGenerator {
     }
 
     protected void generateSerializationCode(MethodSpec.Builder method) {
+        m.put("writeTagToOutput", generateWriteVarint32(getInfo().getTag()));
+        if (info.isPacked()) {
+            m.put("writePackedTagToOutput", generateWriteVarint32(getInfo().getPackedTag()));
+        }
+
         if (info.isPacked() && info.isFixedWidth()) {
-            method.addNamedCode("output.writePacked$capitalizedType:L($number:L, $field:N);\n", m);
+            method.addNamedCode("" +
+                    "$writePackedTagToOutput:L;\n" +
+                    "output.writePacked$capitalizedType:LNoTag($field:N);\n", m);
 
         } else if (info.isPacked()) {
             method.addNamedCode("" +
@@ -202,7 +209,7 @@ public class FieldGenerator {
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
                     "$<}\n" +
-                    "output.writeRawVarint32($packedTag:L);\n" +
+                    "$writePackedTagToOutput:L;\n" +
                     "output.writeRawVarint32(dataSize);\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
@@ -211,12 +218,65 @@ public class FieldGenerator {
         } else if (info.isRepeated()) {
             method.addNamedCode("" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "output.write$capitalizedType:L($number:L, $field:N.get(i));\n" +
+                    "$writeTagToOutput:L;\n" +
+                    "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
                     "$<}\n", m);
 
         } else {
-            method.addNamedCode("output.write$capitalizedType:L($number:L, $field:N);\n", m); // non-repeated
+            // unroll varint tag loop
+            method.addNamedCode("$writeTagToOutput:L;\n", m);
+            method.addNamedCode("output.write$capitalizedType:LNoTag($field:N);\n", m); // non-repeated
         }
+    }
+
+    private static String generateWriteVarint32(int value) {
+        // Split tag into individual bytes
+        int[] bytes = new int[5];
+        int numBytes = 0;
+        while (true) {
+            if ((value & ~0x7F) == 0) {
+                bytes[numBytes++] = value;
+                break;
+            } else {
+                bytes[numBytes++] = (value & 0x7F) | 0x80;
+                value >>>= 7;
+            }
+        }
+
+        // Write tag bytes as efficiently as possible
+        String output = "";
+        switch (numBytes) {
+
+            case 5:
+                value = (bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0]);
+                output += "output.writeRawLittleEndian32(" + value + ");\n";
+                output += "output.writeRawByte((byte) " + bytes[4] + ")";
+                break;
+
+            case 4:
+                value = (bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0]);
+                output += "output.writeRawLittleEndian32(" + value + ")";
+                break;
+
+            case 3:
+                value = (bytes[1] << 8 | bytes[0]);
+                output += "output.writeRawLittleEndian16((short) " + value + ");\n";
+                output += "output.writeRawByte((byte) " + bytes[2] + ")";
+                break;
+
+            case 2:
+                value = (bytes[1] << 8 | bytes[0]);
+                output += "output.writeRawLittleEndian16((short) " + value + ")";
+                break;
+
+            default:
+                for (int i = 0; i < numBytes - 1; i++) {
+                    output += "output.writeRawByte((byte) " + bytes[i] + ");\n";
+                }
+                output += "output.writeRawByte((byte) " + bytes[numBytes - 1] + ")";
+        }
+
+        return output;
     }
 
     protected void generateComputeSerializedSizeCode(MethodSpec.Builder method) {

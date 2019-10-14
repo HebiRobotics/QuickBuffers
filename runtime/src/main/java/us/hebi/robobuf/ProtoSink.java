@@ -136,64 +136,62 @@ public abstract class ProtoSink {
      *
      * @return this
      */
-    public ProtoSink clear(){
+    public ProtoSink clear() {
         return setOutput(InternalUtil._byteEmpty);
     }
 
     // -----------------------------------------------------------------
 
-    /** Write a repeated (non-packed) {@code double} field, including tag, to the stream. */
-    public void writePackedDouble(final int fieldNumber, final RepeatedDouble values)
+    /** Encode and write a packed tag for the given field number. */
+    public void writePackedTag(final int fieldNumber) throws IOException {
+        writeRawVarint32(WireFormat.makeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED));
+    }
+
+    /** Write a repeated (non-packed) {@code double} field, excluding tag, to the stream. */
+    public void writePackedDoubleNoTag(final RepeatedDouble values)
             throws IOException {
-        writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
         writeRawVarint32(values.length * SIZEOF_FIXED_64);
         writeRawDoubles(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed) {@code float} field, including tag, to the stream. */
-    public void writePackedFloat(final int fieldNumber, final RepeatedFloat values)
+    /** Write a repeated (non-packed) {@code float} field, excluding tag, to the stream. */
+    public void writePackedFloatNoTag(final RepeatedFloat values)
             throws IOException {
-        writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
         writeRawVarint32(values.length * SIZEOF_FIXED_32);
         writeRawFloats(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed){@code fixed64} field, including tag, to the stream. */
-    public void writePackedFixed64(final int fieldNumber, final RepeatedLong values)
+    /** Write a repeated (non-packed){@code fixed64} field, excluding tag, to the stream. */
+    public void writePackedFixed64NoTag(final RepeatedLong values)
             throws IOException {
-        writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
         writeRawVarint32(values.length * SIZEOF_FIXED_64);
         writeRawFixed64s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed){@code fixed32} field, including tag, to the stream. */
-    public void writePackedFixed32(final int fieldNumber, final RepeatedInt values)
+    /** Write a repeated (non-packed){@code fixed32} field, excluding tag, to the stream. */
+    public void writePackedFixed32NoTag(final RepeatedInt values)
             throws IOException {
-        writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
         writeRawVarint32(values.length * SIZEOF_FIXED_32);
         writeRawFixed32s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed) {@code sfixed32} field, including tag, to the stream. */
-    public void writePackedSFixed32(final int fieldNumber, final RepeatedInt values)
+    /** Write a repeated (non-packed) {@code sfixed32} field, excluding tag, to the stream. */
+    public void writePackedSFixed32NoTag(final RepeatedInt values)
             throws IOException {
-        writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
         writeRawVarint32(values.length * SIZEOF_FIXED_32);
         writeRawFixed32s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed) {@code sfixed64} field, including tag, to the stream. */
-    public void writePackedSFixed64(final int fieldNumber, final RepeatedLong values)
+    /** Write a repeated (non-packed) {@code sfixed64} field, excluding tag, to the stream. */
+    public void writePackedSFixed64NoTag(final RepeatedLong values)
             throws IOException {
-        writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
         writeRawVarint32(values.length * SIZEOF_FIXED_64);
         writeRawFixed64s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed){@code bool} field, including tag, to the stream. */
-    public void writePackedBool(final int fieldNumber, final RepeatedBoolean values)
+    /** Write a repeated (non-packed){@code bool} field, excluding tag, to the stream. */
+    public void writePackedBoolNoTag(final RepeatedBoolean values)
             throws IOException {
-        writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
         writeRawVarint32(values.length * SIZEOF_FIXED_BOOL);
         writeRawBooleans(values.array, values.length);
     }
@@ -901,24 +899,30 @@ public abstract class ProtoSink {
         return 10;
     }
 
+    /** Write a little-endian 16-bit integer. */
+    public void writeRawLittleEndian16(final short value) throws IOException {
+        writeRawByte((byte) ((value) & 0xFF));
+        writeRawByte((byte) ((value >> 8) & 0xFF));
+    }
+
     /** Write a little-endian 32-bit integer. */
     public void writeRawLittleEndian32(final int value) throws IOException {
-        writeRawByte((value) & 0xFF);
-        writeRawByte((value >> 8) & 0xFF);
-        writeRawByte((value >> 16) & 0xFF);
-        writeRawByte((value >> 24) & 0xFF);
+        writeRawByte((byte) ((value) & 0xFF));
+        writeRawByte((byte) ((value >> 8) & 0xFF));
+        writeRawByte((byte) ((value >> 16) & 0xFF));
+        writeRawByte((byte) ((value >> 24) & 0xFF));
     }
 
     /** Write a little-endian 64-bit integer. */
     public void writeRawLittleEndian64(final long value) throws IOException {
-        writeRawByte((int) (value) & 0xFF);
-        writeRawByte((int) (value >> 8) & 0xFF);
-        writeRawByte((int) (value >> 16) & 0xFF);
-        writeRawByte((int) (value >> 24) & 0xFF);
-        writeRawByte((int) (value >> 32) & 0xFF);
-        writeRawByte((int) (value >> 40) & 0xFF);
-        writeRawByte((int) (value >> 48) & 0xFF);
-        writeRawByte((int) (value >> 56) & 0xFF);
+        writeRawByte((byte) ((value) & 0xFF));
+        writeRawByte((byte) ((value >> 8) & 0xFF));
+        writeRawByte((byte) ((value >> 16) & 0xFF));
+        writeRawByte((byte) ((value >> 24) & 0xFF));
+        writeRawByte((byte) ((value >> 32) & 0xFF));
+        writeRawByte((byte) ((value >> 40) & 0xFF));
+        writeRawByte((byte) ((value >> 48) & 0xFF));
+        writeRawByte((byte) ((value >> 56) & 0xFF));
     }
 
     /**
