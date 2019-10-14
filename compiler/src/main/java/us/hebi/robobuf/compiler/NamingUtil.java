@@ -121,7 +121,10 @@ class NamingUtil {
             "this", "throw", "throws", "transient", "try", "void", "volatile", "while",
 
             // Reserved Keywords for Literals
-            "false", "null", "true"
+            "false", "null", "true",
+
+            // Reserved keywords for internal variables
+            "value", "values", "other", "input", "output"
     ));
 
 }
