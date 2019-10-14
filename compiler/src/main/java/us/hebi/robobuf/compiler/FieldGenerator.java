@@ -306,8 +306,11 @@ public class FieldGenerator {
                     "size += dataSize;\n" +
                     "size += $bytesPerTag:L * $field:N.length();\n", m);
 
+        } else if (info.isFixedWidth()) {
+            method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated
+
         } else {
-            method.addNamedCode("size += $computeClass:T.compute$capitalizedType:LSize($number:L, $field:N);\n", m); // non-repeated
+            method.addNamedCode("size += $bytesPerTag:L + $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N);\n", m); // non-repeated
         }
 
     }
