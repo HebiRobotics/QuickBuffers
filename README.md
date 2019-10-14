@@ -271,7 +271,7 @@ public final class SimpleMessage {
 
 Note that repeated stores can currently only expand, but we may add something similar to `StringBuilder::trimToSize` to get rid of unneeded memory (`TODO`).
 
-### Marshalling
+### Serialization
 
 Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the moment we only support contiguous blocks of memory, i.e., `byte[]`, and we we have no immediate plans on supporting `ByteBuffer` or `InputStream` due to the significant performance penalties involved.
 
@@ -336,40 +336,31 @@ private byte[][] datasets = /* load into memory */;
 
 Note that we did not test the default `Protobuf-Java` bindings because the benchmark would not trigger the lazy String parsing. However, considering that `Protobuf-JavaLite` uses the same library, the time should be about the same as decoding with `Protobuf-Java` and accessing all lazy fields.
 
-* Dataset 1 (87 MB): a series of delimited ~220 byte messages. Only primitive data types and a relatively small amount of nesting. No strings, repeated, or unknown fields.
-* Dataset 2 (57 MB): a series of delimited ~650 byte messages. Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields.
-* Dataset 3 (64 MB): a single artificial message with one (64 MB) repeated double value (`repeated double values = 1 [packed=true]`)
+* Dataset 1 (87 MB): a series of delimited ~220 byte messages. Only primitive data types and a relatively small amount of nesting. No strings, repeated, or unknown fields. Only a small subset of fields are populated.
+* Dataset 2 (57 MB): a series of delimited ~650 byte messages. Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only a subset of fields is populated.
+* Dataset 3 (64 MB): a single artificial message with one (64 MB) packed double field (`repeated double values = 1 [packed=true]`)
 
 The results below were taken by a single thread running on a JDK8 runtime running on an Intel NUC8i7BEH. 
-
-<!--
-| Dataset | Read | Write`[1]` | Read + Write
-| ----------- | ----------- | ----------- | ----------- |
-| RoboBuffers (1)  | 520ms (167 MB/s) | 166ms (524 MB/s) | 686 ms (126 MB/s)
-| JavaLite (1)  | 567ms (153 MB/s) | 718ms (121 MB/s) | 1285 ms (68 MB/s)
-| RoboBuffers (2)  | 175ms (325 MB/s) | 94 ms (606 MB/s) | 269 ms (212 MB/s)
-| JavaLite (2)  | 378ms (150 MB/s) | 308ms (188 MB/s) | 686 ms (83 MB/s)
--->
 
 |  | RoboBuffers (Unsafe) | RoboBuffers (Safe) | JavaLite | Relative`[2]`
 | ----------- | ----------- | ----------- | ----------- | ----------- |
 | **Read**  | | |
-| 1  | 520ms (167 MB/s) | 536ms (162 MB/s) | 567ms (153 MB/s) | 1.1
-| 2  | 175ms (325 MB/s) | 190ms (300 MB/s) | 378ms (150 MB/s) | 2.2
+| 1  | 494ms (176 MB/s) | 521ms (167 MB/s) | 567ms (153 MB/s) | 1.1
+| 2  | 161ms (354 MB/s) | 177ms (322 MB/s) | 378ms (150 MB/s) | 2.3
 | 3 | 9.8ms (6.5 GB/s) | 44ms (1.5 GB/s) |  92ms (696 MB/s) | 9.4
 |  **Write**`[1]`  | | |
-| 1 | 166ms (524 MB/s)  | 212 ms (410 MB/s) | 718ms (121 MB/s)  | 4.3
-| 2 | 94 ms (606 MB/s)  | 124 ms (460 MB/s) | 308ms (188 MB/s) | 3.3
+| 1 | 111ms (784 MB/s)  | 152 ms (572 MB/s) | 718ms (121 MB/s)  | 6.5
+| 2 | 71 ms (803 MB/s)  | 99 ms (576 MB/s) | 308ms (188 MB/s) | 4.3
 | 3 | 6.2 ms (10 GB/s)  | 46 ms (1.4 GB/s) | 21 ms (3.0 GB/s) | 3.4
 | **Read + Write** |  | |
-| 1  | 686 ms (126 MB/s) | 748ms (116 MB/s) | 1285 ms (68 MB/s) | 1.9
-| 2 | 269 ms (212 MB/s) | 314ms (181 MB/s) | 686 ms (83 MB/s) | 2.6
+| 1  | 605 ms (144 MB/s) | 673ms (129 MB/s) | 1285 ms (68 MB/s) | 2.1
+| 2 | 232 ms (245 MB/s) | 276ms (206 MB/s) | 686 ms (83 MB/s) | 3.0
 | 3  | 16 ms (4.0 GB/s) | 90ms (711 MB/s) | 113 ms (566 MB/s) | 7.1
 
-* `[1]` Derived from `Write = (Read + Write) - Read` so less accurate
+* `[1]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
 * `[2]` `Javalite / RoboBuffers (Unsafe)`
 
-There is a significant decoding overhead in the field lookup, i.e., "the big switch statement". Dataset 1 contains almost entirely primitives and should be representative of a realistic worst case scenario. Dataset 3 represents a best case scenario with practically zero encoding cost or metadata overhead. Dataset 2 is in between and should be somewhat representative of datasets that most users actually work with.
+Dataset 1 contains almost entirely primitives and should be representative of a realistic bad-case scenario. Dataset 3 represents a best-case scenario with practically zero encoding cost or metadata overhead. Dataset 2 is in between and should be somewhat representative of datasets that most users actually work with.
 
 ## Acknowledgements
 
