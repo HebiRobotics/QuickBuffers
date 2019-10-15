@@ -7,6 +7,14 @@ package robobuf_unittest;
 option java_package = "us.hebi.robobuf.java";
 option java_multiple_files = false;
 
+message ExampleMessage {
+    optional int32 field1 = 1;
+    optional int32 field2 = 3;
+    optional string field3 = 4;
+    optional double field4 = 2;
+    optional int64 field5 = 5;
+}
+
 message TestFieldOrder {
 
     message NestedMessage {
