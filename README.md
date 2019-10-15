@@ -12,18 +12,18 @@ It currently supports all of the Proto2 syntax, with the exception of
 Note that this library hasn't gone through an official release yet, so the public API should be considered a work-in-progress that is subject to change. Feedback is always welcome.
 
 ## Performance / Benchmarks
-
-The performance implications depend a lot on the specific data format, so the numbers below may not be representative for your use case and you should always do your own tests.
   
-Below are benchmark results for a comparison between `RoboBuffers (pre-release)` and Google's `Protobuf-JavaLite v3.9.1` for different datasets. The tests were run on a single thread running on a JDK8 runtime on an Intel NUC8i7BEH.
+Below are benchmark results for a comparison between `RoboBuffers` and Google's `Protobuf-JavaLite` for different datasets. The tests were run on a single thread on a JDK8 runtime running on an Intel NUC8i7BEH.
 
-|  | RoboBuffers (Unsafe) | RoboBuffers (Safe) | JavaLite | Relative`[2]`
+Note that the performance depends a lot on the specific data format, so the results may not be representative for your use case.
+
+|  | RoboBuffers (Unsafe) | RoboBuffers (No-Unsafe) | JavaLite (v3.9.1`[1]`) | Relative`[2]`
 | ----------- | ----------- | ----------- | ----------- | ----------- |
 | **Read**  | | |
 | 1  | 494ms (176 MB/s) | 521ms (167 MB/s) | 567ms (153 MB/s) | 1.1
 | 2  | 161ms (354 MB/s) | 177ms (322 MB/s) | 378ms (150 MB/s) | 2.3
 | 3 | 9.8ms (6.5 GB/s) | 44ms (1.5 GB/s) |  92ms (696 MB/s) | 9.4
-|  **Write**`[1]`  | | |
+|  **Write**`[3]`  | | |
 | 1 | 111ms (784 MB/s)  | 152 ms (572 MB/s) | 718ms (121 MB/s)  | 6.5
 | 2 | 71 ms (803 MB/s)  | 99 ms (576 MB/s) | 308ms (188 MB/s) | 4.3
 | 3 | 6.2 ms (10 GB/s)  | 46 ms (1.4 GB/s) | 21 ms (3.0 GB/s) | 3.4
@@ -32,14 +32,15 @@ Below are benchmark results for a comparison between `RoboBuffers (pre-release)`
 | 2 | 232 ms (245 MB/s) | 276ms (206 MB/s) | 686 ms (83 MB/s) | 3.0
 | 3  | 16 ms (4.0 GB/s) | 90ms (711 MB/s) | 113 ms (566 MB/s) | 7.1
 
-* `[1]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
+* `[1]` Also makes (limited) use of `sun.misc.Unsafe`
 * `[2]` `Javalite / RoboBuffers (Unsafe)`
+* `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
 
 Each dataset contains delimited protobuf messages with contents that were extracted from a production log. All datasets were then loaded into a `byte[]` and decoded from memory. The benchmark decodes each contained message and then serializes it into another output `byte[]`. 
  
  * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages. Only primitive data types and a relatively small amount of nesting. No strings, repeated, or unknown fields. Only a small subset of fields are populated. This should be a realistic of a bad-case scenario.
  * Dataset 2 (57 MB) contains a series of delimited ~650 byte messages. Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only a subset of fields is populated.
- * Dataset 3 (64 MB) contains a single artificial message with one (64 MB) packed double field (`repeated double values = 1 [packed=true]`). It only encodes a repeated type with known width (no varints), so it should be representative of a best-case scenario.
+ * Dataset 3 (64 MB) contains a single artificial message with one (64 MB) packed double field (`repeated double values = 1 [packed=true]`). It only encodes a repeated type with known width (no varint), so it should be representative of a best-case scenario (on little-endian systems this can map to memcpy).
  
  The benchmarking code looks as below. We did not test the default `Protobuf-Java` bindings separately because the benchmark would not trigger the lazy String parsing. However, considering that `Protobuf-JavaLite` uses the same library, the time should be about the same as decoding with `Protobuf-Java` and accessing all lazy fields.
 
