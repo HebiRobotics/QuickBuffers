@@ -1,11 +1,9 @@
 package us.hebi.robobuf;
 
 import org.junit.Test;
-import us.hebi.robobuf.robo.ForeignEnum;
-import us.hebi.robobuf.robo.ForeignMessage;
-import us.hebi.robobuf.robo.RepeatedPackables;
-import us.hebi.robobuf.robo.TestAllTypes;
+import us.hebi.robobuf.robo.*;
 import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
+import us.hebi.robobuf.robo.UnittestFieldOrder.MessageWithMultibyteNumbers;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
@@ -363,8 +361,26 @@ public class ProtoTests {
 
         TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg2).toByteArray());
         assertEquals(msg, actual);
+    }
 
+    @Test
+    public void testHighFieldNumbers() throws IOException {
+        MessageWithMultibyteNumbers expected = new MessageWithMultibyteNumbers()
+                .setTagSize1(1)
+                .setTagSize2(2)
+                .setTagSize3(3)
+                .setTagSize4(4)
+                .setTagSize5(5)
+                .setTagSizeMax(6);
+        MessageWithMultibyteNumbers actual = MessageWithMultibyteNumbers.parseFrom(expected.toByteArray());
+        assertEquals(expected, actual);
+    }
 
+    @Test
+    public void testSkipUnknownFields() throws IOException {
+        ProtoSource source = ProtoSource.createFastest().setInput(CompatibilityTest.getCombinedMessage());
+        new Simple.SimpleMessage().mergeFrom(source);
+        assertTrue(source.isAtEnd());
     }
 
     @Test

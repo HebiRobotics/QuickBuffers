@@ -224,9 +224,11 @@ class MessageGenerator {
         mergeFrom.beginControlFlow("default:")
                 .beginControlFlow("if (!input.skipField(tag))")
                 .addStatement("return this")
-                .endControlFlow()
-                .addStatement("break")
                 .endControlFlow();
+        if (enableFallthroughOptimization) {
+            mergeFrom.addStatement("tag = input.readTag()");
+        }
+        mergeFrom.addStatement("break").endControlFlow();
 
         // Generate missing non-packed cases for packable fields for compatibility reasons
         for (FieldGenerator field : sortedFields) {
@@ -236,8 +238,7 @@ class MessageGenerator {
                 if (enableFallthroughOptimization) {
                     mergeFrom.addStatement("tag = input.readTag()");
                 }
-                mergeFrom.addStatement("break");
-                mergeFrom.endControlFlow();
+                mergeFrom.addStatement("break").endControlFlow();
             }
         }
 

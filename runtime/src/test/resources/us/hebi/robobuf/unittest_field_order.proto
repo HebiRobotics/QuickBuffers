@@ -65,3 +65,14 @@ message TestFieldOrder {
     optional string field_36_id14 = 14;
 
 }
+
+message MessageWithMultibyteNumbers {
+
+    optional int32 tag_size_1 = 1; // 2^1
+    optional int32 tag_size_2 = 16; // 2^3
+    optional int32 tag_size_3 = 2048; // 2^10
+    optional int32 tag_size_4 = 262144; // 2^17
+    optional int32 tag_size_5 = 33554432; // 2^24
+    optional int32 tag_size_max = 536870911; // 2^29 - 1 (highest allowed field id)
+
+}
