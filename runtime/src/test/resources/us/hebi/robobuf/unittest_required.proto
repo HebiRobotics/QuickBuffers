@@ -36,7 +36,34 @@ package robobuf_unittest_import;
 option java_package = "us.hebi.robobuf.java";
 
 message SimpleMessage {
-
     required int32 required_field = 1 [deprecated = true];
+}
+
+message TestAllTypesRequired {
+
+    enum NestedEnum {
+        FOO = 1;
+        BAR = 2;
+        BAZ = 3;
+    }
+
+    required    int32 required_int32    =  1;
+    required    int64 required_int64    =  2;
+    required   uint32 required_uint32   =  3;
+    required   uint64 required_uint64   =  4;
+    required   sint32 required_sint32   =  5;
+    required   sint64 required_sint64   =  6;
+    required  fixed32 required_fixed32  =  7;
+    required  fixed64 required_fixed64  =  8;
+    required sfixed32 required_sfixed32 =  9;
+    required sfixed64 required_sfixed64 = 10;
+    required    float required_float    = 11;
+    required   double required_double   = 12;
+    required     bool required_bool     = 13;
+    required   string required_string   = 14;
+    required    bytes required_bytes    = 15;
+
+    required NestedEnum required_nested_enum     = 21;
+    required SimpleMessage required_nested_message     = 22;
 
 }

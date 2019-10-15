@@ -12,10 +12,11 @@ import static org.junit.Assert.*;
 public class TypeRegistryTest {
 
     @Test
-    public void testSimpleTypeMap() {
-        TypeRegistry map = RequestInfo.withTypeRegistry(TestRequestLoader.getSimpleRequest()).getTypeRegistry();
-        assertEquals(1, map.typeMap.entrySet().size());
-        assertEquals("us.hebi.robobuf.java.Simple.SimpleMessage", map.resolveMessageType(".robobuf_unittest_import.SimpleMessage").toString());
+    public void testRequiredTypeMap() {
+        TypeRegistry map = RequestInfo.withTypeRegistry(TestRequestLoader.getRequiredRequest()).getTypeRegistry();
+        assertTrue(map.typeMap.size() >= 2);
+        assertEquals("us.hebi.robobuf.java.UnittestRequired.SimpleMessage", map.resolveMessageType(".robobuf_unittest_import.SimpleMessage").toString());
+        assertEquals("us.hebi.robobuf.java.UnittestRequired.TestAllTypesRequired", map.resolveMessageType(".robobuf_unittest_import.TestAllTypesRequired").toString());
     }
 
     @Test

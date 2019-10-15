@@ -2,8 +2,8 @@ package us.hebi.robobuf;
 
 import org.junit.Test;
 import us.hebi.robobuf.robo.RepeatedPackables;
-import us.hebi.robobuf.robo.Simple;
 import us.hebi.robobuf.robo.TestAllTypes;
+import us.hebi.robobuf.robo.UnittestRequired;
 
 import java.io.IOException;
 
@@ -15,7 +15,7 @@ public class ProtoFailTests {
 
     @Test(expected = IllegalStateException.class)
     public void testMissingRequiredField() {
-        new Simple.SimpleMessage().toByteArray();
+        new UnittestRequired.SimpleMessage().toByteArray();
     }
 
     // --------------------------------------------------------------------------------------

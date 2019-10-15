@@ -4,6 +4,7 @@ import org.junit.Test;
 import us.hebi.robobuf.robo.*;
 import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
 import us.hebi.robobuf.robo.UnittestFieldOrder.MessageWithMultibyteNumbers;
+import us.hebi.robobuf.robo.UnittestRequired.TestAllTypesRequired;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
 import java.io.IOException;
@@ -377,9 +378,43 @@ public class ProtoTests {
     }
 
     @Test
+    public void testAllTypesRequired() throws IOException {
+        TestAllTypesRequired expected = new TestAllTypesRequired()
+                .setRequiredBool(true)
+                .setRequiredDouble(100.0d)
+                .setRequiredFloat(101.0f)
+                .setRequiredFixed32(102)
+                .setRequiredFixed64(103)
+                .setRequiredSfixed32(104)
+                .setRequiredSfixed64(105)
+                .setRequiredSint32(106)
+                .setRequiredSint64(107)
+                .setRequiredInt32(108)
+                .setRequiredInt64(109)
+                .setRequiredUint32(110)
+                .setRequiredUint64(111)
+                .setRequiredString("test")
+                .addRequiredBytes((byte) 0)
+                .setRequiredNestedEnum(TestAllTypesRequired.NestedEnum.BAR)
+                .setRequiredNestedMessage(new UnittestRequired.SimpleMessage().setRequiredField(0));
+        byte[] output = expected.toByteArray();
+
+        TestAllTypesRequired actual = TestAllTypesRequired.parseFrom(expected.toByteArray());
+        assertEquals(expected, actual);
+        assertArrayEquals(output, actual.toByteArray());
+
+        try {
+            expected.clearRequiredBool().toByteArray();
+            fail("should not serialize with missing required field");
+        } catch (Throwable t) {
+        }
+
+    }
+
+    @Test
     public void testSkipUnknownFields() throws IOException {
         ProtoSource source = ProtoSource.createFastest().setInput(CompatibilityTest.getCombinedMessage());
-        new Simple.SimpleMessage().mergeFrom(source);
+        new TestAllTypes.NestedMessage().mergeFrom(source);
         assertTrue(source.isAtEnd());
     }
 
