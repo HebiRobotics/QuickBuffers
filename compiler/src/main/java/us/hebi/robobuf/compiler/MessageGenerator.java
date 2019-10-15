@@ -181,6 +181,7 @@ class MessageGenerator {
         }
 
         if (enableFallthroughOptimization) {
+            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
             mergeFrom.addStatement("int tag = input.readTag()");
             mergeFrom.beginControlFlow("while (true)");
         } else {
@@ -318,7 +319,7 @@ class MessageGenerator {
     private void generateParseFrom(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder("parseFrom")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addException(IOException.class)
+                .addException(RuntimeClasses.InvalidProtocolBufferException)
                 .addParameter(byte[].class, "data", Modifier.FINAL)
                 .returns(info.getTypeName())
                 .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.AbstractMessage, info.getTypeName())

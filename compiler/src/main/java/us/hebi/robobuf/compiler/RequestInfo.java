@@ -85,11 +85,23 @@ public class RequestInfo {
     enum ExpectedIncomingOrder {
         Robobuf, // parsing messages from Robobuf
         AscendingNumber, // parsing messages from official protobuf bindings
-        Random // parsing messages from unknown sources
+        Random; // parsing messages from unknown sources
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case Robobuf:
+                    return "RoboBuffers";
+                case AscendingNumber:
+                    return "Sorted by Field Numbers";
+                default:
+                    return name();
+            }
+        }
     }
 
     public ExpectedIncomingOrder getExpectedIncomingOrder() {
-        String order = generatorParameters.getOrDefault("incoming_order", "robobuf");
+        String order = generatorParameters.getOrDefault("input_order", "robobuf");
         switch (order.toLowerCase()) {
             case "robobuf":
                 return ExpectedIncomingOrder.Robobuf;
@@ -98,7 +110,7 @@ public class RequestInfo {
             case "random":
                 return ExpectedIncomingOrder.Random;
         }
-        throw new GeneratorException("Expected incoming_order robobuf,number,random. Found: " + order);
+        throw new GeneratorException("Expected input_order robobuf,number,random. Found: " + order);
     }
 
     public boolean shouldEnumUseArrayLookup(int highestNumber) {
