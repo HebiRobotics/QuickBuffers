@@ -21,11 +21,13 @@ abstract class RepeatedField<RepeatedType extends RepeatedField> {
      *
      * @param numEntries number of entries to be added
      */
-    public final void requireCapacity(int numEntries) {
+    @SuppressWarnings("unchecked")
+    public final RepeatedType requireCapacity(int numEntries) {
         final int desiredSize = length + numEntries;
         if (desiredSize > capacity()) {
             extendCapacityTo(desiredSize);
         }
+        return (RepeatedType) this;
     }
 
     public final void clear() {

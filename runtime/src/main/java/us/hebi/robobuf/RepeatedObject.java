@@ -12,7 +12,7 @@ import java.util.Iterator;
  */
 abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends RepeatedField<SubType> implements Iterable<T> {
 
-    public final T getAndAdd() {
+    public final T next() {
         requireCapacity(1);
         return array[length++];
     }

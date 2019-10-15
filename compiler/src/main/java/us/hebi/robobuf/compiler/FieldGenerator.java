@@ -120,7 +120,7 @@ public class FieldGenerator {
                             "$<}\n", m)
                     .addNamedCode(info.isPrimitive() || info.isEnum() ?
                             "$field:N.add(input.read$capitalizedType:L());\n"
-                            : "input.read$capitalizedType:L($field:N.getAndAdd()$secondArgs:L);\n", m)
+                            : "input.read$capitalizedType:L($field:N.next()$secondArgs:L);\n", m)
                     .addNamedCode("" +
                             "nextTagPosition = input.getPosition();\n" +
                             "$<} while (input.readTag() == $tag:L);\n" +
