@@ -43,6 +43,17 @@ class FieldUtil {
     }
 
     /**
+     * Sort fields according to their specified field number. This is used as the serialization order
+     * by Google's protobuf bindings.
+     */
+    static final Comparator<FieldGenerator> AscendingNumberSorter = new Comparator<FieldGenerator>() {
+        @Override
+        public int compare(FieldGenerator objA, FieldGenerator objB) {
+            return objA.getInfo().getNumber() - objB.getInfo().getNumber();
+        }
+    };
+
+    /**
      * Sort the fields according to their layout in memory.
      *
      * Summary:

@@ -82,6 +82,25 @@ public class RequestInfo {
         throw new GeneratorException("Expected 2,4,8,tab. Found: " + indent);
     }
 
+    enum ExpectedIncomingOrder {
+        Robobuf, // parsing messages from Robobuf
+        AscendingNumber, // parsing messages from official protobuf bindings
+        Random // parsing messages from unknown sources
+    }
+
+    public ExpectedIncomingOrder getExpectedIncomingOrder() {
+        String order = generatorParameters.getOrDefault("incoming_order", "robobuf");
+        switch (order.toLowerCase()) {
+            case "robobuf":
+                return ExpectedIncomingOrder.Robobuf;
+            case "number":
+                return ExpectedIncomingOrder.AscendingNumber;
+            case "random":
+                return ExpectedIncomingOrder.Random;
+        }
+        throw new GeneratorException("Expected incoming_order robobuf,number,random. Found: " + order);
+    }
+
     public boolean shouldEnumUseArrayLookup(int highestNumber) {
         return highestNumber < 50; // parameter?
     }
@@ -184,6 +203,8 @@ public class RequestInfo {
                     .map(desc -> new EnumInfo(parentFile, typeId, typeName, true, desc))
                     .collect(Collectors.toList());
 
+            expectedIncomingOrder = getParentFile().getParentRequest().getExpectedIncomingOrder();
+
         }
 
         private final DescriptorProtos.DescriptorProto descriptor;
@@ -191,6 +212,7 @@ public class RequestInfo {
         private final List<FieldInfo> fields = new ArrayList<>();
         private final List<MessageInfo> nestedTypes;
         private final List<EnumInfo> nestedEnums;
+        private final ExpectedIncomingOrder expectedIncomingOrder;
 
     }
 

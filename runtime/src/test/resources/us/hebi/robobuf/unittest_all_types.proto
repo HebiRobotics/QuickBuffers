@@ -135,6 +135,13 @@ message TestAllTypes {
   // Try to fail with java reserved keywords
   optional int32 synchronized = 96;
 
+  // Try to fail with internally used argument names
+  optional int32 value = 10001;
+  repeated int32 values = 10002;
+  optional int32 other = 10003;
+  optional int32 input = 100004;
+  optional int32 output = 100005;
+
 }
 
 message ForeignMessage {

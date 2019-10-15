@@ -62,6 +62,7 @@ final class WireFormat {
 
     static final int SIZEOF_FIXED_64 = 8;
     static final int SIZEOF_FIXED_32 = 4;
+    static final int SIZEOF_FIXED_16 = 2;
     static final int SIZEOF_FIXED_BOOL = 1;
 
     /** Given a tag value, determines the wire type (the lower 3 bits). */
