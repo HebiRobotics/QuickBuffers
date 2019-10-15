@@ -25,6 +25,8 @@ Unfortunately, we currently have no way of knowing an appropriate initial size f
 
 Be aware that this prevents the definition of cycles in the message definitions.
 
+`TODO`: In the benchmarks it seems that eager allocation is very good if all fields are used, but can be significantly reduce performance if most fields are empty. We should enable the lazy option so users can specify what fields they expect.
+
 ### Serialization Order
 
 `Protobuf-Java` defines fields in the same order as in the `.proto` file, and it serializes them in the order of ascending field numbers. Unfortunately, this results in poor semi-random memory access patterns. `RoboBuffers` instead orders fields primarily by their type, and serializes them in a way that results in a fully sequential access pattern.
@@ -147,8 +149,8 @@ In fact, we unfortunately noticed too late that benchmark is flawed in that it d
 |  | RoboBuffers (Unsafe) | RoboBuffers (No-Unsafe) | Java`[1]`| JavaLite`[1]` | Relative`[2]`
 | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
 | **Read**  | | |
-| 1  | 494ms (176 MB/s) | 521ms (167 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 0.7
-| 2  | 161ms (354 MB/s) | 177ms (322 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.05
+| 1  | 494ms (176 MB/s)`[4]` | 521ms (167 MB/s)`[4]` |  344ms (253 MB/s)  | 567ms (153 MB/s) | 0.7
+| 2  | 161ms (354 MB/s)`[4]` | 177ms (322 MB/s)`[4]` | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.05
 | 3  | 36ms (280 MB/s) | 44ms (226 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 1.8
 | 4  | 25ms (408 MB/s) | 28ms (353 MB/s) | 47ms (214 MB/s)  | 155ms (65 MB/s) | 1.9
 | 5 | 9.8ms (6.5 GB/s) | 44ms (1.5 GB/s) |  103ms (621 MB/s)  | 92ms (696 MB/s) | 10.5
@@ -170,6 +172,7 @@ In fact, we unfortunately noticed too late that benchmark is flawed in that it d
 * `[1]` Version 3.9.1 (also makes use of `sun.misc.Unsafe`)
 * `[2]` `Java / RoboBuffers (Unsafe)`
 * `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
+* `[4]` Is only sparsely populated, so `clear()` actually becomes a major cost. Specifying unused messages as lazy results in an almost 3x speedup of the read performance (~500 MB/s). (`TODO` support lazy flag and be smarter about clearing) 
 
 Each dataset contains delimited protobuf messages with with varying contents. All datasets were then loaded into a `byte[]` and decoded from memory. The benchmark decodes each contained message and then serializes it into another output `byte[]`. 
  
