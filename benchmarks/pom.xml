@@ -58,12 +58,6 @@
 
                             <inputDirectories>
                                 <include>${proto.dir}</include>
-
-                                <!-- protobuf benchmarks from protobuf/benchmarks/datasets -->
-                                <!--<include>${project.basedir}/src/main/resources/datasets/google_message1/proto2</include>--> <!-- Missing required fields, so Java/lite fails-->
-                                <include>${project.basedir}/src/main/resources/datasets/google_message2/</include>
-                                <!--<include>${project.basedir}/src/main/resources/datasets/google_message3/</include>--> <!--  protoc can't find dependencies -->
-                                <!--<include>${project.basedir}/src/main/resources/datasets/google_message4/</include>--> <!-- protoc can't find dependencies -->
                             </inputDirectories>
 
                             <outputTargets>
