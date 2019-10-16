@@ -214,7 +214,7 @@ public class FieldGenerator {
 
         if (info.isPacked() && info.isFixedWidth()) {
             method.addNamedCode("" +
-                    "$writePackedTagToOutput:L;\n" +
+                    "$writePackedTagToOutput:L" +
                     "output.writePacked$capitalizedType:LNoTag($field:N);\n", m);
 
         } else if (info.isPacked()) {
@@ -223,7 +223,7 @@ public class FieldGenerator {
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
                     "$<}\n" +
-                    "$writePackedTagToOutput:L;\n" +
+                    "$writePackedTagToOutput:L" +
                     "output.writeRawVarint32(dataSize);\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
@@ -232,13 +232,13 @@ public class FieldGenerator {
         } else if (info.isRepeated()) {
             method.addNamedCode("" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "$writeTagToOutput:L;\n" +
+                    "$writeTagToOutput:L" +
                     "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
                     "$<}\n", m);
 
         } else {
             // unroll varint tag loop
-            method.addNamedCode("$writeTagToOutput:L;\n", m);
+            method.addNamedCode("$writeTagToOutput:L", m);
             method.addNamedCode("output.write$capitalizedType:LNoTag($field:N);\n", m); // non-repeated
         }
     }
@@ -261,35 +261,26 @@ public class FieldGenerator {
         String output = "";
         switch (numBytes) {
 
+            case 4:
             case 5:
                 value = (bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0]);
-                output += "output.writeRawLittleEndian32(" + value + ");\n";
-                output += "output.writeRawByte((byte) " + bytes[4] + ")";
-                break;
-
-            case 4:
-                value = (bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0]);
-                output += "output.writeRawLittleEndian32(" + value + ")";
-                break;
-
-            case 3:
-                value = (bytes[1] << 8 | bytes[0]);
-                output += "output.writeRawLittleEndian16((short) " + value + ");\n";
-                output += "output.writeRawByte((byte) " + bytes[2] + ")";
+                output = "output.writeRawLittleEndian32(" + value + ");\n";
+                if (numBytes == 5) output += "output.writeRawByte((byte) " + bytes[4] + ");\n";
                 break;
 
             case 2:
+            case 3:
                 value = (bytes[1] << 8 | bytes[0]);
-                output += "output.writeRawLittleEndian16((short) " + value + ")";
+                output = "output.writeRawLittleEndian16((short) " + value + ");\n";
+                if (numBytes == 3) output += "output.writeRawByte((byte) " + bytes[2] + ");\n";
                 break;
 
             default:
-                for (int i = 0; i < numBytes - 1; i++) {
+                for (int i = 0; i < numBytes; i++) {
                     output += "output.writeRawByte((byte) " + bytes[i] + ");\n";
                 }
-                output += "output.writeRawByte((byte) " + bytes[numBytes - 1] + ")";
-        }
 
+        }
         return output;
     }
 
