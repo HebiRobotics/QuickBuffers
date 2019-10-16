@@ -74,6 +74,14 @@ static <MessageType extends AbstractMessageLite> int readWrite(byte[] input, byt
 }
 ```
 
+We additionally ran a benchmark very similar to SBE's original MarketData throughput [Benchmark](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html):
+
+| Test | RoboBuffers | Protobuf-Java | Ratio
+| :----------- | -----------: | -----------: | -----------: |
+| Market Data Encode  | 7444 msg/ms | 3811 msg/ms |  1.95  
+| Market Data Decode  | 5814 msg/ms | 3290 msg/ms |  1.77  
+
+
 ## Highlights
 
 ### Mutability
