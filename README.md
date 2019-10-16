@@ -17,9 +17,9 @@ Below is a comparison with Google's official Protobuf bindings for a variefy of 
 
 Note that the performance depends a lot on the specific data format and content, so the results may not be representative for your use case. 
 
-|  | RoboBuffers<p>(Unsafe) | RoboBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | Relative`[2]`
-| ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
-| **Read**  | | |
+|  | RoboBuffers<p>(Unsafe) | RoboBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | `[2]`
+| ----------- | -----------: | -----------: | -----------: | -----------: | ----------- |
+| **Read**  | | 
 | 1  | 173ms (502 MB/s) | 212ms (410 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 2.0
 | 2  | 102ms (559 MB/s)` | 118ms (483 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.7
 | 3  | 34ms (297 MB/s) | 44ms (226 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 1.9
@@ -30,13 +30,13 @@ Note that the performance depends a lot on the specific data format and content,
 | 2 | 71ms (802 MB/s)  | 101ms (564 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 1.9
 | 3  | 23ms (435 MB/s) | 29ms (344 MB/s) | 29ms (344 MB/s)  | 101ms (99 MB/s) | 1.3
 | 4  | 16ms (625 MB/s) | 23ms (434 MB/s) | 42ms (238 MB/s)  | 97ms (103 MB/s) | 2.6
-| 5 | 6.2 ms (10 GB/s)  | 46 ms (1.4 GB/s) | 16ms (4.0 GB/s)  | 21 ms (3.0 GB/s) | 2.5
-| **Read + Write** |  | |
+| 5 | 6.2ms (10 GB/s)  | 46ms (1.4 GB/s) | 16ms (4.0 GB/s)  | 21ms (3.0 GB/s) | 2.5
+| **Read + Write** |  | 
 | 1  | 291ms (299 MB/s) | 377ms (231 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 1.7
 | 2 | 173ms (329 MB/s) | 219ms (260 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.8
 | 3  | 57ms (176 MB/s) | 73ms (138 MB/s) | 94ms (106 MB/s)  | 248ms (40 MB/s) | 1.6
 | 4  | 41ms (244 MB/s) | 51ms (196 MB/s) | 89ms (112 MB/s)  | 252ms (40 MB/s) | 2.2
-| 5  | 16 ms (4.0 GB/s) | 90ms (711 MB/s) | 119ms (537 MB/s)  | 113 ms (566 MB/s) | 7.4
+| 5  | 16ms (4.0 GB/s) | 90ms (711 MB/s) | 119ms (537 MB/s)  | 113ms (566 MB/s) | 7.4
 
 <!-- | 3  | ms (  MB/s) | ms (  MB/s) | ms (  MB/s)  | ms (  MB/s) | 0 -->
 
