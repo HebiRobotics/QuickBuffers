@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit;
  *
  * === RoboBuffers (Unsafe) ===
  *  Benchmark                                Mode  Cnt   Score    Error  Units
- *  SbeBenchmark.carUnsafeRoboRead           avgt   10  35.683 ±  1.082  ms/op -- 280 MB/s
- *  SbeBenchmark.carUnsafeRoboReadReadWrite  avgt   10  62.558 ±  3.884  ms/op -- 160 MB/s
- *  SbeBenchmark.marketUnsafeRoboRead        avgt   10  24.542 ±  0.387  ms/op -- 408 MB/s
- *  SbeBenchmark.marketUnsafeRoboReadWrite   avgt   10  46.270 ±  3.329  ms/op -- 217 MB/s
+ * SbeBenchmark.carUnsafeRoboRead           avgt   10  33.602 ± 0.568  ms/op
+ * SbeBenchmark.carUnsafeRoboReadReadWrite  avgt   10  56.860 ± 1.176  ms/op
+ * SbeBenchmark.marketUnsafeRoboRead        avgt   10  25.022 ± 1.249  ms/op
+ * SbeBenchmark.marketUnsafeRoboReadWrite   avgt   10  41.227 ± 0.612  ms/op
  *
  * === RoboBuffers (Safe) ===
  * SbeBenchmark.carRoboRead                    avgt   10   44.306 ±  1.814  ms/op -- 226 MB/s
@@ -253,7 +253,7 @@ public class SbeBenchmark {
         while (!source.isAtEnd()) {
             final int length = source.readRawVarint32();
             int limit = source.pushLimit(length);
-            message.clear().mergeFrom(source);
+            message.clearQuick().mergeFrom(source);
             source.popLimit(limit);
         }
         return source.getPosition();
@@ -264,7 +264,7 @@ public class SbeBenchmark {
             // read delimited
             final int length = source.readRawVarint32();
             int limit = source.pushLimit(length);
-            message.clear().mergeFrom(source);
+            message.clearQuick().mergeFrom(source);
             source.popLimit(limit);
 
             // write delimited

@@ -30,8 +30,7 @@ abstract class RepeatedField<RepeatedType extends RepeatedField> {
         return (RepeatedType) this;
     }
 
-    public final void clear() {
-        clearRange(0, length);
+    public void clear() {
         length = 0;
     }
 
@@ -46,8 +45,6 @@ abstract class RepeatedField<RepeatedType extends RepeatedField> {
     public abstract int capacity();
 
     protected abstract void extendCapacityTo(int desiredSize);
-
-    protected abstract void clearRange(int fromIndex, int toIndex);
 
     protected int length = 0;
 

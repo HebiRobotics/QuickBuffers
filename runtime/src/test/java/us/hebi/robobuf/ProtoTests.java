@@ -125,6 +125,11 @@ public class ProtoTests {
         TestAllTypes msg3 = TestAllTypes.parseFrom(manualMsg.toByteArray());
         assertEquals(msg, msg3);
 
+        // Test quick clear
+        TestAllTypes msg4 = msg3.clone();
+        assertEquals(msg3.clear(), msg4.clearQuick());
+        assertArrayEquals(msg3.toByteArray(), msg4.toByteArray());
+
     }
 
     @Test

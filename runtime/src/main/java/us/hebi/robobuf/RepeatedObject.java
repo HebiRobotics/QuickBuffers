@@ -126,10 +126,11 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
     }
 
     @Override
-    protected final void clearRange(int fromIndex, int toIndex) {
-        for (int i = fromIndex; i < toIndex; i++) {
+    public final void clear() {
+        for (int i = 0; i < length; i++) {
             clearIndex0(i);
         }
+        length = 0;
     }
 
     @Override

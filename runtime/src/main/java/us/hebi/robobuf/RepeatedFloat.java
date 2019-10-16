@@ -17,11 +17,6 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
         this.array = newValues;
     }
 
-    @Override
-    protected void clearRange(int fromIndex, int toIndex) {
-        Arrays.fill(array, fromIndex, toIndex, DEFAULT_VALUE);
-    }
-
     public float get(int index) {
         checkIndex(index);
         return array[index];
@@ -102,6 +97,5 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     float[] array = InternalUtil._floatEmpty;
-    private static final float DEFAULT_VALUE = InternalUtil._floatDefault;
 
 }

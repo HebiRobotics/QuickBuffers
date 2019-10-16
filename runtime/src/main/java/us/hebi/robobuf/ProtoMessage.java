@@ -93,6 +93,18 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     public abstract MessageType clear();
 
     /**
+     * Clears all has state so that the message would serialize empty,
+     * but does not set field default values and does not get rid of
+     * memory that was allocated for repeated types.
+     *
+     * Use this if you use this message for serialization purposes or
+     * if you do not require default values for unset fields.
+     *
+     * @return this
+     */
+    public abstract MessageType clearQuick();
+
+    /**
      * Computes the number of bytes required to encode this message. This does not update the
      * cached size.
      */

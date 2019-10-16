@@ -71,6 +71,20 @@ public class FieldGenerator {
         }
     }
 
+    protected void generateClearQuickCode(MethodSpec.Builder method) {
+        if (info.isRepeated() || info.isBytes()) {
+            method.addNamedCode("$field:N.clear();\n", m);
+        } else if (info.isMessageOrGroup()) {
+            method.addNamedCode("$field:N.clearQuick();\n", m);
+        } else if (info.isString()) {
+            method.addNamedCode("$field:N.setLength(0);\n", m);
+        } else if (info.isPrimitive() || info.isEnum()) {
+            // do nothing
+        } else {
+            throw new IllegalStateException("unhandled field: " + info.getDescriptor());
+        }
+    }
+
     protected void generateCopyFromCode(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup()) {
             method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m);

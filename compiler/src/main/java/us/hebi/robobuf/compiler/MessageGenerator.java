@@ -88,7 +88,12 @@ class MessageGenerator {
     }
 
     private void generateClear(TypeSpec.Builder type) {
-        MethodSpec.Builder clear = MethodSpec.methodBuilder("clear")
+        type.addMethod(generateClearCode("clear", true));
+        type.addMethod(generateClearCode("clearQuick", false));
+    }
+
+    private MethodSpec generateClearCode(String name, boolean isFullClear) {
+        MethodSpec.Builder clear = MethodSpec.methodBuilder(name)
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
@@ -99,14 +104,20 @@ class MessageGenerator {
                 .addStatement("return this")
                 .endControlFlow();
 
-        // full clear
+        // clear has state
         clear.addStatement("cachedSize = -1");
         for (int i = 0; i < numBitFields; i++) {
             clear.addStatement("$L = 0", BitField.fieldName(i));
         }
-        fields.forEach(field -> field.generateClearCode(clear));
+
+        if (isFullClear) {
+            fields.forEach(field -> field.generateClearCode(clear));
+        } else {
+            fields.forEach(field -> field.generateClearQuickCode(clear));
+        }
+
         clear.addStatement("return this");
-        type.addMethod(clear.build());
+        return clear.build();
     }
 
     private void generateEquals(TypeSpec.Builder type) {

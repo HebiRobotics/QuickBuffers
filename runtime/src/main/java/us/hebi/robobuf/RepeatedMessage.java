@@ -36,6 +36,13 @@ public class RepeatedMessage<MessageType extends ProtoMessage<MessageType>> exte
         array[index].clear();
     }
 
+    public final void clearQuick() {
+        for (int i = 0; i < length; i++) {
+            array[i].clearQuick();
+        }
+        length = 0;
+    }
+
     @Override
     protected final boolean isEqual(MessageType a, Object b) {
         return a.equals(b);
