@@ -43,7 +43,7 @@ public class FieldGenerator {
             // byte[] default values are stored as utf8 strings, so we need to convert it first
             type.addField(FieldSpec.builder(ArrayTypeName.get(byte[].class), info.getDefaultFieldName())
                     .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer(CodeBlock.builder().addNamed("$internalUtil:T.bytesDefaultValue(\"$default:L\")", m).build())
+                    .initializer(CodeBlock.builder().addNamed("$abstractMessage:T.bytesDefaultValue(\"$default:L\")", m).build())
                     .build());
         }
     }
@@ -106,7 +106,7 @@ public class FieldGenerator {
             method.addNamedCode("$field:N.equals(other.$field:N)", m);
 
         } else if (info.isString()) {
-            method.addNamedCode("$internalUtil:T.equals($field:N, other.$field:N)", m);
+            method.addNamedCode("$protoUtil:T.isEqual($field:N, other.$field:N)", m);
 
         } else if (typeName == TypeName.DOUBLE) {
             method.addNamedCode("Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N)", m);
@@ -129,7 +129,7 @@ public class FieldGenerator {
                     .addNamedCode("do {$>\n" +
                             "// look ahead for more items so we resize only once\n" +
                             "if ($field:N.remainingCapacity() == 0) {$>\n" +
-                            "int count = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n" +
+                            "int count = $protoSource:T.getRepeatedFieldArrayLength(input, $tag:L);\n" +
                             "$field:N.reserve(count);\n" +
                             "$<}\n", m)
                     .addNamedCode(info.isPrimitive() || info.isEnum() ?
@@ -221,7 +221,7 @@ public class FieldGenerator {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
                     "$<}\n" +
                     "$writePackedTagToOutput:L" +
                     "output.writeRawVarint32(dataSize);\n" +
@@ -290,23 +290,23 @@ public class FieldGenerator {
                     "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
                     "size += dataSize;\n" +
                     "size += $bytesPerTag:L;\n" +
-                    "size += $computeClass:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
 
         } else if (info.isPacked()) {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
                     "$<}\n" +
                     "size += dataSize;\n" +
                     "size += $bytesPerTag:L;\n" +
-                    "size += $computeClass:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
 
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
                     "$<}\n" +
                     "size += dataSize;\n" +
                     "size += $bytesPerTag:L * $field:N.length();\n", m);
@@ -315,7 +315,7 @@ public class FieldGenerator {
             method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated
 
         } else {
-            method.addNamedCode("size += $bytesPerTag:L + $computeClass:T.compute$capitalizedType:LSizeNoTag($field:N);\n", m); // non-repeated
+            method.addNamedCode("size += $bytesPerTag:L + $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N);\n", m); // non-repeated
         }
 
     }
@@ -502,8 +502,6 @@ public class FieldGenerator {
         m.put("number", info.getNumber());
         m.put("tag", info.getTag());
         m.put("capitalizedType", FieldUtil.getCapitalizedType(info.getDescriptor().getType()));
-        m.put("computeClass", RuntimeClasses.ProtoSink);
-        m.put("internalUtil", RuntimeClasses.InternalUtil);
         m.put("secondArgs", info.isGroup() ? ", " + info.getNumber() : "");
         m.put("defaultField", info.getDefaultFieldName());
         m.put("bytesPerTag", info.getBytesPerTag());
@@ -511,6 +509,11 @@ public class FieldGenerator {
         if (info.isPackable()) m.put("packedTag", info.getPackedTag());
         if (info.isFixedWidth()) m.put("fixedWidth", info.getFixedWidth());
 
+        // utility classes
+        m.put("abstractMessage", RuntimeClasses.AbstractMessage);
+        m.put("protoSource", RuntimeClasses.ProtoSource);
+        m.put("protoSink", RuntimeClasses.ProtoSink);
+        m.put("protoUtil", RuntimeClasses.ProtoUtil);
     }
 
     protected final RequestInfo.FieldInfo info;

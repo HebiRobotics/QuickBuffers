@@ -15,7 +15,7 @@ class RuntimeClasses {
 
     static final ClassName ProtoSource = ClassName.get(API_PACKAGE, "ProtoSource");
     static final ClassName ProtoSink = ClassName.get(API_PACKAGE, "ProtoSink");
-    static final ClassName InternalUtil = ClassName.get(API_PACKAGE, "InternalUtil");
+    static final ClassName ProtoUtil = ClassName.get(API_PACKAGE, "ProtoUtil");
     static final ClassName AbstractMessage = ClassName.get(API_PACKAGE, "ProtoMessage");
     static final ClassName MessageFactory = ClassName.get(API_PACKAGE, "MessageFactory");
     static final ClassName StringType = ClassName.get(StringBuilder.class);

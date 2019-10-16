@@ -75,7 +75,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      * @return copy of valid data
      */
     public final float[] toArray() {
-        if (length == 0) return InternalUtil._floatEmpty;
+        if (length == 0) return EMPTY_ARRAY;
         return Arrays.copyOf(array, length);
     }
 
@@ -132,12 +132,13 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
             return false;
 
         for (int i = 0; i < length; i++) {
-            if (!InternalUtil.equals(array[i], other.array[i]))
+            if (!ProtoUtil.isEqual(array[i], other.array[i]))
                 return false;
         }
         return true;
     }
 
-    float[] array = InternalUtil._floatEmpty;
+    float[] array = EMPTY_ARRAY;
+    private static final float[] EMPTY_ARRAY = new float[0];
 
 }

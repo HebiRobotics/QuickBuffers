@@ -86,7 +86,7 @@ public class ProtoSource {
      * @return this
      */
     public ProtoSource clear(){
-        return setInput(InternalUtil._byteEmpty);
+        return setInput(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     // -----------------------------------------------------------------
@@ -677,6 +677,30 @@ public class ProtoSource {
         if (size > (bufferSize - bufferPos)) {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+    }
+
+    /**
+     * Computes the array length of a repeated field. We assume that in the common case repeated
+     * fields are contiguously serialized but we still correctly handle interspersed values of a
+     * repeated field (but with extra allocations).
+     * <p>
+     * Rewinds to current input position before returning.
+     *
+     * @param input stream input, pointing to the byte after the first tag
+     * @param tag   repeated field tag just read
+     * @return length of array
+     * @throws IOException
+     */
+    public static int getRepeatedFieldArrayLength(final ProtoSource input, final int tag) throws IOException {
+        int arrayLength = 1;
+        int startPos = input.getPosition();
+        input.skipField(tag);
+        while (input.readTag() == tag) {
+            input.skipField(tag);
+            arrayLength++;
+        }
+        input.rewindToPosition(startPos);
+        return arrayLength;
     }
 
 }

@@ -19,7 +19,7 @@ public class RepeatedString extends RepeatedObject<RepeatedString, StringBuilder
 
     @Override
     protected boolean isEqual(StringBuilder a, Object b) {
-        return (b instanceof CharSequence) && InternalUtil.equals(a, (CharSequence) b);
+        return (b instanceof CharSequence) && ProtoUtil.isEqual(a, (CharSequence) b);
     }
 
     @Override

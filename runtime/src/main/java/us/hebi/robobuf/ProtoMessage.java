@@ -31,6 +31,7 @@
 package us.hebi.robobuf;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 /**
  * ---- Code below was adapted from Javanano's MessageNano ----
@@ -207,6 +208,18 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     @Override
     public ProtoMessage clone() throws CloneNotSupportedException {
         return (ProtoMessage) super.clone();
+    }
+
+    /**
+     * Helper to determine the default value for 'Bytes' fields. The Protobuf
+     * generator encodes raw bytes as strings with ISO-8859-1 encoding.
+     */
+    protected static byte[] bytesDefaultValue(String bytes) {
+        return bytes.getBytes(Charsets.ISO_8859_1);
+    }
+
+    private static class Charsets {
+        private static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
     }
 
 }
