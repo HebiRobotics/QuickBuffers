@@ -23,7 +23,7 @@ public class FieldGenerator {
 
     protected void generateMemberFields(TypeSpec.Builder type) {
         FieldSpec.Builder field = FieldSpec.builder(storeType, info.getFieldName())
-                .addJavadoc(info.getJavadoc())
+                .addJavadoc(named("$commentLine:L"))
                 .addModifiers(Modifier.PRIVATE);
 
         if (info.isRepeated() && info.isMessageOrGroup()) {
@@ -43,7 +43,7 @@ public class FieldGenerator {
             // byte[] default values are stored as utf8 strings, so we need to convert it first
             type.addField(FieldSpec.builder(ArrayTypeName.get(byte[].class), info.getDefaultFieldName())
                     .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer(CodeBlock.builder().addNamed("$abstractMessage:T.bytesDefaultValue(\"$default:L\")", m).build())
+                    .initializer(named("$abstractMessage:T.bytesDefaultValue(\"$default:L\")"))
                     .build());
         }
     }
@@ -263,15 +263,15 @@ public class FieldGenerator {
 
             case 4:
             case 5:
-                value = (bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0]);
-                output = "output.writeRawLittleEndian32(" + value + ");\n";
+                final int fourBytes = (bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0]);
+                output = "output.writeRawLittleEndian32(" + fourBytes + ");\n";
                 if (numBytes == 5) output += "output.writeRawByte((byte) " + bytes[4] + ");\n";
                 break;
 
             case 2:
             case 3:
-                value = (bytes[1] << 8 | bytes[0]);
-                output = "output.writeRawLittleEndian16((short) " + value + ");\n";
+                final int twoBytes = (bytes[1] << 8 | bytes[0]);
+                output = "output.writeRawLittleEndian16((short) " + twoBytes + ");\n";
                 if (numBytes == 3) output += "output.writeRawByte((byte) " + bytes[2] + ");\n";
                 break;
 
@@ -449,23 +449,37 @@ public class FieldGenerator {
     }
 
     protected void generateGetMethods(TypeSpec.Builder type) {
-        type.addMethod(MethodSpec.methodBuilder(info.getGetterName())
+        MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(storeType)
-                .addNamedCode("return $field:N;\n", m)
-                .build());
+                .addNamedCode("return $field:N;\n", m);
 
         if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes() || info.isString()) {
+            getter.addJavadoc(named("" +
+                    "This method returns the internal storage object without modifying any has state.\n" +
+                    "The returned object should not be modified and be treated as read-only.\n" +
+                    "\n" +
+                    "Use {@link #$getMutableMethod:N()} if you want to modify it.\n"));
+
             MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
+                    .addJavadoc(named("" +
+                            "This method returns the internal storage object and sets the corresponding\n" +
+                            "has state. The returned object will become part of this message and its\n" +
+                            "contents may be modified as long as the has state is not cleared.\n"))
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
                     .addNamedCode("$setHas:L;\n", m)
                     .addNamedCode("return $field:N;\n", m)
                     .build();
+
+            type.addMethod(getter.build());
             type.addMethod(mutableGetter);
+        } else {
+            type.addMethod(getter.build());
         }
+
     }
 
     protected void generateClearMethod(TypeSpec.Builder type) {
@@ -491,9 +505,12 @@ public class FieldGenerator {
             m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + ".getNumber()" : "0");
             m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
         }
-        m.put("hasMethod", info.getHazzerName());
+        m.put("commentLine", info.getJavadoc());
+        m.put("getMutableMethod", info.getMutableGetterName());
+        m.put("getMethod", info.getGetterName());
         m.put("setMethod", info.getSetterName());
         m.put("addMethod", info.getAdderName());
+        m.put("hasMethod", info.getHazzerName());
         m.put("getHas", info.getHasBit());
         m.put("setHas", info.getSetBit());
         m.put("clearHas", info.getClearBit());
@@ -521,5 +538,9 @@ public class FieldGenerator {
     protected final TypeName storeType;
 
     protected final HashMap<String, Object> m = new HashMap<>();
+
+    private CodeBlock named(String format, Object... args /* does nothing, but makes IDE hints disappear */) {
+        return CodeBlock.builder().addNamed(format, m).build();
+    }
 
 }
