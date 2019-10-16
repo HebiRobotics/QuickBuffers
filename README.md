@@ -165,7 +165,7 @@ Note that the performance depends a lot on the specific data format, so the resu
 
 <!-- | 3  | ms ( MB/s) | ms ( MB/s) | ms ( MB/s)  | ms ( MB/s) | 0 -->
 
-* `[1]` Version 3.9.1 (also makes use of `sun.misc.Unsafe`)
+* `[1]` Version 3.9.1 (makes use of `sun.misc.Unsafe` when available)
 * `[2]` `Java / RoboBuffers (Unsafe)`
 * `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
 
