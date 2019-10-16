@@ -25,8 +25,6 @@ Unfortunately, we currently have no way of knowing an appropriate initial size f
 
 Be aware that this prevents the definition of cycles in the message definitions.
 
-`TODO`: In the benchmarks it seems that eager allocation is very good if all fields are used, but can be significantly reduce performance if most fields are empty. We should enable the lazy option so users can specify what fields they expect.
-
 ### Serialization Order
 
 `Protobuf-Java` defines fields in the same order as in the `.proto` file, and it serializes them in the order of ascending field numbers. Unfortunately, this results in poor semi-random memory access patterns. `RoboBuffers` instead orders fields primarily by their type, and serializes them in a way that results in a fully sequential access pattern.
@@ -142,27 +140,25 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
   
 Below are benchmark results for a comparison between `RoboBuffers` and Google's `Protobuf-Java` bindings for different datasets. The tests were run on a single thread on a JDK8 runtime running on an Intel NUC8i7BEH.
 
-Note that the performance depends a lot on the specific data format, so the results may not be representative for your use case. 
-
-In fact, we unfortunately noticed too late that benchmark is flawed in that it does not trigger Protobuf-Java's lazy loading features, so it some cases it passes on bytes without actually parsing them, so the numbers may be better than if the data would actually get accessed.
+Note that the performance depends a lot on the specific data format, so the results may not be representative for your use case. In fact, this benchmark does not trigger `Protobuf-Java`'s lazy String parsing, so the numbers are a bit better than they would be if all Strings were to be accessed.
 
 |  | RoboBuffers (Unsafe) | RoboBuffers (No-Unsafe) | Java`[1]`| JavaLite`[1]` | Relative`[2]`
 | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
 | **Read**  | | |
-| 1  | 494ms (176 MB/s)`[4]` | 521ms (167 MB/s)`[4]` |  344ms (253 MB/s)  | 567ms (153 MB/s) | 0.7
-| 2  | 161ms (354 MB/s)`[4]` | 177ms (322 MB/s)`[4]` | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.05
+| 1  | 181ms (481 MB/s) | 212ms (410 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 1.9
+| 2  | 104ms (548 MB/s)` | 118ms (483 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.6
 | 3  | 36ms (280 MB/s) | 44ms (226 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 1.8
 | 4  | 25ms (408 MB/s) | 28ms (353 MB/s) | 47ms (214 MB/s)  | 155ms (65 MB/s) | 1.9
 | 5 | 9.8ms (6.5 GB/s) | 44ms (1.5 GB/s) |  103ms (621 MB/s)  | 92ms (696 MB/s) | 10.5
 |  **Write**`[3]`  | | |
-| 1 | 111ms (784 MB/s)  | 152 ms (572 MB/s) | 157ms (554 MB/s)  | 718ms (121 MB/s)  | 1.4
-| 2 | 71 ms (803 MB/s)  | 99 ms (576 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 1.9
+| 1 | 127ms (685 MB/s)  | 165ms (527 MB/s) | 157ms (554 MB/s)  | 718ms (121 MB/s)  | 1.24
+| 2 | 69ms (826 MB/s)  | 101ms (564 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 2.0
 | 3  | 27ms (370 MB/s) | 29ms (344 MB/s) | 29ms (344 MB/s)  | 101ms (99 MB/s) | 1.07
 | 4  | 21ms (476 MB/s) | 23ms (434 MB/s) | 42ms (238 MB/s)  | 97ms (103 MB/s) | 2
 | 5 | 6.2 ms (10 GB/s)  | 46 ms (1.4 GB/s) | 16ms (4.0 GB/s)  | 21 ms (3.0 GB/s) | 2.5
 | **Read + Write** |  | |
-| 1  | 605 ms (144 MB/s) | 673ms (129 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 0.82
-| 2 | 232 ms (245 MB/s) | 276ms (206 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.3
+| 1  | 308ms (282 MB/s) | 377ms (231 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 1.6
+| 2 | 173ms (329 MB/s) | 219ms (260 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.8
 | 3  | 63ms (160 MB/s) | 73ms (138 MB/s) | 94ms (106 MB/s)  | 248ms ( MB/s) | 1.5
 | 4  | 46ms (217 MB/s) | 51ms (196 MB/s) | 89ms (112 MB/s)  | 252ms ( MB/s) | 1.9
 | 5  | 16 ms (4.0 GB/s) | 90ms (711 MB/s) | 119ms (537 MB/s)  | 113 ms (566 MB/s) | 7.4
@@ -172,11 +168,10 @@ In fact, we unfortunately noticed too late that benchmark is flawed in that it d
 * `[1]` Version 3.9.1 (also makes use of `sun.misc.Unsafe`)
 * `[2]` `Java / RoboBuffers (Unsafe)`
 * `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
-* `[4]` Is only sparsely populated, so `clear()` actually becomes a major cost. Specifying unused messages as lazy results in an almost 3x speedup of the read performance (~500 MB/s). (`TODO` support lazy flag and be smarter about clearing) 
 
 Each dataset contains delimited protobuf messages with with varying contents. All datasets were then loaded into a `byte[]` and decoded from memory. The benchmark decodes each contained message and then serializes it into another output `byte[]`. 
  
- * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages (production data). Only primitive data types and a relatively small amount of nesting. No strings, repeated, or unknown fields. Only a small subset of fields are populated. This should be a realistic of a very bad case scenario.
+ * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages (production data). Only primitive data types and a relatively small amount of nesting. No strings, repeated, or unknown fields.
  * Dataset 2 (57 MB) contains a series of delimited ~650 byte messages (production data). Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only a subset of fields is populated.
  * Dataset 3 (10 MB) contains ~147k identical 70 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s `CarBenchmark`
  * Dataset 4 (10 MB) contains ~73k identical 140 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s `MarketDataBenchmark`

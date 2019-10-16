@@ -326,7 +326,6 @@ public class FieldGenerator {
         generateClearMethod(type);
     }
 
-
     protected void generateHasMethod(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getHazzerName())
                 .addAnnotations(info.getMethodAnnotations())
