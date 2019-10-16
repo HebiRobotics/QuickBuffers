@@ -159,8 +159,8 @@ Note that the performance depends a lot on the specific data format, so the resu
 | **Read + Write** |  | |
 | 1  | 291ms (299 MB/s) | 377ms (231 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 1.7
 | 2 | 173ms (329 MB/s) | 219ms (260 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.8
-| 3  | 57ms (176 MB/s) | 73ms (138 MB/s) | 94ms (106 MB/s)  | 248ms ( MB/s) | 1.6
-| 4  | 41ms (244 MB/s) | 51ms (196 MB/s) | 89ms (112 MB/s)  | 252ms ( MB/s) | 2.2
+| 3  | 57ms (176 MB/s) | 73ms (138 MB/s) | 94ms (106 MB/s)  | 248ms (40 MB/s) | 1.6
+| 4  | 41ms (244 MB/s) | 51ms (196 MB/s) | 89ms (112 MB/s)  | 252ms (40 MB/s) | 2.2
 | 5  | 16 ms (4.0 GB/s) | 90ms (711 MB/s) | 119ms (537 MB/s)  | 113 ms (566 MB/s) | 7.4
 
 <!-- | 3  | ms ( MB/s) | ms ( MB/s) | ms ( MB/s)  | ms ( MB/s) | 0 -->
