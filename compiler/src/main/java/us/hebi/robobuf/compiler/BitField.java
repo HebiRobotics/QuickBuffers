@@ -26,6 +26,14 @@ class BitField {
         return String.format("bitField%d_ = (bitField%d_ & ~0x%08x)", intSlot, intSlot, 1 << indexInSlot);
     }
 
+    static String hasNoBits(int numBitFields){
+        String output = "((" + fieldName(0);
+        for (int i = 1; i < numBitFields; i++) {
+            output += " | " + fieldName(i);
+        }
+        return output + ") == 0)";
+    }
+
     /**
      * string that results in 1 if the bit is set, or zero if it is not set
      *

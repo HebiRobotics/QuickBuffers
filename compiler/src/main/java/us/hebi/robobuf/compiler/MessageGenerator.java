@@ -55,6 +55,7 @@ class MessageGenerator {
         // Constructor
         type.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
+                .addStatement("$L", BitField.setBit(0)) // dummy for triggering clear
                 .addStatement("clear()")
                 .build());
 
@@ -93,11 +94,8 @@ class MessageGenerator {
                 .returns(info.getTypeName());
 
         // no fields set -> no need to clear (e.g. unused nested messages)
-        clear.addCode("if (($N", BitField.fieldName(0));
-        for (int i = 1; i < numBitFields; i++) {
-            clear.addCode(" | $N", BitField.fieldName(i));
-        }
-        clear.beginControlFlow(") == 0)")
+        // NOTE: always make sure that the constructor creates conditions that clears everything
+        clear.beginControlFlow("if ($N)", BitField.hasNoBits(numBitFields))
                 .addStatement("return this")
                 .endControlFlow();
 
