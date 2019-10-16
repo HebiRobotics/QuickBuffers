@@ -18,6 +18,7 @@ class MessageGenerator {
     MessageGenerator(MessageInfo info) {
         this.info = info;
         info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
+        numBitFields = BitField.getNumberOfFields(info.getFields().size());
     }
 
     TypeSpec generate() {
@@ -58,7 +59,7 @@ class MessageGenerator {
                 .build());
 
         // Member state (the first two bitfields are in the parent class)
-        for (int i = 2; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
+        for (int i = 2; i < numBitFields; i++) {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
         fields.forEach(f -> f.generateMemberFields(type));
@@ -90,8 +91,19 @@ class MessageGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
+
+        // no fields set -> no need to clear (e.g. unused nested messages)
+        clear.addCode("if (($N", BitField.fieldName(0));
+        for (int i = 1; i < numBitFields; i++) {
+            clear.addCode(" | $N", BitField.fieldName(i));
+        }
+        clear.beginControlFlow(") == 0)")
+                .addStatement("return this")
+                .endControlFlow();
+
+        // full clear
         clear.addStatement("cachedSize = -1");
-        for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
+        for (int i = 0; i < numBitFields; i++) {
             clear.addStatement("$L = 0", BitField.fieldName(i));
         }
         fields.forEach(field -> field.generateClearCode(clear));
@@ -120,7 +132,7 @@ class MessageGenerator {
         // Check whether all of the same fields are set
         if (info.getFieldCount() > 0) {
             equals.addCode("return $1L == other.$1L$>", BitField.fieldName(0));
-            for (int i = 1; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
+            for (int i = 1; i < numBitFields; i++) {
                 equals.addCode("\n&& $1L == other.$1L", BitField.fieldName(i));
             }
 
@@ -298,7 +310,7 @@ class MessageGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
         copyFrom.addStatement("cachedSize = other.cachedSize");
-        for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
+        for (int i = 0; i < numBitFields; i++) {
             copyFrom.addStatement("$1L = other.$1L", BitField.fieldName(i));
         }
         fields.forEach(field -> field.generateCopyFromCode(copyFrom));
@@ -356,5 +368,6 @@ class MessageGenerator {
 
     final MessageInfo info;
     final List<FieldGenerator> fields = new ArrayList<>();
+    final int numBitFields;
 
 }
