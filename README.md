@@ -45,12 +45,12 @@ Note that the performance depends a lot on the specific data format and content,
 * `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
 
 
- 
- * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages (production data). Only primitive data types and a relatively small amount of nesting. No strings, repeated, or unknown fields.
- * Dataset 2 (57 MB) contains a series of delimited ~650 byte messages (production data). Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only a subset of fields is populated.
- * Dataset 3 (10 MB) contains ~147k identical 70 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s `CarBenchmark`
- * Dataset 4 (10 MB) contains ~73k identical 140 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s `MarketDataBenchmark`
- * Dataset 5 (64 MB) contains a single artificial message with one (64 MB) packed double field (`repeated double values = 1 [packed=true]`). It only encodes a repeated type with known width (no varint), so it should be representative of a best-case scenario (on little-endian systems this can map to memcpy).
+ * Dataset Contents
+   * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages (production data). Only **primitive data types** and a relatively small amount of nesting. No strings, repeated, or unknown fields.
+   * Dataset 2 (57 MB) contains a series of delimited ~650 byte messages (**production data**). Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only a subset of fields is populated.
+   * Dataset 3 (10 MB) contains ~147k identical 70 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s **CarBenchmark**
+   * Dataset 4 (10 MB) contains ~73k identical 140 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s **MarketDataBenchmark**
+   * Dataset 5 (64 MB) contains a single artificial message with one (64 MB) **packed double field** (`repeated double values = 1 [packed=true]`). It only encodes a repeated type with known width (no varint), so it should be representative of a best-case scenario (on little-endian systems this can map to memcpy).
  
  The benchmarking code looks as below.
 
