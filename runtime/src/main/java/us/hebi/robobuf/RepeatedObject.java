@@ -12,8 +12,8 @@ import java.util.Iterator;
  */
 abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends RepeatedField<SubType> implements Iterable<T> {
 
-    public final T getAndAdd() {
-        requireCapacity(1);
+    public final T next() {
+        reserve(1);
         return array[length++];
     }
 
@@ -32,14 +32,14 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
     }
 
     public final void addAll(IN[] buffer, int offset, int length) {
-        requireCapacity(length);
+        reserve(length);
         for (int i = offset; i < length; i++) {
             add(buffer[i]);
         }
     }
 
     public final void add(IN value) {
-        requireCapacity(1);
+        reserve(1);
         setIndex0(length++, value);
     }
 
@@ -126,10 +126,11 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
     }
 
     @Override
-    protected final void clearRange(int fromIndex, int toIndex) {
-        for (int i = fromIndex; i < toIndex; i++) {
+    public final void clear() {
+        for (int i = 0; i < length; i++) {
             clearIndex0(i);
         }
+        length = 0;
     }
 
     @Override

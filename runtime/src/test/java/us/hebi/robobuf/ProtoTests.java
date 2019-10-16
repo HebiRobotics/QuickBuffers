@@ -1,14 +1,16 @@
 package us.hebi.robobuf;
 
 import org.junit.Test;
-import us.hebi.robobuf.robo.ForeignEnum;
-import us.hebi.robobuf.robo.ForeignMessage;
-import us.hebi.robobuf.robo.RepeatedPackables;
-import us.hebi.robobuf.robo.TestAllTypes;
+import us.hebi.robobuf.robo.*;
 import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
+import us.hebi.robobuf.robo.UnittestFieldOrder.MessageWithMultibyteNumbers;
+import us.hebi.robobuf.robo.UnittestRequired.TestAllTypesRequired;
 import us.hebi.robobuf.robo.external.ImportEnum;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -37,9 +39,9 @@ public class ProtoTests {
             assertEquals(51.5f, msg.getDefaultFloat(), 0);
             assertEquals(52.0e3, msg.getDefaultDouble(), 0.0);
             assertEquals("hello", msg.getDefaultString().toString());
-            assertEquals("world", new String(msg.getDefaultBytes().toArray(), InternalUtil.UTF_8));
+            assertEquals("world", new String(msg.getDefaultBytes().toArray(), UTF_8));
             assertEquals("dünya", msg.getDefaultStringNonascii().toString());
-            assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), InternalUtil.UTF_8));
+            assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), UTF_8));
             assertEquals(NestedEnum.BAR, msg.getDefaultNestedEnum());
             assertEquals(ForeignEnum.FOREIGN_BAR, msg.getDefaultForeignEnum());
             assertEquals(ImportEnum.IMPORT_BAR, msg.getDefaultImportEnum());
@@ -125,6 +127,11 @@ public class ProtoTests {
         // Test round-trip
         TestAllTypes msg3 = TestAllTypes.parseFrom(manualMsg.toByteArray());
         assertEquals(msg, msg3);
+
+        // Test quick clear
+        TestAllTypes msg4 = msg3.clone();
+        assertEquals(msg3.clear(), msg4.clearQuick());
+        assertArrayEquals(msg3.toByteArray(), msg4.toByteArray());
 
     }
 
@@ -293,7 +300,7 @@ public class ProtoTests {
 
     @Test
     public void testBytes() throws IOException {
-        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(InternalUtil.UTF_8);
+        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
 
@@ -321,8 +328,8 @@ public class ProtoTests {
     public void testRepeatedBytes() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedBytes());
         assertEquals(2, msg.getRepeatedBytes().length());
-        assertArrayEquals("ascii".getBytes(InternalUtil.UTF_8), msg.getRepeatedBytes().get(0).toArray());
-        assertArrayEquals("utf8\uD83D\uDCA9".getBytes(InternalUtil.UTF_8), msg.getRepeatedBytes().get(1).toArray());
+        assertArrayEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
+        assertArrayEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
         TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }
@@ -363,8 +370,60 @@ public class ProtoTests {
 
         TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg2).toByteArray());
         assertEquals(msg, actual);
+    }
 
+    @Test
+    public void testHighFieldNumbers() throws IOException {
+        MessageWithMultibyteNumbers expected = new MessageWithMultibyteNumbers()
+                .setTagSize1(1)
+                .setTagSize2(2)
+                .setTagSize3(3)
+                .setTagSize4(4)
+                .setTagSize5(5)
+                .setTagSizeMax(6);
+        MessageWithMultibyteNumbers actual = MessageWithMultibyteNumbers.parseFrom(expected.toByteArray());
+        assertEquals(expected, actual);
+    }
 
+    @Test
+    public void testAllTypesRequired() throws IOException {
+        TestAllTypesRequired expected = new TestAllTypesRequired()
+                .setRequiredBool(true)
+                .setRequiredDouble(100.0d)
+                .setRequiredFloat(101.0f)
+                .setRequiredFixed32(102)
+                .setRequiredFixed64(103)
+                .setRequiredSfixed32(104)
+                .setRequiredSfixed64(105)
+                .setRequiredSint32(106)
+                .setRequiredSint64(107)
+                .setRequiredInt32(108)
+                .setRequiredInt64(109)
+                .setRequiredUint32(110)
+                .setRequiredUint64(111)
+                .setRequiredString("test")
+                .addRequiredBytes((byte) 0)
+                .setRequiredNestedEnum(TestAllTypesRequired.NestedEnum.BAR)
+                .setRequiredNestedMessage(new UnittestRequired.SimpleMessage().setRequiredField(0));
+        byte[] output = expected.toByteArray();
+
+        TestAllTypesRequired actual = TestAllTypesRequired.parseFrom(expected.toByteArray());
+        assertEquals(expected, actual);
+        assertArrayEquals(output, actual.toByteArray());
+
+        try {
+            expected.clearRequiredBool().toByteArray();
+            fail("should not serialize with missing required field");
+        } catch (Throwable t) {
+        }
+
+    }
+
+    @Test
+    public void testSkipUnknownFields() throws IOException {
+        ProtoSource source = ProtoSource.createFastest().setInput(CompatibilityTest.getCombinedMessage());
+        new TestAllTypes.NestedMessage().mergeFrom(source);
+        assertTrue(source.isAtEnd());
     }
 
     @Test
@@ -376,5 +435,30 @@ public class ProtoTests {
         }
         assertEquals(3, sum);
     }
+
+    @Test
+    public void testDelimitedStream() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+
+        // Write varint delimited message
+        byte[] outData = msg.toByteArray();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ProtoUtil.writeRawVarint32(outData.length, outputStream);
+        outputStream.write(outData);
+
+        // Read varint delimited message
+        byte[] result = outputStream.toByteArray();
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(result);
+        int length = ProtoUtil.readRawVarint32(inputStream);
+        assertEquals(outData.length, length);
+
+        byte[] inData = new byte[length];
+        if (inputStream.read(inData) != length) {
+            fail();
+        }
+        assertArrayEquals(outData, inData);
+    }
+
+    public static final Charset UTF_8 = Charset.forName("UTF-8");
 
 }

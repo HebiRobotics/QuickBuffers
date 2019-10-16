@@ -16,14 +16,14 @@ public class TestRequestLoader {
 
     @Test
     public void testAllAvailable() {
-        getSimpleRequest();
+        getRequiredRequest();
         getImportRequest();
         getAllTypesRequest();
         getRepeatedPackablesRequest();
     }
 
-    public static CodeGeneratorRequest getSimpleRequest() {
-        return getRequest("simple");
+    public static CodeGeneratorRequest getRequiredRequest() {
+        return getRequest("required");
     }
 
     public static CodeGeneratorRequest getImportRequest() {

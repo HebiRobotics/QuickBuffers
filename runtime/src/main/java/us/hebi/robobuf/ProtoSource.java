@@ -86,7 +86,7 @@ public class ProtoSource {
      * @return this
      */
     public ProtoSource clear(){
-        return setInput(InternalUtil._byteEmpty);
+        return setInput(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     // -----------------------------------------------------------------
@@ -176,7 +176,7 @@ public class ProtoSource {
     /** Read a repeated (packed) {@code double} field value from the stream. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.requireCapacity(numEntries);
+        store.reserve(numEntries);
         readRawDoubles(store.array, store.length, numEntries);
         store.length += numEntries;
     }
@@ -184,7 +184,7 @@ public class ProtoSource {
     /** Read a repeated (packed) {@code fixed64} field value from the stream. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.requireCapacity(numEntries);
+        store.reserve(numEntries);
         readRawFixed64s(store.array, store.length, numEntries);
         store.length += numEntries;
     }
@@ -192,7 +192,7 @@ public class ProtoSource {
     /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
     public void readPackedSFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.requireCapacity(numEntries);
+        store.reserve(numEntries);
         readRawFixed64s(store.array, store.length, numEntries);
         store.length += numEntries;
     }
@@ -200,7 +200,7 @@ public class ProtoSource {
     /** Read a repeated (packed) {@code float} field value from the stream. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.requireCapacity(numEntries);
+        store.reserve(numEntries);
         readRawFloats(store.array, store.length, numEntries);
         store.length += numEntries;
     }
@@ -208,7 +208,7 @@ public class ProtoSource {
     /** Read a repeated (packed) {@code fixed32} field value from the stream. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.requireCapacity(numEntries);
+        store.reserve(numEntries);
         readRawFixed32s(store.array, store.length, numEntries);
         store.length += numEntries;
     }
@@ -216,7 +216,7 @@ public class ProtoSource {
     /** Read a repeated (packed) {@code sfixed32} field value from the stream. */
     public void readPackedSFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.requireCapacity(numEntries);
+        store.reserve(numEntries);
         readRawFixed32s(store.array, store.length, numEntries);
         store.length += numEntries;
     }
@@ -224,7 +224,7 @@ public class ProtoSource {
     /** Read a repeated (packed) {@code bool} field value from the stream. */
     public void readPackedBool(RepeatedBoolean store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_BOOL;
-        store.requireCapacity(numEntries);
+        store.reserve(numEntries);
         for (int i = 0; i < numEntries; i++) {
             store.add(readBool());
         }
@@ -677,6 +677,30 @@ public class ProtoSource {
         if (size > (bufferSize - bufferPos)) {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+    }
+
+    /**
+     * Computes the array length of a repeated field. We assume that in the common case repeated
+     * fields are contiguously serialized but we still correctly handle interspersed values of a
+     * repeated field (but with extra allocations).
+     * <p>
+     * Rewinds to current input position before returning.
+     *
+     * @param input stream input, pointing to the byte after the first tag
+     * @param tag   repeated field tag just read
+     * @return length of array
+     * @throws IOException
+     */
+    public static int getRepeatedFieldArrayLength(final ProtoSource input, final int tag) throws IOException {
+        int arrayLength = 1;
+        int startPos = input.getPosition();
+        input.skipField(tag);
+        while (input.readTag() == tag) {
+            input.skipField(tag);
+            arrayLength++;
+        }
+        input.rewindToPosition(startPos);
+        return arrayLength;
     }
 
 }

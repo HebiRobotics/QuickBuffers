@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Serializes a single massive packed double array. Represents best case scenario.
- * Represents dataset 3 in the Readme benchmarks.
+ * Represents the last dataset in the Readme benchmarks.
  *
  * === RoboBuffers (Unsafe) ===
  * Benchmark                              Mode  Cnt    Score    Error  Units
@@ -26,6 +26,10 @@ import java.util.concurrent.TimeUnit;
  * === RoboBuffers (Safe) ===
  * PackedDoublesBenchmark.readRobo       avgt   10  44.434 ± 0.928  ms/op -- 1.5 GB/s
  * PackedDoublesBenchmark.readWriteRobo  avgt   10  89.855 ± 3.870  ms/op --
+ *
+ * === Java (Some Unsafe) ===
+ * PackedDoublesBenchmark.readProto       avgt   10  103.989 ± 37.389  ms/op
+ * PackedDoublesBenchmark.readWriteProto  avgt   10  119.322 ± 15.138  ms/op
  *
  * === JavaLite (Some Unsafe) ===
  * PackedDoublesBenchmark.readProto       avgt   10   91.523 ± 42.055  ms/op --
@@ -53,8 +57,8 @@ public class PackedDoublesBenchmark {
     final byte[] input = new Packed().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
     final byte[] output = new byte[input.length + 100];
 
-    final ProtoSource source = ProtoSource.createInstance();
-    final ProtoSink sink = ProtoSink.createInstance();
+    final ProtoSource source = ProtoSource.createFastest();
+    final ProtoSink sink = ProtoSink.createFastest();
 
     final Packed message = new Packed();
 
@@ -74,7 +78,6 @@ public class PackedDoublesBenchmark {
     public Object readProto() throws IOException {
         return us.hebi.robobuf.java.RepeatedPackables.Packed.parseFrom(input);
     }
-
 
     @Benchmark
     public int readWriteProto() throws IOException {

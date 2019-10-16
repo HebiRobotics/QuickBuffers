@@ -17,11 +17,6 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
         this.array = newValues;
     }
 
-    @Override
-    protected void clearRange(int fromIndex, int toIndex) {
-        Arrays.fill(array, fromIndex, toIndex, DEFAULT_VALUE);
-    }
-
     public float get(int index) {
         checkIndex(index);
         return array[index];
@@ -33,7 +28,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public void add(float value) {
-        requireCapacity(1);
+        reserve(1);
         array[length++] = value;
     }
 
@@ -42,7 +37,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public void addAll(float[] buffer, int offset, int length) {
-        requireCapacity(length);
+        reserve(length);
         System.arraycopy(buffer, offset, array, this.length, length);
         this.length += length;
     }
@@ -65,14 +60,56 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
         length = other.length;
     }
 
+    /**
+     * @return total capacity of the internal storage array
+     */
     @Override
     public int capacity() {
         return array.length;
     }
 
-    public float[] toArray() {
-        if (length == 0) return InternalUtil._floatEmpty;
+    /**
+     * Creates a copy of the valid data contained in the
+     * internal storage.
+     *
+     * @return copy of valid data
+     */
+    public final float[] toArray() {
+        if (length == 0) return EMPTY_ARRAY;
         return Arrays.copyOf(array, length);
+    }
+
+    /**
+     * Provides access to the internal storage array. Do not hold
+     * on to this reference as it can change during a resize.
+     *
+     * The array may be larger than the amount of contained data,
+     * but the data is only valid between index 0 and length.
+     *
+     * @return internal storage array
+     */
+    public final float[] array() {
+        return array;
+    }
+
+    /**
+     * Sets the absolute length of the data that can be serialized. The
+     * internal storage array may get extended to accommodate at least
+     * the desired length.
+     *
+     * This does not change the underlying data, so setting a length
+     * longer than the current one may result in arbitrary data being
+     * serialized.
+     *
+     * @param length desired length
+     * @return this
+     */
+    public final RepeatedFloat setLength(int length) {
+        if (array.length < length) {
+            extendCapacityTo(length);
+        }
+        this.length = length;
+        return this;
     }
 
     @Override
@@ -95,13 +132,13 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
             return false;
 
         for (int i = 0; i < length; i++) {
-            if (!InternalUtil.equals(array[i], other.array[i]))
+            if (!ProtoUtil.isEqual(array[i], other.array[i]))
                 return false;
         }
         return true;
     }
 
-    float[] array = InternalUtil._floatEmpty;
-    private static final float DEFAULT_VALUE = InternalUtil._floatDefault;
+    float[] array = EMPTY_ARRAY;
+    private static final float[] EMPTY_ARRAY = new float[0];
 
 }

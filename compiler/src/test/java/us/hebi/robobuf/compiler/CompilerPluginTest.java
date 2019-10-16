@@ -17,8 +17,8 @@ import java.io.IOException;
 public class CompilerPluginTest {
 
     @Test
-    public void testSimpleRequest() {
-        CodeGeneratorRequest request = TestRequestLoader.getSimpleRequest();
+    public void testRequiredRequest() {
+        CodeGeneratorRequest request = TestRequestLoader.getRequiredRequest();
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 

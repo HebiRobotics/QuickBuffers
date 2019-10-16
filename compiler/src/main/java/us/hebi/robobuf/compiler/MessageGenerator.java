@@ -18,6 +18,7 @@ class MessageGenerator {
     MessageGenerator(MessageInfo info) {
         this.info = info;
         info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
+        numBitFields = BitField.getNumberOfFields(info.getFields().size());
     }
 
     TypeSpec generate() {
@@ -54,11 +55,12 @@ class MessageGenerator {
         // Constructor
         type.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
+                .addStatement("$L", BitField.setBit(0)) // dummy for triggering clear
                 .addStatement("clear()")
                 .build());
 
         // Member state (the first two bitfields are in the parent class)
-        for (int i = 2; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
+        for (int i = 2; i < numBitFields; i++) {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
         fields.forEach(f -> f.generateMemberFields(type));
@@ -86,17 +88,36 @@ class MessageGenerator {
     }
 
     private void generateClear(TypeSpec.Builder type) {
-        MethodSpec.Builder clear = MethodSpec.methodBuilder("clear")
+        type.addMethod(generateClearCode("clear", true));
+        type.addMethod(generateClearCode("clearQuick", false));
+    }
+
+    private MethodSpec generateClearCode(String name, boolean isFullClear) {
+        MethodSpec.Builder clear = MethodSpec.methodBuilder(name)
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
+
+        // no fields set -> no need to clear (e.g. unused nested messages)
+        // NOTE: always make sure that the constructor creates conditions that clears everything
+        clear.beginControlFlow("if ($N)", BitField.hasNoBits(numBitFields))
+                .addStatement("return this")
+                .endControlFlow();
+
+        // clear has state
         clear.addStatement("cachedSize = -1");
-        for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
+        for (int i = 0; i < numBitFields; i++) {
             clear.addStatement("$L = 0", BitField.fieldName(i));
         }
-        fields.forEach(field -> field.generateClearCode(clear));
+
+        if (isFullClear) {
+            fields.forEach(field -> field.generateClearCode(clear));
+        } else {
+            fields.forEach(field -> field.generateClearQuickCode(clear));
+        }
+
         clear.addStatement("return this");
-        type.addMethod(clear.build());
+        return clear.build();
     }
 
     private void generateEquals(TypeSpec.Builder type) {
@@ -120,7 +141,7 @@ class MessageGenerator {
         // Check whether all of the same fields are set
         if (info.getFieldCount() > 0) {
             equals.addCode("return $1L == other.$1L$>", BitField.fieldName(0));
-            for (int i = 1; i < BitField.getNumberOfFields(info.getFieldCount()); i++) {
+            for (int i = 1; i < numBitFields; i++) {
                 equals.addCode("\n&& $1L == other.$1L", BitField.fieldName(i));
             }
 
@@ -181,6 +202,7 @@ class MessageGenerator {
         }
 
         if (enableFallthroughOptimization) {
+            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
             mergeFrom.addStatement("int tag = input.readTag()");
             mergeFrom.beginControlFlow("while (true)");
         } else {
@@ -224,9 +246,11 @@ class MessageGenerator {
         mergeFrom.beginControlFlow("default:")
                 .beginControlFlow("if (!input.skipField(tag))")
                 .addStatement("return this")
-                .endControlFlow()
-                .addStatement("break")
                 .endControlFlow();
+        if (enableFallthroughOptimization) {
+            mergeFrom.addStatement("tag = input.readTag()");
+        }
+        mergeFrom.addStatement("break").endControlFlow();
 
         // Generate missing non-packed cases for packable fields for compatibility reasons
         for (FieldGenerator field : sortedFields) {
@@ -236,8 +260,7 @@ class MessageGenerator {
                 if (enableFallthroughOptimization) {
                     mergeFrom.addStatement("tag = input.readTag()");
                 }
-                mergeFrom.addStatement("break");
-                mergeFrom.endControlFlow();
+                mergeFrom.addStatement("break").endControlFlow();
             }
         }
 
@@ -296,7 +319,7 @@ class MessageGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
         copyFrom.addStatement("cachedSize = other.cachedSize");
-        for (int i = 0; i < BitField.getNumberOfFields(fields.size()); i++) {
+        for (int i = 0; i < numBitFields; i++) {
             copyFrom.addStatement("$1L = other.$1L", BitField.fieldName(i));
         }
         fields.forEach(field -> field.generateCopyFromCode(copyFrom));
@@ -317,7 +340,7 @@ class MessageGenerator {
     private void generateParseFrom(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder("parseFrom")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addException(IOException.class)
+                .addException(RuntimeClasses.InvalidProtocolBufferException)
                 .addParameter(byte[].class, "data", Modifier.FINAL)
                 .returns(info.getTypeName())
                 .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.AbstractMessage, info.getTypeName())
@@ -354,5 +377,6 @@ class MessageGenerator {
 
     final MessageInfo info;
     final List<FieldGenerator> fields = new ArrayList<>();
+    final int numBitFields;
 
 }

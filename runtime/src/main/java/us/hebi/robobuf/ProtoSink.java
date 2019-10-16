@@ -137,7 +137,7 @@ public abstract class ProtoSink {
      * @return this
      */
     public ProtoSink clear() {
-        return setOutput(InternalUtil._byteEmpty);
+        return setOutput(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     // -----------------------------------------------------------------
