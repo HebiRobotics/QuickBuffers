@@ -33,7 +33,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public void add(float value) {
-        requireCapacity(1);
+        reserve(1);
         array[length++] = value;
     }
 
@@ -42,7 +42,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     public void addAll(float[] buffer, int offset, int length) {
-        requireCapacity(length);
+        reserve(length);
         System.arraycopy(buffer, offset, array, this.length, length);
         this.length += length;
     }

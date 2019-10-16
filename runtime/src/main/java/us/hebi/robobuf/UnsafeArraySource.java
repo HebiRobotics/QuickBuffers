@@ -126,7 +126,7 @@ class UnsafeArraySource extends ProtoSource {
     public void readBytes(RepeatedByte store) throws IOException {
         final int numBytes = readRawVarint32();
         requireRemaining(numBytes);
-        store.requireCapacity(numBytes);
+        store.reserve(numBytes);
         store.length = numBytes;
         UNSAFE.copyMemory(buffer, baseOffset + bufferPos, store.array, BYTE_ARRAY_OFFSET, numBytes);
         bufferPos += numBytes;

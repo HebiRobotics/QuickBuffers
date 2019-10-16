@@ -116,7 +116,7 @@ public class FieldGenerator {
                             "// look ahead for more items so we resize only once\n" +
                             "if ($field:N.remainingCapacity() == 0) {$>\n" +
                             "int count = $internalUtil:T.getRepeatedFieldArrayLength(input, $tag:L);\n" +
-                            "$field:N.requireCapacity(count);\n" +
+                            "$field:N.reserve(count);\n" +
                             "$<}\n", m)
                     .addNamedCode(info.isPrimitive() || info.isEnum() ?
                             "$field:N.add(input.read$capitalizedType:L());\n"
@@ -176,7 +176,7 @@ public class FieldGenerator {
                     .addStatement("count++")
                     .endControlFlow()
                     .addStatement("input.rewindToPosition(position)")
-                    .addNamedCode("$field:N.requireCapacity(count);\n", m)
+                    .addNamedCode("$field:N.reserve(count);\n", m)
                     .endControlFlow()
 
                     // Add data
@@ -361,7 +361,7 @@ public class FieldGenerator {
                 addAll.addNamedCode("$field:N.addAll(values);\n", m);
             } else {
                 addAll.addNamedCode("" +
-                        "$field:N.requireCapacity(values.length);\n" +
+                        "$field:N.reserve(values.length);\n" +
                         "for ($type:T value : values) {$>\n" +
                         "$field:N.add($valueOrNumber:L);\n" +
                         "$<}\n", m);

@@ -19,11 +19,11 @@ abstract class RepeatedField<RepeatedType extends RepeatedField> {
      * space for the requested number of entries. This method will
      * increase the internal capacity if needed.
      *
-     * @param numEntries number of entries to be added
+     * @param count number of entries to be added
      */
     @SuppressWarnings("unchecked")
-    public final RepeatedType requireCapacity(int numEntries) {
-        final int desiredSize = length + numEntries;
+    public final RepeatedType reserve(int count) {
+        final int desiredSize = length + count;
         if (desiredSize > capacity()) {
             extendCapacityTo(desiredSize);
         }
