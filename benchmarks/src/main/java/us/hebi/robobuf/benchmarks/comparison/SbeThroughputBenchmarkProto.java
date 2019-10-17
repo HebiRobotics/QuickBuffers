@@ -138,22 +138,19 @@ public class SbeThroughputBenchmarkProto {
         car.addFuelFigures(Examples.FuelFigures.newBuilder().setSpeed(30).setMpg(49.0F).build());
         car.addFuelFigures(Examples.FuelFigures.newBuilder().setSpeed(30).setMpg(40.0F).build());
 
-
-        Examples.PerformanceFigures perfFigures1 = Examples.PerformanceFigures.newBuilder().setOctaneRating(95)
+        car.addPerformance(Examples.PerformanceFigures.newBuilder()
+                .setOctaneRating(95)
                 .addAcceleration(Examples.Acceleration.newBuilder().setMph(30).setSeconds(4.0f).build())
                 .addAcceleration(Examples.Acceleration.newBuilder().setMph(60).setSeconds(7.5f).build())
                 .addAcceleration(Examples.Acceleration.newBuilder().setMph(100).setSeconds(12.2f).build())
-                .build();
+                .build());
 
-        Examples.PerformanceFigures perfFigures2 = Examples.PerformanceFigures.newBuilder().setOctaneRating(95)
+        car.addPerformance(Examples.PerformanceFigures.newBuilder()
+                .setOctaneRating(95)
                 .addAcceleration(Examples.Acceleration.newBuilder().setMph(30).setSeconds(3.8f).build())
                 .addAcceleration(Examples.Acceleration.newBuilder().setMph(60).setSeconds(7.1f).build())
                 .addAcceleration(Examples.Acceleration.newBuilder().setMph(100).setSeconds(11.8f).build())
-                .build();
-
-        car
-                .addPerformance(perfFigures1)
-                .addPerformance(perfFigures2);
+                .build());
 
         return car.build();
     }
