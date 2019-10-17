@@ -1,21 +1,33 @@
 # RoboBuffers - Fast Protocol Buffers without Allocations
 
-RoboBuffers is a Java implementation of Google's Protocol Buffers v2 that has been developed for low latency and high throughput use cases. It is allocation free in steady state and can be used in zero-allocation environments and for off-heap use cases.
+RoboBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency and high throughput use cases. It can be used in zero-allocation environments and supports off-heap use cases.
+ 
+The main differences to Protobuf-Java are
+ * Message contents are mutable
+ * Nested types are allocated eagerly
+ * The serialization order matches the memory layout (i.e. sequential access pattern)
+ 
+This library hasn't gone through an official release yet, so the public API should be considered a work-in-progress that is subject to change. It currently supports all of the Proto2 types with the exception of `OneOf`, `Maps`, `Extensions`, and `Services`.
 
-It currently supports all of the Proto2 syntax, with the exception of
-* Extensions (ignored)
-* Maps ([workaround](https://developers.google.com/protocol-buffers/docs/proto#simple))
-* OneOf (ignored)
-* Services (ignored)
-* Recursive Message Definitions (out of memory runtime error)
-
-Note that this library hasn't gone through an official release yet, so the public API should be considered a work-in-progress that is subject to change. Feedback is always welcome.
-
-## Performance / Benchmarks
+## Performance
   
-Below is a comparison with Google's official Protobuf bindings for a variefy of datasets. Each dataset contains a series of delimited protobuf messages with varying contents. All datasets were loaded into memory and decoded from a `byte[]` array. The benchmark decodes each contained message and then serializes it into another output `byte[]`. This does not trigger lazy parsing of Strings and does not require generating messages using the Builder API, so it should represent an ideal case for Protobuf-Java. The tests were run on a single thread on a JDK8 runtime running on an Intel NUC8i7BEH. 
+Below is a comparison with Google's official bindings for a variefy of datasets. Note that the performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run using JMH on JDK8 on an Intel NUC8i7BEH.
 
-Note that the performance depends a lot on the specific data format and content, so the results may not be representative for your use case. 
+The first benchmark was copied from [Small Binary Encoding's](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html) Car (140 byte) and MarketData (64 byte) throughput benchmarks. It tests manual creation of messages and encodes and decodes them from a byte array, which is similar to sending and receiving individual messages.
+
+<!-- car mutliplier: 140 * 1000 / (1024*1024) = 0.1335 = -->
+<!-- market multiplier: 64 * 1000 / (1024*1024) = 0.061 = -->
+
+| Test [msg/ms] | RoboBuffers | Protobuf-Java | Ratio
+| :----------- | :-----------: | :-----------: | :-----------: |
+| Car Encode  | 2728 (364 MB/s) | 1125 (150 MB/s) |  2.4  
+| Car Decode  | 2042 (273 MB/s) | 1166s (149 MB/s) |  1.8  
+| Market Data Encode  | 6654 (406 MB/s) | 3712 (226 MB/s) |  1.8  
+| Market Data Decode  | 5977 (365 MB/s) | 3282 (200 MB/s) |  1.8  
+
+Note that this test was done using the original SBE .proto definitions. If the varint types are adapted to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers change to encoding 8245 msgs/ms (+23%) and decoding 6583 msgs/ms (+10%). By additionally inlining the small nested message fields it'd go to 3-4x the original throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
+
+We also ran benchmarks for reading and writing streams of delimited protobuf messages with varying contents, which is similar to reading sequentially from a log file. All datasets were loaded into memory and decoded from a byte array. Neither benchmark triggers Protobuf-Java's lazy-parsing of strings, so the results may be slightly off. The benchmark code can be found in the `benchmarks` directory.
 
 |  | RoboBuffers<p>(Unsafe) | RoboBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | `[2]`
 | ----------- | -----------: | -----------: | -----------: | -----------: | ----------- |
@@ -44,188 +56,24 @@ Note that the performance depends a lot on the specific data format and content,
 * `[2]` `Java / RoboBuffers (Unsafe)`
 * `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
 
-
  * Dataset Contents
-   * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages (production data). Only **primitive data types** and a relatively small amount of nesting. No strings, repeated, or unknown fields.
-   * Dataset 2 (57 MB) contains a series of delimited ~650 byte messages (**production data**). Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only a subset of fields is populated.
-   * Dataset 3 (10 MB) contains ~147k identical 70 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s **CarBenchmark**
-   * Dataset 4 (10 MB) contains ~73k identical 140 byte messages copied from [SBE](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html)'s **MarketDataBenchmark**
-   * Dataset 5 (64 MB) contains a single artificial message with one (64 MB) **packed double field** (`repeated double values = 1 [packed=true]`). It only encodes a repeated type with known width (no varint), so it should be representative of a best-case scenario (on little-endian systems this can map to memcpy).
- 
- The benchmarking code looks as below.
-
-```Java
-// Code for Protobuf-Java
-static <MessageType extends AbstractMessageLite> int readWrite(byte[] input, byte[] output, Parser<MessageType> parser) {
-    CodedInputStream source = CodedInputStream.newInstance(input);
-    CodedOutputStream sink = CodedOutputStream.newInstance(output);
-    while (!source.isAtEnd()) {
-        // read delimited
-        final int length = source.readRawVarint32();
-        int limit = source.pushLimit(length);
-        MessageType msg = parser.parseFrom(source);
-        source.popLimit(limit);
-
-        // write delimited
-        sink.writeUInt32NoTag(msg.getSerializedSize());
-        msg.writeTo(sink);
-    }
-    return sink.getTotalBytesWritten();
-}
-```
-
-We additionally ran a benchmark very similar to SBE's original MarketData throughput [Benchmark](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html):
-
-| Test | RoboBuffers | Protobuf-Java | Ratio
-| :----------- | -----------: | -----------: | -----------: |
-| Market Data Encode  | 7444 msg/ms | 3811 msg/ms |  1.95  
-| Market Data Decode  | 5814 msg/ms | 3290 msg/ms |  1.77  
-
-
-## Highlights
-
-### Mutability
-
-Our main reason for creating this project was that all available Protobuf implementations (Java, JavaLite, Wire) favor immutable messages, and that they can't be used without resulting in significant amounts of allocations. While this is not a problem for most applications, the GC pressure becomes an issue when working with complex nested messages at very high rates and with very low deadlines. Allocations can also become a performance bottleneck when iterating over large files with millions or more protobuf entries. RoboBuffers considers all message contents to be mutable and reusable. 
-
-### Eager Allocation
-
-The use cases we are targeting often care less about allocations during startup, but it is often important that there are no allocations in steady state. Thus, all object-type fields inside a message are `final` and are allocated immediately at object instantiation. This also makes it more likely that messages are allocated in a contiguous block and that the serialization can be done with a more sequential access pattern.
-
-Unfortunately, we currently have no way of knowing an appropriate initial size for repeated fields, so they are initialized empty and may grow as needed. In the future, we may add custom options to specify a default and/or maximum size.  (`TODO`)
-
-Be aware that this prevents the definition of cycles in the message definitions.
-
-### Serialization Order
-
-`Protobuf-Java` defines fields in the same order as in the `.proto` file, and it serializes them in the order of ascending field numbers. Unfortunately, this results in poor semi-random memory access patterns. `RoboBuffers` instead orders fields primarily by their type, and serializes them in a way that results in a fully sequential access pattern.
-
-One thing to be aware of is that the JVM is allowed to do many optimizations, including re-ordering the location of fields in memory. For example, take the following proto definition
-
-```proto
-// Proto definition
-message ExampleMessage {
-    optional int32 field1 = 1;
-    optional int32 field2 = 3;
-    optional string field3 = 4;
-    optional double field4 = 2;
-    optional int64 field5 = 5;
-}
-```
-
-This would generate code that roughly looks as below. While the typical assumption is that the memory layout matches the declaration order,  i.e., `field [1,2,3,4,5]`, on JDK8 it would actually be changed to `field [4,5,1,2,3]`. We recommend reading [Know Thy Java Object Memory Layout](http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html) for more information on this topic.
-
-```Java
-// Generated Protobuf-Java Message (simplified)
-class ExampleMessage extends GeneratedMessageV3 { 
-    private int field1_;
-    private int field2_;
-    private String field3_;
-    private double field4_;
-    private long field5_;
-
-    @Override
-    public void writeTo(CodedOutputStream output) throws IOException {
-        // removed bitfield checks                          // offset 40
-        output.writeInt32(1, field1_);                      // offset 44
-        output.writeDouble(2, field4_);                     // offset 24
-        output.writeInt32(3, field2_);                      // offset 48
-        GeneratedMessageV3.writeString(output, 4, field3_); // offset 56 & ref jump
-        output.writeInt64(5, field5_);                      // offset 32
-    }
-    
-}
-``` 
-
-By sorting field types according to the re-ordering rules, we can pre-order fields and serialize with a purely sequential memory access pattern. Note that the main benefit for serializing by number is that new fields get added in a predictable location, but the same is still true when sorting by type first.
-
-```java
-// Generated RoboBuffers Message (simplified)
-class ExampleMessage extends ProtoMessage { 
-    private double field4;
-    private long field5;
-    private int field1;
-    private int field2;
-    private final StringBuilder field3 = new StringBuilder(0);
-
-    @Override
-    public void writeTo(ProtoSink output) throws IOException {
-        // removed bitfield checks       // offset 16
-        output.writeRawByte((byte) 17);  // tag
-        output.writeDoubleNoTag(field4); // offset 24
-        output.writeRawByte((byte) 40);  // tag
-        output.writeInt64NoTag(field5);  // offset 32
-        output.writeRawByte((byte) 8);   // tag
-        output.writeInt32NoTag(field1);  // offset 40
-        output.writeRawByte((byte) 24);  // tag
-        output.writeInt32NoTag(field2);  // offset 44
-        output.writeRawByte((byte) 34);  // tag
-        output.writeStringNoTag(field3); // offset 48 & ref jump
-    }
-   
-}
-```
-
-<!-- Protobuf-Java generated message
-```text
-UnittestFieldOrder$ExampleMessage object internals:
- OFFSET  SIZE             TYPE DESCRIPTION                               VALUE
-      0    12                  (object header)                           N/A
-     12     4              int AbstractMessageLite.memoizedHashCode      N/A
-     16     4              int AbstractMessage.memoizedSize              N/A
-     20     4  UnknownFieldSet GeneratedMessageV3.unknownFields          N/A
-     24     8           double ExampleMessage.field4_                    N/A
-     32     8             long ExampleMessage.field5_                    N/A
-     40     4              int ExampleMessage.bitField0_                 N/A
-     44     4              int ExampleMessage.field1_                    N/A
-     48     4              int ExampleMessage.field2_                    N/A
-     52     1             byte ExampleMessage.memoizedIsInitialized      N/A
-     53     3                  (alignment/padding gap)                  
-     56     4           Object ExampleMessage.field3_                    N/A
-     60     4                  (loss due to the next object alignment)
-Instance size: 64 bytes
-Space losses: 3 bytes internal + 4 bytes external = 7 bytes total
-```
--->
-
-<!-- RoboBuffers generated message
-```text
-us.hebi.robobuf.robo.UnittestFieldOrder$ExampleMessage object internals:
-OFFSET  SIZE                      TYPE DESCRIPTION                               VALUE
-   0    12                           (object header)                           N/A
-  12     4                       int ProtoMessage.cachedSize                   N/A
-  16     4                       int ProtoMessage.bitField0_                   N/A
-  20     4                       int ProtoMessage.bitField1_                   N/A
-  24     8                    double ExampleMessage.field4                     N/A
-  32     8                      long ExampleMessage.field5                     N/A
-  40     4                       int ExampleMessage.field1                     N/A
-  44     4                       int ExampleMessage.field2                     N/A
-  48     4   java.lang.StringBuilder ExampleMessage.field3                     N/A
-  52     4                           (loss due to the next object alignment)
-Instance size: 56 bytes
-Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
-```
--->
+   * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages (production data). A lot of **scalar data types** and a relatively small amount of nesting. No strings, repeated, or unknown fields. Only a small subset of fields is populated.
+   * Dataset 2 (57 MB) contains a series of delimited ~650 byte messages (**production data**). Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only about half the fields are populated.
+   * Dataset 3 (10 MB) contains ~147k messages generated by the **CarBenchmark**
+   * Dataset 4 (10 MB) contains ~73k messages generated by the  **MarketDataBenchmark**
+   * Dataset 5 (64 MB) contains a single artificial message with one (64 MB) **packed double field** (`repeated double values = 1 [packed=true]`). It only encodes a repeated type with fixed size, so it should be representative of the best-case scenario memory throughput (on little-endian systems this can map to memcpy).
 
 ## Getting Started
 
 There have been no releases yet, so currently users need to build from source.
 
-### Project Info
-
-Protoc plugins get executed by the `protoc` process and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development.
-
-To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development. The `compiler` module contains the 'real' protoc-plugin that will generate the messages. 
-
-The `runtime` module contains the runtime libraries needed for using the generated messages, and the `benchmark` module contains performance benchmarks in order to test performance implications of different strategies.
-
 ### Building from Source
 
-The sources currently use Java 6 syntax (internal constraint that may be updated to 7+) while the tests make use of Java 8. Since JDK12 only builds 7+, you currently need to build it with JDK8 or JDK11.
+The project can be built with `mvn package` using JDK8 through JDK11. The runtime sources are compiled against Java 1.6.
 
-`mvn package`
+Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
 
-Because the unit tests in the `compiler` module require the packaged output of the `parser` module, you always need to run the `package` goal. `mvn clean test` will not work. All the binary dependencies for unit tests such as an appropriate `protoc` executable should be downloaded automatically.
+For this reason the `compiler` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
 
 ### Generating Messages
 
@@ -244,10 +92,10 @@ Currently available options are
 
 * **replacePackage** = `regex|replacement` (Allows replacing the Java package to avoid name collisions with messages generated by `--java_out`)
 
-* **input_order** enables an (experimental) fall-through optimization for reading messages that arrive with a known serialization order.
-  * **"robobuf"** expects fields to arrive sorted by type and their ascending number (default)
-  * **"number"** expects fields to arrive sorted by their ascending number. Used by most implementations.
-  * **"random"**: disables this optimization
+* **input_order** enables an optimization that improves decoding performance when parsing messages that arrive in an expected serialization order.
+  * **robobuf:** expects fields to arrive sorted by type and their ascending number (default)
+  * **number:** expects fields to arrive sorted by their ascending number (official implementations)
+  * **random:** disables this optimization (not recommended)
 
 For example, 
 ```bash
@@ -258,9 +106,11 @@ protoc --robobuf_out= \
     ./path/to/generate`.
 ``` 
 
-## Examples
+## Usage Examples
 
 We tried to keep the public API as close to Google's official Java bindings as possible, so for many use cases the required changes should be minimal.
+
+All nested object types (e.g. messages, repeated fields, etc.) have `getField()` and `getMutableField()` accessors. Both return the internal storage, but the `getField()` getter should be considered read-only.
 
 ### Primitive Fields
 
@@ -416,6 +266,134 @@ long address = /* DirectBuffer::address */;
 ProtoSource source = ProtoSource.createUnsafe();
 source.setInput(null, address, length)
 ```
+
+<!-- 
+## More Information
+
+### Mutability
+
+Our main reason for creating this project was that all commonly available Protobuf implementations (Java, JavaLite, Wire) favor immutable messages, and that they can't be used without resulting in significant amounts of allocations. While this is not a problem for most applications, the GC pressure becomes an issue when working with complex nested messages at very high rates and with very low deadlines. Allocations can also become a performance bottleneck when iterating over large files with millions or more protobuf entries. RoboBuffers considers all message contents to be mutable and reusable. 
+
+### Eager Allocation
+
+The use cases we are targeting often care less about allocations during startup, but it is often important that there are no allocations in steady state. Thus, all object-type fields inside a message are `final` and are allocated immediately at object instantiation. This also makes it more likely that messages are allocated in a contiguous block and that the serialization can be done with a more sequential access pattern.
+
+Unfortunately, we currently have no way of knowing an appropriate initial size for repeated fields, so they are initialized empty and may grow as needed. In the future, we may add custom options to specify a default and/or maximum size.  (`TODO`)
+
+Be aware that this prevents the definition of cycles in the message definitions.
+
+-->
+
+## Sequential Serialization Order
+
+`Protobuf-Java` defines fields in the same order as in the `.proto` file, and it serializes them in the order of ascending field numbers. Unfortunately, this results in poor semi-random memory access patterns. `RoboBuffers` instead orders fields primarily by their type, and serializes them in a way that results in a fully sequential access pattern.
+
+One thing to be aware of is that the JVM is allowed to do many optimizations, including re-ordering the location of fields in memory. For example, take the following proto definition
+
+```proto
+// Proto definition
+message ExampleMessage {
+    optional int32 field1 = 1;
+    optional int32 field2 = 3;
+    optional string field3 = 4;
+    optional double field4 = 2;
+    optional int64 field5 = 5;
+}
+```
+
+This would generate code that roughly looks as below. While the typical assumption is that the memory layout matches the declaration order,  i.e., `field [1,2,3,4,5]`, on JDK8 it would actually be changed to `field [4,5,1,2,3]`. We recommend reading [Know Thy Java Object Memory Layout](http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html) for more information on this topic.
+
+```Java
+// Generated Protobuf-Java Message (simplified)
+class ExampleMessage extends GeneratedMessageV3 { 
+    private int field1_;
+    private int field2_;
+    private String field3_;
+    private double field4_;
+    private long field5_;
+
+    @Override
+    public void writeTo(CodedOutputStream output) throws IOException {
+        // removed bitfield checks                          // offset 40
+        output.writeInt32(1, field1_);                      // offset 44
+        output.writeDouble(2, field4_);                     // offset 24
+        output.writeInt32(3, field2_);                      // offset 48
+        GeneratedMessageV3.writeString(output, 4, field3_); // offset 56 & ref jump
+        output.writeInt64(5, field5_);                      // offset 32
+    }
+    
+}
+``` 
+
+By sorting field types according to the re-ordering rules, we can pre-order fields and serialize with a purely sequential memory access pattern. Note that the main benefit for serializing by number is that new fields get added in a predictable location, but the same is still true when sorting by type first.
+
+```java
+// Generated RoboBuffers Message (simplified)
+class ExampleMessage extends ProtoMessage { 
+    private double field4;
+    private long field5;
+    private int field1;
+    private int field2;
+    private final StringBuilder field3 = new StringBuilder(0);
+
+    @Override
+    public void writeTo(ProtoSink output) throws IOException {
+        // removed bitfield checks       // offset 16
+        output.writeRawByte((byte) 17);  // tag
+        output.writeDoubleNoTag(field4); // offset 24
+        output.writeRawByte((byte) 40);  // tag
+        output.writeInt64NoTag(field5);  // offset 32
+        output.writeRawByte((byte) 8);   // tag
+        output.writeInt32NoTag(field1);  // offset 40
+        output.writeRawByte((byte) 24);  // tag
+        output.writeInt32NoTag(field2);  // offset 44
+        output.writeRawByte((byte) 34);  // tag
+        output.writeStringNoTag(field3); // offset 48 & ref jump
+    }
+   
+}
+```
+
+<!-- Protobuf-Java generated message
+```text
+UnittestFieldOrder$ExampleMessage object internals:
+ OFFSET  SIZE             TYPE DESCRIPTION                               VALUE
+      0    12                  (object header)                           N/A
+     12     4              int AbstractMessageLite.memoizedHashCode      N/A
+     16     4              int AbstractMessage.memoizedSize              N/A
+     20     4  UnknownFieldSet GeneratedMessageV3.unknownFields          N/A
+     24     8           double ExampleMessage.field4_                    N/A
+     32     8             long ExampleMessage.field5_                    N/A
+     40     4              int ExampleMessage.bitField0_                 N/A
+     44     4              int ExampleMessage.field1_                    N/A
+     48     4              int ExampleMessage.field2_                    N/A
+     52     1             byte ExampleMessage.memoizedIsInitialized      N/A
+     53     3                  (alignment/padding gap)                  
+     56     4           Object ExampleMessage.field3_                    N/A
+     60     4                  (loss due to the next object alignment)
+Instance size: 64 bytes
+Space losses: 3 bytes internal + 4 bytes external = 7 bytes total
+```
+-->
+
+<!-- RoboBuffers generated message
+```text
+us.hebi.robobuf.robo.UnittestFieldOrder$ExampleMessage object internals:
+OFFSET  SIZE                      TYPE DESCRIPTION                               VALUE
+   0    12                           (object header)                           N/A
+  12     4                       int ProtoMessage.cachedSize                   N/A
+  16     4                       int ProtoMessage.bitField0_                   N/A
+  20     4                       int ProtoMessage.bitField1_                   N/A
+  24     8                    double ExampleMessage.field4                     N/A
+  32     8                      long ExampleMessage.field5                     N/A
+  40     4                       int ExampleMessage.field1                     N/A
+  44     4                       int ExampleMessage.field2                     N/A
+  48     4   java.lang.StringBuilder ExampleMessage.field3                     N/A
+  52     4                           (loss due to the next object alignment)
+Instance size: 56 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+```
+-->
 
 ## Acknowledgements
 

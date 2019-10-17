@@ -85,7 +85,7 @@ public class ProtoSource {
      *
      * @return this
      */
-    public ProtoSource clear(){
+    public ProtoSource clear() {
         return setInput(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
@@ -134,10 +134,10 @@ public class ProtoSource {
     public boolean skipField(final int tag) throws IOException {
         switch (WireFormat.getTagWireType(tag)) {
             case WireFormat.WIRETYPE_VARINT:
-                readInt32();
+                readRawVarint32();
                 return true;
             case WireFormat.WIRETYPE_FIXED64:
-                readRawLittleEndian64();
+                skipRawBytes(SIZEOF_FIXED_64);
                 return true;
             case WireFormat.WIRETYPE_LENGTH_DELIMITED:
                 skipRawBytes(readRawVarint32());
@@ -151,7 +151,7 @@ public class ProtoSource {
             case WireFormat.WIRETYPE_END_GROUP:
                 return false;
             case WireFormat.WIRETYPE_FIXED32:
-                readRawLittleEndian32();
+                skipRawBytes(SIZEOF_FIXED_32);
                 return true;
             default:
                 throw InvalidProtocolBufferException.invalidWireType();
