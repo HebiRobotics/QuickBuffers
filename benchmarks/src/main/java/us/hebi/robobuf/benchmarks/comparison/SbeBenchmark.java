@@ -13,11 +13,7 @@ import org.openjdk.jmh.runner.options.VerboseMode;
 import uk.co.real_logic.protobuf.examples.Examples;
 import uk.co.real_logic.protobuf.fix.Fix;
 import uk.co.real_logic.robo.examples.Examples.Car;
-import uk.co.real_logic.robo.examples.Examples.Car.Extras;
-import uk.co.real_logic.robo.examples.Examples.PerformanceFigures;
 import uk.co.real_logic.robo.fix.Fix.MarketDataIncrementalRefreshTrades;
-import uk.co.real_logic.robo.fix.Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator;
-import uk.co.real_logic.robo.fix.Fix.MdIncGrp;
 import us.hebi.robobuf.ProtoMessage;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
@@ -32,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  *
  *
  * === RoboBuffers (Unsafe) ===
- *  Benchmark                                Mode  Cnt   Score    Error  Units
+ * Benchmark                                Mode  Cnt   Score    Error  Units
  * SbeBenchmark.carUnsafeRoboRead           avgt   10  33.602 ± 0.568  ms/op
  * SbeBenchmark.carUnsafeRoboReadReadWrite  avgt   10  56.860 ± 1.176  ms/op
  * SbeBenchmark.marketUnsafeRoboRead        avgt   10  25.022 ± 1.249  ms/op
@@ -76,82 +72,6 @@ public class SbeBenchmark {
         new Runner(options).run();
     }
 
-    /**
-     * Generates data identical to MarketDataBenchmark
-     * https://github.com/real-logic/simple-binary-encoding/blob/26205593ca9ff6fefba5cfaf1db095397395c3a3/perf/java/uk/co/real_logic/protobuf/MarketDataBenchmark.java
-     *
-     * @return byte[] containing one message
-     */
-    private static byte[] generateMarketData() {
-        MarketDataIncrementalRefreshTrades marketData = new MarketDataIncrementalRefreshTrades();
-        marketData.setTransactTime(1234L);
-        marketData.setEventTimeDelta(987);
-        marketData.setMatchEventIndicator(MatchEventIndicator.END_EVENT);
-
-        for (int i = 0; i < 2; i++) {
-
-            MdIncGrp group = marketData.getMutableMdIncGroup().next()
-                    .setTradeId(1234L)
-                    .setSecurityId(56789L)
-                    .setNumberOfOrders(1)
-                    .setMdUpdateAction(MdIncGrp.MdUpdateAction.NEW)
-                    .setRepSeq(1)
-                    .setAggressorSide(MdIncGrp.Side.BUY)
-                    .setMdEntryType(MdIncGrp.MdEntryType.BID);
-            group.getMutableMdEntrySize().setMantissa(10).setExponent(7);
-            group.getMutableMdEntryPx().setMantissa(50).setExponent(0);
-
-        }
-
-        return marketData.toByteArray();
-    }
-
-    /**
-     * Generates data identical to CarBenchmark
-     * https://github.com/real-logic/simple-binary-encoding/blob/26205593ca9ff6fefba5cfaf1db095397395c3a3/perf/java/uk/co/real_logic/protobuf/CarBenchmark.java
-     *
-     * @return byte[] containing one message
-     */
-    private static byte[] generateCarData() {
-        Car car = new Car()
-                .setSerialNumber(12345)
-                .setModelYear(2005)
-                .setAvailable(true)
-                .setCode(Car.Model.A)
-                .addAllSomeNumbers(0, 1, 2, 3, 4)
-                .setVehicleCode(VEHICLE_CODE)
-                .setMake(MAKE)
-                .setModel(MODEL)
-                .addOptionalExtras(Extras.SPORTS_PACK)
-                .addOptionalExtras(Extras.SUN_ROOF);
-
-        car.getMutableEngine()
-                .setCapacity(4200)
-                .setNumCylinders(8)
-                .setManufacturerCode(ENG_MAN_CODE);
-
-        car.getMutableFuelFigures().next().setSpeed(30).setMpg(35.9F);
-        car.getMutableFuelFigures().next().setSpeed(30).setMpg(49.0F);
-        car.getMutableFuelFigures().next().setSpeed(30).setMpg(40.0F);
-
-        PerformanceFigures perfFigures = car.getMutablePerformance().next().setOctaneRating(95);
-        perfFigures.getMutableAcceleration().next().setMph(30).setSeconds(4.0f);
-        perfFigures.getMutableAcceleration().next().setMph(60).setSeconds(7.5f);
-        perfFigures.getMutableAcceleration().next().setMph(100).setSeconds(12.2f);
-
-        perfFigures = car.getMutablePerformance().next().setOctaneRating(99);
-        perfFigures.getMutableAcceleration().next().setMph(30).setSeconds(3.8f);
-        perfFigures.getMutableAcceleration().next().setMph(60).setSeconds(7.1f);
-        perfFigures.getMutableAcceleration().next().setMph(100).setSeconds(11.8f);
-
-        return car.toByteArray();
-    }
-
-    private static final String VEHICLE_CODE = "abcdef";
-    private static final String ENG_MAN_CODE = "abc";
-    private static final String MAKE = "AUDI";
-    private static final String MODEL = "R8";
-
     private static byte[] multiplyToNumBytes(byte[] singleMessage, int maxNumBytes) {
         try {
 
@@ -171,12 +91,6 @@ public class SbeBenchmark {
         }
     }
 
-    // ===================== DATASETS =====================
-    final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
-    final byte[] marketDataMessages = multiplyToNumBytes(generateMarketData(), MAX_DATASET_SIZE);
-    final byte[] carDataMessages = multiplyToNumBytes(generateCarData(), MAX_DATASET_SIZE);
-    final byte[] output = new byte[MAX_DATASET_SIZE];
-
     // ===================== REUSABLE STATE =====================
     final MarketDataIncrementalRefreshTrades marketMsg = new MarketDataIncrementalRefreshTrades();
     final Car carMsg = new Car();
@@ -184,6 +98,12 @@ public class SbeBenchmark {
     final ProtoSink sink = ProtoSink.createInstance();
     final ProtoSource unsafeSource = ProtoSource.createFastest();
     final ProtoSink unsafeSink = ProtoSink.createFastest();
+
+    // ===================== DATASETS =====================
+    final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
+    final byte[] marketDataMessages = multiplyToNumBytes(SbeThroughputBenchmarkRobo.buildMarketData(marketMsg).toByteArray(), MAX_DATASET_SIZE);
+    final byte[] carDataMessages = multiplyToNumBytes(SbeThroughputBenchmarkRobo.buildCarData(carMsg).toByteArray(), MAX_DATASET_SIZE);
+    final byte[] output = new byte[MAX_DATASET_SIZE];
 
     // ===================== UNSAFE OPTION DISABLED (e.g. Android) =====================
     @Benchmark

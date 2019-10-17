@@ -22,33 +22,37 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
         return array[index];
     }
 
-    public void set(int index, float value) {
+    public RepeatedFloat set(int index, float value) {
         checkIndex(index);
         array[index] = value;
+        return this;
     }
 
-    public void add(float value) {
+    public RepeatedFloat add(float value) {
         reserve(1);
         array[length++] = value;
+        return this;
     }
 
-    public void addAll(float[] values) {
-        addAll(values, 0, values.length);
+    public RepeatedFloat addAll(float[] values) {
+        return addAll(values, 0, values.length);
     }
 
-    public void addAll(float[] buffer, int offset, int length) {
+    public RepeatedFloat addAll(float[] buffer, int offset, int length) {
         reserve(length);
         System.arraycopy(buffer, offset, array, this.length, length);
         this.length += length;
+        return this;
     }
 
-    public void copyFrom(float[] buffer) {
-        copyFrom(buffer, 0, buffer.length);
+    public RepeatedFloat copyFrom(float[] buffer) {
+        return copyFrom(buffer, 0, buffer.length);
     }
 
-    public void copyFrom(float[] buffer, int offset, int length) {
+    public RepeatedFloat copyFrom(float[] buffer, int offset, int length) {
         this.length = 0;
         addAll(buffer, offset, length);
+        return this;
     }
 
     @Override
