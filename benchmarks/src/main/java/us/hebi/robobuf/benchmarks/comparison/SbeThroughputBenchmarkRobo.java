@@ -6,8 +6,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import uk.co.real_logic.robo.examples.Examples;
-import uk.co.real_logic.robo.fix.Fix;
+import protos.benchmarks.real_logic.robo.Examples;
+import protos.benchmarks.real_logic.robo.Fix;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
 

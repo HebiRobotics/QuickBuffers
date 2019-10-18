@@ -1,6 +1,6 @@
 package uk.co.real_logic.protobuf.examples;
 
-option java_package = "uk.co.real_logic.protobuf.fix";
+option java_package = "protos.benchmarks.real_logic.java";
 option java_outer_classname = "Fix";
 
 message Decimal64

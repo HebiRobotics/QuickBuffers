@@ -3,8 +3,8 @@ package us.hebi.robobuf;
 import org.junit.Before;
 import org.junit.Test;
 import sun.nio.ch.DirectBuffer;
-import us.hebi.robobuf.robo.RepeatedPackables;
-import us.hebi.robobuf.robo.TestAllTypes;
+import protos.test.robo.RepeatedPackables;
+import protos.test.robo.TestAllTypes;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -2,12 +2,12 @@ package us.hebi.robobuf;
 
 import com.google.protobuf.ByteString;
 import org.junit.Test;
-import us.hebi.robobuf.java.ForeignEnum;
-import us.hebi.robobuf.java.ForeignMessage;
-import us.hebi.robobuf.java.RepeatedPackables;
-import us.hebi.robobuf.java.TestAllTypes;
-import us.hebi.robobuf.java.TestAllTypes.NestedEnum;
-import us.hebi.robobuf.java.external.ImportEnum;
+import protos.test.java.ForeignEnum;
+import protos.test.java.ForeignMessage;
+import protos.test.java.RepeatedPackables;
+import protos.test.java.TestAllTypes;
+import protos.test.java.TestAllTypes.NestedEnum;
+import protos.test.java.external.ImportEnum;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ public class CompatibilityTest {
     public void testCompatibilityWithProtobufJava() throws IOException {
         byte[] serializedMsg = getCombinedMessage();
         TestAllTypes.Builder expected = TestAllTypes.newBuilder();
-        us.hebi.robobuf.robo.TestAllTypes msg = new us.hebi.robobuf.robo.TestAllTypes();
+        protos.test.robo.TestAllTypes msg = new protos.test.robo.TestAllTypes();
 
         // multiple merges to check expanding repeated behavior
         for (int i = 0; i < 3; i++) {
@@ -39,7 +39,7 @@ public class CompatibilityTest {
         }
 
         assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
-        assertEquals(msg, us.hebi.robobuf.robo.TestAllTypes.parseFrom(msg.toByteArray()));
+        assertEquals(msg, protos.test.robo.TestAllTypes.parseFrom(msg.toByteArray()));
 
     }
 

@@ -1,11 +1,11 @@
 package us.hebi.robobuf;
 
 import org.junit.Test;
-import us.hebi.robobuf.robo.*;
-import us.hebi.robobuf.robo.TestAllTypes.NestedEnum;
-import us.hebi.robobuf.robo.UnittestFieldOrder.MessageWithMultibyteNumbers;
-import us.hebi.robobuf.robo.UnittestRequired.TestAllTypesRequired;
-import us.hebi.robobuf.robo.external.ImportEnum;
+import protos.test.robo.*;
+import protos.test.robo.TestAllTypes.NestedEnum;
+import protos.test.robo.UnittestFieldOrder.MessageWithMultibyteNumbers;
+import protos.test.robo.UnittestRequired.TestAllTypesRequired;
+import protos.test.robo.external.ImportEnum;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

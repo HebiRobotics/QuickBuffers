@@ -9,7 +9,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
-import us.hebi.robobuf.robo.RepeatedPackables.Packed;
+import protos.test.robo.RepeatedPackables.Packed;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -76,13 +76,13 @@ public class PackedDoublesBenchmark {
 
     @Benchmark
     public Object readProto() throws IOException {
-        return us.hebi.robobuf.java.RepeatedPackables.Packed.parseFrom(input);
+        return protos.test.java.RepeatedPackables.Packed.parseFrom(input);
     }
 
     @Benchmark
     public int readWriteProto() throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(output);
-        us.hebi.robobuf.java.RepeatedPackables.Packed.parseFrom(input)
+        protos.test.java.RepeatedPackables.Packed.parseFrom(input)
                 .writeTo(out);
         return out.getTotalBytesWritten();
     }

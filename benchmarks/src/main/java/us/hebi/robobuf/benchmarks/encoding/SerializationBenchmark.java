@@ -8,8 +8,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
-import us.hebi.robobuf.robo.ForeignMessage;
-import us.hebi.robobuf.robo.TestAllTypes;
+import protos.test.robo.ForeignMessage;
+import protos.test.robo.TestAllTypes;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

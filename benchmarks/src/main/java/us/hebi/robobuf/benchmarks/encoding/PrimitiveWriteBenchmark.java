@@ -7,7 +7,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.robobuf.ProtoSink;
-import us.hebi.robobuf.robo.TestAllTypes;
+import protos.test.robo.TestAllTypes;
 
 import java.io.IOException;
 import java.util.Random;

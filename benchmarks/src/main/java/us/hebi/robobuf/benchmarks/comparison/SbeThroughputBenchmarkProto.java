@@ -7,8 +7,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import uk.co.real_logic.protobuf.examples.Examples;
-import uk.co.real_logic.protobuf.fix.Fix;
+import protos.benchmarks.real_logic.java.Examples;
+import protos.benchmarks.real_logic.java.Fix;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

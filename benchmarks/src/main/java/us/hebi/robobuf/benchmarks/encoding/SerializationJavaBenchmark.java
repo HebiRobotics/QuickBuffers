@@ -6,8 +6,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import us.hebi.robobuf.java.ForeignMessage;
-import us.hebi.robobuf.java.TestAllTypes;
+import protos.test.java.ForeignMessage;
+import protos.test.java.TestAllTypes;
 
 import java.io.IOException;
 import java.util.Arrays;

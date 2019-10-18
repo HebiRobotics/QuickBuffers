@@ -6,7 +6,7 @@ import org.openjdk.jol.info.GraphLayout;
 import org.openjdk.jol.vm.VM;
 import org.openjdk.jol.vm.VirtualMachine;
 import us.hebi.robobuf.ProtoMessage;
-import us.hebi.robobuf.robo.TestAllTypes;
+import protos.test.robo.TestAllTypes;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 public class PrintMemoryLayout {
 
     public static void main(String[] args) throws IllegalAccessException, IOException {
-        Class<?> clazz = us.hebi.robobuf.robo.TestAllTypes.class;
+        Class<?> clazz = protos.test.robo.TestAllTypes.class;
         ClassLayout layout = ClassLayout.parseClass(clazz);
         FieldOffsetMap offsetMap = new FieldOffsetMap(layout);
 

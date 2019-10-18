@@ -1,9 +1,9 @@
 package us.hebi.robobuf;
 
 import org.junit.Test;
-import us.hebi.robobuf.robo.RepeatedPackables;
-import us.hebi.robobuf.robo.TestAllTypes;
-import us.hebi.robobuf.robo.UnittestRequired;
+import protos.test.robo.RepeatedPackables;
+import protos.test.robo.TestAllTypes;
+import protos.test.robo.UnittestRequired;
 
 import java.io.IOException;
 
