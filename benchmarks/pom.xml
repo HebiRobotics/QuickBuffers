@@ -58,7 +58,7 @@
 
                             <inputDirectories>
                                 <include>${proto.dir}</include>
-                                <include>${project.basedir}/src/test/resources/sbe-benchmark-protos</include>
+                                <include>${project.basedir}/src/test/resources/protos</include>
                             </inputDirectories>
 
                             <outputTargets>
@@ -67,7 +67,7 @@
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}</pluginPath>
                                     <type>robobuf</type>
-                                    <outputOptions>replacePackage=(java|benchmarks|protobuf)=robo,indent=4,input_order=robobuf
+                                    <outputOptions>replacePackage=(java|benchmarks|protobuf|nano)=robo,indent=4,input_order=robobuf
                                     </outputOptions>
                                     <addSources>main</addSources>
                                 </outputTarget>
