@@ -103,7 +103,9 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      *
      * @return this
      */
-    public abstract MessageType clearQuick();
+    public MessageType clearQuick() {
+        return clear();
+    }
 
     /**
      * Computes the number of bytes required to encode this message. This does not update the

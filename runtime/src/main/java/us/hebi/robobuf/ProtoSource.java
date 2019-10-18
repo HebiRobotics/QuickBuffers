@@ -662,19 +662,21 @@ public class ProtoSource {
         bufferPos += size;
     }
 
-    protected void requireRemaining(int size) throws IOException {
-        if (size < 0) {
+    protected int remaining() {
+        // bufferSize is always the same as currentLimit
+        // in cases where currentLimit != Integer.MAX_VALUE
+        return bufferSize - bufferPos;
+    }
+
+    protected void requireRemaining(int numBytes) throws IOException {
+        if (numBytes < 0) {
             throw InvalidProtocolBufferException.negativeSize();
-        }
 
-        if (bufferPos + size > currentLimit) {
-            // Read to the end of the stream anyway.
-            bufferPos = currentLimit;
-            // Then fail.
-            throw InvalidProtocolBufferException.truncatedMessage();
-        }
-
-        if (size > (bufferSize - bufferPos)) {
+        } else if (numBytes > remaining()) {
+            // Read to the end of the current sub-message before failing
+            if (numBytes > currentLimit - bufferPos) {
+                bufferPos = currentLimit;
+            }
             throw InvalidProtocolBufferException.truncatedMessage();
         }
     }
