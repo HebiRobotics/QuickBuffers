@@ -7,6 +7,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.robo.Examples;
+import protos.benchmarks.real_logic.robo.Examples.Car;
 import protos.benchmarks.real_logic.robo.Fix;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
@@ -48,7 +49,7 @@ public class SbeThroughputBenchmarkRobo {
 
     final Fix.MarketDataIncrementalRefreshTrades marketData = new Fix.MarketDataIncrementalRefreshTrades();
     final byte[] marketDecodeBuffer = buildMarketData(marketData).toByteArray();
-    final Examples.Car car = new Examples.Car();
+    final Car car = new Car();
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
@@ -85,7 +86,7 @@ public class SbeThroughputBenchmarkRobo {
         marketData.clearQuick()
                 .setTransactTime(1234L)
                 .setEventTimeDelta(987)
-                .setMatchEventIndicator(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT);
+                .setMatchEventIndicator(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
 
         for (int i = 0; i < 2; i++) {
 
@@ -94,9 +95,9 @@ public class SbeThroughputBenchmarkRobo {
                     .setSecurityId(56789L)
                     .setNumberOfOrders(1)
                     .setRepSeq(1)
-                    .setMdUpdateAction(Fix.MdIncGrp.MdUpdateAction.NEW)
-                    .setAggressorSide(Fix.MdIncGrp.Side.BUY)
-                    .setMdEntryType(Fix.MdIncGrp.MdEntryType.BID);
+                    .setMdUpdateAction(Fix.MdIncGrp.MdUpdateAction.NEW_VALUE)
+                    .setAggressorSide(Fix.MdIncGrp.Side.BUY_VALUE)
+                    .setMdEntryType(Fix.MdIncGrp.MdEntryType.BID_VALUE);
             group.getMutableMdEntryPx().setMantissa(50);
             group.getMutableMdEntrySize().setMantissa(10);
 
@@ -105,11 +106,11 @@ public class SbeThroughputBenchmarkRobo {
         return marketData;
     }
 
-    static Examples.Car buildCarData(Examples.Car car) {
+    static Car buildCarData(Car car) {
         car.clearQuick()
                 .setSerialNumber(12345)
                 .setModelYear(2005)
-                .setCode(Examples.Car.Model.A)
+                .setCode(Car.Model.A_VALUE)
                 .setAvailable(true);
 
         car.getMutableEngine()
@@ -126,9 +127,9 @@ public class SbeThroughputBenchmarkRobo {
             car.addSomeNumbers(i);
         }
 
-        car
-                .addOptionalExtras(Examples.Car.Extras.SPORTS_PACK)
-                .addOptionalExtras(Examples.Car.Extras.SUN_ROOF);
+        car.getMutableOptionalExtras()
+                .add(Car.Extras.SPORTS_PACK_VALUE)
+                .add(Car.Extras.SUN_ROOF_VALUE);
 
         car.getMutableFuelFigures().next().setSpeed(30).setMpg(35.9F);
         car.getMutableFuelFigures().next().setSpeed(30).setMpg(49.0F);

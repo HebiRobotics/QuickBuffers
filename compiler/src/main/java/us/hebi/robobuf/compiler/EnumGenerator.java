@@ -20,8 +20,15 @@ class EnumGenerator {
         TypeSpec.Builder type = TypeSpec.enumBuilder(info.getTypeName())
                 .addModifiers(Modifier.PUBLIC);
 
+        // Add enum constants
         for (EnumValueDescriptorProto value : info.getValues()) {
-            type.addEnumConstant(NamingUtil.filterKeyword(value.getName()), TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
+            String constName = value.getName() + "_VALUE";
+            String enumName = NamingUtil.filterKeyword(value.getName());
+
+            FieldSpec constField = FieldSpec.builder(int.class, constName, Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL).initializer("$L", value.getNumber()).build();
+
+            type.addField(constField);
+            type.addEnumConstant(enumName, TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
         }
 
         generateGetValue(type);

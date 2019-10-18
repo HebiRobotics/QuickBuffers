@@ -323,10 +323,9 @@ public class FieldGenerator {
     protected void generateMemberMethods(TypeSpec.Builder type) {
         generateHasMethod(type);
         if (info.isEnum()) {
-            generateGetEnumMethods(type);
-        } else {
-            generateGetMethods(type);
+            generateExtraEnumAccessors(type);
         }
+        generateGetMethods(type);
         generateSetMethods(type);
         generateClearMethod(type);
     }
@@ -417,23 +416,51 @@ public class FieldGenerator {
 
     }
 
-    protected void generateGetEnumMethods(TypeSpec.Builder type) {
-        // Enums are odd because they need to be converter back and forth and they
-        // don't have the same type as the repeated store. Maybe we should switch
-        // to using either fully int or fully enum?
+    /**
+     * Enums are odd because they need to be converter back and forth and they
+     * don't have the same type as the internal/repeated store. In this case we give
+     * raw access to the int number, but also add convenience wrappers to get
+     * the enum value.
+     *
+     * @param type
+     */
+    protected void generateExtraEnumAccessors(TypeSpec.Builder type) {
+
         MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(typeName);
 
-        if (!info.isRepeated()) { // get()
+        if (!info.isRepeated()) {
+
+            // getField() that maps from int to enum
             if (!info.hasDefaultValue()) {
                 getter.addNamedCode("return $type:T.forNumber($field:N);\n", m);
             } else {
                 getter.addNamedCode("return $type:T.forNumberOr($field:N, $defaultEnumValue:L);\n", m);
             }
 
-        } else { // getCount() & get(index)
+            // We also want an overload to set the internal value directly.
+            // For repeated enums people can just use the mutable store.
+            MethodSpec setNumber = MethodSpec.methodBuilder(info.getSetterName())
+                    .addAnnotations(info.getMethodAnnotations())
+                    .addJavadoc(named("" +
+                            "Sets the value of the internal enum store. This does not\n" +
+                            "do any validity checks, so be sure to use appropriate value\n" +
+                            "constants from {@link $type:T}.\n"))
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(info.getStoreType(), "value", Modifier.FINAL)
+                    .returns(info.getParentType())
+                    .addNamedCode("" +
+                            "$setHas:L;\n" +
+                            "$field:N = value;\n" +
+                            "return this;\n", m)
+                    .build();
+            type.addMethod(setNumber);
+
+        } else {
+
+            // getCount() & get(index)
             getter.addParameter(int.class, "index", Modifier.FINAL);
             getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
 
@@ -449,11 +476,23 @@ public class FieldGenerator {
     }
 
     protected void generateGetMethods(TypeSpec.Builder type) {
-        MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
+        // We are adding another getter for enums with the same name
+        String getterName = info.getGetterName();
+        if (info.isEnum() && !info.isRepeated()) {
+            getterName += "Number";
+        }
+
+        MethodSpec.Builder getter = MethodSpec.methodBuilder(getterName)
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(storeType)
                 .addNamedCode("return $field:N;\n", m);
+
+        if (info.isEnum()) {
+            getter.addJavadoc(named("" +
+                    "Gets the value of the internal enum store. The result is\n" +
+                    "equivalent to {@link #$getMethod:N()}.getNumber().\n"));
+        }
 
         if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes() || info.isString()) {
             getter.addJavadoc(named("" +
@@ -502,7 +541,7 @@ public class FieldGenerator {
         m.put("field", info.getFieldName());
         m.put("default", info.getDefaultValue());
         if (info.isEnum()) {
-            m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + ".getNumber()" : "0");
+            m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + "_VALUE" : "0");
             m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
         }
         m.put("commentLine", info.getJavadoc());
