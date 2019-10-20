@@ -114,20 +114,20 @@ public class SerializationBenchmark {
     byte[] stringMsgBytes = stringMessage.toByteArray();
     byte[] stringMsgOutBuffer = new byte[stringMessage.getSerializedSize()];
 
-    final ProtoSink sink = ProtoSink.createInstance();
-    final ProtoSource source = ProtoSource.createInstance();
+    final ProtoSink sink = ProtoSink.newSafeInstance();
+    final ProtoSource source = ProtoSource.newSafeInstance();
 
-    final ProtoSink unsafeSink = ProtoSink.createUnsafe();
-    final ProtoSource unsafeSource = ProtoSource.createUnsafe();
+    final ProtoSink unsafeSink = ProtoSink.newUnsafeInstance();
+    final ProtoSource unsafeSource = ProtoSource.newUnsafeInstance();
 
     @Benchmark
     public TestAllTypes readMessage() throws IOException {
-        return msgIn.clear().mergeFrom(source.setInput(msgBytes));
+        return msgIn.clear().mergeFrom(source.wrap(msgBytes));
     }
 
     @Benchmark
     public int readString() throws IOException {
-        stringMessage.clear().mergeFrom(source.setInput(stringMsgBytes));
+        stringMessage.clear().mergeFrom(source.wrap(stringMsgBytes));
         return stringMessage.getDefaultString().length() + stringMessage.getOptionalString().length();
     }
 
@@ -143,36 +143,36 @@ public class SerializationBenchmark {
 
     @Benchmark
     public int writeMessage() throws IOException {
-        msg.writeTo(sink.setOutput(msgOutBuffer));
+        msg.writeTo(sink.wrap(msgOutBuffer));
         return sink.position();
     }
 
     @Benchmark
     public int writeString() throws IOException {
-        stringMessage.writeTo(sink.setOutput(stringMsgOutBuffer));
+        stringMessage.writeTo(sink.wrap(stringMsgOutBuffer));
         return sink.position();
     }
 
     @Benchmark
     public TestAllTypes readMessageUnsafe() throws IOException {
-        return msgIn.clear().mergeFrom(unsafeSource.setInput(msgBytes));
+        return msgIn.clear().mergeFrom(unsafeSource.wrap(msgBytes));
     }
 
     @Benchmark
     public int readStringUnsafe() throws IOException {
-        stringMessage.clear().mergeFrom(unsafeSource.setInput(stringMsgBytes));
+        stringMessage.clear().mergeFrom(unsafeSource.wrap(stringMsgBytes));
         return stringMessage.getDefaultString().length() + stringMessage.getOptionalString().length();
     }
 
     @Benchmark
     public int writeMessageUnsafe() throws IOException {
-        msg.writeTo(unsafeSink.setOutput(msgOutBuffer));
+        msg.writeTo(unsafeSink.wrap(msgOutBuffer));
         return unsafeSink.position();
     }
 
     @Benchmark
     public int writeStringUnsafe() throws IOException {
-        stringMessage.writeTo(unsafeSink.setOutput(stringMsgOutBuffer));
+        stringMessage.writeTo(unsafeSink.wrap(stringMsgOutBuffer));
         return unsafeSink.position();
     }
 

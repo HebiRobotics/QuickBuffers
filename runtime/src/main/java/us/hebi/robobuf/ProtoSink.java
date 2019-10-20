@@ -59,49 +59,49 @@ public abstract class ProtoSink {
 
     /**
      * Create a new {@code ProtoSink} that writes directly to the given
-     * byte array.  If more bytes are written than fit in the array,
-     * {@link OutOfSpaceException} will be thrown.  Writing directly to a
-     * flat array is faster than writing to an {@code OutputStream}.
+     * byte array. If more bytes are written than fit in the array,
+     * {@link OutOfSpaceException} will be thrown.
      */
-    public static ProtoSink wrapArray(final byte[] flatArray) {
-        return createInstance().setOutput(flatArray);
+    public static ProtoSink newInstance(final byte[] flatArray) {
+        return newInstance().wrap(flatArray);
     }
 
     /**
      * Create a new {@code ProtoSink} that writes directly to the given
-     * byte array slice.  If more bytes are written than fit in the slice,
-     * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
-     * array is faster than writing to an {@code OutputStream}.
+     * byte array slice. If more bytes are written than fit in the slice,
+     * {@link OutOfSpaceException} will be thrown.
      */
-    public static ProtoSink wrapArray(final byte[] flatArray,
-                                      final int offset,
-                                      final int length) {
-        return createInstance().setOutput(flatArray, offset, length);
+    public static ProtoSink newInstance(final byte[] flatArray,
+                                        final int offset,
+                                        final int length) {
+        return newInstance().wrap(flatArray, offset, length);
     }
 
     /**
      * Create a new {@code ProtoSink} that writes directly to a byte array.
      * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
-     * be thrown.  Writing directly to a flat array is faster than writing
-     * to an {@code OutputStream}.
-     */
-    public static ProtoSink createInstance() {
-        return new ArraySink();
-    }
-
-    /**
-     * Create a new {@code ProtoSink} that writes directly to a byte array.
-     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
-     * be thrown.  Writing directly to a flat array is faster than writing
-     * to an {@code OutputStream}.
+     * be thrown.
      *
-     * The returned sink may leverage features from sun.misc.Unsafe if
-     * available on the current platform.
+     * This method will return the fastest implementation available for the
+     * current platform and may leverage features from sun.misc.Unsafe if
+     * available.
      */
-    public static ProtoSink createFastest() {
+    public static ProtoSink newInstance() {
         if (UnsafeArraySink.isAvailable())
             return new UnsafeArraySink(false);
-        return createInstance();
+        return newSafeInstance();
+    }
+
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array.
+     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
+     * be thrown.
+     *
+     * The returned sink does not leverage features from sun.misc.Unsafe
+     * even if they are available on the current platform.
+     */
+    public static ProtoSink newSafeInstance() {
+        return new ArraySink();
     }
 
     /**
@@ -109,9 +109,13 @@ public abstract class ProtoSink {
      * direct memory. If more bytes are written than fit in the array, an
      * {@link OutOfSpaceException} will be thrown.
      *
-     * This sink requires availability of sun.misc.Unsafe and Java 8 or higher.
+     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     *
+     * Additionally, this sink removes null-argument checks and allows users to
+     * write to off-heap memory. Working with off-heap memory may cause segfaults
+     * of the runtime, so only use if you know what you are doing.
      */
-    public static ProtoSink createUnsafe() {
+    public static ProtoSink newUnsafeInstance() {
         return new UnsafeArraySink(true);
     }
 
@@ -125,10 +129,10 @@ public abstract class ProtoSink {
      * @param length
      * @return
      */
-    public abstract ProtoSink setOutput(byte[] buffer, long offset, int length);
+    public abstract ProtoSink wrap(byte[] buffer, long offset, int length);
 
-    public final ProtoSink setOutput(byte[] buffer) {
-        return setOutput(buffer, 0, buffer.length);
+    public final ProtoSink wrap(byte[] buffer) {
+        return wrap(buffer, 0, buffer.length);
     }
 
     /**
@@ -137,7 +141,7 @@ public abstract class ProtoSink {
      * @return this
      */
     public ProtoSink clear() {
-        return setOutput(ProtoUtil.EMPTY_BYTE_ARRAY);
+        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     // -----------------------------------------------------------------

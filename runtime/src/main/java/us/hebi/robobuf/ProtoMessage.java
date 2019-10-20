@@ -157,7 +157,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      */
     public static final void toByteArray(ProtoMessage msg, byte[] data, int offset, int length) {
         try {
-            final ProtoSink output = ProtoSink.wrapArray(data, offset, length);
+            final ProtoSink output = ProtoSink.newInstance(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -182,7 +182,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data,
                                                              final int off, final int len) throws InvalidProtocolBufferException {
         try {
-            final ProtoSource input = ProtoSource.wrapArray(data, off, len);
+            final ProtoSource input = ProtoSource.newInstance(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;

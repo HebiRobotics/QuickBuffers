@@ -27,10 +27,10 @@ class UnsafeArraySink extends ArraySink {
     }
 
     @Override
-    public ProtoSink setOutput(byte[] buffer, long offset, int length) {
+    public ProtoSink wrap(byte[] buffer, long offset, int length) {
         if (!enableDirect || buffer != null) {
             baseOffset = BYTE_ARRAY_OFFSET;
-            return super.setOutput(buffer, offset, length);
+            return super.wrap(buffer, offset, length);
         }
         if (offset <= 0) {
             throw new NullPointerException("null reference with invalid address offset");

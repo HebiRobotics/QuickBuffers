@@ -11,7 +11,7 @@ import java.io.IOException;
 class ArraySink extends ProtoSink {
 
     @Override
-    public ProtoSink setOutput(byte[] buffer, long offset, int length) {
+    public ProtoSink wrap(byte[] buffer, long offset, int length) {
         if (offset < 0 || length < 0 || offset > buffer.length || offset + length > buffer.length)
             throw new ArrayIndexOutOfBoundsException();
         this.buffer = buffer;

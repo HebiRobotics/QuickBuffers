@@ -53,32 +53,32 @@ public class SbeThroughputBenchmarkRobo {
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
-    final ProtoSource source = ProtoSource.createFastest();
-    final ProtoSink sink = ProtoSink.createFastest();
+    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSink sink = ProtoSink.newInstance();
 
     @Benchmark
     public int testMarketEncode() throws IOException {
-        sink.setOutput(encodeBuffer);
+        sink.wrap(encodeBuffer);
         buildMarketData(marketData).writeTo(sink);
         return sink.position();
     }
 
     @Benchmark
     public Object testMarketDecode() throws IOException {
-        source.setInput(marketDecodeBuffer);
+        source.wrap(marketDecodeBuffer);
         return marketData.clearQuick().mergeFrom(source);
     }
 
     @Benchmark
     public int testCarEncode() throws IOException {
-        sink.setOutput(encodeBuffer);
+        sink.wrap(encodeBuffer);
         buildCarData(car).writeTo(sink);
         return sink.position();
     }
 
     @Benchmark
     public Object testCarDecode() throws IOException {
-        source.setInput(carDecodeBuffer);
+        source.wrap(carDecodeBuffer);
         return car.clearQuick().mergeFrom(source);
     }
 

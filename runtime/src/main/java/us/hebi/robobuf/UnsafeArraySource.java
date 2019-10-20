@@ -27,10 +27,10 @@ class UnsafeArraySource extends ProtoSource {
     }
 
     @Override
-    public ProtoSource setInput(byte[] buffer, long offset, int length) {
+    public ProtoSource wrap(byte[] buffer, long offset, int length) {
         if (!enableDirect || buffer != null) {
             baseOffset = BYTE_ARRAY_OFFSET;
-            return super.setInput(buffer, offset, length);
+            return super.wrap(buffer, offset, length);
         }
         if (offset <= 0) {
             throw new NullPointerException("null reference with invalid address offset");

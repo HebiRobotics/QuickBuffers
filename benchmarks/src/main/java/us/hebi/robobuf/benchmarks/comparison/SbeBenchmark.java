@@ -79,7 +79,7 @@ public class SbeBenchmark {
             int numMessages = maxNumBytes / sizePerMessage;
 
             byte[] data = new byte[sizePerMessage * numMessages];
-            ProtoSink sink = ProtoSink.createFastest().setOutput(data);
+            ProtoSink sink = ProtoSink.newInstance().wrap(data);
             for (int i = 0; i < numMessages; i++) {
                 sink.writeRawVarint32(singleMessage.length);
                 sink.writeRawBytes(singleMessage);
@@ -94,10 +94,10 @@ public class SbeBenchmark {
     // ===================== REUSABLE STATE =====================
     final MarketDataIncrementalRefreshTrades marketMsg = new MarketDataIncrementalRefreshTrades();
     final Car carMsg = new Car();
-    final ProtoSource source = ProtoSource.createInstance();
-    final ProtoSink sink = ProtoSink.createInstance();
-    final ProtoSource unsafeSource = ProtoSource.createFastest();
-    final ProtoSink unsafeSink = ProtoSink.createFastest();
+    final ProtoSource source = ProtoSource.newSafeInstance();
+    final ProtoSink sink = ProtoSink.newSafeInstance();
+    final ProtoSource unsafeSource = ProtoSource.newInstance();
+    final ProtoSink unsafeSink = ProtoSink.newInstance();
 
     // ===================== DATASETS =====================
     final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
@@ -108,43 +108,43 @@ public class SbeBenchmark {
     // ===================== UNSAFE OPTION DISABLED (e.g. Android) =====================
     @Benchmark
     public int marketRoboRead() throws IOException {
-        return readRobo(source.setInput(marketDataMessages), marketMsg);
+        return readRobo(source.wrap(marketDataMessages), marketMsg);
     }
 
     @Benchmark
     public int marketRoboReadWrite() throws IOException {
-        return readWriteRobo(source.setInput(marketDataMessages), marketMsg, sink.setOutput(output));
+        return readWriteRobo(source.wrap(marketDataMessages), marketMsg, sink.wrap(output));
     }
 
     @Benchmark
     public int carRoboRead() throws IOException {
-        return readRobo(source.setInput(carDataMessages), carMsg);
+        return readRobo(source.wrap(carDataMessages), carMsg);
     }
 
     @Benchmark
     public int carRoboReadWrite() throws IOException {
-        return readWriteRobo(source.setInput(carDataMessages), carMsg, sink.setOutput(output));
+        return readWriteRobo(source.wrap(carDataMessages), carMsg, sink.wrap(output));
     }
 
     // ===================== UNSAFE OPTION ENABLED =====================
     @Benchmark
     public int marketUnsafeRoboRead() throws IOException {
-        return readRobo(unsafeSource.setInput(marketDataMessages), marketMsg);
+        return readRobo(unsafeSource.wrap(marketDataMessages), marketMsg);
     }
 
     @Benchmark
     public int marketUnsafeRoboReadWrite() throws IOException {
-        return readWriteRobo(unsafeSource.setInput(marketDataMessages), marketMsg, unsafeSink.setOutput(output));
+        return readWriteRobo(unsafeSource.wrap(marketDataMessages), marketMsg, unsafeSink.wrap(output));
     }
 
     @Benchmark
     public int carUnsafeRoboRead() throws IOException {
-        return readRobo(unsafeSource.setInput(carDataMessages), carMsg);
+        return readRobo(unsafeSource.wrap(carDataMessages), carMsg);
     }
 
     @Benchmark
     public int carUnsafeRoboReadReadWrite() throws IOException {
-        return readWriteRobo(unsafeSource.setInput(carDataMessages), carMsg, unsafeSink.setOutput(output));
+        return readWriteRobo(unsafeSource.wrap(carDataMessages), carMsg, unsafeSink.wrap(output));
     }
 
     // ===================== STOCK PROTOBUF =====================

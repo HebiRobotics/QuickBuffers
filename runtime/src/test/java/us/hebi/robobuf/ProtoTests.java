@@ -421,7 +421,7 @@ public class ProtoTests {
 
     @Test
     public void testSkipUnknownFields() throws IOException {
-        ProtoSource source = ProtoSource.createFastest().setInput(CompatibilityTest.getCombinedMessage());
+        ProtoSource source = ProtoSource.newInstance().wrap(CompatibilityTest.getCombinedMessage());
         new TestAllTypes.NestedMessage().mergeFrom(source);
         assertTrue(source.isAtEnd());
     }

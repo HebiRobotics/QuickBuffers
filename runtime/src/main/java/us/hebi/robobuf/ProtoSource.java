@@ -50,34 +50,60 @@ import static us.hebi.robobuf.WireFormat.*;
  */
 public class ProtoSource {
 
-    /** Create a new CodedInputStream wrapping the given byte array. */
-    public static ProtoSource wrapArray(final byte[] buf) {
-        return wrapArray(buf, 0, buf.length);
+    /** Create a new ProtoSource wrapping the given byte array. */
+    public static ProtoSource newInstance(final byte[] buf) {
+        return newInstance(buf, 0, buf.length);
     }
 
-    /** Create a new CodedInputStream wrapping the given byte array slice. */
-    public static ProtoSource wrapArray(final byte[] buf,
-                                        final int off,
-                                        final int len) {
-        return createInstance().setInput(buf, off, len);
+    /** Create a new ProtoSource wrapping the given byte array slice. */
+    public static ProtoSource newInstance(final byte[] buf,
+                                          final int off,
+                                          final int len) {
+        return newSafeInstance().wrap(buf, off, len);
     }
 
-    public static ProtoSource createInstance() {
+    /**
+     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     *
+     * This method will return the fastest implementation available for the
+     * current platform and may leverage features from sun.misc.Unsafe if
+     * available.
+     */
+    public static ProtoSource newInstance() {
+        if (UnsafeArraySource.isAvailable())
+            return new UnsafeArraySource(false);
+        return newSafeInstance();
+    }
+
+    /**
+     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     *
+     * This method returns an implementation that does not leverage any
+     * features from sun.misc.Unsafe, even if they are available on the
+     * current platform.
+     *
+     * Unless you are doing comparisons you probably want to call
+     * {@link #newInstance()} instead.
+     */
+    public static ProtoSource newSafeInstance() {
         return new ProtoSource();
     }
 
-    public static ProtoSource createFastest() {
-        if (UnsafeArraySource.isAvailable())
-            return new UnsafeArraySource(false);
-        return createInstance();
-    }
-
-    public static ProtoSource createUnsafe() {
+    /**
+     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     *
+     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     *
+     * Additionally, this sink removes null-argument checks and allows users to
+     * write to off-heap memory. Working with off-heap memory may cause segfaults
+     * of the runtime, so only use if you know what you are doing.
+     */
+    public static ProtoSource newUnsafeInstance() {
         return new UnsafeArraySource(true);
     }
 
-    public final ProtoSource setInput(byte[] buffer) {
-        return setInput(buffer, 0, buffer.length);
+    public final ProtoSource wrap(byte[] buffer) {
+        return wrap(buffer, 0, buffer.length);
     }
 
     /**
@@ -86,7 +112,7 @@ public class ProtoSource {
      * @return this
      */
     public ProtoSource clear() {
-        return setInput(ProtoUtil.EMPTY_BYTE_ARRAY);
+        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     // -----------------------------------------------------------------
@@ -517,7 +543,7 @@ public class ProtoSource {
      * @param len
      * @return this
      */
-    public ProtoSource setInput(byte[] buffer, long off, int len) {
+    public ProtoSource wrap(byte[] buffer, long off, int len) {
         if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
             throw new ArrayIndexOutOfBoundsException();
         this.buffer = buffer;

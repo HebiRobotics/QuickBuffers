@@ -57,20 +57,20 @@ public class PackedDoublesBenchmark {
     final byte[] input = new Packed().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
     final byte[] output = new byte[input.length + 100];
 
-    final ProtoSource source = ProtoSource.createFastest();
-    final ProtoSink sink = ProtoSink.createFastest();
+    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSink sink = ProtoSink.newInstance();
 
     final Packed message = new Packed();
 
     @Benchmark
     public Object readRobo() throws IOException {
-        source.setInput(input);
+        source.wrap(input);
         return message.clear().mergeFrom(source);
     }
 
     @Benchmark
     public int readWriteRobo() throws IOException {
-        message.clear().mergeFrom(source.setInput(input)).writeTo(sink.setOutput(output));
+        message.clear().mergeFrom(source.wrap(input)).writeTo(sink.wrap(output));
         return sink.position();
     }
 
