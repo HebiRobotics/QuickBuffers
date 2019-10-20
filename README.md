@@ -158,16 +158,16 @@ public final class RootMessage {
     public NestedMessage getNestedMessage(); // internal message -> treat as read-only
     public NestedMessage getMutableNestedMessage(); // internal message -> may be modified until has state is cleared
 
-    private final NestedMessage nestedMessage = new NestedMessage();
+    private final NestedMessage nestedMessage = NestedMessage.newInstance();
 }
 ```
 
 ```Java
 // (1) setting nested values via 'set' (does a data copy!)
-msg.setNestedMessage(new NestedMessage().setPrimitiveValue(0));
+msg.setNestedMessage(NestedMessage().newInstance().setPrimitiveValue(0));
 
 // (2) modify the internal store directly (recommended)
-RootMessage msg = new RootMessage();
+RootMessage msg = RootMessage.newInstance();
 msg.getMutableNestedMessage().setPrimitiveValue(0);
 ```
 
@@ -197,7 +197,7 @@ public final class SimpleMessage {
 
 ```Java
 // Set and append to a string field
-SimpleMessage msg = new SimpleMessage();
+SimpleMessage msg = SimpleMessage.newInstance();
 msg.setOptionalString("my-");
 msg.getMutableOptionalString()
     .append("text"); // field is now 'my-text'
@@ -228,7 +228,7 @@ public final class SimpleMessage {
     public RepeatedDouble getRepeatedDouble(); // internal store -> treat as read-only
     public RepeatedDouble getMutableRepeatedDouble(); // internal store -> may be modified 
 
-    private final RepeatedDouble repeatedDouble = new RepeatedDouble();
+    private final RepeatedDouble repeatedDouble = RepeatedDouble.newEmptyInstance();
 }
 ```
 
@@ -240,20 +240,20 @@ Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the m
 
 ```Java
 // Create data
-RootMessage msg = new RootMessage()
+RootMessage msg = RootMessage().newInstance
     .setPrimitiveValue(2);
 
 // Serialize into existing byte array
 byte[] buffer = new byte[msg.getSerializedSize()];
-ProtoSink sink = ProtoSink.createFastest().setOutput(buffer);
+ProtoSink sink = ProtoSink.newInstance(buffer);
 msg.writeTo(sink);
 
 // Serialize to byte array using helper method
 assertArrayEquals(msg.toByteArray(), buffer);
 
 // Read from byte array into an existing message
-ProtoSource source = ProtoSource.createFastest().setInput(buffer);
-assertEquals(msg, new RootMessage().mergeFrom(source));
+ProtoSource source = ProtoSource.newInstance(buffer);
+assertEquals(msg, RootMessage().newInstance.mergeFrom(source));
 ```
 
 Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
@@ -263,7 +263,7 @@ are familiar with Unsafe, you may also request an UnsafeSource instance that wil
 
 ```Java
 long address = /* DirectBuffer::address */;
-ProtoSource source = ProtoSource.createUnsafe();
+ProtoSource source = ProtoSource.newUnsafeInstance();
 source.setInput(null, address, length)
 ```
 
