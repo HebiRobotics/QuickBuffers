@@ -29,7 +29,7 @@ class RuntimeClasses {
     private static final ClassName RepeatedBoolean = ClassName.get(API_PACKAGE, "RepeatedBoolean");
     private static final ClassName RepeatedString = ClassName.get(API_PACKAGE, "RepeatedString");
     private static final ClassName RepeatedBytes = ClassName.get(API_PACKAGE, "RepeatedBytes");
-    private static final ClassName RepeatedMessage = ClassName.get(API_PACKAGE, "RepeatedMessage");
+    static final ClassName RepeatedMessage = ClassName.get(API_PACKAGE, "RepeatedMessage");
 
     static ClassName getRepeatedStoreType(FieldDescriptorProto.Type type) {
         switch (type) {

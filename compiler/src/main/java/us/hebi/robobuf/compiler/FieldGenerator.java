@@ -27,11 +27,11 @@ public class FieldGenerator {
                 .addModifiers(Modifier.PRIVATE);
 
         if (info.isRepeated() && info.isMessageOrGroup()) {
-            field.addModifiers(Modifier.FINAL).initializer("new $T($T.getFactory())", storeType, info.getTypeName());
-        } else if (info.isMessageOrGroup()) {
-            field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
+            field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.getFactory())", RuntimeClasses.RepeatedMessage, info.getTypeName());
         } else if (info.isRepeated() || info.isBytes()) {
-            field.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
+            field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
+        }else if(info.isMessageOrGroup()){
+            field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
         } else if (info.isString()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);
         } else if (info.isPrimitive() || info.isEnum()) {

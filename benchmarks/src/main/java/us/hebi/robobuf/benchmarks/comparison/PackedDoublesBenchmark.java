@@ -54,13 +54,13 @@ public class PackedDoublesBenchmark {
         new Runner(options).run();
     }
 
-    final byte[] input = new Packed().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
+    final byte[] input = Packed.newInstance().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
     final byte[] output = new byte[input.length + 100];
 
     final ProtoSource source = ProtoSource.newInstance();
     final ProtoSink sink = ProtoSink.newInstance();
 
-    final Packed message = new Packed();
+    final Packed message = Packed.newInstance();
 
     @Benchmark
     public Object readRobo() throws IOException {

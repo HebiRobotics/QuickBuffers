@@ -92,8 +92,8 @@ public class SbeBenchmark {
     }
 
     // ===================== REUSABLE STATE =====================
-    final MarketDataIncrementalRefreshTrades marketMsg = new MarketDataIncrementalRefreshTrades();
-    final Car carMsg = new Car();
+    final MarketDataIncrementalRefreshTrades marketMsg = MarketDataIncrementalRefreshTrades.newInstance();
+    final Car carMsg = Car.newInstance();
     final ProtoSource source = ProtoSource.newSafeInstance();
     final ProtoSink sink = ProtoSink.newSafeInstance();
     final ProtoSource unsafeSource = ProtoSource.newInstance();

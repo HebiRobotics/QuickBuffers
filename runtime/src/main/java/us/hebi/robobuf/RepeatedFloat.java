@@ -8,7 +8,14 @@ import java.util.Arrays;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
+public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
+
+    public static RepeatedFloat newEmptyInstance() {
+        return new RepeatedFloat();
+    }
+
+    RepeatedFloat() {
+    }
 
     @Override
     protected void extendCapacityTo(int desiredSize) {
@@ -86,7 +93,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     /**
      * Provides access to the internal storage array. Do not hold
      * on to this reference as it can change during a resize.
-     *
+     * <p>
      * The array may be larger than the amount of contained data,
      * but the data is only valid between index 0 and length.
      *
@@ -100,7 +107,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      * Sets the absolute length of the data that can be serialized. The
      * internal storage array may get extended to accommodate at least
      * the desired length.
-     *
+     * <p>
      * This does not change the underlying data, so setting a length
      * longer than the current one may result in arbitrary data being
      * serialized.

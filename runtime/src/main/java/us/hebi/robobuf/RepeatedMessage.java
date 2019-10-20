@@ -4,9 +4,14 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedMessage<MessageType extends ProtoMessage<MessageType>> extends RepeatedObject<RepeatedMessage<MessageType>, MessageType, MessageType> {
+public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>> extends RepeatedObject<RepeatedMessage<MessageType>, MessageType, MessageType> {
 
-    public RepeatedMessage(MessageFactory<MessageType> factory) {
+    @SuppressWarnings("unchecked")
+    public static <T extends ProtoMessage<T>> RepeatedMessage<T> newEmptyInstance(MessageFactory<T> factory) {
+        return new RepeatedMessage(factory);
+    }
+
+    private RepeatedMessage(MessageFactory<MessageType> factory) {
         if (factory == null) throw new NullPointerException();
         this.factory = factory;
     }

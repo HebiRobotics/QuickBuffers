@@ -4,7 +4,14 @@ package us.hebi.robobuf;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedString extends RepeatedObject<RepeatedString, StringBuilder, CharSequence> {
+public final class RepeatedString extends RepeatedObject<RepeatedString, StringBuilder, CharSequence> {
+
+    public static RepeatedString newEmptyInstance(){
+        return new RepeatedString();
+    }
+
+    RepeatedString(){
+    }
 
     @Override
     protected void setIndex0(int index, CharSequence value) {

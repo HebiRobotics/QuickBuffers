@@ -6,6 +6,13 @@ package us.hebi.robobuf;
  */
 public class RepeatedBytes extends RepeatedObject<RepeatedBytes, RepeatedByte, byte[]> {
 
+    public static RepeatedBytes newEmptyInstance(){
+        return new RepeatedBytes();
+    }
+
+    private RepeatedBytes(){
+    }
+
     @Override
     protected void copyDataFrom0(RepeatedBytes other) {
         for (int i = 0; i < other.length; i++) {

@@ -47,9 +47,9 @@ public class SbeThroughputBenchmarkRobo {
         new Runner(options).run();
     }
 
-    final Fix.MarketDataIncrementalRefreshTrades marketData = new Fix.MarketDataIncrementalRefreshTrades();
+    final Fix.MarketDataIncrementalRefreshTrades marketData = Fix.MarketDataIncrementalRefreshTrades.newInstance();
     final byte[] marketDecodeBuffer = buildMarketData(marketData).toByteArray();
-    final Car car = new Car();
+    final Car car = Car.newInstance();
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
