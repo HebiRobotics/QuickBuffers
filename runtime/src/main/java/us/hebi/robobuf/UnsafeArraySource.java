@@ -17,7 +17,7 @@ import static us.hebi.robobuf.WireFormat.*;
 class UnsafeArraySource extends ProtoSource {
 
     static boolean isAvailable() {
-        return Platform.getJavaVersion() >= 7 && UnsafeAccess.isAvailable();
+        return UnsafeAccess.isAvailable() && UnsafeAccess.isCopyMemoryAvailable();
     }
 
     UnsafeArraySource(boolean enableDirect) {

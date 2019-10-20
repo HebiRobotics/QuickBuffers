@@ -37,6 +37,11 @@ class UnsafeAccess {
         return UNSAFE != null;
     }
 
+    public static boolean isCopyMemoryAvailable(){
+        // copy memory (obj, long, obj, long, long) is @since 1.7
+        return isAvailable() && javaVersion >= 7;
+    }
+
     static {
         Unsafe unsafe = null;
         long byteArrayOffset = 0;
@@ -86,5 +91,22 @@ class UnsafeAccess {
     final static long INT_ARRAY_OFFSET;
     final static long DOUBLE_ARRAY_OFFSET;
     final static long LONG_ARRAY_OFFSET;
+
+
+    // Move this into a separate utility class if anything else should ever
+    // depend on the version
+    static {
+        String specVersion = System.getProperty("java.specification.version", "1.6");
+        String[] parts = specVersion.split("\\.");
+
+        // 1.4, 1.5, 1.6, 1.8, 9, 10, 11, 18.3, etc.
+        if ("1".equals(parts[0])) {
+            javaVersion = Integer.parseInt(parts[1]);
+        } else {
+            javaVersion = Integer.parseInt(parts[0]);
+        }
+    }
+
+    private static final int javaVersion;
 
 }

@@ -17,7 +17,7 @@ import static us.hebi.robobuf.WireFormat.*;
 class UnsafeArraySink extends ArraySink {
 
     static boolean isAvailable() {
-        return Platform.getJavaVersion() >= 7 && UnsafeAccess.isAvailable();
+        return UnsafeAccess.isAvailable() && UnsafeAccess.isCopyMemoryAvailable();
     }
 
     UnsafeArraySink(boolean enableDirect) {
