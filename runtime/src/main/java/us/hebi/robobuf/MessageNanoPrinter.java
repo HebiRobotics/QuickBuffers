@@ -60,9 +60,9 @@ final class MessageNanoPrinter {
             return "";
         }
 
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         try {
-            print(null, message, new StringBuffer(), buf);
+            print(null, message, new StringBuilder(), buf);
         } catch (IllegalAccessException e) {
             return "Error printing proto: " + e.getMessage();
         } catch (InvocationTargetException e) {
@@ -72,7 +72,7 @@ final class MessageNanoPrinter {
     }
 
     /**
-     * Function that will print the given message/field into the StringBuffer.
+     * Function that will print the given message/field into the StringBuilder.
      * Meant to be called recursively.
      *
      * @param identifier the identifier to use, or {@code null} if this is the root message to
@@ -83,7 +83,7 @@ final class MessageNanoPrinter {
      * @param buf        the output buffer.
      */
     private static void print(String identifier, Object object,
-                              StringBuffer indentBuf, StringBuffer buf) throws IllegalAccessException,
+                              StringBuilder indentBuf, StringBuilder buf) throws IllegalAccessException,
             InvocationTargetException {
         if (object == null) {
             // This can happen if...
@@ -91,7 +91,7 @@ final class MessageNanoPrinter {
             //   - we're about to print a primitive, but "reftype" optional style is enabled, and
             //     the field is unset.
             // In both cases the appropriate behavior is to output nothing.
-        } else if (object instanceof ProtoMessage) {  // Nano proto message
+        } else if (object instanceof ProtoMessage) {
             int origIndentBufLength = indentBuf.length();
             if (identifier != null) {
                 buf.append(indentBuf).append(deCamelCaseify(identifier)).append(" <\n");
@@ -118,7 +118,7 @@ final class MessageNanoPrinter {
                     Class<?> fieldType = field.getType();
                     Object value = field.get(object);
 
-                    if (fieldType.isArray()) {
+                    if (fieldType.isAssignableFrom(RepeatedField.class)) {
                         Class<?> arrayType = fieldType.getComponentType();
 
                         // bytes is special since it's not repeated, but is represented by an array
@@ -205,7 +205,7 @@ final class MessageNanoPrinter {
      * Converts an identifier of the format "FieldName" into "field_name".
      */
     private static String deCamelCaseify(String identifier) {
-        StringBuffer out = new StringBuffer();
+        StringBuilder out = new StringBuilder();
         for (int i = 0; i < identifier.length(); i++) {
             char currentChar = identifier.charAt(i);
             if (i == 0) {
@@ -248,9 +248,9 @@ final class MessageNanoPrinter {
     }
 
     /**
-     * Appends a quoted byte array to the provided {@code StringBuffer}.
+     * Appends a quoted byte array to the provided {@code StringBuilder}.
      */
-    private static void appendQuotedBytes(byte[] bytes, StringBuffer builder) {
+    private static void appendQuotedBytes(byte[] bytes, StringBuilder builder) {
         if (bytes == null) {
             builder.append("\"\"");
             return;
