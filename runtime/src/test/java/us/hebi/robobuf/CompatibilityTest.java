@@ -30,7 +30,7 @@ public class CompatibilityTest {
     public void testCompatibilityWithProtobufJava() throws IOException {
         byte[] serializedMsg = getCombinedMessage();
         TestAllTypes.Builder expected = TestAllTypes.newBuilder();
-        protos.test.robo.TestAllTypes msg = new protos.test.robo.TestAllTypes();
+        protos.test.robo.TestAllTypes msg = protos.test.robo.TestAllTypes.newInstance();
 
         // multiple merges to check expanding repeated behavior
         for (int i = 0; i < 3; i++) {

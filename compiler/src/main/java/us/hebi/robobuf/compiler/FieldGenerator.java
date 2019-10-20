@@ -28,7 +28,9 @@ public class FieldGenerator {
 
         if (info.isRepeated() && info.isMessageOrGroup()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T($T.getFactory())", storeType, info.getTypeName());
-        } else if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
+        } else if (info.isMessageOrGroup()) {
+            field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
+        } else if (info.isRepeated() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T()", storeType);
         } else if (info.isString()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);

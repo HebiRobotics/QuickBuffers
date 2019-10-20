@@ -46,7 +46,7 @@ public class UnsafeTest {
 
         // Read
         ProtoSource source = ProtoSource.newUnsafeInstance().wrap(target, offset, target.length - offset);
-        assertEquals(message, new TestAllTypes().mergeFrom(source));
+        assertEquals(message, TestAllTypes.newInstance().mergeFrom(source));
     }
 
     @Test
@@ -61,7 +61,7 @@ public class UnsafeTest {
 
         // Read
         ProtoSource source = ProtoSource.newUnsafeInstance().wrap(null, directAddress, array.length);
-        assertEquals(message, new TestAllTypes().mergeFrom(source));
+        assertEquals(message, TestAllTypes.newInstance().mergeFrom(source));
     }
 
     @Test
@@ -75,7 +75,7 @@ public class UnsafeTest {
         sink.checkNoSpaceLeft();
 
         ProtoSource source = ProtoSource.newUnsafeInstance().wrap(null, getDirectAddress(buffer), size);
-        assertEquals(msg, new RepeatedPackables.Packed().mergeFrom(source));
+        assertEquals(msg, RepeatedPackables.Packed.newInstance().mergeFrom(source));
     }
 
     @Test
@@ -89,7 +89,7 @@ public class UnsafeTest {
         sink.checkNoSpaceLeft();
 
         ProtoSource source = ProtoSource.newUnsafeInstance().wrap(null, getDirectAddress(buffer), size);
-        assertEquals(msg, new RepeatedPackables.NonPacked().mergeFrom(source));
+        assertEquals(msg, RepeatedPackables.NonPacked.newInstance().mergeFrom(source));
     }
 
     private static long getDirectAddress(ByteBuffer buffer) {

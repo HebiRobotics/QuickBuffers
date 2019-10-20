@@ -66,7 +66,7 @@ public class RepeatedWriteBenchmark {
     }
 
     final Random rnd = new Random();
-    final TestAllTypes msg = new TestAllTypes();
+    final TestAllTypes msg = TestAllTypes.newInstance();
     byte[] outputBuffer = new byte[10 * 1024];
     final ProtoSink sink = ProtoSink.newInstance(outputBuffer);
     final static int size = 256;
@@ -75,8 +75,8 @@ public class RepeatedWriteBenchmark {
     final int[] intArray = new int[size];
     final long[] longArray = new long[size];
 
-    final RepeatedPackables.Packed packed = new RepeatedPackables.Packed();
-    final RepeatedPackables.NonPacked nonPacked = new RepeatedPackables.NonPacked();
+    final RepeatedPackables.Packed packed = RepeatedPackables.Packed.newInstance();
+    final RepeatedPackables.NonPacked nonPacked = RepeatedPackables.NonPacked.newInstance();
 
     @Setup(Level.Trial)
     public void setupData() {

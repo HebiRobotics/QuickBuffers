@@ -45,7 +45,7 @@ public class PrimitiveWriteBenchmark {
     }
 
     final Random rnd = new Random();
-    final TestAllTypes msg = new TestAllTypes();
+    final TestAllTypes msg = TestAllTypes.newInstance();
     byte[] outputBuffer = new byte[10 * 1024];
     final ProtoSink sink = ProtoSink.newInstance(outputBuffer);
     final double[] doubleArray = new double[512];

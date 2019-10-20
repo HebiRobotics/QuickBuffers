@@ -42,7 +42,7 @@ public class PrintMemoryLayout {
         }
 
         System.out.println("---- Object Graph ---- ");
-        ProtoMessage msg = new TestAllTypes();
+        ProtoMessage msg = TestAllTypes.newInstance();
         System.out.println(GraphLayout.parseInstance(msg).toPrintable());
 
         System.out.println("---- Offsets of Nested Messages ---- ");

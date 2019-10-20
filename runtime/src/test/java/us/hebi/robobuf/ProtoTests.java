@@ -23,7 +23,7 @@ public class ProtoTests {
 
     @Test
     public void testDefaults() throws IOException {
-        TestAllTypes msg = new TestAllTypes();
+        TestAllTypes msg = TestAllTypes.newInstance();
         for (int i = 0; i < 2; i++) {
             assertTrue(msg.getDefaultBool());
             assertEquals(41, msg.getDefaultInt32());
@@ -62,7 +62,7 @@ public class ProtoTests {
 
     @Test
     public void testOptionalPrimitives() throws IOException {
-        TestAllTypes emptyMsg = new TestAllTypes();
+        TestAllTypes emptyMsg = TestAllTypes.newInstance();
         assertFalse(emptyMsg.hasOptionalBool());
         assertFalse(emptyMsg.hasOptionalDouble());
         assertFalse(emptyMsg.hasOptionalFloat());
@@ -108,7 +108,7 @@ public class ProtoTests {
         assertEquals(110, msg.getOptionalUint32());
         assertEquals(111, msg.getOptionalUint64());
 
-        TestAllTypes manualMsg = new TestAllTypes()
+        TestAllTypes manualMsg = TestAllTypes.newInstance()
                 .setOptionalBool(true)
                 .setOptionalDouble(100.0d)
                 .setOptionalFloat(101.0f)
@@ -137,7 +137,7 @@ public class ProtoTests {
 
     @Test
     public void testRepeatedPrimitives() throws IOException {
-        RepeatedPackables.Packed emptyMsg = new RepeatedPackables.Packed();
+        RepeatedPackables.Packed emptyMsg = RepeatedPackables.Packed.newInstance();
         assertFalse(emptyMsg.hasBools());
         assertFalse(emptyMsg.hasDoubles());
         assertFalse(emptyMsg.hasFloats());
@@ -183,7 +183,7 @@ public class ProtoTests {
         assertArrayEquals(new int[]{2, 300, 4, 5}, msg.getUint32S().toArray());
         assertArrayEquals(new long[]{5L, 6L, 23L << 40, 8L}, msg.getUint64S().toArray());
 
-        RepeatedPackables.Packed manualMsg = new RepeatedPackables.Packed()
+        RepeatedPackables.Packed manualMsg = RepeatedPackables.Packed.newInstance()
                 .addAllBools(true, false, true, true)
                 .addAllDoubles(Double.POSITIVE_INFINITY, -2d, 3d, 4d)
                 .addAllFloats(10f, 20f, -30f, Float.NaN)
@@ -211,7 +211,7 @@ public class ProtoTests {
 
     @Test
     public void testOptionalEnums() throws IOException {
-        TestAllTypes emptyMsg = new TestAllTypes();
+        TestAllTypes emptyMsg = TestAllTypes.newInstance();
         assertFalse(emptyMsg.hasOptionalNestedEnum());
         assertFalse(emptyMsg.hasOptionalForeignEnum());
         assertFalse(emptyMsg.hasOptionalImportEnum());
@@ -226,7 +226,7 @@ public class ProtoTests {
         assertEquals(ForeignEnum.FOREIGN_BAR, msg.getOptionalForeignEnum());
         assertEquals(ImportEnum.IMPORT_BAZ, msg.getOptionalImportEnum());
 
-        TestAllTypes manualMsg = new TestAllTypes()
+        TestAllTypes manualMsg = TestAllTypes.newInstance()
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
                 .setOptionalImportEnum(ImportEnum.IMPORT_BAZ);
@@ -253,13 +253,13 @@ public class ProtoTests {
         assertEquals(NestedEnum.BAR, msg.getRepeatedNestedEnum(1));
         assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum(2));
         assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum(3));
-        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
+        TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }
 
     @Test
     public void testStrings() throws IOException {
-        TestAllTypes msg = new TestAllTypes();
+        TestAllTypes msg = TestAllTypes.newInstance();
 
         // Setter
         assertFalse(msg.hasOptionalString());
@@ -290,7 +290,7 @@ public class ProtoTests {
         assertEquals("ascii", msg.getRepeatedString().get(2).toString());
         assertEquals("utf8\uD83D\uDCA9", msg.getRepeatedString().get(3).toString());
 
-        TestAllTypes msg2 = new TestAllTypes();
+        TestAllTypes msg2 = TestAllTypes.newInstance();
         msg2.getMutableRepeatedString()
                 .copyFrom(msg.getRepeatedString().toArray());
 
@@ -304,7 +304,7 @@ public class ProtoTests {
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
 
-        TestAllTypes msg = new TestAllTypes();
+        TestAllTypes msg = TestAllTypes.newInstance();
 
         assertFalse(msg.hasOptionalBytes());
         msg.addAllOptionalBytes(utf8Bytes);
@@ -330,13 +330,13 @@ public class ProtoTests {
         assertEquals(2, msg.getRepeatedBytes().length());
         assertArrayEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
         assertArrayEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
-        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg).toByteArray());
+        TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }
 
     @Test
     public void testOptionalMessages() throws IOException {
-        TestAllTypes msg = new TestAllTypes();
+        TestAllTypes msg = TestAllTypes.newInstance();
 
         // Setter
         assertFalse(msg.hasOptionalNestedMessage());
@@ -346,7 +346,7 @@ public class ProtoTests {
 
         // Mutable getter
         assertFalse(msg.hasOptionalForeignMessage());
-        msg.setOptionalForeignMessage(new ForeignMessage().setC(3));
+        msg.setOptionalForeignMessage(ForeignMessage.newInstance().setC(3));
         assertTrue(msg.hasOptionalForeignMessage());
 
         // Compare w/ gen-Java and round-trip parsing
@@ -358,23 +358,23 @@ public class ProtoTests {
     public void testRepeatedMessages() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedMessages());
         assertEquals(3, msg.getRepeatedForeignMessage().length());
-        assertEquals(new ForeignMessage().setC(0), msg.getRepeatedForeignMessage().get(0));
-        assertEquals(new ForeignMessage().setC(1), msg.getRepeatedForeignMessage().get(1));
-        assertEquals(new ForeignMessage().setC(2), msg.getRepeatedForeignMessage().get(2));
+        assertEquals(ForeignMessage.newInstance().setC(0), msg.getRepeatedForeignMessage().get(0));
+        assertEquals(ForeignMessage.newInstance().setC(1), msg.getRepeatedForeignMessage().get(1));
+        assertEquals(ForeignMessage.newInstance().setC(2), msg.getRepeatedForeignMessage().get(2));
 
-        TestAllTypes msg2 = new TestAllTypes()
-                .addRepeatedForeignMessage(new ForeignMessage().setC(0))
-                .addRepeatedForeignMessage(new ForeignMessage().setC(1))
-                .addRepeatedForeignMessage(new ForeignMessage().setC(2));
+        TestAllTypes msg2 = TestAllTypes.newInstance()
+                .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(0))
+                .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(1))
+                .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(2));
         assertEquals(msg, msg2);
 
-        TestAllTypes actual = TestAllTypes.parseFrom(new TestAllTypes().copyFrom(msg2).toByteArray());
+        TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg2).toByteArray());
         assertEquals(msg, actual);
     }
 
     @Test
     public void testHighFieldNumbers() throws IOException {
-        MessageWithMultibyteNumbers expected = new MessageWithMultibyteNumbers()
+        MessageWithMultibyteNumbers expected = MessageWithMultibyteNumbers.newInstance()
                 .setTagSize1(1)
                 .setTagSize2(2)
                 .setTagSize3(3)
@@ -387,7 +387,7 @@ public class ProtoTests {
 
     @Test
     public void testAllTypesRequired() throws IOException {
-        TestAllTypesRequired expected = new TestAllTypesRequired()
+        TestAllTypesRequired expected = TestAllTypesRequired.newInstance()
                 .setRequiredBool(true)
                 .setRequiredDouble(100.0d)
                 .setRequiredFloat(101.0f)
@@ -404,7 +404,7 @@ public class ProtoTests {
                 .setRequiredString("test")
                 .addRequiredBytes((byte) 0)
                 .setRequiredNestedEnum(TestAllTypesRequired.NestedEnum.BAR)
-                .setRequiredNestedMessage(new UnittestRequired.SimpleMessage().setRequiredField(0));
+                .setRequiredNestedMessage(UnittestRequired.SimpleMessage.newInstance().setRequiredField(0));
         byte[] output = expected.toByteArray();
 
         TestAllTypesRequired actual = TestAllTypesRequired.parseFrom(expected.toByteArray());
@@ -422,7 +422,7 @@ public class ProtoTests {
     @Test
     public void testSkipUnknownFields() throws IOException {
         ProtoSource source = ProtoSource.newInstance().wrap(CompatibilityTest.getCombinedMessage());
-        new TestAllTypes.NestedMessage().mergeFrom(source);
+        TestAllTypes.NestedMessage.newInstance().mergeFrom(source);
         assertTrue(source.isAtEnd());
     }
 

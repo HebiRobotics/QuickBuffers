@@ -52,9 +52,16 @@ class MessageGenerator {
                 .map(MessageGenerator::generate)
                 .forEach(type::addType);
 
+        // newInstance() method
+        type.addMethod(MethodSpec.methodBuilder("newInstance")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(info.getTypeName())
+                .addStatement("return new $T()", info.getTypeName())
+                .build());
+
         // Constructor
         type.addMethod(MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC)
+                .addModifiers(Modifier.PRIVATE)
                 .addStatement("$L", BitField.setBit(0)) // dummy for triggering clear
                 .addStatement("clear()")
                 .build());
@@ -355,7 +362,7 @@ class MessageGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
-                .addStatement("return new $T()", info.getTypeName())
+                .addStatement("return $T.newInstance()", info.getTypeName())
                 .build();
 
         TypeSpec factoryEnum = TypeSpec.enumBuilder(factoryTypeName.simpleName())

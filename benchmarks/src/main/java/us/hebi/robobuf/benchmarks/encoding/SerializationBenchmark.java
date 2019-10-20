@@ -47,7 +47,7 @@ public class SerializationBenchmark {
         new Runner(options).run();
     }
 
-    final TestAllTypes msg = new TestAllTypes()
+    final TestAllTypes msg = TestAllTypes.newInstance()
             .setOptionalBool(true)
             .setOptionalDouble(100.0d)
             .setOptionalFloat(101.0f)
@@ -66,12 +66,12 @@ public class SerializationBenchmark {
             .setDefaultNestedEnum(TestAllTypes.NestedEnum.FOO)
             .addAllRepeatedFixed32(new int[5])
             .addAllRepeatedDouble(new double[5])
-            .addRepeatedForeignMessage(new ForeignMessage().setC(512));
+            .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(512));
     byte[] msgBytes = msg.toByteArray();
     byte[] msgOutBuffer = new byte[msgBytes.length];
-    final TestAllTypes msgIn = new TestAllTypes();
+    final TestAllTypes msgIn = TestAllTypes.newInstance();
 
-    final TestAllTypes stringMessage = new TestAllTypes()
+    final TestAllTypes stringMessage = TestAllTypes.newInstance()
             .setOptionalString("" +
                     "this is a pretty long ascii string \n" +
                     "this is a pretty long ascii string \n" +
