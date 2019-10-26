@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>compiler</artifactId>
+    <artifactId>generator</artifactId>
 
     <properties>
         <protocPluginName>protoc-gen-robobuf</protocPluginName>
@@ -114,6 +114,7 @@
                         </goals>
                         <configuration>
                             <finalName>${finalName}</finalName>
+                            <minimizeJar>true</minimizeJar>
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -150,6 +151,28 @@
                                 <fixcrlf file="target/${protocPluginName}" eol="unix"/>
                             </tasks>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Create zip file that contains executable scripts -->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/protoc-gen-robobuf.xml</descriptor>
+                    </descriptors>
+                    <finalName>${finalName}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
