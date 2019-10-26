@@ -417,6 +417,19 @@ public class ProtoTests {
         } catch (Throwable t) {
         }
 
+        // Check isInitialized()
+        assertFalse(expected.isInitialized());
+        expected.setRequiredBool(false);
+        assertTrue(expected.isInitialized());
+        expected.clearRequiredInt32();
+        assertFalse(expected.isInitialized());
+        expected.setRequiredInt32(108);
+        assertTrue(expected.isInitialized());
+        expected.getMutableRequiredNestedMessage().clear();
+        assertFalse(expected.isInitialized());
+        expected.getMutableRequiredNestedMessage().setRequiredField(0);
+        assertTrue(expected.isInitialized());
+
     }
 
     @Test

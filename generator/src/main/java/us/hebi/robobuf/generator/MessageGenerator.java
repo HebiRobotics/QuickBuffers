@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static us.hebi.robobuf.generator.BitField.*;
+
 /**
  * @author Florian Enner
  * @since 07 Aug 2019
@@ -81,6 +83,7 @@ class MessageGenerator {
         generateWriteTo(type);
         generateComputeSerializedSize(type);
         generateMergeFrom(type);
+        generateIsInitialized(type);
         generateClone(type);
 
         // Static utilities
@@ -352,6 +355,55 @@ class MessageGenerator {
                 .returns(info.getTypeName())
                 .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.AbstractMessage, info.getTypeName())
                 .build());
+    }
+
+    private void generateIsInitialized(TypeSpec.Builder type) {
+        MethodSpec.Builder isInitialized = MethodSpec.methodBuilder("isInitialized")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .returns(boolean.class);
+
+        // check if all required bits are set
+        final int numFields = fields.size();
+        int i = 0;
+        for (int bitFieldIndex = 0; bitFieldIndex < numBitFields && i < numFields; bitFieldIndex++) {
+
+            // Generate a single number that contains all required bits
+            int bits = 0;
+            for (int bit = 0; bit < BITS_PER_FIELD && i < numFields; bit++, i++) {
+                if (fields.get(i).getInfo().isRequired()) {
+                    bits |= 1 << bit;
+                }
+            }
+
+            // Check up to 32 fields at the same time
+            if (bits != 0) {
+                isInitialized.beginControlFlow("if ($L)", BitField.isMissingRequiredBits(bitFieldIndex, bits))
+                        .addStatement("return false")
+                        .endControlFlow();
+            }
+
+        }
+
+        // Check sub-messages (including optional and repeated)
+        fields.stream()
+                .map(FieldGenerator::getInfo)
+                .filter(RequestInfo.FieldInfo::isMessageOrGroup)
+                .forEach(field -> {
+                    if (field.isRequired()) {
+                        // has bit was already checked
+                        isInitialized.beginControlFlow("if (!$N.isInitialized())", field.getFieldName());
+                    } else {
+                        // We need to check has bit ourselves
+                        isInitialized.beginControlFlow("if ($L() && !$N.isInitialized())", field.getHazzerName(), field.getFieldName());
+                    }
+                    isInitialized
+                            .addStatement("return false")
+                            .endControlFlow();
+                });
+
+        isInitialized.addStatement("return true");
+        type.addMethod(isInitialized.build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {

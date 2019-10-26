@@ -108,8 +108,16 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     }
 
     /**
-     * Computes the number of bytes required to encode this message. This does not update the
-     * cached size.
+     * Returns true if all required fields in the message and all embedded
+     * messages are set, false otherwise.
+     */
+    public boolean isInitialized() {
+        return true;
+    }
+
+    /**
+     * Computes the number of bytes required to encode this message. This does
+     * not update the cached size.
      */
     protected abstract int computeSerializedSize();
 

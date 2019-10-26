@@ -48,6 +48,17 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
         length = 0;
     }
 
+    /**
+     * @return true if all contained messages are initialized
+     */
+    public final boolean isInitialized() {
+        for (int i = 0; i < length; i++) {
+            if (!array[i].isInitialized())
+                return false;
+        }
+        return true;
+    }
+
     @Override
     protected final boolean isEqual(MessageType a, Object b) {
         return a.equals(b);
