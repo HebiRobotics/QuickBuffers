@@ -1,2 +1,2 @@
 #!/bin/bash
-./compiler/target/protoc-gen-robobuf
+./generator/target/protoc-gen-robobuf

@@ -1,4 +1,4 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 /**
  * Copied from Guava's Preconditions

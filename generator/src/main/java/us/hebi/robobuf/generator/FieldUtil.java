@@ -1,4 +1,4 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Label;

@@ -73,7 +73,7 @@ The project can be built with `mvn package` using JDK8 through JDK11. The runtim
 
 Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
 
-For this reason the `compiler` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
+For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
 
 ### Generating Messages
 
@@ -81,9 +81,9 @@ The code generator is setup as a `protoc` plugin. In order to call it, you need 
 
 * Download `protoc` and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.2`)
 * Place the files below in the same directory or somewhere else on the `$PATH`. Protoc does have an option to define a plugin path, but it does not seem to work with scripts.
-  * `compiler/target/protoc-gen-robobuf`
-  * `compiler/target/protoc-gen-robobuf.bat`
-  * `compiler/target/protoc-gen-robobuf-<version>.jar`
+  * `generator/target/protoc-gen-robobuf`
+  * `generator/target/protoc-gen-robobuf.bat`
+  * `generator/target/protoc-gen-robobuf-<version>.jar`
 * Call `protoc` with `--robobuf_out=<options>:./path/to/generate`
 
 Currently available options are

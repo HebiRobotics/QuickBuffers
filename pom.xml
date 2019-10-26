@@ -21,7 +21,7 @@
 
     <modules>
         <module>parser</module>
-        <module>compiler</module>
+        <module>generator</module>
         <module>runtime</module>
         <module>benchmarks</module>
     </modules>

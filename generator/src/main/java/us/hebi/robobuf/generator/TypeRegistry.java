@@ -1,17 +1,17 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
 import lombok.ToString;
-import us.hebi.robobuf.compiler.RequestInfo.FileInfo;
-import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
-import us.hebi.robobuf.compiler.RequestInfo.TypeInfo;
+import us.hebi.robobuf.generator.RequestInfo.FileInfo;
+import us.hebi.robobuf.generator.RequestInfo.MessageInfo;
+import us.hebi.robobuf.generator.RequestInfo.TypeInfo;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static us.hebi.robobuf.compiler.Preconditions.*;
+import static us.hebi.robobuf.generator.Preconditions.*;
 
 /**
  * Maps proto type ids to Java class names, e.g.,

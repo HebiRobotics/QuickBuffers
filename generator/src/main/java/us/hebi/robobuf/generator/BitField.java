@@ -1,4 +1,4 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 /**
  * Utilities for creating protobuf-like bit-sets to keep has state

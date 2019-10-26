@@ -1,4 +1,4 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static us.hebi.robobuf.compiler.Preconditions.*;
+import static us.hebi.robobuf.generator.Preconditions.*;
 
 /**
  * Meta info that wraps the information in descriptors in a format that is easier to work with

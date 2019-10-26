@@ -68,26 +68,26 @@
                                 <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protoc.version}/${protoc.executable}"
                                      dest="../${protoc.executable}" skipexisting="true" verbose="on"/>
 
-                                <mkdir dir="target/test-classes/us/hebi/robobuf/compiler"/>
+                                <mkdir dir="target/test-classes/us/hebi/robobuf/generator"/>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=required.request,indent=tab,input_order=robobuf:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=required.request,indent=tab,input_order=robobuf:target/test-classes/us/hebi/robobuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_required.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number:target/test-classes/us/hebi/robobuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=java=robo,input_order=random:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=java=robo,input_order=random:target/test-classes/us/hebi/robobuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=java=robo:target/test-classes/us/hebi/robobuf/compiler"/>
+                                    <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=java=robo:target/test-classes/us/hebi/robobuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
                                 </exec>
@@ -117,7 +117,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>us.hebi.robobuf.compiler.CompilerPlugin</mainClass>
+                                    <mainClass>us.hebi.robobuf.generator.CompilerPlugin</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

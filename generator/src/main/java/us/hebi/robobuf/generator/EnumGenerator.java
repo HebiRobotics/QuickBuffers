@@ -1,8 +1,8 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 import com.google.protobuf.DescriptorProtos.EnumValueDescriptorProto;
 import com.squareup.javapoet.*;
-import us.hebi.robobuf.compiler.RequestInfo.EnumInfo;
+import us.hebi.robobuf.generator.RequestInfo.EnumInfo;
 
 import javax.lang.model.element.Modifier;
 

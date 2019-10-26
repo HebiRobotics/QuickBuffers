@@ -1,10 +1,10 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import us.hebi.robobuf.compiler.RequestInfo.FileInfo;
+import us.hebi.robobuf.generator.RequestInfo.FileInfo;
 import us.hebi.robobuf.parser.ParserUtil;
 
 import javax.lang.model.element.Modifier;

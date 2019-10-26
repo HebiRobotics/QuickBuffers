@@ -1,8 +1,8 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 import com.squareup.javapoet.*;
-import us.hebi.robobuf.compiler.RequestInfo.ExpectedIncomingOrder;
-import us.hebi.robobuf.compiler.RequestInfo.MessageInfo;
+import us.hebi.robobuf.generator.RequestInfo.ExpectedIncomingOrder;
+import us.hebi.robobuf.generator.RequestInfo.MessageInfo;
 
 import javax.lang.model.element.Modifier;
 import java.io.IOException;

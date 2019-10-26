@@ -1,4 +1,4 @@
-package us.hebi.robobuf.compiler;
+package us.hebi.robobuf.generator;
 
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import org.junit.Test;
@@ -6,7 +6,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static us.hebi.robobuf.compiler.Preconditions.*;
+import static us.hebi.robobuf.generator.Preconditions.*;
 
 /**
  * @author Florian Enner
