@@ -84,6 +84,7 @@ class MessageGenerator {
         generateComputeSerializedSize(type);
         generateMergeFrom(type);
         generateIsInitialized(type);
+        generatePrint(type);
         generateClone(type);
 
         // Static utilities
@@ -404,6 +405,22 @@ class MessageGenerator {
 
         isInitialized.addStatement("return true");
         type.addMethod(isInitialized.build());
+    }
+
+    private void generatePrint(TypeSpec.Builder type) {
+        MethodSpec.Builder print = MethodSpec.methodBuilder("print")
+                .addAnnotation(Override.class)
+                .addParameter(RuntimeClasses.ProtoPrinter, "printer", Modifier.FINAL)
+                .addModifiers(Modifier.PUBLIC);
+
+        // add every set field
+        for (FieldGenerator field : fields) {
+            print.beginControlFlow("if ($L)", BitField.hasBit(field.getInfo().getFieldIndex()));
+            field.generatePrintCode(print);
+            print.endControlFlow();
+        }
+
+        type.addMethod(print.build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {

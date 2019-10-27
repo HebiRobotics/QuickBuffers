@@ -124,7 +124,7 @@ class NamingUtil {
             "false", "null", "true",
 
             // Reserved keywords for internal variables
-            "value", "values", "other", "input", "output"
+            "value", "values", "other", "input", "output", "o", "printer"
     ));
 
 }

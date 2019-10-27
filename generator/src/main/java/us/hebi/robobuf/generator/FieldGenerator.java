@@ -30,7 +30,7 @@ public class FieldGenerator {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.getFactory())", RuntimeClasses.RepeatedMessage, info.getTypeName());
         } else if (info.isRepeated() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
-        }else if(info.isMessageOrGroup()){
+        } else if (info.isMessageOrGroup()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
         } else if (info.isString()) {
             field.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);
@@ -320,6 +320,11 @@ public class FieldGenerator {
             method.addNamedCode("size += $bytesPerTag:L + $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N);\n", m); // non-repeated
         }
 
+    }
+
+    protected void generatePrintCode(MethodSpec.Builder method) {
+        // TODO: handle enum with strings?
+        method.addStatement("printer.print($S, $N)", getInfo().getDescriptor().getName(), getInfo().getFieldName());
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {

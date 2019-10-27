@@ -450,6 +450,12 @@ public class ProtoTests {
     }
 
     @Test
+    public void testToString() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        assertNotNull(msg.toString());
+    }
+
+    @Test
     public void testDelimitedStream() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
 
