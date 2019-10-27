@@ -87,8 +87,28 @@ public abstract class ProtoSink {
      * available.
      */
     public static ProtoSink newInstance() {
-        if (UnsafeArraySink.isAvailable())
-            return new UnsafeArraySink(false);
+        return newInstance(true);
+    }
+
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array.
+     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
+     * be thrown.
+     *
+     * This method will return the fastest implementation available for the
+     * current platform and may leverage features from sun.misc.Unsafe if
+     * available.
+     *
+     * @param allowUnalignedAccess true if the platform supports non-aligned writes
+     */
+    public static ProtoSink newInstance(boolean allowUnalignedAccess) {
+        if (UnsafeArraySink.isAvailable()) {
+            if (allowUnalignedAccess) {
+                return new UnsafeArraySink.Unaligned(false);
+            } else {
+                return new UnsafeArraySink(false);
+            }
+        }
         return newSafeInstance();
     }
 
@@ -116,6 +136,26 @@ public abstract class ProtoSink {
      * of the runtime, so only use if you know what you are doing.
      */
     public static ProtoSink newUnsafeInstance() {
+        return newUnsafeInstance(true);
+    }
+
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array or
+     * direct memory. If more bytes are written than fit in the array, an
+     * {@link OutOfSpaceException} will be thrown.
+     *
+     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     *
+     * Additionally, this sink removes null-argument checks and allows users to
+     * write to off-heap memory. Working with off-heap memory may cause segfaults
+     * of the runtime, so only use if you know what you are doing.
+     *
+     * @param allowUnalignedAccess true if the platform supports non-aligned writes
+     */
+    public static ProtoSink newUnsafeInstance(boolean allowUnalignedAccess) {
+        if (allowUnalignedAccess) {
+            return new UnsafeArraySink.Unaligned(true);
+        }
         return new UnsafeArraySink(true);
     }
 

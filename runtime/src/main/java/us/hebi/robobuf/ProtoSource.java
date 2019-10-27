@@ -70,8 +70,26 @@ public class ProtoSource {
      * available.
      */
     public static ProtoSource newInstance() {
-        if (UnsafeArraySource.isAvailable())
-            return new UnsafeArraySource(false);
+        return newInstance(true);
+    }
+
+    /**
+     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     *
+     * This method will return the fastest implementation available for the
+     * current platform and may leverage features from sun.misc.Unsafe if
+     * available.
+     *
+     * @param allowUnalignedAccess true if the platform supports non-aligned reads
+     */
+    public static ProtoSource newInstance(boolean allowUnalignedAccess) {
+        if (UnsafeArraySource.isAvailable()) {
+            if (allowUnalignedAccess) {
+                return new UnsafeArraySource.Unaligned(false);
+            } else {
+                return new UnsafeArraySource(false);
+            }
+        }
         return newSafeInstance();
     }
 
@@ -99,7 +117,26 @@ public class ProtoSource {
      * of the runtime, so only use if you know what you are doing.
      */
     public static ProtoSource newUnsafeInstance() {
-        return new UnsafeArraySource(true);
+        return newUnsafeInstance(true);
+    }
+
+    /**
+     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     *
+     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     *
+     * Additionally, this sink removes null-argument checks and allows users to
+     * write to off-heap memory. Working with off-heap memory may cause segfaults
+     * of the runtime, so only use if you know what you are doing.
+     *
+     * @param allowUnalignedAccess true if the platform supports non-aligned reads
+     */
+    public static ProtoSource newUnsafeInstance(boolean allowUnalignedAccess) {
+        if (allowUnalignedAccess) {
+            return new UnsafeArraySource.Unaligned(true);
+        } else {
+            return new UnsafeArraySource(true);
+        }
     }
 
     public final ProtoSource wrap(byte[] buffer) {
