@@ -15,6 +15,7 @@
         <protocPluginName>protoc-gen-request</protocPluginName>
         <finalName>${protocPluginName}-${project.version}</finalName>
         <javaModuleName>us.hebi.robobuf.parser</javaModuleName>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>

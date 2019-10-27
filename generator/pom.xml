@@ -18,6 +18,7 @@
         <protoc.arch>x86_64</protoc.arch>
         <protoc.executable>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.executable>
         <javaModuleName>us.hebi.robobuf.generator</javaModuleName>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>
