@@ -233,7 +233,7 @@ assertEquals(msg, RootMessage().newInstance.mergeFrom(source));
 Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
 
 <details>
-<summary>Off-Heap Addresses</summary><p>
+<summary>Off-Heap Addressing</summary><p>
 
 Depending on platform support, the implementation may make use of `sun.misc.Unsafe`. If you 
 are familiar with Unsafe, you may also request an UnsafeSource instance that will allow you to use off-heap addresses. Use with caution!
