@@ -19,6 +19,7 @@
         <protoc.executable>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.executable>
         <javaModuleName>us.hebi.robobuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
     </properties>
 
     <dependencies>
