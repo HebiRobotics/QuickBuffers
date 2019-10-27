@@ -59,8 +59,7 @@ The generated messages require a runtime library. Released versions will be on M
 ```
 
 <details>
-<summary>Building from Source</summary>
-<p>
+<summary>Building from Source</summary><p>
 
 The project can be built with `mvn package` using JDK8 through JDK11.
 
@@ -68,8 +67,7 @@ Note that protoc plugins get started by the `protoc` executable and exchange inf
 
 For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
 
-</p>
-</details> 
+</p></details> 
 
 ## Basic Usage
 
@@ -79,7 +77,7 @@ All nested object types (e.g. messages, repeated fields, etc.) have `getField()`
 
 
 <details>
-<summary>Primitive Fields</summary>
+<summary>Primitive Fields</summary><p>
 
 All primitive values generate the same accessors and behavior as Protobuf-Java's `Builder` classes
 
@@ -102,10 +100,10 @@ public final class SimpleMessage {
 }
 ```
 
-</details> 
+</p></details> 
 
 <details>
-<summary>Message Fields</summary>
+<summary>Message Fields</summary><p>
 
 Nested message types are `final` and allocated during construction time. Setting the field copies the internal data, but does not change the reference, so the best way to set nested message content is by directly accessing the internal store with `getMutableNestedMessage()`.
 
@@ -141,10 +139,10 @@ RootMessage msg = RootMessage.newInstance();
 msg.getMutableNestedMessage().setPrimitiveValue(0);
 ```
 
-</details> 
+</p></details> 
 
 <details>
-<summary>String Fields</summary>
+<summary>String Fields</summary><p>
 
 `String` objects are immutable, so we use the built-in `CharSequence` and `StringBuilder` classes instead.
 
@@ -178,10 +176,10 @@ msg.getMutableOptionalString()
 
 If you receive messages with many identical Strings, you may want to use a `StringInterner` to share already existing references.
 
-</details> 
+</p></details> 
 
 <details>
-<summary>Repeated Fields</summary>
+<summary>Repeated Fields</summary><p>
 
 Note: Our own use cases make very little use of repeated fields, so we expect that the API can probably be improved significantly. (i.e. please let us know if you have any better ideas)
 
@@ -237,7 +235,7 @@ assertEquals(msg, RootMessage().newInstance.mergeFrom(source));
 Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
 
 <details>
-<summary>Off-Heap Addresses</summary>
+<summary>Off-Heap Addresses</summary><p>
 
 Depending on platform support, the implementation may make use of `sun.misc.Unsafe`. If you 
 are familiar with Unsafe, you may also request an UnsafeSource instance that will allow you to use off-heap addresses. Use with caution!
