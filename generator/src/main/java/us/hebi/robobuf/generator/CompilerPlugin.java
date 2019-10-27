@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 public class CompilerPlugin {
 
     /**
-     * The protoc-gen-plugin communicates via proto messages on System.in/.out
+     * The protoc-gen-plugin communicates via proto messages on System.in and System.out
      *
      * @param args
      * @throws IOException

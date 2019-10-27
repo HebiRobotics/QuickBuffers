@@ -14,7 +14,7 @@ import java.util.Map;
 public class ParserPlugin {
 
     /**
-     * A protoc-gen-plugin that communicates with protoc via messages on System.in & System.out
+     * A protoc-gen-plugin that communicates with protoc via messages on System.in and System.out
      *
      * @param args
      * @throws IOException

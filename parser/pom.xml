@@ -9,11 +9,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>parser</artifactId>
+    <artifactId>robobuf-parser</artifactId>
 
     <properties>
         <protocPluginName>protoc-gen-request</protocPluginName>
         <finalName>${protocPluginName}-${project.version}</finalName>
+        <javaModuleName>us.hebi.robobuf.parser</javaModuleName>
     </properties>
 
     <dependencies>

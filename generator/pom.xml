@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>generator</artifactId>
+    <artifactId>robobuf-generator</artifactId>
 
     <properties>
         <protocPluginName>protoc-gen-robobuf</protocPluginName>
@@ -17,6 +17,7 @@
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
         <protoc.executable>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.executable>
+        <javaModuleName>us.hebi.robobuf.generator</javaModuleName>
     </properties>
 
     <dependencies>
@@ -24,7 +25,7 @@
         <!-- stores request input as binary that we can load in unit tests -->
         <dependency>
             <groupId>us.hebi.robobuf</groupId>
-            <artifactId>parser</artifactId>
+            <artifactId>robobuf-parser</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

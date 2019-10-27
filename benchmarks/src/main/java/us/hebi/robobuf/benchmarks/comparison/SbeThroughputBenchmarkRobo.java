@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  5976.679 ± 196.894  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  6654.291 ±  99.163  ops/ms
  *
- * === change .proto definition to use fixed width types for >7 bit values ===
+ * === change .proto definition to use fixed width types for 7+ bit values ===
  * Benchmark                                     Mode  Cnt     Score     Error   Units
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  6583.222 ± 206.918  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8245.170 ±  40.951  ops/ms

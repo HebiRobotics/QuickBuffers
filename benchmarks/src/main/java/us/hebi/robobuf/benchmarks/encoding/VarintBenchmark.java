@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  * supports the instructions), but for the likely case (low positive integers) they are quite a bit
  * slower.
  *
- * (best case w/ positive integers < 128)
+ * (best case w/ positive integers below 128)
  * Benchmark                                    Mode  Cnt  Score   Error  Units
  * VarintBenchmark.computeVarint32Nano          avgt   10  0.143 ± 0.005  us/op
  * VarintBenchmark.computeVarint32LeadingZeros  avgt   10  0.551 ± 0.012  us/op
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  * VarintBenchmark.writeVarint32Loop            avgt   10  3.412 ± 0.096  us/op
  * VarintBenchmark.writeVarint32Switch          avgt   10  2.557 ± 0.153  us/op
  *
- * @author Florian Enner < florian @ hebirobotics.com >
+ * @author Florian Enner
  * @since 12 Sep 2014
  */
 @BenchmarkMode(Mode.AverageTime)

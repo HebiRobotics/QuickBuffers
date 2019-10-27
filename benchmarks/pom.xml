@@ -11,10 +11,14 @@
 
     <artifactId>benchmarks</artifactId>
 
+    <properties>
+        <javaModuleName>us.hebi.robobuf.benchmarks</javaModuleName>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>us.hebi.robobuf</groupId>
-            <artifactId>runtime</artifactId>
+            <artifactId>robobuf-runtime</artifactId>
             <version>${parent.version}</version>
         </dependency>
         <dependency>
