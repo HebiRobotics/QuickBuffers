@@ -218,7 +218,7 @@ Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the m
 
 ```Java
 // Create data
-RootMessage msg = RootMessage().newInstance
+RootMessage msg = RootMessagenewInstance()
     .setPrimitiveValue(2);
 
 // Serialize into existing byte array
@@ -236,6 +236,9 @@ assertEquals(msg, RootMessage().newInstance.mergeFrom(source));
 
 Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
 
+<details>
+<summary>Off-Heap Addresses</summary>
+
 Depending on platform support, the implementation may make use of `sun.misc.Unsafe`. If you 
 are familiar with Unsafe, you may also request an UnsafeSource instance that will allow you to use off-heap addresses. Use with caution!
 
@@ -244,6 +247,8 @@ long address = /* DirectBuffer::address */;
 ProtoSource source = ProtoSource.newUnsafeInstance();
 source.setInput(null, address, length)
 ```
+
+</details>
 
 <!-- 
 ## More Information
