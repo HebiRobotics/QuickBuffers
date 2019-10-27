@@ -1,0 +1,69 @@
+// Protocol Buffers - Google's data interchange format
+// Copyright 2008 Google Inc.  All rights reserved.
+// https://developers.google.com/protocol-buffers/
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// Author: maxtroy@google.com (Max Cai)
+
+syntax = "proto2";
+package robobuf_unittest_import;
+
+option java_package = "protos.test.java";
+
+message SimpleMessage {
+    required int32 required_field = 1 [deprecated = true];
+}
+
+message TestAllTypesRequired {
+
+    enum NestedEnum {
+        FOO = 1;
+        BAR = 2;
+        BAZ = 3;
+    }
+
+    required    int32 required_int32    =  1;
+    required    int64 required_int64    =  2;
+    required   uint32 required_uint32   =  3;
+    required   uint64 required_uint64   =  4;
+    required   sint32 required_sint32   =  5;
+    required   sint64 required_sint64   =  6;
+    required  fixed32 required_fixed32  =  7;
+    required  fixed64 required_fixed64  =  8;
+    required sfixed32 required_sfixed32 =  9;
+    required sfixed64 required_sfixed64 = 10;
+    required    float required_float    = 11;
+    required   double required_double   = 12;
+    required     bool required_bool     = 13;
+    required   string required_string   = 14;
+    required    bytes required_bytes    = 15;
+
+    required NestedEnum required_nested_enum     = 21;
+    required SimpleMessage required_nested_message     = 22;
+
+}

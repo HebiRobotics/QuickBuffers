@@ -1,0 +1,21 @@
+syntax = "proto2";
+package robobuf_unittest_import;
+
+option java_package = "protos.test.java.external";
+option java_outer_classname = "NamespacesOuterClass";
+option java_multiple_files = true;
+
+message ImportMessage {
+  optional int32 d = 1;
+
+  message NestedImportMessage {
+    optional int32 e = 1;
+  }
+
+}
+
+enum ImportEnum {
+  IMPORT_FOO = 7;
+  IMPORT_BAR = 8;
+  IMPORT_BAZ = 9;
+}

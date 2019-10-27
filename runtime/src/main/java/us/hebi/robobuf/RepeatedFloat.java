@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * robobuf-runtime
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf;
 
 import java.util.Arrays;
@@ -8,7 +30,14 @@ import java.util.Arrays;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
+public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
+
+    public static RepeatedFloat newEmptyInstance() {
+        return new RepeatedFloat();
+    }
+
+    RepeatedFloat() {
+    }
 
     @Override
     protected void extendCapacityTo(int desiredSize) {
@@ -86,7 +115,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     /**
      * Provides access to the internal storage array. Do not hold
      * on to this reference as it can change during a resize.
-     *
+     * <p>
      * The array may be larger than the amount of contained data,
      * but the data is only valid between index 0 and length.
      *
@@ -100,7 +129,7 @@ public class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      * Sets the absolute length of the data that can be serialized. The
      * internal storage array may get extended to accommodate at least
      * the desired length.
-     *
+     * <p>
      * This does not change the underlying data, so setting a length
      * longer than the current one may result in arbitrary data being
      * serialized.

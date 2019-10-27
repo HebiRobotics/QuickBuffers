@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * robobuf-runtime
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 // Protocol Buffers - Google's data interchange format
 // Copyright 2013 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
@@ -35,7 +57,7 @@ import java.io.IOException;
 import static us.hebi.robobuf.WireFormat.*;
 
 /**
- * ----- NOTE: the code was modified from Javanano's CodedOutputByteBufferNano ----
+ * NOTE: the code was modified from Javanano's CodedOutputByteBufferNano
  *
  * Encodes and writes protocol message fields.
  *
@@ -49,6 +71,7 @@ import static us.hebi.robobuf.WireFormat.*;
  * <p>This class is totally unsynchronized.
  *
  * @author kneton@google.com Kenton Varda
+ * @author Florian Enner
  */
 public abstract class ProtoSink {
     /* max bytes per java UTF-16 char in UTF-8 */
@@ -59,49 +82,69 @@ public abstract class ProtoSink {
 
     /**
      * Create a new {@code ProtoSink} that writes directly to the given
-     * byte array.  If more bytes are written than fit in the array,
-     * {@link OutOfSpaceException} will be thrown.  Writing directly to a
-     * flat array is faster than writing to an {@code OutputStream}.
+     * byte array. If more bytes are written than fit in the array,
+     * {@link OutOfSpaceException} will be thrown.
      */
-    public static ProtoSink wrapArray(final byte[] flatArray) {
-        return createInstance().setOutput(flatArray);
+    public static ProtoSink newInstance(final byte[] flatArray) {
+        return newInstance().wrap(flatArray);
     }
 
     /**
      * Create a new {@code ProtoSink} that writes directly to the given
-     * byte array slice.  If more bytes are written than fit in the slice,
-     * {@link OutOfSpaceException} will be thrown.  Writing directly to a flat
-     * array is faster than writing to an {@code OutputStream}.
+     * byte array slice. If more bytes are written than fit in the slice,
+     * {@link OutOfSpaceException} will be thrown.
      */
-    public static ProtoSink wrapArray(final byte[] flatArray,
-                                      final int offset,
-                                      final int length) {
-        return createInstance().setOutput(flatArray, offset, length);
+    public static ProtoSink newInstance(final byte[] flatArray,
+                                        final int offset,
+                                        final int length) {
+        return newInstance().wrap(flatArray, offset, length);
     }
 
     /**
      * Create a new {@code ProtoSink} that writes directly to a byte array.
      * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
-     * be thrown.  Writing directly to a flat array is faster than writing
-     * to an {@code OutputStream}.
-     */
-    public static ProtoSink createInstance() {
-        return new ArraySink();
-    }
-
-    /**
-     * Create a new {@code ProtoSink} that writes directly to a byte array.
-     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
-     * be thrown.  Writing directly to a flat array is faster than writing
-     * to an {@code OutputStream}.
+     * be thrown.
      *
-     * The returned sink may leverage features from sun.misc.Unsafe if
-     * available on the current platform.
+     * This method will return the fastest implementation available for the
+     * current platform and may leverage features from sun.misc.Unsafe if
+     * available.
      */
-    public static ProtoSink createFastest() {
-        if (UnsafeArraySink.isAvailable())
-            return new UnsafeArraySink(false);
-        return createInstance();
+    public static ProtoSink newInstance() {
+        return newInstance(true);
+    }
+
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array.
+     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
+     * be thrown.
+     *
+     * This method will return the fastest implementation available for the
+     * current platform and may leverage features from sun.misc.Unsafe if
+     * available.
+     *
+     * @param allowUnalignedAccess true if the platform supports non-aligned writes
+     */
+    public static ProtoSink newInstance(boolean allowUnalignedAccess) {
+        if (UnsafeArraySink.isAvailable()) {
+            if (allowUnalignedAccess) {
+                return new UnsafeArraySink.Unaligned(false);
+            } else {
+                return new UnsafeArraySink(false);
+            }
+        }
+        return newSafeInstance();
+    }
+
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array.
+     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
+     * be thrown.
+     *
+     * The returned sink does not leverage features from sun.misc.Unsafe
+     * even if they are available on the current platform.
+     */
+    public static ProtoSink newSafeInstance() {
+        return new ArraySink();
     }
 
     /**
@@ -109,9 +152,33 @@ public abstract class ProtoSink {
      * direct memory. If more bytes are written than fit in the array, an
      * {@link OutOfSpaceException} will be thrown.
      *
-     * This sink requires availability of sun.misc.Unsafe and Java 8 or higher.
+     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     *
+     * Additionally, this sink removes null-argument checks and allows users to
+     * write to off-heap memory. Working with off-heap memory may cause segfaults
+     * of the runtime, so only use if you know what you are doing.
      */
-    public static ProtoSink createUnsafe() {
+    public static ProtoSink newUnsafeInstance() {
+        return newUnsafeInstance(true);
+    }
+
+    /**
+     * Create a new {@code ProtoSink} that writes directly to a byte array or
+     * direct memory. If more bytes are written than fit in the array, an
+     * {@link OutOfSpaceException} will be thrown.
+     *
+     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     *
+     * Additionally, this sink removes null-argument checks and allows users to
+     * write to off-heap memory. Working with off-heap memory may cause segfaults
+     * of the runtime, so only use if you know what you are doing.
+     *
+     * @param allowUnalignedAccess true if the platform supports non-aligned writes
+     */
+    public static ProtoSink newUnsafeInstance(boolean allowUnalignedAccess) {
+        if (allowUnalignedAccess) {
+            return new UnsafeArraySink.Unaligned(true);
+        }
         return new UnsafeArraySink(true);
     }
 
@@ -125,10 +192,10 @@ public abstract class ProtoSink {
      * @param length
      * @return
      */
-    public abstract ProtoSink setOutput(byte[] buffer, long offset, int length);
+    public abstract ProtoSink wrap(byte[] buffer, long offset, int length);
 
-    public final ProtoSink setOutput(byte[] buffer) {
-        return setOutput(buffer, 0, buffer.length);
+    public final ProtoSink wrap(byte[] buffer) {
+        return wrap(buffer, 0, buffer.length);
     }
 
     /**
@@ -137,7 +204,7 @@ public abstract class ProtoSink {
      * @return this
      */
     public ProtoSink clear() {
-        return setOutput(ProtoUtil.EMPTY_BYTE_ARRAY);
+        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     // -----------------------------------------------------------------
@@ -147,49 +214,49 @@ public abstract class ProtoSink {
         writeRawVarint32(WireFormat.makeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED));
     }
 
-    /** Write a repeated (non-packed) {@code double} field, excluding tag, to the stream. */
+    /** Write a repeated (non-packed) {@code double} field, excluding tag, to the sink. */
     public void writePackedDoubleNoTag(final RepeatedDouble values)
             throws IOException {
         writeRawVarint32(values.length * SIZEOF_FIXED_64);
         writeRawDoubles(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed) {@code float} field, excluding tag, to the stream. */
+    /** Write a repeated (non-packed) {@code float} field, excluding tag, to the sink. */
     public void writePackedFloatNoTag(final RepeatedFloat values)
             throws IOException {
         writeRawVarint32(values.length * SIZEOF_FIXED_32);
         writeRawFloats(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed){@code fixed64} field, excluding tag, to the stream. */
+    /** Write a repeated (non-packed){@code fixed64} field, excluding tag, to the sink. */
     public void writePackedFixed64NoTag(final RepeatedLong values)
             throws IOException {
         writeRawVarint32(values.length * SIZEOF_FIXED_64);
         writeRawFixed64s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed){@code fixed32} field, excluding tag, to the stream. */
+    /** Write a repeated (non-packed){@code fixed32} field, excluding tag, to the sink. */
     public void writePackedFixed32NoTag(final RepeatedInt values)
             throws IOException {
         writeRawVarint32(values.length * SIZEOF_FIXED_32);
         writeRawFixed32s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed) {@code sfixed32} field, excluding tag, to the stream. */
+    /** Write a repeated (non-packed) {@code sfixed32} field, excluding tag, to the sink. */
     public void writePackedSFixed32NoTag(final RepeatedInt values)
             throws IOException {
         writeRawVarint32(values.length * SIZEOF_FIXED_32);
         writeRawFixed32s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed) {@code sfixed64} field, excluding tag, to the stream. */
+    /** Write a repeated (non-packed) {@code sfixed64} field, excluding tag, to the sink. */
     public void writePackedSFixed64NoTag(final RepeatedLong values)
             throws IOException {
         writeRawVarint32(values.length * SIZEOF_FIXED_64);
         writeRawFixed64s(values.array, values.length);
     }
 
-    /** Write a repeated (non-packed){@code bool} field, excluding tag, to the stream. */
+    /** Write a repeated (non-packed){@code bool} field, excluding tag, to the sink. */
     public void writePackedBoolNoTag(final RepeatedBoolean values)
             throws IOException {
         writeRawVarint32(values.length * SIZEOF_FIXED_BOOL);
@@ -228,70 +295,70 @@ public abstract class ProtoSink {
 
     // -----------------------------------------------------------------
 
-    /** Write a {@code double} field, including tag, to the stream. */
+    /** Write a {@code double} field, including tag, to the sink. */
     public void writeDouble(final int fieldNumber, final double value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED64);
         writeDoubleNoTag(value);
     }
 
-    /** Write a {@code float} field, including tag, to the stream. */
+    /** Write a {@code float} field, including tag, to the sink. */
     public void writeFloat(final int fieldNumber, final float value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED32);
         writeFloatNoTag(value);
     }
 
-    /** Write a {@code uint64} field, including tag, to the stream. */
+    /** Write a {@code uint64} field, including tag, to the sink. */
     public void writeUInt64(final int fieldNumber, final long value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
         writeUInt64NoTag(value);
     }
 
-    /** Write an {@code int64} field, including tag, to the stream. */
+    /** Write an {@code int64} field, including tag, to the sink. */
     public void writeInt64(final int fieldNumber, final long value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
         writeInt64NoTag(value);
     }
 
-    /** Write an {@code int32} field, including tag, to the stream. */
+    /** Write an {@code int32} field, including tag, to the sink. */
     public void writeInt32(final int fieldNumber, final int value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
         writeInt32NoTag(value);
     }
 
-    /** Write a {@code fixed64} field, including tag, to the stream. */
+    /** Write a {@code fixed64} field, including tag, to the sink. */
     public void writeFixed64(final int fieldNumber, final long value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED64);
         writeFixed64NoTag(value);
     }
 
-    /** Write a {@code fixed32} field, including tag, to the stream. */
+    /** Write a {@code fixed32} field, including tag, to the sink. */
     public void writeFixed32(final int fieldNumber, final int value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED32);
         writeFixed32NoTag(value);
     }
 
-    /** Write a {@code bool} field, including tag, to the stream. */
+    /** Write a {@code bool} field, including tag, to the sink. */
     public void writeBool(final int fieldNumber, final boolean value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
         writeBoolNoTag(value);
     }
 
-    /** Write a {@code string} field, including tag, to the stream. */
+    /** Write a {@code string} field, including tag, to the sink. */
     public void writeString(final int fieldNumber, final CharSequence value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_LENGTH_DELIMITED);
         writeStringNoTag(value);
     }
 
-    /** Write a {@code group} field, including tag, to the stream. */
+    /** Write a {@code group} field, including tag, to the sink. */
     public void writeGroup(final int fieldNumber, final ProtoMessage value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_START_GROUP);
@@ -299,21 +366,21 @@ public abstract class ProtoSink {
         writeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP);
     }
 
-    /** Write an embedded message field, including tag, to the stream. */
+    /** Write an embedded message field, including tag, to the sink. */
     public void writeMessage(final int fieldNumber, final ProtoMessage value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_LENGTH_DELIMITED);
         writeMessageNoTag(value);
     }
 
-    /** Write a {@code bytes} field, including tag, to the stream. */
+    /** Write a {@code bytes} field, including tag, to the sink. */
     public void writeBytes(final int fieldNumber, final RepeatedByte value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_LENGTH_DELIMITED);
         writeBytesNoTag(value);
     }
 
-    /** Write a {@code uint32} field, including tag, to the stream. */
+    /** Write a {@code uint32} field, including tag, to the sink. */
     public void writeUInt32(final int fieldNumber, final int value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
@@ -321,7 +388,7 @@ public abstract class ProtoSink {
     }
 
     /**
-     * Write an enum field, including tag, to the stream.  Caller is responsible
+     * Write an enum field, including tag, to the sink.  Caller is responsible
      * for converting the enum value to its numeric value.
      */
     public void writeEnum(final int fieldNumber, final int value)
@@ -330,28 +397,28 @@ public abstract class ProtoSink {
         writeEnumNoTag(value);
     }
 
-    /** Write an {@code sfixed32} field, including tag, to the stream. */
+    /** Write an {@code sfixed32} field, including tag, to the sink. */
     public void writeSFixed32(final int fieldNumber, final int value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED32);
         writeSFixed32NoTag(value);
     }
 
-    /** Write an {@code sfixed64} field, including tag, to the stream. */
+    /** Write an {@code sfixed64} field, including tag, to the sink. */
     public void writeSFixed64(final int fieldNumber, final long value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED64);
         writeSFixed64NoTag(value);
     }
 
-    /** Write an {@code sint32} field, including tag, to the stream. */
+    /** Write an {@code sint32} field, including tag, to the sink. */
     public void writeSInt32(final int fieldNumber, final int value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
         writeSInt32NoTag(value);
     }
 
-    /** Write an {@code sint64} field, including tag, to the stream. */
+    /** Write an {@code sint64} field, including tag, to the sink. */
     public void writeSInt64(final int fieldNumber, final long value)
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
@@ -360,27 +427,27 @@ public abstract class ProtoSink {
 
     // -----------------------------------------------------------------
 
-    /** Write a {@code double} field to the stream. */
+    /** Write a {@code double} field to the sink. */
     public void writeDoubleNoTag(final double value) throws IOException {
         writeRawLittleEndian64(Double.doubleToLongBits(value));
     }
 
-    /** Write a {@code float} field to the stream. */
+    /** Write a {@code float} field to the sink. */
     public void writeFloatNoTag(final float value) throws IOException {
         writeRawLittleEndian32(Float.floatToIntBits(value));
     }
 
-    /** Write a {@code uint64} field to the stream. */
+    /** Write a {@code uint64} field to the sink. */
     public void writeUInt64NoTag(final long value) throws IOException {
         writeRawVarint64(value);
     }
 
-    /** Write an {@code int64} field to the stream. */
+    /** Write an {@code int64} field to the sink. */
     public void writeInt64NoTag(final long value) throws IOException {
         writeRawVarint64(value);
     }
 
-    /** Write an {@code int32} field to the stream. */
+    /** Write an {@code int32} field to the sink. */
     public void writeInt32NoTag(final int value) throws IOException {
         if (value >= 0) {
             writeRawVarint32(value);
@@ -390,70 +457,70 @@ public abstract class ProtoSink {
         }
     }
 
-    /** Write a {@code fixed64} field to the stream. */
+    /** Write a {@code fixed64} field to the sink. */
     public void writeFixed64NoTag(final long value) throws IOException {
         writeRawLittleEndian64(value);
     }
 
-    /** Write a {@code fixed32} field to the stream. */
+    /** Write a {@code fixed32} field to the sink. */
     public void writeFixed32NoTag(final int value) throws IOException {
         writeRawLittleEndian32(value);
     }
 
-    /** Write a {@code bool} field to the stream. */
+    /** Write a {@code bool} field to the sink. */
     public void writeBoolNoTag(final boolean value) throws IOException {
         writeRawByte(value ? 1 : 0);
     }
 
-    /** Write a {@code string} field to the stream. */
+    /** Write a {@code string} field to the sink. */
     public abstract void writeStringNoTag(final CharSequence value) throws IOException;
 
-    /** Write a {@code group} field to the stream. */
+    /** Write a {@code group} field to the sink. */
     public void writeGroupNoTag(final ProtoMessage value) throws IOException {
         value.writeTo(this);
     }
 
-    /** Write an embedded message field to the stream. */
+    /** Write an embedded message field to the sink. */
     public void writeMessageNoTag(final ProtoMessage value) throws IOException {
         writeRawVarint32(value.getCachedSize());
         value.writeTo(this);
     }
 
-    /** Write a {@code bytes} field to the stream. */
+    /** Write a {@code bytes} field to the sink. */
     public void writeBytesNoTag(final RepeatedByte value) throws IOException {
         writeRawVarint32(value.length);
         writeRawBytes(value.array, 0, value.length);
     }
 
-    /** Write a {@code uint32} field to the stream. */
+    /** Write a {@code uint32} field to the sink. */
     public void writeUInt32NoTag(final int value) throws IOException {
         writeRawVarint32(value);
     }
 
     /**
-     * Write an enum field to the stream.  Caller is responsible
+     * Write an enum field to the sink.  Caller is responsible
      * for converting the enum value to its numeric value.
      */
     public void writeEnumNoTag(final int value) throws IOException {
         writeRawVarint32(value);
     }
 
-    /** Write an {@code sfixed32} field to the stream. */
+    /** Write an {@code sfixed32} field to the sink. */
     public void writeSFixed32NoTag(final int value) throws IOException {
         writeRawLittleEndian32(value);
     }
 
-    /** Write an {@code sfixed64} field to the stream. */
+    /** Write an {@code sfixed64} field to the sink. */
     public void writeSFixed64NoTag(final long value) throws IOException {
         writeRawLittleEndian64(value);
     }
 
-    /** Write an {@code sint32} field to the stream. */
+    /** Write an {@code sint32} field to the sink. */
     public void writeSInt32NoTag(final int value) throws IOException {
         writeRawVarint32(encodeZigZag32(value));
     }
 
-    /** Write an {@code sint64} field to the stream. */
+    /** Write an {@code sint64} field to the sink. */
     public void writeSInt64NoTag(final long value) throws IOException {
         writeRawVarint64(encodeZigZag64(value));
     }

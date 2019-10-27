@@ -11,10 +11,15 @@
 
     <artifactId>benchmarks</artifactId>
 
+    <properties>
+        <javaModuleName>us.hebi.robobuf.benchmarks</javaModuleName>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>us.hebi.robobuf</groupId>
-            <artifactId>runtime</artifactId>
+            <artifactId>robobuf-runtime</artifactId>
             <version>${parent.version}</version>
         </dependency>
         <dependency>
@@ -58,7 +63,7 @@
 
                             <inputDirectories>
                                 <include>${proto.dir}</include>
-                                <include>${project.basedir}/src/test/resources/sbe-benchmark-protos</include>
+                                <include>${project.basedir}/src/test/resources/protos</include>
                             </inputDirectories>
 
                             <outputTargets>
@@ -67,7 +72,7 @@
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}</pluginPath>
                                     <type>robobuf</type>
-                                    <outputOptions>replacePackage=(java|benchmarks|protobuf)=robo,indent=4,input_order=robobuf
+                                    <outputOptions>replacePackage=(java)=robo,indent=4,input_order=robobuf
                                     </outputOptions>
                                     <addSources>main</addSources>
                                 </outputTarget>
@@ -75,7 +80,7 @@
                                 <!-- Generate Java sources for sanity checks -->
                                 <outputTarget>
                                     <type>java</type>
-<!--                                    <outputOptions>lite</outputOptions>-->
+                                    <outputOptions><!--lite--></outputOptions>
                                     <addSources>main</addSources>
                                 </outputTarget>
 

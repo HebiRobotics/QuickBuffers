@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * benchmarks
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf.benchmarks.comparison;
 
 import org.openjdk.jmh.annotations.*;
@@ -6,8 +28,9 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import uk.co.real_logic.robo.examples.Examples;
-import uk.co.real_logic.robo.fix.Fix;
+import protos.benchmarks.real_logic.robo.Examples;
+import protos.benchmarks.real_logic.robo.Examples.Car;
+import protos.benchmarks.real_logic.robo.Fix;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
 
@@ -22,7 +45,7 @@ import java.util.concurrent.TimeUnit;
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  5976.679 ± 196.894  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  6654.291 ±  99.163  ops/ms
  *
- * === change .proto definition to use fixed width types for >7 bit values ===
+ * === change .proto definition to use fixed width types for 7+ bit values ===
  * Benchmark                                     Mode  Cnt     Score     Error   Units
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  6583.222 ± 206.918  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8245.170 ±  40.951  ops/ms
@@ -46,38 +69,38 @@ public class SbeThroughputBenchmarkRobo {
         new Runner(options).run();
     }
 
-    final Fix.MarketDataIncrementalRefreshTrades marketData = new Fix.MarketDataIncrementalRefreshTrades();
+    final Fix.MarketDataIncrementalRefreshTrades marketData = Fix.MarketDataIncrementalRefreshTrades.newInstance();
     final byte[] marketDecodeBuffer = buildMarketData(marketData).toByteArray();
-    final Examples.Car car = new Examples.Car();
+    final Car car = Car.newInstance();
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
-    final ProtoSource source = ProtoSource.createFastest();
-    final ProtoSink sink = ProtoSink.createFastest();
+    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSink sink = ProtoSink.newInstance();
 
     @Benchmark
     public int testMarketEncode() throws IOException {
-        sink.setOutput(encodeBuffer);
+        sink.wrap(encodeBuffer);
         buildMarketData(marketData).writeTo(sink);
         return sink.position();
     }
 
     @Benchmark
     public Object testMarketDecode() throws IOException {
-        source.setInput(marketDecodeBuffer);
+        source.wrap(marketDecodeBuffer);
         return marketData.clearQuick().mergeFrom(source);
     }
 
     @Benchmark
     public int testCarEncode() throws IOException {
-        sink.setOutput(encodeBuffer);
+        sink.wrap(encodeBuffer);
         buildCarData(car).writeTo(sink);
         return sink.position();
     }
 
     @Benchmark
     public Object testCarDecode() throws IOException {
-        source.setInput(carDecodeBuffer);
+        source.wrap(carDecodeBuffer);
         return car.clearQuick().mergeFrom(source);
     }
 
@@ -85,7 +108,7 @@ public class SbeThroughputBenchmarkRobo {
         marketData.clearQuick()
                 .setTransactTime(1234L)
                 .setEventTimeDelta(987)
-                .setMatchEventIndicator(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT);
+                .setMatchEventIndicator(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
 
         for (int i = 0; i < 2; i++) {
 
@@ -94,9 +117,9 @@ public class SbeThroughputBenchmarkRobo {
                     .setSecurityId(56789L)
                     .setNumberOfOrders(1)
                     .setRepSeq(1)
-                    .setMdUpdateAction(Fix.MdIncGrp.MdUpdateAction.NEW)
-                    .setAggressorSide(Fix.MdIncGrp.Side.BUY)
-                    .setMdEntryType(Fix.MdIncGrp.MdEntryType.BID);
+                    .setMdUpdateAction(Fix.MdIncGrp.MdUpdateAction.NEW_VALUE)
+                    .setAggressorSide(Fix.MdIncGrp.Side.BUY_VALUE)
+                    .setMdEntryType(Fix.MdIncGrp.MdEntryType.BID_VALUE);
             group.getMutableMdEntryPx().setMantissa(50);
             group.getMutableMdEntrySize().setMantissa(10);
 
@@ -105,11 +128,11 @@ public class SbeThroughputBenchmarkRobo {
         return marketData;
     }
 
-    static Examples.Car buildCarData(Examples.Car car) {
+    static Car buildCarData(Car car) {
         car.clearQuick()
                 .setSerialNumber(12345)
                 .setModelYear(2005)
-                .setCode(Examples.Car.Model.A)
+                .setCode(Car.Model.A_VALUE)
                 .setAvailable(true);
 
         car.getMutableEngine()
@@ -126,9 +149,9 @@ public class SbeThroughputBenchmarkRobo {
             car.addSomeNumbers(i);
         }
 
-        car
-                .addOptionalExtras(Examples.Car.Extras.SPORTS_PACK)
-                .addOptionalExtras(Examples.Car.Extras.SUN_ROOF);
+        car.getMutableOptionalExtras()
+                .add(Car.Extras.SPORTS_PACK_VALUE)
+                .add(Car.Extras.SUN_ROOF_VALUE);
 
         car.getMutableFuelFigures().next().setSpeed(30).setMpg(35.9F);
         car.getMutableFuelFigures().next().setSpeed(30).setMpg(49.0F);

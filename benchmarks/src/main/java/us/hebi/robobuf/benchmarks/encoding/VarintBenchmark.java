@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * benchmarks
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf.benchmarks.encoding;
 
 import org.openjdk.jmh.annotations.*;
@@ -17,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * supports the instructions), but for the likely case (low positive integers) they are quite a bit
  * slower.
  *
- * (best case w/ positive integers < 128)
+ * (best case w/ positive integers below 128)
  * Benchmark                                    Mode  Cnt  Score   Error  Units
  * VarintBenchmark.computeVarint32Nano          avgt   10  0.143 ± 0.005  us/op
  * VarintBenchmark.computeVarint32LeadingZeros  avgt   10  0.551 ± 0.012  us/op
@@ -35,7 +57,7 @@ import java.util.concurrent.TimeUnit;
  * VarintBenchmark.writeVarint32Loop            avgt   10  3.412 ± 0.096  us/op
  * VarintBenchmark.writeVarint32Switch          avgt   10  2.557 ± 0.153  us/op
  *
- * @author Florian Enner < florian @ hebirobotics.com >
+ * @author Florian Enner
  * @since 12 Sep 2014
  */
 @BenchmarkMode(Mode.AverageTime)

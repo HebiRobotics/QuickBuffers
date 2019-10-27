@@ -1,2 +1,2 @@
 @echo off
-.\compiler\target\protoc-gen-robobuf.bat
+.\generator\target\protoc-gen-robobuf.bat

@@ -1,13 +1,35 @@
+/*-
+ * #%L
+ * robobuf-runtime
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf;
 
 import com.google.protobuf.ByteString;
 import org.junit.Test;
-import us.hebi.robobuf.java.ForeignEnum;
-import us.hebi.robobuf.java.ForeignMessage;
-import us.hebi.robobuf.java.RepeatedPackables;
-import us.hebi.robobuf.java.TestAllTypes;
-import us.hebi.robobuf.java.TestAllTypes.NestedEnum;
-import us.hebi.robobuf.java.external.ImportEnum;
+import protos.test.java.ForeignEnum;
+import protos.test.java.ForeignMessage;
+import protos.test.java.RepeatedPackables;
+import protos.test.java.TestAllTypes;
+import protos.test.java.TestAllTypes.NestedEnum;
+import protos.test.java.external.ImportEnum;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,16 +52,16 @@ public class CompatibilityTest {
     public void testCompatibilityWithProtobufJava() throws IOException {
         byte[] serializedMsg = getCombinedMessage();
         TestAllTypes.Builder expected = TestAllTypes.newBuilder();
-        us.hebi.robobuf.robo.TestAllTypes msg = new us.hebi.robobuf.robo.TestAllTypes();
+        protos.test.robo.TestAllTypes msg = protos.test.robo.TestAllTypes.newInstance();
 
         // multiple merges to check expanding repeated behavior
         for (int i = 0; i < 3; i++) {
             expected.mergeFrom(serializedMsg);
-            msg.mergeFrom(ProtoSource.wrapArray(serializedMsg));
+            msg.mergeFrom(ProtoSource.newInstance(serializedMsg));
         }
 
         assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
-        assertEquals(msg, us.hebi.robobuf.robo.TestAllTypes.parseFrom(msg.toByteArray()));
+        assertEquals(msg, protos.test.robo.TestAllTypes.parseFrom(msg.toByteArray()));
 
     }
 

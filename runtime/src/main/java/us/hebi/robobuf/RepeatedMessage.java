@@ -1,12 +1,39 @@
+/*-
+ * #%L
+ * robobuf-runtime
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf;
 
 /**
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class RepeatedMessage<MessageType extends ProtoMessage<MessageType>> extends RepeatedObject<RepeatedMessage<MessageType>, MessageType, MessageType> {
+public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>> extends RepeatedObject<RepeatedMessage<MessageType>, MessageType, MessageType> {
 
-    public RepeatedMessage(MessageFactory<MessageType> factory) {
+    @SuppressWarnings("unchecked")
+    public static <T extends ProtoMessage<T>> RepeatedMessage<T> newEmptyInstance(MessageFactory<T> factory) {
+        return new RepeatedMessage(factory);
+    }
+
+    private RepeatedMessage(MessageFactory<MessageType> factory) {
         if (factory == null) throw new NullPointerException();
         this.factory = factory;
     }
@@ -41,6 +68,17 @@ public class RepeatedMessage<MessageType extends ProtoMessage<MessageType>> exte
             array[i].clearQuick();
         }
         length = 0;
+    }
+
+    /**
+     * @return true if all contained messages are initialized
+     */
+    public final boolean isInitialized() {
+        for (int i = 0; i < length; i++) {
+            if (!array[i].isInitialized())
+                return false;
+        }
+        return true;
     }
 
     @Override

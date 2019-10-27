@@ -9,6 +9,67 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
 
+    <name>RoboBuffers</name>
+    <url>https://github.com/HebiRobotics/RoboBuffers</url>
+    <description>
+        Java library for reading and writing Google's Protocol Buffers v2 messages
+    </description>
+
+    <organization>
+        <name>HEBI Robotics</name>
+        <url>http://www.hebirobotics.com</url>
+    </organization>
+    <inceptionYear>2019</inceptionYear>
+
+    <!-- Required: license information: -->
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL) version 3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.en.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!-- Required: source control information: -->
+    <scm>
+        <url>https://github.com/HebiRobotics/RoboBuffers</url>
+        <connection>scm:git:git://github.com/HebiRobotics/RoboBuffers.git</connection>
+        <developerConnection>scm:git:git@github.com:HebiRobotics/RoboBuffers.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <!-- Maven Central Distribution -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/
+            </url>
+        </repository>
+    </distributionManagement>
+
+    <!-- Required: developer information: -->
+    <developers>
+        <developer>
+            <id>ennerf</id>
+            <name>Florian Enner</name>
+            <email>florian@hebirobotics.com</email>
+            <url>https://github.com/ennerf</url>
+            <organization>HEBI Robotics</organization>
+            <organizationUrl>https://github.com/HebiRobotics</organizationUrl>
+        </developer>
+    </developers>
+
+    <modules>
+        <module>parser</module>
+        <module>generator</module>
+        <module>runtime</module>
+        <module>benchmarks</module>
+    </modules>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
@@ -16,15 +77,21 @@
         <maven.compiler.testSource>8</maven.compiler.testSource>
         <maven.compiler.testTarget>8</maven.compiler.testTarget>
         <protoc.version>3.9.1</protoc.version>
-        <proto.dir>${project.basedir}/../runtime/src/test/resources/us/hebi/robobuf</proto.dir>
-    </properties>
+        <proto.dir>${project.basedir}/../runtime/src/test/resources/protos</proto.dir>
 
-    <modules>
-        <module>parser</module>
-        <module>compiler</module>
-        <module>runtime</module>
-        <module>benchmarks</module>
-    </modules>
+        <!-- Jigsaw module name -->
+        <javaModuleName />
+        <gpg.keyname /> <!-- set via settings.xml to sign release artifacts-->
+
+        <!-- License Headers (http://www.mojohaus.org/license-maven-plugin/update-file-header-mojo.html) -->
+        <license.licenseName>gpl_v3</license.licenseName>
+        <license.addJavaLicenseAfterPackage>false</license.addJavaLicenseAfterPackage>
+        <license.trimHeaderLine>true</license.trimHeaderLine>
+
+        <!-- For now, disable 'missing' warnings about undocumented @param and @throws -->
+        <doclint>html,syntax,accessibility,reference</doclint>
+
+    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -72,5 +139,117 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+
+        <!-- Plugins required for publishing to Maven Central -->
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+
+        <!-- Configuration for plugins required for publishing to Maven Central -->
+        <pluginManagement>
+            <plugins>
+
+                <!-- Add licenses to files -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>1.16</version>
+                    <executions>
+                        <execution>
+                            <id>first</id>
+                            <goals>
+                                <goal>update-file-header</goal>
+                            </goals>
+                            <phase>process-sources</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Optional: ensure the manifest contains artifact version information: -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.4</version>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                            </manifest>
+                            <manifestEntries>
+                                <Automatic-Module-Name>${javaModuleName}</Automatic-Module-Name>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <!-- Required: Source Jar -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Required: Javadoc Jar -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadoc</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Required: Sign Artifacts -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.6</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                            <configuration>
+                                <keyname>${gpg.keyname}</keyname>
+                                <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Deploy selected modules -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.7</version>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+
+    </build>
 
 </project>

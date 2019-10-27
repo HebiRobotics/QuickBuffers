@@ -1,32 +1,24 @@
-// Protocol Buffers - Google's data interchange format
-// Copyright 2013 Google Inc.  All rights reserved.
-// https://developers.google.com/protocol-buffers/
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google Inc. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/*-
+ * #%L
+ * robobuf-runtime
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
 
 package us.hebi.robobuf;
 
@@ -34,11 +26,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * ---- Code below was adapted from Javanano's MessageNano ----
- *
  * Abstract interface implemented by Protocol Message objects.
  *
- * @author wink@google.com Wink Saville
+ * API partially copied from Google's MessageNano
+ *
+ * @author Florian Enner
  */
 public abstract class ProtoMessage<MessageType extends ProtoMessage> {
 
@@ -103,11 +95,29 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      *
      * @return this
      */
-    public abstract MessageType clearQuick();
+    public MessageType clearQuick() {
+        return clear();
+    }
 
     /**
-     * Computes the number of bytes required to encode this message. This does not update the
-     * cached size.
+     * Returns true if all required fields in the message and all embedded
+     * messages are set, false otherwise.
+     */
+    public boolean isInitialized() {
+        return true;
+    }
+
+    /**
+     * Prints all fields in this message to the printer
+     *
+     * @param printer output
+     */
+    public void print(ProtoPrinter printer) {
+    }
+
+    /**
+     * Computes the number of bytes required to encode this message. This does
+     * not update the cached size.
      */
     protected abstract int computeSerializedSize();
 
@@ -155,7 +165,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      */
     public static final void toByteArray(ProtoMessage msg, byte[] data, int offset, int length) {
         try {
-            final ProtoSink output = ProtoSink.wrapArray(data, offset, length);
+            final ProtoSink output = ProtoSink.newSafeInstance().wrap(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -180,7 +190,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data,
                                                              final int off, final int len) throws InvalidProtocolBufferException {
         try {
-            final ProtoSource input = ProtoSource.wrapArray(data, off, len);
+            final ProtoSource input = ProtoSource.newInstance(data, off, len);
             msg.mergeFrom(input);
             input.checkLastTagWas(0);
             return msg;
@@ -193,18 +203,15 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     }
 
     /**
-     * Returns a string that is (mostly) compatible with ProtoBuffer's TextFormat. Note that groups
-     * (which are deprecated) are not serialized with the correct field name.
-     *
-     * <p>This is implemented using reflection, so it is not especially fast nor is it guaranteed
-     * to find all fields if you have method removal turned on for proguard.
+     * Returns a string that contains a human readable representation of the contents. The output
+     * may not be compatible with any existing readers.
      */
     @Override
     public String toString() {
-        return MessageNanoPrinter.print(this);
+        return JsonPrinter.newInstance().print(this).toString();
     }
 
-    /** Provides support for cloning. This only works if you specify the generate_clone method. */
+    /** Provides support for cloning if the method is generated for child classes */
     @Override
     public ProtoMessage clone() throws CloneNotSupportedException {
         return (ProtoMessage) super.clone();

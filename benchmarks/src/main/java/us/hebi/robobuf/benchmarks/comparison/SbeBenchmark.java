@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * benchmarks
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf.benchmarks.comparison;
 
 import com.google.protobuf.AbstractMessageLite;
@@ -10,10 +32,10 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import uk.co.real_logic.protobuf.examples.Examples;
-import uk.co.real_logic.protobuf.fix.Fix;
-import uk.co.real_logic.robo.examples.Examples.Car;
-import uk.co.real_logic.robo.fix.Fix.MarketDataIncrementalRefreshTrades;
+import protos.benchmarks.real_logic.java.Examples;
+import protos.benchmarks.real_logic.java.Fix;
+import protos.benchmarks.real_logic.robo.Examples.Car;
+import protos.benchmarks.real_logic.robo.Fix.MarketDataIncrementalRefreshTrades;
 import us.hebi.robobuf.ProtoMessage;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
@@ -79,7 +101,7 @@ public class SbeBenchmark {
             int numMessages = maxNumBytes / sizePerMessage;
 
             byte[] data = new byte[sizePerMessage * numMessages];
-            ProtoSink sink = ProtoSink.createFastest().setOutput(data);
+            ProtoSink sink = ProtoSink.newInstance().wrap(data);
             for (int i = 0; i < numMessages; i++) {
                 sink.writeRawVarint32(singleMessage.length);
                 sink.writeRawBytes(singleMessage);
@@ -92,12 +114,12 @@ public class SbeBenchmark {
     }
 
     // ===================== REUSABLE STATE =====================
-    final MarketDataIncrementalRefreshTrades marketMsg = new MarketDataIncrementalRefreshTrades();
-    final Car carMsg = new Car();
-    final ProtoSource source = ProtoSource.createInstance();
-    final ProtoSink sink = ProtoSink.createInstance();
-    final ProtoSource unsafeSource = ProtoSource.createFastest();
-    final ProtoSink unsafeSink = ProtoSink.createFastest();
+    final MarketDataIncrementalRefreshTrades marketMsg = MarketDataIncrementalRefreshTrades.newInstance();
+    final Car carMsg = Car.newInstance();
+    final ProtoSource source = ProtoSource.newSafeInstance();
+    final ProtoSink sink = ProtoSink.newSafeInstance();
+    final ProtoSource unsafeSource = ProtoSource.newInstance();
+    final ProtoSink unsafeSink = ProtoSink.newInstance();
 
     // ===================== DATASETS =====================
     final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
@@ -108,43 +130,43 @@ public class SbeBenchmark {
     // ===================== UNSAFE OPTION DISABLED (e.g. Android) =====================
     @Benchmark
     public int marketRoboRead() throws IOException {
-        return readRobo(source.setInput(marketDataMessages), marketMsg);
+        return readRobo(source.wrap(marketDataMessages), marketMsg);
     }
 
     @Benchmark
     public int marketRoboReadWrite() throws IOException {
-        return readWriteRobo(source.setInput(marketDataMessages), marketMsg, sink.setOutput(output));
+        return readWriteRobo(source.wrap(marketDataMessages), marketMsg, sink.wrap(output));
     }
 
     @Benchmark
     public int carRoboRead() throws IOException {
-        return readRobo(source.setInput(carDataMessages), carMsg);
+        return readRobo(source.wrap(carDataMessages), carMsg);
     }
 
     @Benchmark
     public int carRoboReadWrite() throws IOException {
-        return readWriteRobo(source.setInput(carDataMessages), carMsg, sink.setOutput(output));
+        return readWriteRobo(source.wrap(carDataMessages), carMsg, sink.wrap(output));
     }
 
     // ===================== UNSAFE OPTION ENABLED =====================
     @Benchmark
     public int marketUnsafeRoboRead() throws IOException {
-        return readRobo(unsafeSource.setInput(marketDataMessages), marketMsg);
+        return readRobo(unsafeSource.wrap(marketDataMessages), marketMsg);
     }
 
     @Benchmark
     public int marketUnsafeRoboReadWrite() throws IOException {
-        return readWriteRobo(unsafeSource.setInput(marketDataMessages), marketMsg, unsafeSink.setOutput(output));
+        return readWriteRobo(unsafeSource.wrap(marketDataMessages), marketMsg, unsafeSink.wrap(output));
     }
 
     @Benchmark
     public int carUnsafeRoboRead() throws IOException {
-        return readRobo(unsafeSource.setInput(carDataMessages), carMsg);
+        return readRobo(unsafeSource.wrap(carDataMessages), carMsg);
     }
 
     @Benchmark
     public int carUnsafeRoboReadReadWrite() throws IOException {
-        return readWriteRobo(unsafeSource.setInput(carDataMessages), carMsg, unsafeSink.setOutput(output));
+        return readWriteRobo(unsafeSource.wrap(carDataMessages), carMsg, unsafeSink.wrap(output));
     }
 
     // ===================== STOCK PROTOBUF =====================

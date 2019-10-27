@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * benchmarks
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf.benchmarks.comparison;
 
 import com.google.protobuf.CodedOutputStream;
@@ -9,7 +31,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
-import us.hebi.robobuf.robo.RepeatedPackables.Packed;
+import protos.test.robo.RepeatedPackables.Packed;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -54,35 +76,35 @@ public class PackedDoublesBenchmark {
         new Runner(options).run();
     }
 
-    final byte[] input = new Packed().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
+    final byte[] input = Packed.newInstance().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
     final byte[] output = new byte[input.length + 100];
 
-    final ProtoSource source = ProtoSource.createFastest();
-    final ProtoSink sink = ProtoSink.createFastest();
+    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSink sink = ProtoSink.newInstance();
 
-    final Packed message = new Packed();
+    final Packed message = Packed.newInstance();
 
     @Benchmark
     public Object readRobo() throws IOException {
-        source.setInput(input);
+        source.wrap(input);
         return message.clear().mergeFrom(source);
     }
 
     @Benchmark
     public int readWriteRobo() throws IOException {
-        message.clear().mergeFrom(source.setInput(input)).writeTo(sink.setOutput(output));
+        message.clear().mergeFrom(source.wrap(input)).writeTo(sink.wrap(output));
         return sink.position();
     }
 
     @Benchmark
     public Object readProto() throws IOException {
-        return us.hebi.robobuf.java.RepeatedPackables.Packed.parseFrom(input);
+        return protos.test.java.RepeatedPackables.Packed.parseFrom(input);
     }
 
     @Benchmark
     public int readWriteProto() throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(output);
-        us.hebi.robobuf.java.RepeatedPackables.Packed.parseFrom(input)
+        protos.test.java.RepeatedPackables.Packed.parseFrom(input)
                 .writeTo(out);
         return out.getTotalBytesWritten();
     }

@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * benchmarks
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf.benchmarks.encoding;
 
 import org.openjdk.jmh.annotations.*;
@@ -6,10 +28,10 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
+import protos.test.robo.RepeatedPackables;
+import protos.test.robo.TestAllTypes;
 import us.hebi.robobuf.ProtoMessage;
 import us.hebi.robobuf.ProtoSink;
-import us.hebi.robobuf.robo.RepeatedPackables;
-import us.hebi.robobuf.robo.TestAllTypes;
 
 import java.io.IOException;
 import java.util.Random;
@@ -18,33 +40,33 @@ import java.util.concurrent.TimeUnit;
 /**
  * ==== Array Sink ==== (256x each type)
  * Benchmark                                        Mode  Cnt  Score   Error  Units
- * RepeatedWriteBenchmark.writeNonPackedDouble      avgt   10  1.660 ± 0.026  us/op
- * RepeatedWriteBenchmark.writeNonPackedFloat       avgt   10  0.978 ± 0.021  us/op
- * RepeatedWriteBenchmark.writeNonPackedInt32       avgt   10  2.320 ± 0.100  us/op
- * RepeatedWriteBenchmark.writeNonPackedInt64       avgt   10  3.048 ± 0.253  us/op
- * RepeatedWriteBenchmark.writeNonPackedIntFixed32  avgt   10  0.984 ± 0.036  us/op
- * RepeatedWriteBenchmark.writeNonPackedIntFixed64  avgt   10  1.603 ± 0.065  us/op
- * RepeatedWriteBenchmark.writePackedDouble         avgt   10  0.831 ± 0.016  us/op
- * RepeatedWriteBenchmark.writePackedFloat          avgt   10  0.442 ± 0.023  us/op
- * RepeatedWriteBenchmark.writePackedInt32          avgt   10  2.354 ± 0.074  us/op
- * RepeatedWriteBenchmark.writePackedInt64          avgt   10  3.268 ± 0.205  us/op
- * RepeatedWriteBenchmark.writePackedIntFixed32     avgt   10  0.329 ± 0.011  us/op
- * RepeatedWriteBenchmark.writePackedIntFixed64     avgt   10  0.772 ± 0.064  us/op
+ * RepeatedWriteBenchmark.writeNonPackedDouble      avgt   10  1.649 ± 0.044  us/op
+ * RepeatedWriteBenchmark.writeNonPackedFloat       avgt   10  0.874 ± 0.021  us/op
+ * RepeatedWriteBenchmark.writeNonPackedInt32       avgt   10  2.317 ± 0.098  us/op
+ * RepeatedWriteBenchmark.writeNonPackedInt64       avgt   10  2.968 ± 0.093  us/op
+ * RepeatedWriteBenchmark.writeNonPackedIntFixed32  avgt   10  0.799 ± 0.015  us/op
+ * RepeatedWriteBenchmark.writeNonPackedIntFixed64  avgt   10  1.515 ± 0.029  us/op
+ * RepeatedWriteBenchmark.writePackedDouble         avgt   10  1.000 ± 0.023  us/op
+ * RepeatedWriteBenchmark.writePackedFloat          avgt   10  0.432 ± 0.004  us/op
+ * RepeatedWriteBenchmark.writePackedInt32          avgt   10  2.275 ± 0.061  us/op
+ * RepeatedWriteBenchmark.writePackedInt64          avgt   10  3.169 ± 0.056  us/op
+ * RepeatedWriteBenchmark.writePackedIntFixed32     avgt   10  0.324 ± 0.005  us/op
+ * RepeatedWriteBenchmark.writePackedIntFixed64     avgt   10  0.846 ± 0.016  us/op
  *
  * ==== Unsafe Array Sink ==== (256x each type)
  * Benchmark                                        Mode  Cnt  Score   Error  Units
- * RepeatedWriteBenchmark.writeNonPackedDouble      avgt   10  0.742 ± 0.020  us/op
- * RepeatedWriteBenchmark.writeNonPackedFloat       avgt   10  0.710 ± 0.013  us/op
- * RepeatedWriteBenchmark.writeNonPackedInt32       avgt   10  2.322 ± 0.082  us/op
- * RepeatedWriteBenchmark.writeNonPackedInt64       avgt   10  2.951 ± 0.205  us/op
- * RepeatedWriteBenchmark.writeNonPackedIntFixed32  avgt   10  0.699 ± 0.031  us/op
- * RepeatedWriteBenchmark.writeNonPackedIntFixed64  avgt   10  0.716 ± 0.026  us/op
- * RepeatedWriteBenchmark.writePackedDouble         avgt   10  0.097 ± 0.003  us/op
- * RepeatedWriteBenchmark.writePackedFloat          avgt   10  0.056 ± 0.002  us/op
- * RepeatedWriteBenchmark.writePackedInt32          avgt   10  2.292 ± 0.085  us/op
- * RepeatedWriteBenchmark.writePackedInt64          avgt   10  3.230 ± 0.113  us/op
- * RepeatedWriteBenchmark.writePackedIntFixed32     avgt   10  0.061 ± 0.005  us/op
- * RepeatedWriteBenchmark.writePackedIntFixed64     avgt   10  0.099 ± 0.003  us/op
+ * RepeatedWriteBenchmark.writeNonPackedDouble      avgt   10  0.449 ± 0.007  us/op
+ * RepeatedWriteBenchmark.writeNonPackedFloat       avgt   10  0.439 ± 0.009  us/op
+ * RepeatedWriteBenchmark.writeNonPackedInt32       avgt   10  1.924 ± 0.060  us/op
+ * RepeatedWriteBenchmark.writeNonPackedInt64       avgt   10  2.674 ± 0.077  us/op
+ * RepeatedWriteBenchmark.writeNonPackedIntFixed32  avgt   10  0.478 ± 0.016  us/op
+ * RepeatedWriteBenchmark.writeNonPackedIntFixed64  avgt   10  0.472 ± 0.005  us/op
+ * RepeatedWriteBenchmark.writePackedDouble         avgt   10  0.065 ± 0.003  us/op
+ * RepeatedWriteBenchmark.writePackedFloat          avgt   10  0.044 ± 0.002  us/op
+ * RepeatedWriteBenchmark.writePackedInt32          avgt   10  1.956 ± 0.029  us/op
+ * RepeatedWriteBenchmark.writePackedInt64          avgt   10  2.610 ± 0.045  us/op
+ * RepeatedWriteBenchmark.writePackedIntFixed32     avgt   10  0.048 ± 0.001  us/op
+ * RepeatedWriteBenchmark.writePackedIntFixed64     avgt   10  0.063 ± 0.001  us/op
  *
  * @author Florian Enner
  * @since 16 Aug 2019
@@ -66,17 +88,17 @@ public class RepeatedWriteBenchmark {
     }
 
     final Random rnd = new Random();
-    final TestAllTypes msg = new TestAllTypes();
+    final TestAllTypes msg = TestAllTypes.newInstance();
     byte[] outputBuffer = new byte[10 * 1024];
-    final ProtoSink sink = ProtoSink.wrapArray(outputBuffer);
+    final ProtoSink sink = ProtoSink.newInstance(outputBuffer);
     final static int size = 256;
     final double[] doubleArray = new double[size];
     final float[] floatArray = new float[size];
     final int[] intArray = new int[size];
     final long[] longArray = new long[size];
 
-    final RepeatedPackables.Packed packed = new RepeatedPackables.Packed();
-    final RepeatedPackables.NonPacked nonPacked = new RepeatedPackables.NonPacked();
+    final RepeatedPackables.Packed packed = RepeatedPackables.Packed.newInstance();
+    final RepeatedPackables.NonPacked nonPacked = RepeatedPackables.NonPacked.newInstance();
 
     @Setup(Level.Trial)
     public void setupData() {

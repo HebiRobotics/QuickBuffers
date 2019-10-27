@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * benchmarks
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf.benchmarks.encoding;
 
 import org.openjdk.jmh.annotations.*;
@@ -7,7 +29,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.robobuf.ProtoSink;
-import us.hebi.robobuf.robo.TestAllTypes;
+import protos.test.robo.TestAllTypes;
 
 import java.io.IOException;
 import java.util.Random;
@@ -45,9 +67,9 @@ public class PrimitiveWriteBenchmark {
     }
 
     final Random rnd = new Random();
-    final TestAllTypes msg = new TestAllTypes();
+    final TestAllTypes msg = TestAllTypes.newInstance();
     byte[] outputBuffer = new byte[10 * 1024];
-    final ProtoSink sink = ProtoSink.wrapArray(outputBuffer);
+    final ProtoSink sink = ProtoSink.newInstance(outputBuffer);
     final double[] doubleArray = new double[512];
     final int[] intArray = new int[512];
 

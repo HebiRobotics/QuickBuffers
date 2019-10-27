@@ -1,71 +1,19 @@
 # RoboBuffers - Fast Protocol Buffers without Allocations
 
 RoboBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency and high throughput use cases. It can be used in zero-allocation environments and supports off-heap use cases.
- 
+
 The main differences to Protobuf-Java are
+
  * Message contents are mutable
- * Nested types are allocated eagerly
- * The serialization order matches the memory layout (i.e. sequential access pattern)
- 
-This library hasn't gone through an official release yet, so the public API should be considered a work-in-progress that is subject to change. It currently supports all of the Proto2 types with the exception of `OneOf`, `Maps`, `Extensions`, and `Services`.
+ * The serialization order was optimized for sequential memory access
+ * There is currently no support for `OneOf`, `Maps`, `Extensions`, and `Services`
+ * Nested types are instantiated eagerly
 
-## Performance
-  
-Below is a comparison with Google's official bindings for a variefy of datasets. Note that the performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run using JMH on JDK8 on an Intel NUC8i7BEH.
-
-The first benchmark was copied from [Small Binary Encoding's](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html) Car (140 byte) and MarketData (64 byte) throughput benchmarks. It tests manual creation of messages and encodes and decodes them from a byte array, which is similar to sending and receiving individual messages.
-
-<!-- car mutliplier: 140 * 1000 / (1024*1024) = 0.1335 = -->
-<!-- market multiplier: 64 * 1000 / (1024*1024) = 0.061 = -->
-
-| Test [msg/ms] | RoboBuffers | Protobuf-Java | Ratio
-| :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 2728 (364 MB/s) | 1125 (150 MB/s) |  2.4  
-| Car Decode  | 2042 (273 MB/s) | 1166s (149 MB/s) |  1.8  
-| Market Data Encode  | 6654 (406 MB/s) | 3712 (226 MB/s) |  1.8  
-| Market Data Decode  | 5977 (365 MB/s) | 3282 (200 MB/s) |  1.8  
-
-Note that this test was done using the original SBE .proto definitions. If the varint types are adapted to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers change to encoding 8245 msgs/ms (+23%) and decoding 6583 msgs/ms (+10%). By additionally inlining the small nested message fields it'd go to 3-4x the original throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
-
-We also ran benchmarks for reading and writing streams of delimited protobuf messages with varying contents, which is similar to reading sequentially from a log file. All datasets were loaded into memory and decoded from a byte array. Neither benchmark triggers Protobuf-Java's lazy-parsing of strings, so the results may be slightly off. The benchmark code can be found in the `benchmarks` directory.
-
-|  | RoboBuffers<p>(Unsafe) | RoboBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | `[2]`
-| ----------- | -----------: | -----------: | -----------: | -----------: | ----------- |
-| **Read**  | | 
-| 1  | 173ms (502 MB/s) | 212ms (410 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 2.0
-| 2  | 102ms (559 MB/s)` | 118ms (483 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.7
-| 3  | 34ms (297 MB/s) | 44ms (226 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 1.9
-| 4  | 25ms (400 MB/s) | 28ms (353 MB/s) | 47ms (214 MB/s)  | 155ms (65 MB/s) | 1.9
-| 5 | 9.8ms (6.5 GB/s) | 44ms (1.5 GB/s) |  103ms (621 MB/s)  | 92ms (696 MB/s) | 10.5
-|  **Write**`[3]`  | | |
-| 1 | 118ms (737 MB/s)  | 165ms (527 MB/s) | 157ms (554 MB/s)  | 718ms (121 MB/s)  | 1.3
-| 2 | 71ms (802 MB/s)  | 101ms (564 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 1.9
-| 3  | 23ms (435 MB/s) | 29ms (344 MB/s) | 29ms (344 MB/s)  | 101ms (99 MB/s) | 1.3
-| 4  | 16ms (625 MB/s) | 23ms (434 MB/s) | 42ms (238 MB/s)  | 97ms (103 MB/s) | 2.6
-| 5 | 6.2ms (10 GB/s)  | 46ms (1.4 GB/s) | 16ms (4.0 GB/s)  | 21ms (3.0 GB/s) | 2.5
-| **Read + Write** |  | 
-| 1  | 291ms (299 MB/s) | 377ms (231 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 1.7
-| 2 | 173ms (329 MB/s) | 219ms (260 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.8
-| 3  | 57ms (176 MB/s) | 73ms (138 MB/s) | 94ms (106 MB/s)  | 248ms (40 MB/s) | 1.6
-| 4  | 41ms (244 MB/s) | 51ms (196 MB/s) | 89ms (112 MB/s)  | 252ms (40 MB/s) | 2.2
-| 5  | 16ms (4.0 GB/s) | 90ms (711 MB/s) | 119ms (537 MB/s)  | 113ms (566 MB/s) | 7.4
-
-<!-- | 3  | ms (  MB/s) | ms (  MB/s) | ms (  MB/s)  | ms (  MB/s) | 0 -->
-
-* `[1]` Version 3.9.1 (makes use of `sun.misc.Unsafe` when available)
-* `[2]` `Java / RoboBuffers (Unsafe)`
-* `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
-
- * Dataset Contents
-   * Dataset 1 (87 MB) contains a series of delimited ~220 byte messages (production data). A lot of **scalar data types** and a relatively small amount of nesting. No strings, repeated, or unknown fields. Only a small subset of fields is populated.
-   * Dataset 2 (57 MB) contains a series of delimited ~650 byte messages (**production data**). Similar data to dataset 1, but with strings (mostly small and ascii) and more nesting. No unknown or repeated fields. Only about half the fields are populated.
-   * Dataset 3 (10 MB) contains ~147k messages generated by the **CarBenchmark**
-   * Dataset 4 (10 MB) contains ~73k messages generated by the  **MarketDataBenchmark**
-   * Dataset 5 (64 MB) contains a single artificial message with one (64 MB) **packed double field** (`repeated double values = 1 [packed=true]`). It only encodes a repeated type with fixed size, so it should be representative of the best-case scenario memory throughput (on little-endian systems this can map to memcpy).
+For performance comparisons please refer to [benchmarks](./benchmarks).
 
 ## Getting Started
 
-There have been no releases yet, so currently users need to build from source.
+This library hasn't gone through an official release yet, so the public API should be considered a work-in-progress that is subject to change.
 
 ### Building from Source
 
@@ -73,17 +21,17 @@ The project can be built with `mvn package` using JDK8 through JDK11. The runtim
 
 Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
 
-For this reason the `compiler` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
+For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
 
 ### Generating Messages
 
 The code generator is setup as a `protoc` plugin. In order to call it, you need to
 
-* Download `protoc` and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.2`)
+* Download `protoc` and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.1`)
 * Place the files below in the same directory or somewhere else on the `$PATH`. Protoc does have an option to define a plugin path, but it does not seem to work with scripts.
-  * `compiler/target/protoc-gen-robobuf`
-  * `compiler/target/protoc-gen-robobuf.bat`
-  * `compiler/target/protoc-gen-robobuf-<version>.jar`
+  * `generator/target/protoc-gen-robobuf`
+  * `generator/target/protoc-gen-robobuf.bat`
+  * `generator/target/protoc-gen-robobuf-<version>.jar`
 * Call `protoc` with `--robobuf_out=<options>:./path/to/generate`
 
 Currently available options are
@@ -158,16 +106,16 @@ public final class RootMessage {
     public NestedMessage getNestedMessage(); // internal message -> treat as read-only
     public NestedMessage getMutableNestedMessage(); // internal message -> may be modified until has state is cleared
 
-    private final NestedMessage nestedMessage = new NestedMessage();
+    private final NestedMessage nestedMessage = NestedMessage.newInstance();
 }
 ```
 
 ```Java
 // (1) setting nested values via 'set' (does a data copy!)
-msg.setNestedMessage(new NestedMessage().setPrimitiveValue(0));
+msg.setNestedMessage(NestedMessage().newInstance().setPrimitiveValue(0));
 
 // (2) modify the internal store directly (recommended)
-RootMessage msg = new RootMessage();
+RootMessage msg = RootMessage.newInstance();
 msg.getMutableNestedMessage().setPrimitiveValue(0);
 ```
 
@@ -197,7 +145,7 @@ public final class SimpleMessage {
 
 ```Java
 // Set and append to a string field
-SimpleMessage msg = new SimpleMessage();
+SimpleMessage msg = SimpleMessage.newInstance();
 msg.setOptionalString("my-");
 msg.getMutableOptionalString()
     .append("text"); // field is now 'my-text'
@@ -228,7 +176,7 @@ public final class SimpleMessage {
     public RepeatedDouble getRepeatedDouble(); // internal store -> treat as read-only
     public RepeatedDouble getMutableRepeatedDouble(); // internal store -> may be modified 
 
-    private final RepeatedDouble repeatedDouble = new RepeatedDouble();
+    private final RepeatedDouble repeatedDouble = RepeatedDouble.newEmptyInstance();
 }
 ```
 
@@ -240,20 +188,20 @@ Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the m
 
 ```Java
 // Create data
-RootMessage msg = new RootMessage()
+RootMessage msg = RootMessage().newInstance
     .setPrimitiveValue(2);
 
 // Serialize into existing byte array
 byte[] buffer = new byte[msg.getSerializedSize()];
-ProtoSink sink = ProtoSink.createFastest().setOutput(buffer);
+ProtoSink sink = ProtoSink.newInstance(buffer);
 msg.writeTo(sink);
 
 // Serialize to byte array using helper method
 assertArrayEquals(msg.toByteArray(), buffer);
 
 // Read from byte array into an existing message
-ProtoSource source = ProtoSource.createFastest().setInput(buffer);
-assertEquals(msg, new RootMessage().mergeFrom(source));
+ProtoSource source = ProtoSource.newInstance(buffer);
+assertEquals(msg, RootMessage().newInstance.mergeFrom(source));
 ```
 
 Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
@@ -263,7 +211,7 @@ are familiar with Unsafe, you may also request an UnsafeSource instance that wil
 
 ```Java
 long address = /* DirectBuffer::address */;
-ProtoSource source = ProtoSource.createUnsafe();
+ProtoSource source = ProtoSource.newUnsafeInstance();
 source.setInput(null, address, length)
 ```
 
