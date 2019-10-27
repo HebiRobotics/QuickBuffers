@@ -77,7 +77,9 @@ We tried to keep the public API as close to Google's official Java bindings as p
 
 All nested object types (e.g. messages, repeated fields, etc.) have `getField()` and `getMutableField()` accessors. Both return the internal storage, but the `getField()` getter should be considered read-only.
 
-### Primitive Fields
+
+<details>
+<summary>Primitive Fields</summary>
 
 All primitive values generate the same accessors and behavior as Protobuf-Java's `Builder` classes
 
@@ -100,7 +102,10 @@ public final class SimpleMessage {
 }
 ```
 
-### Message Fields
+</details> 
+
+<details>
+<summary>Message Fields</summary>
 
 Nested message types are `final` and allocated during construction time. Setting the field copies the internal data, but does not change the reference, so the best way to set nested message content is by directly accessing the internal store with `getMutableNestedMessage()`.
 
@@ -136,7 +141,10 @@ RootMessage msg = RootMessage.newInstance();
 msg.getMutableNestedMessage().setPrimitiveValue(0);
 ```
 
-### String Fields
+</details> 
+
+<details>
+<summary>String Fields</summary>
 
 `String` objects are immutable, so we use the built-in `CharSequence` and `StringBuilder` classes instead.
 
@@ -170,7 +178,10 @@ msg.getMutableOptionalString()
 
 If you receive messages with many identical Strings, you may want to use a `StringInterner` to share already existing references.
 
-### Repeated Fields
+</details> 
+
+<details>
+<summary>Repeated Fields</summary>
 
 Note: Our own use cases make very little use of repeated fields, so we expect that the API can probably be improved significantly. (i.e. please let us know if you have any better ideas)
 
@@ -198,6 +209,8 @@ public final class SimpleMessage {
 ```
 
 Note that repeated stores can currently only expand, but we may add something similar to `StringBuilder::trimToSize` to get rid of unneeded memory (`TODO`).
+
+</details>
 
 ### Serialization
 
