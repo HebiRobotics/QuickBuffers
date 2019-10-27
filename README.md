@@ -61,11 +61,13 @@ The generated messages require a runtime library. Released versions will be on M
 <details>
 <summary>Building from Source</summary>
 <p>
+
 The project can be built with `mvn package` using JDK8 through JDK11.
 
 Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
 
 For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
+
 </p>
 </details> 
 
