@@ -144,7 +144,7 @@ msg.getMutableNestedMessage().setPrimitiveValue(0);
 <details>
 <summary>String Fields</summary><p>
 
-`String` objects are immutable, so we use the built-in `CharSequence` and `StringBuilder` classes instead.
+`String` objects are immutable, so fields accept `CharSequence` and return `StringBuilder` objects instead.
 
 ```proto
 // .proto
@@ -180,8 +180,6 @@ If you receive messages with many identical Strings, you may want to use a `Stri
 
 <details>
 <summary>Repeated Fields</summary><p>
-
-Note: Our own use cases make very little use of repeated fields, so we expect that the API can probably be improved significantly. (i.e. please let us know if you have any better ideas)
 
 They currently work mostly the same as String fields, e.g.,
 
