@@ -82,7 +82,6 @@
         <!-- Jigsaw module name -->
         <javaModuleName />
         <gpg.keyname /> <!-- set via settings.xml to sign release artifacts-->
-        <maven.deploy.skip>false</maven.deploy.skip>
 
         <!-- License Headers (http://www.mojohaus.org/license-maven-plugin/update-file-header-mojo.html) -->
         <license.licenseName>gpl_v3</license.licenseName>
