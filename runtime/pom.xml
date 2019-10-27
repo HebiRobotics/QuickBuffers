@@ -7,7 +7,7 @@
     <parent>
         <artifactId>robobuf-parent</artifactId>
         <groupId>us.hebi.robobuf</groupId>
-        <version>1.0-alpha1</version>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>robobuf-runtime</artifactId>
