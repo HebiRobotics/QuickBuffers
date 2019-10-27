@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -57,7 +57,7 @@ import java.io.IOException;
 import static us.hebi.robobuf.WireFormat.*;
 
 /**
- * ----- NOTE: the code was modified from Javanano's CodedInputByteBufferNano ----
+ * NOTE: the code was modified from Javanano's CodedInputByteBufferNano
  *
  * Reads and decodes protocol message fields.
  * <p>
@@ -69,6 +69,7 @@ import static us.hebi.robobuf.WireFormat.*;
  * reading some other format of your own design, use the latter.
  *
  * @author kenton@google.com Kenton Varda
+ * @author Florian Enner
  */
 public class ProtoSource {
 
@@ -258,7 +259,7 @@ public class ProtoSource {
 
     // -----------------------------------------------------------------
 
-    /** Read a repeated (packed) {@code double} field value from the stream. */
+    /** Read a repeated (packed) {@code double} field value from the source. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.reserve(numEntries);
@@ -266,7 +267,7 @@ public class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code fixed64} field value from the stream. */
+    /** Read a repeated (packed) {@code fixed64} field value from the source. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.reserve(numEntries);
@@ -274,7 +275,7 @@ public class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code sfixed64} field value from the stream. */
+    /** Read a repeated (packed) {@code sfixed64} field value from the source. */
     public void readPackedSFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
         store.reserve(numEntries);
@@ -282,7 +283,7 @@ public class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code float} field value from the stream. */
+    /** Read a repeated (packed) {@code float} field value from the source. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.reserve(numEntries);
@@ -290,7 +291,7 @@ public class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code fixed32} field value from the stream. */
+    /** Read a repeated (packed) {@code fixed32} field value from the source. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.reserve(numEntries);
@@ -298,7 +299,7 @@ public class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code sfixed32} field value from the stream. */
+    /** Read a repeated (packed) {@code sfixed32} field value from the source. */
     public void readPackedSFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
         store.reserve(numEntries);
@@ -306,7 +307,7 @@ public class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code bool} field value from the stream. */
+    /** Read a repeated (packed) {@code bool} field value from the source. */
     public void readPackedBool(RepeatedBoolean store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_BOOL;
         store.reserve(numEntries);
@@ -345,47 +346,47 @@ public class ProtoSource {
 
     // -----------------------------------------------------------------
 
-    /** Read a {@code double} field value from the stream. */
+    /** Read a {@code double} field value from the source. */
     public double readDouble() throws IOException {
         return Double.longBitsToDouble(readRawLittleEndian64());
     }
 
-    /** Read a {@code float} field value from the stream. */
+    /** Read a {@code float} field value from the source. */
     public float readFloat() throws IOException {
         return Float.intBitsToFloat(readRawLittleEndian32());
     }
 
-    /** Read a {@code uint64} field value from the stream. */
+    /** Read a {@code uint64} field value from the source. */
     public long readUInt64() throws IOException {
         return readRawVarint64();
     }
 
-    /** Read an {@code int64} field value from the stream. */
+    /** Read an {@code int64} field value from the source. */
     public long readInt64() throws IOException {
         return readRawVarint64();
     }
 
-    /** Read an {@code int32} field value from the stream. */
+    /** Read an {@code int32} field value from the source. */
     public int readInt32() throws IOException {
         return readRawVarint32();
     }
 
-    /** Read a {@code fixed64} field value from the stream. */
+    /** Read a {@code fixed64} field value from the source. */
     public long readFixed64() throws IOException {
         return readRawLittleEndian64();
     }
 
-    /** Read a {@code fixed32} field value from the stream. */
+    /** Read a {@code fixed32} field value from the source. */
     public int readFixed32() throws IOException {
         return readRawLittleEndian32();
     }
 
-    /** Read a {@code bool} field value from the stream. */
+    /** Read a {@code bool} field value from the source. */
     public boolean readBool() throws IOException {
         return readRawVarint32() != 0;
     }
 
-    /** Read a {@code string} field value from the stream. */
+    /** Read a {@code string} field value from the source. */
     public void readString(StringBuilder output) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
@@ -393,7 +394,7 @@ public class ProtoSource {
         bufferPos += size;
     }
 
-    /** Read a {@code group} field value from the stream. */
+    /** Read a {@code group} field value from the source. */
     public void readGroup(final ProtoMessage msg, final int fieldNumber)
             throws IOException {
         if (recursionDepth >= recursionLimit) {
@@ -419,7 +420,7 @@ public class ProtoSource {
         popLimit(oldLimit);
     }
 
-    /** Read a {@code bytes} field value from the stream. */
+    /** Read a {@code bytes} field value from the source. */
     public void readBytes(RepeatedByte store) throws IOException {
         final int numBytes = readRawVarint32();
         requireRemaining(numBytes);
@@ -427,35 +428,35 @@ public class ProtoSource {
         bufferPos += numBytes;
     }
 
-    /** Read a {@code uint32} field value from the stream. */
+    /** Read a {@code uint32} field value from the source. */
     public int readUInt32() throws IOException {
         return readRawVarint32();
     }
 
     /**
-     * Read an enum field value from the stream.  Caller is responsible
+     * Read an enum field value from the source.  Caller is responsible
      * for converting the numeric value to an actual enum.
      */
     public int readEnum() throws IOException {
         return readRawVarint32();
     }
 
-    /** Read an {@code sfixed32} field value from the stream. */
+    /** Read an {@code sfixed32} field value from the source. */
     public int readSFixed32() throws IOException {
         return readRawLittleEndian32();
     }
 
-    /** Read an {@code sfixed64} field value from the stream. */
+    /** Read an {@code sfixed64} field value from the source. */
     public long readSFixed64() throws IOException {
         return readRawLittleEndian64();
     }
 
-    /** Read an {@code sint32} field value from the stream. */
+    /** Read an {@code sint32} field value from the source. */
     public int readSInt32() throws IOException {
         return decodeZigZag32(readRawVarint32());
     }
 
-    /** Read an {@code sint64} field value from the stream. */
+    /** Read an {@code sint64} field value from the source. */
     public long readSInt64() throws IOException {
         return decodeZigZag64(readRawVarint64());
     }
@@ -463,7 +464,7 @@ public class ProtoSource {
     // =================================================================
 
     /**
-     * Read a raw Varint from the stream.  If larger than 32 bits, discard the
+     * Read a raw Varint from the source.  If larger than 32 bits, discard the
      * upper bits.
      */
     public int readRawVarint32() throws IOException {
@@ -500,7 +501,7 @@ public class ProtoSource {
         return result;
     }
 
-    /** Read a raw Varint from the stream. */
+    /** Read a raw Varint from the source. */
     public long readRawVarint64() throws IOException {
         int shift = 0;
         long result = 0;
@@ -515,7 +516,16 @@ public class ProtoSource {
         throw InvalidProtocolBufferException.malformedVarint();
     }
 
-    /** Read a 32-bit little-endian integer from the stream. */
+    /** Read a 16-bit little-endian integer from the source. */
+    public short readRawLittleEndian16() throws IOException {
+        final byte b1 = readRawByte();
+        final byte b2 = readRawByte();
+        return (short) (
+                ((b1 & 0xff)) |
+                ((b2 & 0xff) << 8));
+    }
+
+    /** Read a 32-bit little-endian integer from the source. */
     public int readRawLittleEndian32() throws IOException {
         final byte b1 = readRawByte();
         final byte b2 = readRawByte();
@@ -527,7 +537,7 @@ public class ProtoSource {
                 ((b4 & 0xff) << 24);
     }
 
-    /** Read a 64-bit little-endian integer from the stream. */
+    /** Read a 64-bit little-endian integer from the source. */
     public long readRawLittleEndian64() throws IOException {
         final byte b1 = readRawByte();
         final byte b2 = readRawByte();
@@ -625,7 +635,7 @@ public class ProtoSource {
 
     /**
      * Set the maximum message recursion depth.  In order to prevent malicious
-     * messages from causing stack overflows, {@code CodedInputStream} limits
+     * messages from causing stack overflows, {@code ProtoSource} limits
      * how deeply messages may be nested.  The default limit is 64.
      *
      * @return the old limit.
@@ -698,9 +708,9 @@ public class ProtoSource {
     }
 
     /**
-     * Returns true if the stream has reached the end of the input.  This is the
+     * Returns true if the source has reached the end of the input.  This is the
      * case if either the end of the underlying input source has been reached or
-     * if the stream has reached a limit created using {@link #pushLimit(int)}.
+     * if the source has reached a limit created using {@link #pushLimit(int)}.
      */
     public boolean isAtEnd() {
         return bufferPos == bufferSize;
@@ -726,7 +736,7 @@ public class ProtoSource {
     /**
      * Read one byte from the input.
      *
-     * @throws InvalidProtocolBufferException The end of the stream or the current
+     * @throws InvalidProtocolBufferException The end of the source or the current
      *                                        limit was reached.
      */
     public byte readRawByte() throws IOException {
@@ -739,7 +749,7 @@ public class ProtoSource {
     /**
      * Reads and discards {@code size} bytes.
      *
-     * @throws InvalidProtocolBufferException The end of the stream or the current
+     * @throws InvalidProtocolBufferException The end of the source or the current
      *                                        limit was reached.
      */
     public void skipRawBytes(final int size) throws IOException {
@@ -773,7 +783,7 @@ public class ProtoSource {
      * <p>
      * Rewinds to current input position before returning.
      *
-     * @param input stream input, pointing to the byte after the first tag
+     * @param input source input, pointing to the byte after the first tag
      * @param tag   repeated field tag just read
      * @return length of array
      * @throws IOException
