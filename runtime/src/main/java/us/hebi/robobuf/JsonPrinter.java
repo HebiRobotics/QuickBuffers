@@ -1,24 +1,15 @@
 package us.hebi.robobuf;
 
 /**
- * A simple format that is compatible with JSON readers. The output
- * may not be particularly fast.
+ * Prints proto messages in a JSON compatible format
  *
  * @author Florian Enner
  * @since 26 Oct 2019
  */
-class JsonPrinter implements ProtoPrinter {
+public class JsonPrinter implements ProtoPrinter {
 
     public static JsonPrinter newInstance() {
         return new JsonPrinter();
-    }
-
-    private final StringBuilder builder = new StringBuilder(128);
-    private final StringBuilder indent = new StringBuilder(16);
-
-    @Override
-    public String toString() {
-        return builder.toString();
     }
 
     @Override
@@ -27,79 +18,6 @@ class JsonPrinter implements ProtoPrinter {
         value.print(this);
         endObject();
         return this;
-    }
-
-    private void incrementIndent() {
-        indent.append("  ");
-    }
-
-    private void decrementIndent() {
-        indent.setLength(indent.length() - 2);
-    }
-
-    private JsonPrinter startField(String field) {
-        builder.append("\n")
-                .append(indent)
-                .append("\"").append(field).append("\"")
-                .append(": ");
-        return this;
-    }
-
-    private JsonPrinter endField() {
-        builder.append(",");
-        return this;
-    }
-
-    private void startArray() {
-        builder.append("[");
-    }
-
-    private void endArray() {
-        removeTrailingComma();
-        builder.append("]");
-    }
-
-    private JsonPrinter startArrayField(String field) {
-        startField(field);
-        startArray();
-        return this;
-    }
-
-    private JsonPrinter endArrayField() {
-        endArray();
-        return endField();
-    }
-
-    private void removeTrailingComma() {
-        char prevChar = builder.charAt(builder.length() - 1);
-        if (prevChar == ',') {
-            builder.setLength(builder.length() - 1);
-        }
-    }
-
-    private JsonPrinter startObject() {
-        builder.append("{");
-        incrementIndent();
-        return this;
-    }
-
-    private JsonPrinter endObject() {
-        removeTrailingComma();
-        decrementIndent();
-        builder.append("\n").append(indent).append("}");
-        return this;
-    }
-
-    private void print(StringBuilder value) {
-        builder.append("\"").append(value).append("\"");
-    }
-
-    private void print(RepeatedByte value) {
-        startArray();
-        for (int j = 0; j < value.length; j++) {
-            builder.append(value.array[j]).append(',');
-        }
-        endArray();
     }
 
     @Override
@@ -234,5 +152,84 @@ class JsonPrinter implements ProtoPrinter {
         }
         endArrayField();
     }
+
+    protected void incrementIndent() {
+        indent.append("  ");
+    }
+
+    protected void decrementIndent() {
+        indent.setLength(indent.length() - 2);
+    }
+
+    protected void startField(String field) {
+        builder.append("\n")
+                .append(indent)
+                .append("\"").append(field).append("\"")
+                .append(": ");
+    }
+
+    protected void endField() {
+        builder.append(",");
+    }
+
+    protected void startArray() {
+        builder.append("[");
+    }
+
+    protected void endArray() {
+        removeTrailingComma();
+        builder.append("]");
+    }
+
+    protected void startArrayField(String field) {
+        startField(field);
+        startArray();
+    }
+
+    protected void endArrayField() {
+        endArray();
+        endField();
+    }
+
+    protected void removeTrailingComma() {
+        char prevChar = builder.charAt(builder.length() - 1);
+        if (prevChar == ',') {
+            builder.setLength(builder.length() - 1);
+        }
+    }
+
+    protected void startObject() {
+        builder.append("{");
+        incrementIndent();
+    }
+
+    protected void endObject() {
+        removeTrailingComma();
+        decrementIndent();
+        builder.append("\n").append(indent).append("}");
+    }
+
+    private void print(StringBuilder value) {
+        builder.append("\"").append(value).append("\"");
+    }
+
+    private void print(RepeatedByte value) {
+        startArray();
+        for (int j = 0; j < value.length; j++) {
+            builder.append(value.array[j]).append(',');
+        }
+        endArray();
+    }
+
+    @Override
+    public String toString() {
+        return builder.toString();
+    }
+
+    protected JsonPrinter() {
+    }
+
+    protected final StringBuilder builder = new StringBuilder(128);
+    protected final StringBuilder indent = new StringBuilder(16);
 
 }
