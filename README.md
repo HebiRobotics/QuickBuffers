@@ -214,7 +214,7 @@ Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the m
 
 ```Java
 // Create data
-RootMessage msg = RootMessagenewInstance()
+RootMessage msg = RootMessage.newInstance()
     .setPrimitiveValue(2);
 
 // Serialize into existing byte array
