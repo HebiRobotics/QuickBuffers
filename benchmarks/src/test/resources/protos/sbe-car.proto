@@ -1,3 +1,4 @@
+syntax="proto2";
 package uk.co.real_logic.protobuf.examples;
 
 option java_package = "protos.benchmarks.real_logic.java";

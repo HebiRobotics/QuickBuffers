@@ -1,0 +1,43 @@
+// trying to represent a typical mix of datatypes:
+// 1 array of 3 elements, each element: 1 string, 3 nested objects, 9 scalars
+// root element has the array, additional string and an enum
+syntax="proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package benchpb;
+option java_package = "protos.benchmarks.flatbuffers.java";
+option java_outer_classname = "Bench";
+option java_multiple_files = true;
+
+enum Fruit { Apples = 0; Pears = 1; Bananas = 2; }
+
+message Foo {
+  required fixed64 id = 1;
+  required int32 count = 2;
+  required int32 prefix = 3;
+  required fixed32 length = 4;
+}
+
+message Bar {
+  required Foo parent = 1;
+  required sfixed32 time = 2;
+  required float ratio = 3;
+  required uint32 size = 4;
+}
+
+message FooBar {
+  optional Bar sibling = 1;
+  optional string name = 2;
+  optional double rating = 3;
+  optional uint32 postfix = 4;
+}
+
+message FooBarContainer {
+  repeated FooBar list = 1;  // 3 copies of the above
+  optional bool initialized = 2;
+  optional Fruit fruit = 3;
+  optional string location = 4;
+}
+
+
