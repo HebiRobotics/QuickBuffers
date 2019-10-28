@@ -223,14 +223,14 @@ class MessageGenerator {
         // Packable fields make this a bit more complex since they need to generate two cases to preserve
         // backwards compatibility. However, any production proto file should already be using the packed
         // option whenever possible, so we don't need to optimize the non-packed case.
-        final boolean enableFallthroughOptimization = info.getExpectedIncomingOrder() != ExpectedIncomingOrder.Random;
+        final boolean enableFallthroughOptimization = info.getExpectedIncomingOrder() != ExpectedIncomingOrder.None;
         final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
         switch (info.getExpectedIncomingOrder()) {
             case AscendingNumber:
                 sortedFields.sort(FieldUtil.AscendingNumberSorter);
                 break;
             case Robobuf: // keep existing order
-            case Random: // no optimization
+            case None: // no optimization
                 break;
         }
 
