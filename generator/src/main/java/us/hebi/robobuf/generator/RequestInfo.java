@@ -107,7 +107,7 @@ public class RequestInfo {
     enum ExpectedIncomingOrder {
         Robobuf, // parsing messages from Robobuf
         AscendingNumber, // parsing messages from official protobuf bindings
-        Random; // parsing messages from unknown sources
+        None; // parsing messages from unknown sources
 
         @Override
         public String toString() {
@@ -130,7 +130,8 @@ public class RequestInfo {
             case "number":
                 return ExpectedIncomingOrder.AscendingNumber;
             case "random":
-                return ExpectedIncomingOrder.Random;
+            case "none":
+                return ExpectedIncomingOrder.None;
         }
         throw new GeneratorException("Expected input_order robobuf,number,random. Found: " + order);
     }
