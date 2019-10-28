@@ -61,20 +61,20 @@ We also ran benchmarks for reading and writing streams of delimited protobuf mes
 We also compared RoboBuffers against the Java bindings of Google's [FlatBuffers](https://google.github.io/flatbuffers/) project and ported its [official C++ benchmark](https://google.github.io/flatbuffers/flatbuffers_benchmarks.html).
    
    
-|  | RoboBuffers | FlatBuffers-Java`[1]` | Ratio
-| :----------- | :-----------: | :-----------: | :-----------: |
+|  | RoboBuffers | FlatBuffers (v1.11.0) | FlatBuffers (v1.10.0) | Ratio`[1]`
+| :----------- | :-----------: | :-----------: | :-----------: | :-----------: |
 | **UnsafeSource / DirectByteBuffer [ns/op]**  
-| Decode             | 293 | ~0 |  ~0  
-| Decode + Traverse  | 316 | 321 |  1.0 
-| Encode             | 325 | 649 |  2.0
+| Decode             | 293 | ~0 | ~0 |  ~0  
+| Decode + Traverse  | 316 | 234 | 321 |  0.7 
+| Encode             | 325 | 457 | 649 |  1.4
 | **ArraySource / HeapByteBuffer [ns/op]**  
-| Decode             | 383 | ~0 |  ~0  
-| Decode + Traverse  | 412 | 427 |  1.0 
-| Encode             | 375 | 821 |  2.2
+| Decode             | 383 | ~0 | ~0 |  ~0  
+| Decode + Traverse  | 412 | 381 | 427 |  0.9 
+| Encode             | 375 | 626 | 821 |  1.7
 | **Other**  
-| Serialized Size   | 228 bytes | 344 bytes |  1.5
-| Transient memory allocated during decode   | 0 bytes | 0 bytes | 1
+| Serialized Size   | 228 bytes | 344 bytes | 344 bytes |  1.5
+| Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 1
 
-* `[1]` FlatBuffers-Java version `1.10.0`. We could not use version `1.11.0` because `flatc` generated broken messages that required removed APIs.
+* `[1]` `FlatBuffers 1.11.0 / RoboBuffers`
    
-While the official C++ benchmark shows tremendous performance benefits over Protobuf (50x encoding and >3.500x decoding+traversal), the Java implementation has unfortunately been lagging behind by a lot. There is potential for significant improvements, but at this point the `ByteBuffer` API adds enough overhead to completely mitigate the expected performance benefits for most use cases.
+While the official C++ benchmark shows tremendous performance benefits over Protobuf (50x encoding and >3.500x decoding+traversal), the Java implementation has unfortunately been lagging behind a bit. There have been significant performance improvements in `v1.11.0`, but encoding and traversing a `ByteBuffer` are still quite expensive.

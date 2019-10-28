@@ -46,7 +46,7 @@
         <dependency>
             <groupId>com.google.flatbuffers</groupId>
             <artifactId>flatbuffers-java</artifactId>
-            <version>1.10.0</version>
+            <version>1.11.0</version>
         </dependency>
     </dependencies>
 
