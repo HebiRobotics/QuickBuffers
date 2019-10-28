@@ -35,10 +35,17 @@ import java.util.concurrent.TimeUnit;
 /**
  * Message size: FlatBuffers 344, RoboBuffers: 228
  *
+ * === FlatBuffers 1.11.0
+ * Benchmark                                Mode  Cnt  Score   Error  Units
+ * BenchRunner.flatDirectDecodeAndTraverse  avgt   10  0.234 ± 0.012  us/op
+ * BenchRunner.flatDirectEncode             avgt   10  0.457 ± 0.031  us/op
+ * BenchRunner.flatHeapDecodeAndTraverse    avgt   10  0.381 ± 0.144  us/op
+ * BenchRunner.flatHeapEncode               avgt   10  0.626 ± 0.050  us/op
+ *
+ * === FlatBuffers 1.10.0
  * Benchmark                                Mode  Cnt  Score   Error  Units
  * BenchRunner.flatDirectDecodeAndTraverse  avgt   10  0.321 ± 0.003  us/op
  * BenchRunner.flatDirectEncode             avgt   10  0.649 ± 0.006  us/op
- *
  * BenchRunner.flatHeapDecodeAndTraverse    avgt   10  0.427 ± 0.008  us/op
  * BenchRunner.flatHeapEncode               avgt   10  0.821 ± 0.011  us/op
  *
