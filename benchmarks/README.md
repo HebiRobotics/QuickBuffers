@@ -65,12 +65,12 @@ We also compared RoboBuffers against the Java bindings of Google's [FlatBuffers]
 | :----------- | :-----------: | :-----------: | :-----------: | :-----------: |
 | **UnsafeSource / DirectByteBuffer [ns/op]**  
 | Decode             | 293 | 0 | 0 |  0  
-| Traverse`[2]`      | 23 | 234 | 321 |  10.0
+| Traverse           | 23 | 234 | 321 |  10.0
 | Encode             | 325 | 457 | 649 |  1.4
 | Encode + Decode + Traverse | 641 | 691 | 970 |  1.1
 | **ArraySource / HeapByteBuffer [ns/op]**  
 | Decode             | 383 | 0 | 0 |  0  
-| Traverse`[2]`      | 29 | 381 | 427 |  13.0
+| Traverse           | 29 | 381 | 427 |  13.0
 | Encode             | 375 | 626 | 821 |  1.7
 | Encode + Decode + Traverse | 787 | 1007 | 1248 |  1.3
 | **Other**  
@@ -78,7 +78,7 @@ We also compared RoboBuffers against the Java bindings of Google's [FlatBuffers]
 | Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 1
 
 * `[1]` `FlatBuffers v1.11.0 / RoboBuffers`
-* `[2]` `(Decode + Traverse) - Decode`
+* `[2]` `Traverse = (Decode + Traverse) - Decode`
    
 While the official C++ benchmark shows tremendous performance benefits over Protobuf, the Java implementation has unfortunately been lagging behind a bit. Recent versions have seen some significant performance improvements, but encoding and traversing a `ByteBuffer` still results in more overhead than may be expected.
 
