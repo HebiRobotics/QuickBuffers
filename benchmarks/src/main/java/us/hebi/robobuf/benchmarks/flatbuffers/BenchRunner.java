@@ -28,6 +28,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
+import protos.benchmarks.flatbuffers.robo.FooBarContainer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -124,10 +125,16 @@ public class BenchRunner {
     }
 
     @Benchmark
+    public long roboTraverse() {
+        return robobuffers.traverse(roboMsg);
+    }
+
+    @Benchmark
     public long roboDecodeAndTraverse() {
         return robobuffers.traverse(robobuffers.decode());
     }
 
     RoboBench robobuffers = new RoboBench();
+    final FooBarContainer roboMsg = RoboBench.setData(FooBarContainer.newInstance());
 
 }
