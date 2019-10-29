@@ -37,7 +37,7 @@ import java.io.IOException;
 @State(Scope.Thread)
 public class RoboBench {
 
-    private static FooBarContainer setData(FooBarContainer fooBarContainer) {
+    static FooBarContainer setData(FooBarContainer fooBarContainer) {
         fooBarContainer.clearQuick()
                 .setFruit(anEnum)
                 .setInitialized(initialized)

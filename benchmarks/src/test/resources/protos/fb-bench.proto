@@ -13,7 +13,7 @@ option java_multiple_files = true;
 enum Fruit { Apples = 0; Pears = 1; Bananas = 2; }
 
 message Foo {
-  required fixed64 id = 1;
+  required fixed64 id = 1; /* changed from int64 because it's always 10 (!) bytes */
   required int32 count = 2;
   required int32 prefix = 3;
   required fixed32 length = 4;
@@ -21,7 +21,7 @@ message Foo {
 
 message Bar {
   required Foo parent = 1;
-  required sfixed32 time = 2;
+  required sfixed32 time = 2; /* changed from int32 as it's always 2 bytes */
   required float ratio = 3;
   required uint32 size = 4;
 }
