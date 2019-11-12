@@ -51,14 +51,14 @@ import java.util.concurrent.TimeUnit;
  * BenchRunner.flatHeapEncode               avgt   10  0.821 ± 0.011  us/op
  *
  * === Unsafe Sink
- * BenchRunner.roboDecode                   avgt   10  0.293 ± 0.008  us/op
- * BenchRunner.roboDecodeAndTraverse        avgt   10  0.316 ± 0.011  us/op
- * BenchRunner.roboEncode                   avgt   10  0.325 ± 0.022  us/op
+ * BenchRunner.roboDecode                   avgt   10  0.292 ± 0.021  us/op
+ * BenchRunner.roboDecodeAndTraverse        avgt   10  0.309 ± 0.011  us/op
+ * BenchRunner.roboEncode                   avgt   10  0.312 ± 0.011  us/op
  *
  * === Heap Sink
- * BenchRunner.roboDecode                   avgt   10  0.383 ± 0.026  us/op
- * BenchRunner.roboDecodeAndTraverse        avgt   10  0.412 ± 0.036  us/op
- * BenchRunner.roboEncode                   avgt   10  0.375 ± 0.034  us/op
+ * BenchRunner.roboDecode                   avgt   10  0.379 ± 0.031  us/op
+ * BenchRunner.roboDecodeAndTraverse        avgt   10  0.408 ± 0.034  us/op
+ * BenchRunner.roboEncode                   avgt   10  0.334 ± 0.018  us/op
  *
  * @author Florian Enner < florian @ hebirobotics.com >
  * @since 23 Jan 2015

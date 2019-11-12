@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -30,6 +30,7 @@ import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static us.hebi.robobuf.generator.BitField.*;
 
@@ -315,17 +316,19 @@ class MessageGenerator {
                 .returns(void.class)
                 .addParameter(RuntimeClasses.ProtoSink, "output", Modifier.FINAL)
                 .addException(IOException.class);
+
+        // Fail if any required bits are missing
+        insertFailOnMissingRequiredBits(writeTo);
+
         fields.forEach(f -> {
-            writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
-            f.generateSerializationCode(writeTo);
-
             if (f.getInfo().isRequired()) {
-                String error = "Message is missing required field (" + f.getInfo().getLowerName() + ")";
-                writeTo.nextControlFlow("else")
-                        .addStatement("throw new $T($S)", IllegalStateException.class, error);
+                // no need to check has state again
+                f.generateSerializationCode(writeTo);
+            } else {
+                writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
+                f.generateSerializationCode(writeTo);
+                writeTo.endControlFlow();
             }
-
-            writeTo.endControlFlow();
         });
         type.addMethod(writeTo.build());
     }
@@ -335,11 +338,21 @@ class MessageGenerator {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PROTECTED)
                 .returns(int.class);
+
+        // Fail if any required bits are missing
+        insertFailOnMissingRequiredBits(computeSerializedSize);
+
+        // Check all required fields at once
         computeSerializedSize.addStatement("int size = 0");
         fields.forEach(f -> {
-            computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
-            f.generateComputeSerializedSizeCode(computeSerializedSize);
-            computeSerializedSize.endControlFlow();
+            if (f.getInfo().isRequired()) {
+                // no need to check has state again
+                f.generateComputeSerializedSizeCode(computeSerializedSize);
+            } else {
+                computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
+                f.generateComputeSerializedSizeCode(computeSerializedSize);
+                computeSerializedSize.endControlFlow();
+            }
         });
         computeSerializedSize.addStatement("return size");
         type.addMethod(computeSerializedSize.build());
@@ -386,27 +399,8 @@ class MessageGenerator {
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .returns(boolean.class);
 
-        // check if all required bits are set
-        final int numFields = fields.size();
-        int i = 0;
-        for (int bitFieldIndex = 0; bitFieldIndex < numBitFields && i < numFields; bitFieldIndex++) {
-
-            // Generate a single number that contains all required bits
-            int bits = 0;
-            for (int bit = 0; bit < BITS_PER_FIELD && i < numFields; bit++, i++) {
-                if (fields.get(i).getInfo().isRequired()) {
-                    bits |= 1 << bit;
-                }
-            }
-
-            // Check up to 32 fields at the same time
-            if (bits != 0) {
-                isInitialized.beginControlFlow("if ($L)", BitField.isMissingRequiredBits(bitFieldIndex, bits))
-                        .addStatement("return false")
-                        .endControlFlow();
-            }
-
-        }
+        // Check bits first
+        insertOnMissingRequiredBits(isInitialized, m -> m.addStatement("return false"));
 
         // Check sub-messages (including optional and repeated)
         fields.stream()
@@ -427,6 +421,35 @@ class MessageGenerator {
 
         isInitialized.addStatement("return true");
         type.addMethod(isInitialized.build());
+    }
+
+    private void insertFailOnMissingRequiredBits(MethodSpec.Builder method) {
+        String error = "Message is missing at least one required field";
+        insertOnMissingRequiredBits(method, m -> m.addStatement("throw new $T($S)", IllegalStateException.class, error));
+    }
+
+    private void insertOnMissingRequiredBits(MethodSpec.Builder method, Consumer<MethodSpec.Builder> onCondition) {
+        // check if all required bits are set
+        final int numFields = fields.size();
+        int i = 0;
+        for (int bitFieldIndex = 0; bitFieldIndex < numBitFields && i < numFields; bitFieldIndex++) {
+
+            // Generate a single number that contains all required bits
+            int bits = 0;
+            for (int bit = 0; bit < BITS_PER_FIELD && i < numFields; bit++, i++) {
+                if (fields.get(i).getInfo().isRequired()) {
+                    bits |= 1 << bit;
+                }
+            }
+
+            // Check up to 32 fields at the same time
+            if (bits != 0) {
+                method.beginControlFlow("if ($L)", BitField.isMissingRequiredBits(bitFieldIndex, bits));
+                onCondition.accept(method);
+                method.endControlFlow();
+            }
+
+        }
     }
 
     private void generatePrint(TypeSpec.Builder type) {

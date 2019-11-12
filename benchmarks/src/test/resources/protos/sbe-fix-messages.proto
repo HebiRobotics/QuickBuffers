@@ -43,8 +43,8 @@ message MdIncGrp
         TRADING_SESSION_LOW_PRICE = 8;
     }
 
-    required uint64 tradeId = 1;
-    required uint64 securityId = 2;
+    required uint64 tradeId = 1; /* better fixed64 */
+    required uint64 securityId = 2; /* better fixed64 */
     required Decimal64 mdEntryPx = 3;
     required IntQty32 mdEntrySize = 4;
     required uint32 numberOfOrders = 5;
@@ -64,8 +64,8 @@ message MarketDataIncrementalRefreshTrades
         BEGINNING_AND_END_EVENT = 3;
     }
 
-    required uint64 transactTime = 1;
-    required uint32 eventTimeDelta = 2;
+    required uint64 transactTime = 1; /* better fixed64 */
+    required uint32 eventTimeDelta = 2; /* better fixed32 */
     required MatchEventIndicator matchEventIndicator = 3;
     repeated MdIncGrp mdIncGroup = 4;
 }

@@ -11,12 +11,12 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 
 | Test [msg/ms] | RoboBuffers | Protobuf-Java | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 2728 (364 MB/s) | 1125 (150 MB/s) |  2.4  
+| Car Encode  | 2854 (381 MB/s) | 1125 (150 MB/s) |  2.5  
 | Car Decode  | 2042 (273 MB/s) | 1166s (149 MB/s) |  1.8  
-| Market Data Encode  | 6654 (406 MB/s) | 3712 (226 MB/s) |  1.8  
+| Market Data Encode  | 8267 (504 MB/s) | 3712 (226 MB/s) |  2.2  
 | Market Data Decode  | 5977 (365 MB/s) | 3282 (200 MB/s) |  1.8  
 
-Note that this test was done using the original SBE .proto definitions. If the varint types are adapted to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers change to encoding 8245 msgs/ms (+23%) and decoding 6583 msgs/ms (+10%). By additionally inlining the small nested message fields it'd go to 3-4x the original throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
+Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers improve by another 10-20%. By additionally inlining the small nested fields it'd result in 3-4x the original message throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
 
 ## Benchmark 2 - File Streams
 
@@ -64,15 +64,15 @@ We also compared RoboBuffers against the Java bindings of Google's [FlatBuffers]
 |  | RoboBuffers | FlatBuffers (v1.11.0) | FlatBuffers (v1.10.0) | Ratio`[1]`
 | :----------- | :-----------: | :-----------: | :-----------: | :-----------: |
 | **UnsafeSource / DirectByteBuffer [ns/op]**  
-| Decode             | 293 | 0 | 0 |  0  
-| Traverse           | 23 | 234 | 321 |  10.0
-| Encode             | 325 | 457 | 649 |  1.4
-| Encode + Decode + Traverse | 641 | 691 | 970 |  1.1
+| Decode             | 292 | 0 | 0 |  0.0 
+| Traverse           | 17 | 234 | 321 |  13.8
+| Encode             | 312 | 457 | 649 |  1.5
+| Encode + Decode + Traverse | 621 | 691 | 970 |  1.1
 | **ArraySource / HeapByteBuffer [ns/op]**  
-| Decode             | 383 | 0 | 0 |  0  
-| Traverse           | 29 | 381 | 427 |  13.0
-| Encode             | 375 | 626 | 821 |  1.7
-| Encode + Decode + Traverse | 787 | 1007 | 1248 |  1.3
+| Decode             | 379 | 0 | 0 |  0.0  
+| Traverse           | 29 | 381 | 427 |  13.1
+| Encode             | 334 | 626 | 821 |  1.9
+| Encode + Decode + Traverse | 742 | 1007 | 1248 |  1.4
 | **Other**  
 | Serialized Size   | 228 bytes | 344 bytes | 344 bytes |  1.5
 | Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 1
