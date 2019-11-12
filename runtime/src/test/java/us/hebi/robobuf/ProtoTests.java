@@ -32,10 +32,10 @@ import protos.test.robo.external.ImportEnum;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static us.hebi.robobuf.ProtoUtil.Charsets.*;
 
 /**
  * @author Florian Enner
@@ -499,7 +499,5 @@ public class ProtoTests {
         }
         assertArrayEquals(outData, inData);
     }
-
-    public static final Charset UTF_8 = Charset.forName("UTF-8");
 
 }
