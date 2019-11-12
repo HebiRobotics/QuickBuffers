@@ -41,14 +41,14 @@ import java.util.concurrent.TimeUnit;
  * === Robobuf (with Unsafe)
  * Benchmark                                     Mode  Cnt     Score     Error   Units
  * SbeThroughputBenchmarkRobo.testCarDecode     thrpt   10  2041.544 ±  24.943  ops/ms
- * SbeThroughputBenchmarkRobo.testCarEncode     thrpt   10  2728.320 ± 163.706  ops/ms
+ * SbeThroughputBenchmarkRobo.testCarEncode     thrpt   10  2853.995 ± 141.411  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  5976.679 ± 196.894  ops/ms
- * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  6654.291 ±  99.163  ops/ms
+ * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8267.069 ±  84.955  ops/ms
  *
  * === change .proto definition to use fixed width types for 7+ bit values ===
  * Benchmark                                     Mode  Cnt     Score     Error   Units
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  6583.222 ± 206.918  ops/ms
- * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8245.170 ±  40.951  ops/ms
+ * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8716.434 ± 121.461  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019
