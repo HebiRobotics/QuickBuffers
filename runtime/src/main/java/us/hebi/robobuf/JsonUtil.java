@@ -171,7 +171,7 @@ class JsonUtil {
     }
 
     /**
-     * Copied from Java's Long.toString() implementation
+     * Copied from JDK12's Long.toString() implementation
      *
      * TODO: write numbers 3 digits at once. see JsonIter / DSL-Platform?
      * https://github.com/json-iterator/java/blob/master/src/main/java/com/jsoniter/output/StreamImplNumber.java
@@ -179,57 +179,45 @@ class JsonUtil {
     static class IntegerEncoding {
 
         static void writeInt(int value, RepeatedByte output) {
-            if (value == Integer.MIN_VALUE) {
-                output.addAll(INTEGER_MIN_VALUE_BYTES);
-                return;
-            }
-
-            output.reserve(12);
-            if (value < 0) {
-                output.array[output.length++] = '-';
-                value = -value;
-            }
-
-            output.length += stringSize(value);
-            getPositiveLongBytes(value, output.length, output.array);
-
+            output.setLength(output.length + stringSize(value));
+            getChars(value, output.length, output.array);
         }
 
         static void writeLong(long value, RepeatedByte output) {
-            if (value == Long.MIN_VALUE) {
-                output.addAll(LONG_MIN_VALUE_BYTES);
-                return;
-            }
-
-            output.reserve(22);
-            if (value < 0) {
-                output.array[output.length++] = '-';
-                value = -value;
-            }
-
-            output.length += stringSize(value);
-            getPositiveLongBytes(value, output.length, output.array);
+            output.setLength(output.length + stringSize(value));
+            getChars(value, output.length, output.array);
         }
 
         /**
-         * Places bytes representing the positive integer i into the
-         * byte array buf. The characters are placed into
+         * Places characters representing the long i into the
+         * character array buf. The characters are placed into
          * the buffer backwards starting with the least significant
          * digit at the specified index (exclusive), and working
          * backwards from there.
          *
-         * Will fail if i == Long.MIN_VALUE
+         * @param i     value to convert
+         * @param index next index, after the least significant digit
+         * @param buf   target buffer, Latin1-encoded
+         * @return index of the most significant digit or minus sign, if present
+         * @implNote This method converts positive inputs into negative
+         * values, to cover the Long.MIN_VALUE case. Converting otherwise
+         * (negative to positive) will expose -Long.MIN_VALUE that overflows
+         * long.
          */
-        static void getPositiveLongBytes(long i, int index, byte[] buf) {
+        static void getChars(long i, int index, byte[] buf) {
             long q;
             int r;
             int charPos = index;
 
+            boolean negative = (i < 0);
+            if (!negative) {
+                i = -i;
+            }
+
             // Get 2 digits/iteration using longs until quotient fits into an int
-            while (i > Integer.MAX_VALUE) {
+            while (i <= Integer.MIN_VALUE) {
                 q = i / 100;
-                // really: r = i - (q * 100);
-                r = (int) (i - ((q << 6) + (q << 5) + (q << 2)));
+                r = (int) ((q * 100) - i);
                 i = q;
                 buf[--charPos] = DigitOnes[r];
                 buf[--charPos] = DigitTens[r];
@@ -238,47 +226,70 @@ class JsonUtil {
             // Get 2 digits/iteration using ints
             int q2;
             int i2 = (int) i;
-            while (i2 >= 65536) {
+            while (i2 <= -100) {
                 q2 = i2 / 100;
-                // really: r = i2 - (q * 100);
-                r = i2 - ((q2 << 6) + (q2 << 5) + (q2 << 2));
+                r = (q2 * 100) - i2;
                 i2 = q2;
                 buf[--charPos] = DigitOnes[r];
                 buf[--charPos] = DigitTens[r];
             }
 
-            // Fall thru to fast mode for smaller numbers
-            // assert(i2 <= 65536, i2);
-            for (; ; ) {
-                q2 = (i2 * 52429) >>> (16 + 3);
-                r = i2 - ((q2 << 3) + (q2 << 1));  // r = i2-(q2*10) ...
-                buf[--charPos] = digits[r];
-                i2 = q2;
-                if (i2 == 0) break;
+            // We know there are at most two digits left at this point.
+            q2 = i2 / 10;
+            r = (q2 * 10) - i2;
+            buf[--charPos] = (byte) ('0' + r);
+
+            // Whatever left is the remaining digit.
+            if (q2 < 0) {
+                buf[--charPos] = (byte) ('0' - q2);
             }
+
+            if (negative) {
+                buf[--charPos] = (byte) '-';
+            }
+
         }
 
-        // Requires positive x
-        static int stringSize(long x) {
-            long p = 10;
-            for (int i = 1; i < 19; i++) {
-                if (x < p)
-                    return i;
+        /**
+         * Returns the string representation size for a given int value.
+         *
+         * @param x int value
+         * @return string size
+         *
+         * There are other ways to compute this: e.g. binary search,
+         * but values are biased heavily towards zero, and therefore linear search
+         * wins. The iteration results are also routinely inlined in the generated
+         * code after loop unrolling.
+         */
+        static int stringSize(int x) {
+            int d = 1;
+            if (x >= 0) {
+                d = 0;
+                x = -x;
+            }
+            int p = -10;
+            for (int i = 1; i < 10; i++) {
+                if (x > p)
+                    return i + d;
                 p = 10 * p;
             }
-            return 19;
+            return 10 + d;
         }
 
-        // Requires positive x
-        static int stringSize(int x) {
-            for (int i = 0; ; i++)
-                if (x <= sizeTable[i])
-                    return i + 1;
+        static int stringSize(long x) {
+            int d = 1;
+            if (x >= 0) {
+                d = 0;
+                x = -x;
+            }
+            long p = -10;
+            for (int i = 1; i < 19; i++) {
+                if (x > p)
+                    return i + d;
+                p = 10 * p;
+            }
+            return 19 + d;
         }
-
-        final static int[] sizeTable = {9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, Integer.MAX_VALUE};
-        final static byte[] INTEGER_MIN_VALUE_BYTES = String.valueOf(Integer.MIN_VALUE).getBytes(Charsets.ISO_8859_1);
-        final static byte[] LONG_MIN_VALUE_BYTES = String.valueOf(Long.MIN_VALUE).getBytes(Charsets.ISO_8859_1);
 
         final static byte[] DigitTens = {
                 '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
@@ -306,18 +317,6 @@ class JsonUtil {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         };
 
-        /**
-         * All possible chars for representing a number as a String
-         */
-        final static byte[] digits = {
-                '0', '1', '2', '3', '4', '5',
-                '6', '7', '8', '9', 'a', 'b',
-                'c', 'd', 'e', 'f', 'g', 'h',
-                'i', 'j', 'k', 'l', 'm', 'n',
-                'o', 'p', 'q', 'r', 's', 't',
-                'u', 'v', 'w', 'x', 'y', 'z'
-        };
-
     }
 
     /**
@@ -327,9 +326,11 @@ class JsonUtil {
 
         static void writeFloat(float value, RepeatedByte output) {
             if (Float.isNaN(value)) {
-                output.addAll(NAN_BYTES);
+                output.addAll(NAN);
             } else if (Float.isInfinite(value)) {
                 output.addAll(value < 0 ? NEGATIVE_INF : POSITIVE_INF);
+            } else if (((int) value) == value) {
+                IntegerEncoding.writeInt((int) value, output);
             } else {
                 StringEncoding.writeRawAscii(Float.toString(value), output);
             }
@@ -337,9 +338,11 @@ class JsonUtil {
 
         static void writeDouble(double value, RepeatedByte output) {
             if (Double.isNaN(value)) {
-                output.addAll(NAN_BYTES);
+                output.addAll(NAN);
             } else if (Double.isInfinite(value)) {
                 output.addAll(value < 0 ? NEGATIVE_INF : POSITIVE_INF);
+            } else if ((long) value == value) {
+                IntegerEncoding.writeLong((long) value, output);
             } else {
                 StringEncoding.writeRawAscii(Double.toString(value), output);
             }
@@ -348,7 +351,7 @@ class JsonUtil {
         // JSON doesn't define -inf etc., so encode as String
         private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(Charsets.ISO_8859_1);
         private static final byte[] POSITIVE_INF = "\"Infinity\"".getBytes(Charsets.ISO_8859_1);
-        private static final byte[] NAN_BYTES = "\"NaN\"".getBytes(Charsets.ISO_8859_1);
+        private static final byte[] NAN = "\"NaN\"".getBytes(Charsets.ISO_8859_1);
 
     }
 
