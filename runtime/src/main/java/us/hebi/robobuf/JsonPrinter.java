@@ -22,6 +22,7 @@
 
 package us.hebi.robobuf;
 
+import us.hebi.robobuf.JsonUtil.*;
 import us.hebi.robobuf.ProtoUtil.Charsets;
 
 /**
@@ -56,39 +57,35 @@ public class JsonPrinter implements ProtoPrinter {
     @Override
     public void print(String field, boolean value) {
         startField(field);
-        if (value) {
-            writeUnescapedAscii("true");
-        } else {
-            writeUnescapedAscii("false");
-        }
+        BooleanEncoding.writeBoolean(value, output);
         endField();
     }
 
     @Override
     public void print(String field, int value) {
         startField(field);
-        writeUnescapedAscii(String.valueOf(value));
+        IntegerEncoding.writeInt(value, output);
         endField();
     }
 
     @Override
     public void print(String field, long value) {
         startField(field);
-        writeUnescapedAscii(String.valueOf(value));
+        IntegerEncoding.writeLong(value, output);
         endField();
     }
 
     @Override
     public void print(String field, float value) {
         startField(field);
-        writeUnescapedAscii(String.valueOf(value));
+        FloatEncoding.writeFloat(value, output);
         endField();
     }
 
     @Override
     public void print(String field, double value) {
         startField(field);
-        writeUnescapedAscii(String.valueOf(value));
+        FloatEncoding.writeDouble(value, output);
         endField();
     }
 
@@ -119,7 +116,7 @@ public class JsonPrinter implements ProtoPrinter {
     public void print(String field, RepeatedBoolean value) {
         startArrayField(field);
         for (int i = 0; i < value.length; i++) {
-            writeUnescapedAscii(String.valueOf(value.array[i]));
+            BooleanEncoding.writeBoolean(value.array[i], output);
             continueArray();
         }
         endArrayField();
@@ -129,7 +126,7 @@ public class JsonPrinter implements ProtoPrinter {
     public void print(String field, RepeatedInt value) {
         startArrayField(field);
         for (int i = 0; i < value.length; i++) {
-            writeUnescapedAscii(String.valueOf(value.array[i]));
+            IntegerEncoding.writeInt(value.array[i], output);
             continueArray();
         }
         endArrayField();
@@ -139,7 +136,7 @@ public class JsonPrinter implements ProtoPrinter {
     public void print(String field, RepeatedLong value) {
         startArrayField(field);
         for (int i = 0; i < value.length; i++) {
-            writeUnescapedAscii(String.valueOf(value.array[i]));
+            IntegerEncoding.writeLong(value.array[i], output);
             continueArray();
         }
         endArrayField();
@@ -149,7 +146,7 @@ public class JsonPrinter implements ProtoPrinter {
     public void print(String field, RepeatedFloat value) {
         startArrayField(field);
         for (int i = 0; i < value.length; i++) {
-            writeUnescapedAscii(String.valueOf(value.array[i]));
+            FloatEncoding.writeFloat(value.array[i], output);
             continueArray();
         }
         endArrayField();
@@ -159,7 +156,7 @@ public class JsonPrinter implements ProtoPrinter {
     public void print(String field, RepeatedDouble value) {
         startArrayField(field);
         for (int i = 0; i < value.length; i++) {
-            writeUnescapedAscii(String.valueOf(value.array[i]));
+            FloatEncoding.writeDouble(value.array[i], output);
             continueArray();
         }
         endArrayField();
@@ -197,28 +194,28 @@ public class JsonPrinter implements ProtoPrinter {
 
     protected void startField(String field) {
         newline();
-        writeUnescapedAscii('"');
-        writeUnescapedAscii(field);
-        writeUnescapedAscii('"');
-        writeUnescapedAscii(':');
+        writeRawAscii('"');
+        writeRawAscii(field);
+        writeRawAscii('"');
+        writeRawAscii(':');
         space();
     }
 
     protected void endField() {
-        writeUnescapedAscii(',');
+        writeRawAscii(',');
     }
 
     protected void startArray() {
-        writeUnescapedAscii('[');
+        writeRawAscii('[');
     }
 
     protected void endArray() {
         removeTrailingComma();
-        writeUnescapedAscii(']');
+        writeRawAscii(']');
     }
 
     protected void continueArray() {
-        writeUnescapedAscii(',');
+        writeRawAscii(',');
     }
 
     protected void startArrayField(String field) {
@@ -232,7 +229,7 @@ public class JsonPrinter implements ProtoPrinter {
     }
 
     protected void startObject() {
-        writeUnescapedAscii('{');
+        writeRawAscii('{');
         indentLevel++;
     }
 
@@ -240,19 +237,19 @@ public class JsonPrinter implements ProtoPrinter {
         removeTrailingComma();
         indentLevel--;
         newline();
-        writeUnescapedAscii('}');
+        writeRawAscii('}');
     }
 
     private void print(StringBuilder value) {
-        writeUnescapedAscii('"');
-        writeEscapedUtf8(value);
-        writeUnescapedAscii('"');
+        writeRawAscii('"');
+        StringEncoding.writeUtf8(value, output);
+        writeRawAscii('"');
     }
 
     private void print(RepeatedByte value) {
-        writeUnescapedAscii('"');
-        writeBase64(value.array, value.length);
-        writeUnescapedAscii('"');
+        writeRawAscii('"');
+        Base64Encoding.writeBytes(value.array, value.length, output);
+        writeRawAscii('"');
     }
 
     @Override
@@ -280,7 +277,7 @@ public class JsonPrinter implements ProtoPrinter {
     private final void space() {
         if (indentCount <= 0)
             return;
-        writeUnescapedAscii(' ');
+        writeRawAscii(' ');
     }
 
     protected void removeTrailingComma() {
@@ -290,188 +287,12 @@ public class JsonPrinter implements ProtoPrinter {
         }
     }
 
-    private final void writeBase64(final byte[] bytes, final int length) {
-        final int encodedLength = ((length - 1) / 3 + 1) << 2;
-        output.reserve(encodedLength);
-
-        // Encode 24-bit blocks
-        int i;
-        final int blockableLength = (length / 3) * 3; // Length of even 24-bits.
-        for (i = 0; i < blockableLength; ) {
-            // Copy next three bytes into lower 24 bits of int
-            final int bits = (bytes[i++] & 0xff) << 16 | (bytes[i++] & 0xff) << 8 | (bytes[i++] & 0xff);
-
-            // Encode the 24 bits into four characters
-            output.array[output.length++] = BASE64[(bits >>> 18) & 0x3f];
-            output.array[output.length++] = BASE64[(bits >>> 12) & 0x3f];
-            output.array[output.length++] = BASE64[(bits >>> 6) & 0x3f];
-            output.array[output.length++] = BASE64[bits & 0x3f];
-        }
-
-        // Pad and encode last bits if source isn't even 24 bits.
-        int remaining = length - blockableLength; // 0 - 2.
-        if (remaining > 0) {
-            // Prepare the int
-            int bits = ((bytes[i++] & 0xff) << 10) | (remaining == 2 ? ((bytes[i] & 0xff) << 2) : 0);
-
-            // Set last four bytes
-            output.array[output.length++] = BASE64[bits >> 12];
-            output.array[output.length++] = BASE64[(bits >>> 6) & 0x3f];
-            output.array[output.length++] = remaining == 2 ? BASE64[bits & 0x3f] : (byte) '=';
-            output.array[output.length++] = '=';
-        }
-
+    private final void writeRawAscii(CharSequence value) {
+        StringEncoding.writeRawAscii(value, output);
     }
 
-    private static final byte[] BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(Charsets.ISO_8859_1);
-
-    private final void writeUnescapedAscii(CharSequence value) {
-        final int length = value.length();
-        output.reserve(length);
-        for (int i = 0; i < length; i++) {
-            output.array[output.length++] = (byte) value.charAt(i);
-        }
-    }
-
-    private final void writeEscapedUtf8(CharSequence sequence) {
-        final int numChars = sequence.length();
-        if (numChars == 0) return;
-        int i = 0;
-
-        // Fast-path: no utf8 and escape support
-        output.reserve(numChars);
-        for (; i < numChars; i++) {
-            final char c = sequence.charAt(i);
-            if (c < 128 && CAN_DIRECT_WRITE[c]) {
-                output.array[output.length++] = (byte) c;
-            } else {
-                break;
-            }
-        }
-
-        // Slow-path: utf8 and/or escaping
-        for (; i < numChars; i++) {
-            final char c = sequence.charAt(i);
-
-            if (c < 0x80) { // ascii
-                if (CAN_DIRECT_WRITE[c]) {
-                    writeUnescapedAscii(c);
-                } else {
-                    writeEscapedAscii(c);
-                }
-
-            } else if (c < 0x800) { // 11 bits, two UTF-8 bytes
-                write(
-                        (byte) ((0xF << 6) | (c >>> 6)),
-                        (byte) (0x80 | (0x3F & c))
-                );
-            } else if ((c < Character.MIN_SURROGATE || Character.MAX_SURROGATE < c)) {
-                // Maximum single-char code point is 0xFFFF, 16 bits, three UTF-8 bytes
-                write(
-                        (byte) ((0xF << 5) | (c >>> 12)),
-                        (byte) (0x80 | (0x3F & (c >>> 6))),
-                        (byte) (0x80 | (0x3F & c))
-                );
-            } else {
-                // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
-                final char low;
-                if (i + 1 == numChars || !Character.isSurrogatePair(c, (low = sequence.charAt(++i)))) {
-                    throw new IllegalArgumentException("Unpaired surrogate at index " + (i - 1));
-                }
-                int codePoint = Character.toCodePoint(c, low);
-                write(
-                        (byte) ((0xF << 4) | (codePoint >>> 18)),
-                        (byte) (0x80 | (0x3F & (codePoint >>> 12))),
-                        (byte) (0x80 | (0x3F & (codePoint >>> 6))),
-                        (byte) (0x80 | (0x3F & codePoint))
-
-                );
-            }
-        }
-
-    }
-
-    private final void writeUnescapedAscii(char c) {
-        write((byte) c);
-    }
-
-    private final void writeEscapedAscii(char c) {
-        switch (c) {
-            case '"':
-                write((byte) '\\', (byte) '"');
-                break;
-            case '\\':
-                write((byte) '\\', (byte) '\\');
-                break;
-            case '\b':
-                write((byte) '\\', (byte) 'b');
-                break;
-            case '\f':
-                write((byte) '\\', (byte) 'f');
-                break;
-            case '\n':
-                write((byte) '\\', (byte) 'n');
-                break;
-            case '\r':
-                write((byte) '\\', (byte) 'r');
-                break;
-            case '\t':
-                write((byte) '\\', (byte) 't');
-                break;
-            default:
-                writeAsSlashU(c);
-        }
-    }
-
-    private void writeAsSlashU(int c) {
-        output.reserve(6);
-        output.array[output.length++] = '\\';
-        output.array[output.length++] = 'u';
-        output.array[output.length++] = ITOA[c >> 12 & 0xf];
-        output.array[output.length++] = ITOA[c >> 8 & 0xf];
-        output.array[output.length++] = ITOA[c >> 4 & 0xf];
-        output.array[output.length++] = ITOA[c & 0xf];
-    }
-
-    private static final byte[] ITOA = new byte[]{
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            'a', 'b', 'c', 'd', 'e', 'f'};
-
-    private static final boolean[] CAN_DIRECT_WRITE = new boolean[128];
-
-    static {
-        for (int i = 0; i < CAN_DIRECT_WRITE.length; i++) {
-            if (i > 31 && i < 126 && i != '"' && i != '\\') {
-                CAN_DIRECT_WRITE[i] = true;
-            }
-        }
-    }
-
-
-    private final void write(byte b0) {
-        output.reserve(1);
-        output.array[output.length++] = b0;
-    }
-
-    private final void write(byte b0, byte b1) {
-        output.reserve(2);
-        output.array[output.length++] = b0;
-        output.array[output.length++] = b1;
-    }
-
-    private final void write(byte b0, byte b1, byte b2) {
-        output.reserve(3);
-        output.array[output.length++] = b0;
-        output.array[output.length++] = b1;
-        output.array[output.length++] = b2;
-    }
-
-    private final void write(byte b0, byte b1, byte b2, byte b3) {
-        output.reserve(4);
-        output.array[output.length++] = b0;
-        output.array[output.length++] = b1;
-        output.array[output.length++] = b2;
-        output.array[output.length++] = b3;
+    private final void writeRawAscii(char c) {
+        output.add((byte) c);
     }
 
     protected final RepeatedByte output;
