@@ -25,6 +25,7 @@ package us.hebi.robobuf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 /**
  * Utility methods for working with protobuf messages
@@ -171,4 +172,8 @@ public class ProtoUtil {
     private ProtoUtil() {
     }
 
+    static class Charsets {
+        static final Charset UTF_8 = Charset.forName("UTF-8");
+        static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
+    }
 }

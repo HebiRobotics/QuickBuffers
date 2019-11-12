@@ -23,7 +23,6 @@
 package us.hebi.robobuf;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 
 /**
  * Abstract interface implemented by Protocol Message objects.
@@ -208,7 +207,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      */
     @Override
     public String toString() {
-        return JsonPrinter.newInstance().print(this).toString();
+        return JsonPrinter.newInstance().setIndentCount(2).print(this).toString();
     }
 
     /** Provides support for cloning if the method is generated for child classes */
@@ -222,11 +221,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * generator encodes raw bytes as strings with ISO-8859-1 encoding.
      */
     protected static byte[] bytesDefaultValue(String bytes) {
-        return bytes.getBytes(Charsets.ISO_8859_1);
-    }
-
-    private static class Charsets {
-        private static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
+        return bytes.getBytes(ProtoUtil.Charsets.ISO_8859_1);
     }
 
 }
