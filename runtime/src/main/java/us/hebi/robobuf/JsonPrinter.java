@@ -467,7 +467,7 @@ public class JsonPrinter implements ProtoPrinter {
     }
 
     private final void write(byte b0, byte b1, byte b2, byte b3) {
-        output.reserve(34);
+        output.reserve(4);
         output.array[output.length++] = b0;
         output.array[output.length++] = b1;
         output.array[output.length++] = b2;
