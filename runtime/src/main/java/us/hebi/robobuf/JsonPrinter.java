@@ -34,11 +34,27 @@ import us.hebi.robobuf.ProtoUtil.Charsets;
 public class JsonPrinter implements ProtoPrinter {
 
     public static JsonPrinter newInstance() {
-        return wrap(new RepeatedByte().reserve(128));
+        return newInstance(new RepeatedByte().reserve(128));
     }
 
-    public static JsonPrinter wrap(RepeatedByte output) {
-        return new JsonPrinter(output);
+    public static JsonPrinter newInstance(RepeatedByte output) {
+        return new JsonPrinter().wrap(output);
+    }
+
+    public JsonPrinter wrap(RepeatedByte output) {
+        if (output == null)
+            throw new NullPointerException();
+        this.output = output;
+        return this;
+    }
+
+    public JsonPrinter clear() {
+        this.output.clear();
+        return this;
+    }
+
+    public RepeatedByte getBuffer() {
+        return output;
     }
 
     public JsonPrinter setIndentCount(int indentCount) {
@@ -257,10 +273,7 @@ public class JsonPrinter implements ProtoPrinter {
         return new String(output.array, 0, output.length, Charsets.UTF_8);
     }
 
-    protected JsonPrinter(RepeatedByte output) {
-        if (output == null)
-            throw new NullPointerException();
-        this.output = output;
+    protected JsonPrinter() {
     }
 
     private final void newline() {
@@ -295,7 +308,7 @@ public class JsonPrinter implements ProtoPrinter {
         output.add((byte) c);
     }
 
-    protected final RepeatedByte output;
+    protected RepeatedByte output;
     protected int indentLevel = 0;
     protected int indentCount = 0;
 
