@@ -34,7 +34,7 @@ class JsonUtil {
 
         static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
 
-            // Make sure buffer fits bytes
+            // Size output buffer
             int pos = output.length;
             final int encodedLength = ((length + 2) / 3) << 2;
             output.setLength(pos + encodedLength + 2 /* quotes */);
@@ -43,19 +43,19 @@ class JsonUtil {
 
             // Encode 24-bit blocks
             int i;
-            final int blockableLength = (length / 3) * 3; // Length of even 24-bits.
+            final int blockableLength = (length / 3) * 3;
             for (i = 0; i < blockableLength; i += 3, pos += 4) {
                 // Copy next three bytes into lower 24 bits of int
                 final int bits = (bytes[i] & 0xff) << 16 | (bytes[i + 1] & 0xff) << 8 | (bytes[i + 2] & 0xff);
 
-                // Encode the 24 bits into four characters
+                // Encode the 24 bits into four 6 bit characters
                 buffer[pos] = BASE64[(bits >>> 18) & 0x3f];
                 buffer[pos + 1] = BASE64[(bits >>> 12) & 0x3f];
                 buffer[pos + 2] = BASE64[(bits >>> 6) & 0x3f];
                 buffer[pos + 3] = BASE64[bits & 0x3f];
             }
 
-            // Pad and encode last bits if source isn't even 24 bits.
+            // Pad and encode last bits if source isn't even 24 bits
             final int remaining = length - blockableLength; // 0 - 2.
             if (remaining > 0) {
                 // Prepare the int
@@ -88,13 +88,11 @@ class JsonUtil {
         }
 
         static void writeQuotedUtf8(CharSequence sequence, RepeatedByte output) {
-            final int numChars = sequence.length();
-            if (numChars == 0) return;
-            int i = 0;
-
             // Fast-path: no utf8 and escape support
+            final int numChars = sequence.length();
             output.reserve(numChars + 2);
             output.array[output.length++] = '"';
+            int i = 0;
             fastpath:
             {
                 for (; i < numChars; i++) {
@@ -149,7 +147,7 @@ class JsonUtil {
                 }
             }
 
-            output.add((byte) '"');
+            write(output, (byte) '"');
 
         }
 
