@@ -113,6 +113,7 @@ class MessageGenerator {
         // Static utilities
         generateParseFrom(type);
         generateMessageFactory(type);
+        generateTextConstants(type);
         type.addField(FieldSpec.builder(TypeName.LONG, "serialVersionUID")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
                 .initializer("0L")
@@ -494,6 +495,30 @@ class MessageGenerator {
                 .addStatement("return $T.INSTANCE", factoryTypeName)
                 .build());
 
+    }
+
+    private void generateTextConstants(TypeSpec.Builder type) {
+        ClassName constantClassName = info.getTypeName().nestedClass("FieldNames");
+        TypeSpec.Builder constantClass = TypeSpec.classBuilder(constantClassName.simpleName())
+                .addModifiers(Modifier.STATIC);
+
+        fields.forEach(f -> {
+            String jsonName = f.getInfo().getDescriptor().getJsonName();
+            CodeBlock.Builder initializer = CodeBlock.builder();
+            initializer.add("new $T{", byte[].class);
+            initializer.add("'$L'", jsonName.charAt(0));
+            for (int i = 1; i < jsonName.length(); i++) {
+                initializer.add(", '$L'", jsonName.charAt(i));
+            }
+            initializer.add("}");
+
+            FieldSpec fieldSpec = FieldSpec.builder(byte[].class, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL)
+                    .initializer(initializer.build())
+                    .build();
+            constantClass.addField(fieldSpec);
+        });
+
+        type.addType(constantClass.build());
     }
 
     final MessageInfo info;
