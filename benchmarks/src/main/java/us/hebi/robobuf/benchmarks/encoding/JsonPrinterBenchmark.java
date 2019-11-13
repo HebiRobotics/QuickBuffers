@@ -14,24 +14,24 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * === JDK8 ===
- * Benchmark                         Mode  Cnt    Score   Error  Units
- * JsonBenchmark.writeAsciiString    avgt   10    1.042 ± 0.011  us/op
- * JsonBenchmark.writeBase64         avgt   10  247.056 ± 4.119  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10  253.975 ± 5.162  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10  116.836 ± 0.814  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   15.412 ± 0.826  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   32.334 ± 1.547  us/op
- * JsonBenchmark.writeUtf8String     avgt   10    1.777 ± 0.025  us/op
+ * Benchmark                                Mode  Cnt    Score    Error  Units
+ * JsonPrinterBenchmark.writeBase64         avgt   10  245.396 ± 14.421  us/op
+ * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   21.968 ±  2.064  us/op
+ * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   22.826 ±  0.934  us/op
+ * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.828 ±  0.425  us/op
+ * JsonPrinterBenchmark.writeLongNumbers    avgt   10   21.310 ±  1.117  us/op
+ * JsonPrinterBenchmark.writeStringAscii    avgt   10    1.023 ±  0.043  us/op
+ * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.782 ±  0.115  us/op
  *
  * === JDK12 ===
- * Benchmark                         Mode  Cnt    Score    Error  Units
- * JsonBenchmark.writeAsciiString    avgt   10    0.952 ±  0.013  us/op
- * JsonBenchmark.writeBase64         avgt   10  202.268 ±  2.230  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10  255.907 ± 10.073  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10  107.907 ±  2.278  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   20.976 ±  0.444  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   30.664 ±  0.495  us/op
- * JsonBenchmark.writeUtf8String     avgt   10    1.901 ±  0.031  us/op
+ * Benchmark                                Mode  Cnt    Score   Error  Units
+ * JsonPrinterBenchmark.writeBase64         avgt   10  194.622 ± 3.784  us/op
+ * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   22.275 ± 0.365  us/op
+ * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   23.061 ± 0.499  us/op
+ * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.454 ± 0.511  us/op
+ * JsonPrinterBenchmark.writeLongNumbers    avgt   10   19.711 ± 1.085  us/op
+ * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.942 ± 0.039  us/op
+ * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.932 ± 0.157  us/op
  *
  * @author Florian Enner
  * @since 13 Nov 2019
@@ -93,13 +93,13 @@ public class JsonPrinterBenchmark {
     }
 
     @Benchmark
-    public int writeAsciiString() throws IOException {
+    public int writeStringAscii() throws IOException {
         printer.clear().print(key, asciiChars);
         return printer.getBuffer().length();
     }
 
     @Benchmark
-    public int writeUtf8String() throws IOException {
+    public int writeStringUtf8() throws IOException {
         printer.clear().print(key, utf8Chars);
         return printer.getBuffer().length();
     }

@@ -84,28 +84,28 @@ public class JsonPrinter implements TextPrinter {
     @Override
     public void print(byte[] key, int value) {
         writeKey(key);
-        IntegerEncoding.writeInt(value, output);
+        NumberEncoding.writeInt(value, output);
         writeComma();
     }
 
     @Override
     public void print(byte[] key, long value) {
         writeKey(key);
-        IntegerEncoding.writeLong(value, output);
+        NumberEncoding.writeLong(value, output);
         writeComma();
     }
 
     @Override
     public void print(byte[] key, float value) {
         writeKey(key);
-        FloatEncoding.writeFloat(value, output);
+        NumberEncoding.writeFloat(value, output);
         writeComma();
     }
 
     @Override
     public void print(byte[] key, double value) {
         writeKey(key);
-        FloatEncoding.writeDouble(value, output);
+        NumberEncoding.writeDouble(value, output);
         writeComma();
     }
 
@@ -144,7 +144,7 @@ public class JsonPrinter implements TextPrinter {
     public void print(byte[] key, RepeatedInt value) {
         startArray(key);
         for (int i = 0; i < value.length; i++) {
-            IntegerEncoding.writeInt(value.array[i], output);
+            NumberEncoding.writeInt(value.array[i], output);
             writeComma();
         }
         finishArray();
@@ -154,7 +154,7 @@ public class JsonPrinter implements TextPrinter {
     public void print(byte[] key, RepeatedLong value) {
         startArray(key);
         for (int i = 0; i < value.length; i++) {
-            IntegerEncoding.writeLong(value.array[i], output);
+            NumberEncoding.writeLong(value.array[i], output);
             writeComma();
         }
         finishArray();
@@ -164,7 +164,7 @@ public class JsonPrinter implements TextPrinter {
     public void print(byte[] key, RepeatedFloat value) {
         startArray(key);
         for (int i = 0; i < value.length; i++) {
-            FloatEncoding.writeFloat(value.array[i], output);
+            NumberEncoding.writeFloat(value.array[i], output);
             writeComma();
         }
         finishArray();
@@ -174,7 +174,7 @@ public class JsonPrinter implements TextPrinter {
     public void print(byte[] key, RepeatedDouble value) {
         startArray(key);
         for (int i = 0; i < value.length; i++) {
-            FloatEncoding.writeDouble(value.array[i], output);
+            NumberEncoding.writeDouble(value.array[i], output);
             writeComma();
         }
         finishArray();
