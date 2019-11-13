@@ -34,38 +34,42 @@ class JsonUtil {
 
         static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
 
+            // Make sure buffer fits bytes
+            int pos = output.length;
             final int encodedLength = ((length + 2) / 3) << 2;
-            output.reserve(encodedLength + 2);
-            output.array[output.length++] = '"';
+            output.setLength(pos + encodedLength + 2 /* quotes */);
+            final byte[] buffer = output.array;
+            buffer[pos++] = '"';
 
             // Encode 24-bit blocks
             int i;
             final int blockableLength = (length / 3) * 3; // Length of even 24-bits.
-            for (i = 0; i < blockableLength; ) {
+            for (i = 0; i < blockableLength; i += 3, pos += 4) {
                 // Copy next three bytes into lower 24 bits of int
-                final int bits = (bytes[i++] & 0xff) << 16 | (bytes[i++] & 0xff) << 8 | (bytes[i++] & 0xff);
+                final int bits = (bytes[i] & 0xff) << 16 | (bytes[i + 1] & 0xff) << 8 | (bytes[i + 2] & 0xff);
 
                 // Encode the 24 bits into four characters
-                output.array[output.length++] = BASE64[(bits >>> 18) & 0x3f];
-                output.array[output.length++] = BASE64[(bits >>> 12) & 0x3f];
-                output.array[output.length++] = BASE64[(bits >>> 6) & 0x3f];
-                output.array[output.length++] = BASE64[bits & 0x3f];
+                buffer[pos] = BASE64[(bits >>> 18) & 0x3f];
+                buffer[pos + 1] = BASE64[(bits >>> 12) & 0x3f];
+                buffer[pos + 2] = BASE64[(bits >>> 6) & 0x3f];
+                buffer[pos + 3] = BASE64[bits & 0x3f];
             }
 
             // Pad and encode last bits if source isn't even 24 bits.
             final int remaining = length - blockableLength; // 0 - 2.
             if (remaining > 0) {
                 // Prepare the int
-                int bits = ((bytes[i++] & 0xff) << 10) | (remaining == 2 ? ((bytes[i] & 0xff) << 2) : 0);
+                final int bits = ((bytes[i] & 0xff) << 10) | (remaining == 2 ? ((bytes[i + 1] & 0xff) << 2) : 0);
 
                 // Set last four bytes
-                output.array[output.length++] = BASE64[bits >> 12];
-                output.array[output.length++] = BASE64[(bits >>> 6) & 0x3f];
-                output.array[output.length++] = remaining == 2 ? BASE64[bits & 0x3f] : (byte) '=';
-                output.array[output.length++] = '=';
+                buffer[pos] = BASE64[bits >> 12];
+                buffer[pos + 1] = BASE64[(bits >>> 6) & 0x3f];
+                buffer[pos + 2] = remaining == 2 ? BASE64[bits & 0x3f] : (byte) '=';
+                buffer[pos + 3] = '=';
+                pos += 4;
             }
 
-            output.array[output.length++] = '"';
+            buffer[pos] = '"';
 
         }
 
