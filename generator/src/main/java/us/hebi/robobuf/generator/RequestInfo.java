@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -203,6 +203,7 @@ public class RequestInfo {
         protected TypeInfo(FileInfo parentFile, String parentTypeId, ClassName parentType, boolean isNested, String name) {
             this.parentFile = parentFile;
             this.typeName = isNested ? parentType.nestedClass(name) : parentType.peerClass(name);
+            this.jsonKeysClass = this.typeName.nestedClass("JsonKeys");
             this.typeId = parentTypeId + "." + name;
             this.isNested = isNested;
         }
@@ -211,6 +212,7 @@ public class RequestInfo {
         protected final boolean isNested;
         protected final String typeId;
         protected final ClassName typeName;
+        protected final ClassName jsonKeysClass;
 
     }
 
@@ -227,7 +229,7 @@ public class RequestInfo {
             for (FieldDescriptorProto desc : descriptor.getFieldList().stream()
                     .sorted(FieldUtil.MemoryLayoutSorter)
                     .collect(Collectors.toList())) {
-                fields.add(new FieldInfo(parentFile, typeName, desc, fieldIndex++));
+                fields.add(new FieldInfo(parentFile, this, typeName, desc, fieldIndex++));
             }
 
             nestedTypes = descriptor.getNestedTypeList().stream()
@@ -254,8 +256,9 @@ public class RequestInfo {
     @Value
     public static class FieldInfo {
 
-        FieldInfo(FileInfo parentFile, ClassName parentType, FieldDescriptorProto descriptor, int fieldIndex) {
+        FieldInfo(FileInfo parentFile, TypeInfo parentTypeInfo, ClassName parentType, FieldDescriptorProto descriptor, int fieldIndex) {
             this.parentFile = parentFile;
+            this.parentTypeInfo = parentTypeInfo;
             this.parentType = parentType;
             this.descriptor = descriptor;
             this.fieldIndex = fieldIndex;
@@ -404,7 +407,12 @@ public class RequestInfo {
             return getTypeName();
         }
 
+        public String getJsonName() {
+            return getDescriptor().getJsonName();
+        }
+
         private final FileInfo parentFile;
+        private final TypeInfo parentTypeInfo;
         private final ClassName parentType;
         private final ClassName repeatedStoreType;
         private final FieldDescriptorProto descriptor;

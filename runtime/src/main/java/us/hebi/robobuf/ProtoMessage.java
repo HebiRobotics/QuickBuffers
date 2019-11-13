@@ -111,7 +111,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      *
      * @param printer output
      */
-    public void print(ProtoPrinter printer) {
+    public void print(TextPrinter printer) {
     }
 
     /**
