@@ -31,7 +31,7 @@ import us.hebi.robobuf.ProtoUtil.Charsets;
  * @author Florian Enner
  * @since 26 Oct 2019
  */
-public class JsonPrinter implements ProtoPrinter {
+public class JsonPrinter implements TextPrinter {
 
     public static JsonPrinter newInstance() {
         return newInstance(new RepeatedByte().reserve(128));
@@ -63,220 +63,184 @@ public class JsonPrinter implements ProtoPrinter {
     }
 
     @Override
-    public ProtoPrinter print(ProtoMessage value) {
-        startObject();
+    public TextPrinter print(ProtoMessage value) {
+        indentLevel++;
+        writeChar('{');
         value.print(this);
-        endObject();
+        removeTrailingComma();
+        writeNewline();
+        writeChar('}');
+        indentLevel--;
         return this;
     }
 
     @Override
-    public void print(String field, boolean value) {
-        startField(field);
+    public void print(byte[] key, boolean value) {
+        writeKey(key);
         BooleanEncoding.writeBoolean(value, output);
-        endField();
+        writeComma();
     }
 
     @Override
-    public void print(String field, int value) {
-        startField(field);
+    public void print(byte[] key, int value) {
+        writeKey(key);
         IntegerEncoding.writeInt(value, output);
-        endField();
+        writeComma();
     }
 
     @Override
-    public void print(String field, long value) {
-        startField(field);
+    public void print(byte[] key, long value) {
+        writeKey(key);
         IntegerEncoding.writeLong(value, output);
-        endField();
+        writeComma();
     }
 
     @Override
-    public void print(String field, float value) {
-        startField(field);
+    public void print(byte[] key, float value) {
+        writeKey(key);
         FloatEncoding.writeFloat(value, output);
-        endField();
+        writeComma();
     }
 
     @Override
-    public void print(String field, double value) {
-        startField(field);
+    public void print(byte[] key, double value) {
+        writeKey(key);
         FloatEncoding.writeDouble(value, output);
-        endField();
+        writeComma();
     }
 
     @Override
-    public void print(String field, ProtoMessage value) {
-        startField(field);
-        startObject();
-        value.print(this);
-        endObject();
-        endField();
-    }
-
-    @Override
-    public void print(String field, StringBuilder value) {
-        startField(field);
+    public void print(byte[] key, ProtoMessage value) {
+        writeKey(key);
         print(value);
-        endField();
+        writeComma();
     }
 
     @Override
-    public void print(String field, RepeatedByte value) {
-        startField(field);
-        print(value);
-        endField();
+    public void print(byte[] key, StringBuilder value) {
+        writeKey(key);
+        StringEncoding.writeQuotedUtf8(value, output);
+        writeComma();
     }
 
     @Override
-    public void print(String field, RepeatedBoolean value) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedByte value) {
+        writeKey(key);
+        Base64Encoding.writeQuotedBase64(value.array, value.length, output);
+        writeComma();
+    }
+
+    @Override
+    public void print(byte[] key, RepeatedBoolean value) {
+        startArray(key);
         for (int i = 0; i < value.length; i++) {
             BooleanEncoding.writeBoolean(value.array[i], output);
-            continueArray();
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
     @Override
-    public void print(String field, RepeatedInt value) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedInt value) {
+        startArray(key);
         for (int i = 0; i < value.length; i++) {
             IntegerEncoding.writeInt(value.array[i], output);
-            continueArray();
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
     @Override
-    public void print(String field, RepeatedLong value) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedLong value) {
+        startArray(key);
         for (int i = 0; i < value.length; i++) {
             IntegerEncoding.writeLong(value.array[i], output);
-            continueArray();
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
     @Override
-    public void print(String field, RepeatedFloat value) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedFloat value) {
+        startArray(key);
         for (int i = 0; i < value.length; i++) {
             FloatEncoding.writeFloat(value.array[i], output);
-            continueArray();
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
     @Override
-    public void print(String field, RepeatedDouble value) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedDouble value) {
+        startArray(key);
         for (int i = 0; i < value.length; i++) {
             FloatEncoding.writeDouble(value.array[i], output);
-            continueArray();
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
     @Override
-    public void print(String field, RepeatedMessage value) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedMessage value) {
+        startArray(key);
         for (int i = 0; i < value.length; i++) {
             print((ProtoMessage) value.array[i]);
-            continueArray();
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
     @Override
-    public void print(String field, RepeatedString value) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedString value) {
+        startArray(key);
         for (int i = 0; i < value.length; i++) {
-            print(value.array[i]);
-            continueArray();
+            StringEncoding.writeQuotedUtf8(value.array[i], output);
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
     @Override
-    public void print(String field, RepeatedBytes values) {
-        startArrayField(field);
+    public void print(byte[] key, RepeatedBytes values) {
+        startArray(key);
         for (int i = 0; i < values.length; i++) {
-            print(values.get(i));
-            continueArray();
+            final RepeatedByte value = values.get(i);
+            Base64Encoding.writeQuotedBase64(value.array, value.length, output);
+            writeComma();
         }
-        endArrayField();
+        finishArray();
     }
 
-    protected void startField(String field) {
-        newline();
-        writeRawAscii('"');
-        writeRawAscii(field);
-        writeRawAscii('"');
-        writeRawAscii(':');
-        space();
+    protected void writeKey(byte[] key) {
+        writeNewline();
+        output.addAll(key);
+        writeSpace();
     }
 
-    protected void endField() {
-        writeRawAscii(',');
+    protected void startArray(byte[] key) {
+        writeKey(key);
+        writeChar('[');
     }
 
-    protected void startArray() {
-        writeRawAscii('[');
-    }
-
-    protected void endArray() {
+    protected void finishArray() {
         removeTrailingComma();
-        writeRawAscii(']');
+        writeChar(']');
+        writeComma();
     }
 
-    protected void continueArray() {
-        writeRawAscii(',');
+    private final void writeComma() {
+        writeChar(',');
     }
 
-    protected void startArrayField(String field) {
-        startField(field);
-        startArray();
+    protected void removeTrailingComma() {
+        // Called after at least one character, so no need to check bounds
+        final int pos = output.length - 1;
+        if (output.array[pos] == ',') {
+            output.length = pos;
+        }
     }
 
-    protected void endArrayField() {
-        endArray();
-        endField();
-    }
-
-    protected void startObject() {
-        writeRawAscii('{');
-        indentLevel++;
-    }
-
-    protected void endObject() {
-        removeTrailingComma();
-        indentLevel--;
-        newline();
-        writeRawAscii('}');
-    }
-
-    private void print(StringBuilder value) {
-        writeRawAscii('"');
-        StringEncoding.writeUtf8(value, output);
-        writeRawAscii('"');
-    }
-
-    private void print(RepeatedByte value) {
-        writeRawAscii('"');
-        Base64Encoding.writeBytes(value.array, value.length, output);
-        writeRawAscii('"');
-    }
-
-    @Override
-    public String toString() {
-        return new String(output.array, 0, output.length, Charsets.UTF_8);
-    }
-
-    protected JsonPrinter() {
-    }
-
-    private final void newline() {
+    private final void writeNewline() {
         if (indentCount <= 0)
             return;
         int numSpaces = indentLevel * indentCount;
@@ -287,25 +251,22 @@ public class JsonPrinter implements ProtoPrinter {
         }
     }
 
-    private final void space() {
+    private final void writeSpace() {
         if (indentCount <= 0)
             return;
-        writeRawAscii(' ');
+        writeChar(' ');
     }
 
-    protected void removeTrailingComma() {
-        // Called after at least one character, so no need to check bounds
-        if (output.array[output.length - 1] == ',') {
-            output.length--;
-        }
-    }
-
-    private final void writeRawAscii(CharSequence value) {
-        StringEncoding.writeRawAscii(value, output);
-    }
-
-    private final void writeRawAscii(char c) {
+    private final void writeChar(char c) {
         output.add((byte) c);
+    }
+
+    @Override
+    public String toString() {
+        return new String(output.array, 0, output.length, Charsets.UTF_8);
+    }
+
+    protected JsonPrinter() {
     }
 
     protected RepeatedByte output;

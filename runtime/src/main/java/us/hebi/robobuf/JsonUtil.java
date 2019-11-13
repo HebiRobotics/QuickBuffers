@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -32,10 +32,11 @@ class JsonUtil {
 
     static class Base64Encoding {
 
-        static void writeBytes(final byte[] bytes, final int length, RepeatedByte output) {
+        static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
 
             final int encodedLength = ((length + 2) / 3) << 2;
-            output.reserve(encodedLength);
+            output.reserve(encodedLength + 2);
+            output.array[output.length++] = '"';
 
             // Encode 24-bit blocks
             int i;
@@ -64,6 +65,8 @@ class JsonUtil {
                 output.array[output.length++] = '=';
             }
 
+            output.array[output.length++] = '"';
+
         }
 
         private static final byte[] BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(Charsets.ISO_8859_1);
@@ -80,20 +83,26 @@ class JsonUtil {
             }
         }
 
-        static void writeUtf8(CharSequence sequence, RepeatedByte output) {
+        static void writeQuotedUtf8(CharSequence sequence, RepeatedByte output) {
             final int numChars = sequence.length();
             if (numChars == 0) return;
             int i = 0;
 
             // Fast-path: no utf8 and escape support
-            output.reserve(numChars);
-            for (; i < numChars; i++) {
-                final char c = sequence.charAt(i);
-                if (c < 128 && CAN_DIRECT_WRITE[c]) {
-                    output.array[output.length++] = (byte) c;
-                } else {
-                    break;
+            output.reserve(numChars + 2);
+            output.array[output.length++] = '"';
+            fastpath:
+            {
+                for (; i < numChars; i++) {
+                    final char c = sequence.charAt(i);
+                    if (c < 128 && CAN_DIRECT_WRITE[c]) {
+                        output.array[output.length++] = (byte) c;
+                    } else {
+                        break fastpath;
+                    }
                 }
+                output.array[output.length++] = '"';
+                return;
             }
 
             // Slow-path: utf8 and/or escaping
@@ -135,6 +144,8 @@ class JsonUtil {
                     );
                 }
             }
+
+            output.add((byte) '"');
 
         }
 
