@@ -1,3 +1,25 @@
+/*-
+ * #%L
+ * robobuf-benchmarks
+ * %%
+ * Copyright (C) 2019 HEBI Robotics
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+
 package us.hebi.robobuf.benchmarks.encoding;
 
 import org.openjdk.jmh.annotations.*;
@@ -14,24 +36,24 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * === JDK8 ===
- * Benchmark                                Mode  Cnt    Score    Error  Units
- * JsonPrinterBenchmark.writeBase64         avgt   10  245.396 ± 14.421  us/op
- * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   21.968 ±  2.064  us/op
- * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   22.826 ±  0.934  us/op
- * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.828 ±  0.425  us/op
- * JsonPrinterBenchmark.writeLongNumbers    avgt   10   21.310 ±  1.117  us/op
- * JsonPrinterBenchmark.writeStringAscii    avgt   10    1.023 ±  0.043  us/op
- * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.782 ±  0.115  us/op
+ * Benchmark                                Mode  Cnt    Score   Error  Units
+ * JsonPrinterBenchmark.writeBase64         avgt   10  235.938 ± 5.254  us/op
+ * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   21.629 ± 0.246  us/op
+ * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   21.220 ± 0.476  us/op
+ * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.147 ± 0.402  us/op
+ * JsonPrinterBenchmark.writeLongNumbers    avgt   10   21.321 ± 0.656  us/op
+ * JsonPrinterBenchmark.writeStringAscii    avgt   10    1.003 ± 0.007  us/op
+ * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.730 ± 0.025  us/op
  *
  * === JDK12 ===
  * Benchmark                                Mode  Cnt    Score   Error  Units
- * JsonPrinterBenchmark.writeBase64         avgt   10  194.622 ± 3.784  us/op
- * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   22.275 ± 0.365  us/op
- * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   23.061 ± 0.499  us/op
- * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.454 ± 0.511  us/op
- * JsonPrinterBenchmark.writeLongNumbers    avgt   10   19.711 ± 1.085  us/op
- * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.942 ± 0.039  us/op
- * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.932 ± 0.157  us/op
+ * JsonPrinterBenchmark.writeBase64         avgt   10  193.091 ± 3.674  us/op
+ * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   22.055 ± 0.440  us/op
+ * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   21.044 ± 0.551  us/op
+ * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.168 ± 0.271  us/op
+ * JsonPrinterBenchmark.writeLongNumbers    avgt   10   20.170 ± 0.550  us/op
+ * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.910 ± 0.018  us/op
+ * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.937 ± 0.165  us/op
  *
  * @author Florian Enner
  * @since 13 Nov 2019
@@ -65,6 +87,7 @@ public class JsonPrinterBenchmark {
                     "this is an ascii string that we can encode entirely in the fast path 0123456789" +
                     "this is an ascii string that we can encode entirely in the fast path 0123456789" +
                     "this is an ascii string that we can encode entirely in the fast path 0123456789");
+
     final StringBuilder utf8Chars = new StringBuilder().append("utf8\uD83D\uDCA9").append(asciiChars);
     final RepeatedByte rndBytes = RepeatedByte.newEmptyInstance().setLength(256 * 1024);
     final RepeatedInt rndInts = RepeatedInt.newEmptyInstance().setLength(1024);
