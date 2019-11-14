@@ -101,6 +101,21 @@ public class JsonEncodingTest {
         for (int i = 0; i < n; i++) {
             testDouble(rnd.nextDouble());
         }
+        testDouble(100 - 1E-01);
+        testDouble(100 - 1E-02);
+        testDouble(100 - 1E-03);
+        testDouble(100 - 1E-04);
+        testDouble(100 - 1E-05);
+        testDouble(100 - 1E-06);
+        testDouble(100 - 1E-07);
+        testDouble(100 - 1E-08);
+        testDouble(100 - 1E-09);
+        testDouble(100 - 1E-10);
+        testDouble(100 - 1E-11);
+        testDouble(100 - 1E-12);
+        testDouble(100 - 1E-13);
+        testDouble(100 - 1E-14);
+        testDouble(100 - 1E-15);
         testDouble(Double.MIN_VALUE);
         testDouble(Double.MAX_VALUE);
         assertEquals("\"Infinity\"", encodeDouble(Double.POSITIVE_INFINITY));
@@ -113,6 +128,18 @@ public class JsonEncodingTest {
         for (int i = 0; i < n; i++) {
             testFloat(rnd.nextFloat());
         }
+        testFloat(100 - 1E-01f);
+        testFloat(100 - 1E-02f);
+        testFloat(100 - 1E-03f);
+        testFloat(100 - 1E-04f);
+        testFloat(100 - 1E-05f);
+        testFloat(100 - 1E-06f);
+        testFloat(100 - 1E-07f);
+        testFloat(100 - 1E-08f);
+        testFloat(100 - 1E-09f);
+        testFloat(100 - 1E-10f);
+        testFloat(100 - 1E-11f);
+        testFloat(100 - 1E-12f);
         testFloat(Float.MIN_VALUE);
         testFloat(Float.MAX_VALUE);
         assertEquals("\"Infinity\"", encodeFloat(Float.POSITIVE_INFINITY));
@@ -151,8 +178,9 @@ public class JsonEncodingTest {
     }
 
     private void testDouble(double expected) {
-        double actual = Double.parseDouble(encodeDouble(expected));
-        assertEquals(expected, actual, 1E-9);
+        String encoded = encodeDouble(expected);
+        double actual = Double.parseDouble(encoded);
+        assertEquals(encoded, expected, actual, 1E-9);
     }
 
     private void testFloat(float expected) {

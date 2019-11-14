@@ -22,8 +22,13 @@
 
 package us.hebi.robobuf;
 
-import us.hebi.robobuf.JsonUtil.*;
+import us.hebi.robobuf.JsonUtil.Base64Encoding;
+import us.hebi.robobuf.JsonUtil.BooleanEncoding;
+import us.hebi.robobuf.JsonUtil.NumberEncoding;
+import us.hebi.robobuf.JsonUtil.StringEncoding;
 import us.hebi.robobuf.ProtoUtil.Charsets;
+
+import java.util.Arrays;
 
 /**
  * Prints proto messages in a JSON compatible format
@@ -213,7 +218,8 @@ public class JsonPrinter implements TextPrinter {
 
     protected void writeKey(byte[] key) {
         writeNewline();
-        output.addAll(key);
+        final int pos = output.addLength(key.length);
+        System.arraycopy(key, 0, output.array, pos, key.length);
         writeSpace();
     }
 
@@ -243,12 +249,10 @@ public class JsonPrinter implements TextPrinter {
     private final void writeNewline() {
         if (indentCount <= 0)
             return;
-        int numSpaces = indentLevel * indentCount;
-        output.reserve(1 + numSpaces);
-        output.array[output.length++] = '\n';
-        for (int i = 0; i < numSpaces; i++) {
-            output.array[output.length++] = ' ';
-        }
+        final int numSpaces = indentLevel * indentCount;
+        int pos = output.addLength(numSpaces + 1);
+        output.array[pos++] = '\n';
+        Arrays.fill(output.array, pos, output.length, (byte) ' ');
     }
 
     private final void writeSpace() {
@@ -258,7 +262,8 @@ public class JsonPrinter implements TextPrinter {
     }
 
     private final void writeChar(char c) {
-        output.add((byte) c);
+        final int pos = output.addLength(1);
+        output.array[pos] = (byte) c;
     }
 
     @Override
