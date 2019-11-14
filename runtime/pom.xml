@@ -121,7 +121,7 @@
                                     <pluginPath>${project.parent.basedir}
                                     </pluginPath> <!-- for some reason full file paths get omitted, so we rely on forwarding scripts that are in the path :( -->
                                     <type>robobuf</type>
-                                    <outputOptions>replacePackage=protos.test.java=protos.test.robo,indent=4
+                                    <outputOptions>replacePackage=protos.test.java=protos.test.robo,indent=4,store_unknown_fields=true
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>

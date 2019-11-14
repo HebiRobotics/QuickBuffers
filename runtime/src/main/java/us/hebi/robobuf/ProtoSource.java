@@ -197,6 +197,22 @@ public class ProtoSource {
     }
 
     /**
+     * Marks the current position and reads the tag. See {@link ProtoSource#readTag()}
+     */
+    public int readTagMarked() throws IOException {
+        lastTagMark = bufferPos;
+        return readTag();
+    }
+
+    /**
+     * Copies the bytes from the last position marked by {@link ProtoSource#readTagMarked()}.
+     * This allows to efficiently store unknown (skipped) bytes.
+     */
+    public void readBytesFromMark(RepeatedByte store) {
+        store.addAll(buffer, lastTagMark, bufferPos - lastTagMark);
+    }
+
+    /**
      * Verifies that the last call to readTag() returned the given tag value.
      * This is used to verify that a nested group ended with the correct
      * end tag.
@@ -520,9 +536,7 @@ public class ProtoSource {
     public short readRawLittleEndian16() throws IOException {
         final byte b1 = readRawByte();
         final byte b2 = readRawByte();
-        return (short) (
-                ((b1 & 0xff)) |
-                ((b2 & 0xff) << 8));
+        return (short) (((b1 & 0xff)) | ((b2 & 0xff) << 8));
     }
 
     /** Read a 32-bit little-endian integer from the source. */
@@ -593,6 +607,7 @@ public class ProtoSource {
     private int bufferSizeAfterLimit;
     protected int bufferPos;
     private int lastTag;
+    protected int lastTagMark;
 
     /** The absolute position of the end of the current message. */
     private int currentLimit = Integer.MAX_VALUE;
@@ -626,6 +641,7 @@ public class ProtoSource {
         currentLimit = Integer.MAX_VALUE;
         bufferSizeAfterLimit = 0;
         lastTag = 0;
+        lastTagMark = 0;
         recursionDepth = 0;
         return this;
     }

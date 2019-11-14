@@ -84,7 +84,7 @@
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=java=robo,input_order=none:target/test-classes/us/hebi/robobuf/generator"/>
+                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=java=robo,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/robobuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>

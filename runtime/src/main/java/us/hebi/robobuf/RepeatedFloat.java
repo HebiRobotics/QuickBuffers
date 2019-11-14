@@ -57,30 +57,30 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
         return this;
     }
 
-    public RepeatedFloat add(float value) {
+    public RepeatedFloat add(final float value) {
         reserve(1);
         array[length++] = value;
         return this;
     }
 
-    public RepeatedFloat addAll(float[] values) {
+    public RepeatedFloat addAll(final float[] values) {
         return addAll(values, 0, values.length);
     }
 
-    public RepeatedFloat addAll(float[] buffer, int offset, int length) {
-        reserve(length);
-        System.arraycopy(buffer, offset, array, this.length, length);
-        this.length += length;
+    public RepeatedFloat addAll(final float[] buffer, final int offset, final int length) {
+        final int pos = this.length;
+        setLength(pos + length);
+        System.arraycopy(buffer, offset, array, pos, length);
         return this;
     }
 
-    public RepeatedFloat copyFrom(float[] buffer) {
+    public RepeatedFloat copyFrom(final float[] buffer) {
         return copyFrom(buffer, 0, buffer.length);
     }
 
-    public RepeatedFloat copyFrom(float[] buffer, int offset, int length) {
-        this.length = 0;
-        addAll(buffer, offset, length);
+    public RepeatedFloat copyFrom(final float[] buffer, final int offset, final int length) {
+        setLength(length);
+        System.arraycopy(buffer, offset, array, 0, length);
         return this;
     }
 

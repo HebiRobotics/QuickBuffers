@@ -346,10 +346,7 @@ public class FieldGenerator {
 
     protected void generatePrintCode(MethodSpec.Builder method) {
         // TODO: handle enum with strings?
-        method.addStatement("printer.print($T.$L, $N)",
-                getInfo().getParentTypeInfo().getJsonKeysClass(),
-                getInfo().getFieldName(),
-                getInfo().getFieldName());
+        method.addStatement(named("printer.print($jsonKeys:T.$field:N, $field:N)"));
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
@@ -598,6 +595,7 @@ public class FieldGenerator {
         if (info.isFixedWidth()) m.put("fixedWidth", info.getFixedWidth());
 
         // utility classes
+        m.put("jsonKeys", getInfo().getParentTypeInfo().getJsonKeysClass());
         m.put("abstractMessage", RuntimeClasses.AbstractMessage);
         m.put("protoSource", RuntimeClasses.ProtoSource);
         m.put("protoSink", RuntimeClasses.ProtoSink);

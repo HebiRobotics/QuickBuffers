@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -44,6 +44,9 @@ class RuntimeClasses {
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");
     public static ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
     public static ClassName ProtoPrinter = ClassName.get(API_PACKAGE, "TextPrinter");
+
+    static final String unknownBytesField = "unknownBytes";
+    static final String unknownBytesKey = "unknownBytesJsonKey";
 
     private static final ClassName RepeatedDouble = ClassName.get(API_PACKAGE, "RepeatedDouble");
     private static final ClassName RepeatedFloat = ClassName.get(API_PACKAGE, "RepeatedFloat");
