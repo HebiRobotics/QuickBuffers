@@ -43,7 +43,7 @@ class RuntimeClasses {
     static final ClassName StringType = ClassName.get(StringBuilder.class);
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");
     public static ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
-    public static ClassName ProtoPrinter = ClassName.get(API_PACKAGE, "TextPrinter");
+    public static ClassName JsonSink = ClassName.get(API_PACKAGE, "JsonSink");
 
     static final String unknownBytesField = "unknownBytes";
     static final String unknownBytesKey = "unknownBytesJsonKey";

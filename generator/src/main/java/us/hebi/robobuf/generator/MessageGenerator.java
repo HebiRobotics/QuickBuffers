@@ -102,7 +102,7 @@ class MessageGenerator {
         generateComputeSerializedSize(type);
         generateMergeFrom(type);
         generateIsInitialized(type);
-        generatePrint(type);
+        generateWriteToJson(type);
         generateClone(type);
 
         // Static utilities
@@ -458,26 +458,30 @@ class MessageGenerator {
         }
     }
 
-    private void generatePrint(TypeSpec.Builder type) {
-        MethodSpec.Builder print = MethodSpec.methodBuilder("print")
+    private void generateWriteToJson(TypeSpec.Builder type) {
+        MethodSpec.Builder writeTo = MethodSpec.methodBuilder("writeTo")
                 .addAnnotation(Override.class)
-                .addParameter(RuntimeClasses.ProtoPrinter, "printer", Modifier.FINAL)
+                .addParameter(RuntimeClasses.JsonSink, "output", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC);
+        writeTo.addStatement("output.writeObjectStart()");
 
         // add every set field
         for (FieldGenerator field : fields) {
-            print.beginControlFlow("if ($L)", BitField.hasBit(field.getInfo().getFieldIndex()));
-            field.generatePrintCode(print);
-            print.endControlFlow();
+            writeTo.beginControlFlow("if ($L)", BitField.hasBit(field.getInfo().getFieldIndex()));
+            field.generateJsonSerializationCode(writeTo);
+            writeTo.endControlFlow();
         }
 
+        // add unknown fields as base64
         if (info.isStoreUnknownFields()) {
-            print.addCode(named("if ($unknownBytes:N.length() > 0)"))
+            writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
-                    .addStatement(named("printer.print($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
+                    .addStatement(named("output.writeField($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
                     .endControlFlow();
         }
-        type.addMethod(print.build());
+
+        writeTo.addStatement("output.writeObjectEnd()");
+        type.addMethod(writeTo.build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {

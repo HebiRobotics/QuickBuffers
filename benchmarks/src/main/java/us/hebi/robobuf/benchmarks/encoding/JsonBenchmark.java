@@ -36,24 +36,24 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * === JDK8 ===
- * Benchmark                                Mode  Cnt    Score   Error  Units
- * JsonPrinterBenchmark.writeBase64         avgt   10  255.828 ± 2.703  us/op
- * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   22.626 ± 0.424  us/op
- * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   21.293 ± 0.546  us/op
- * JsonPrinterBenchmark.writeIntNumbers     avgt   10   12.309 ± 0.251  us/op
- * JsonPrinterBenchmark.writeLongNumbers    avgt   10   19.921 ± 1.030  us/op
- * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.738 ± 0.011  us/op
- * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.826 ± 0.029  us/op
+ * Benchmark                         Mode  Cnt    Score   Error  Units
+ * JsonBenchmark.writeBase64         avgt   10  255.828 ± 2.703  us/op
+ * JsonBenchmark.writeDoubleNumbers  avgt   10   22.626 ± 0.424  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10   21.293 ± 0.546  us/op
+ * JsonBenchmark.writeIntNumbers     avgt   10   12.309 ± 0.251  us/op
+ * JsonBenchmark.writeLongNumbers    avgt   10   19.921 ± 1.030  us/op
+ * JsonBenchmark.writeStringAscii    avgt   10    0.738 ± 0.011  us/op
+ * JsonBenchmark.writeStringUtf8     avgt   10    1.826 ± 0.029  us/op
  *
  * === JDK12 ===
- * Benchmark                                Mode  Cnt    Score   Error  Units
- * JsonPrinterBenchmark.writeBase64         avgt   10  215.028 ± 2.393  us/op
- * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   23.010 ± 0.443  us/op
- * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   20.967 ± 0.298  us/op
- * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.052 ± 0.296  us/op
- * JsonPrinterBenchmark.writeLongNumbers    avgt   10   18.744 ± 0.400  us/op
- * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.618 ± 0.017  us/op
- * JsonPrinterBenchmark.writeStringUtf8     avgt   10    2.002 ± 0.070  us/op
+ * Benchmark                         Mode  Cnt    Score   Error  Units
+ * JsonBenchmark.writeBase64         avgt   10  215.028 ± 2.393  us/op
+ * JsonBenchmark.writeDoubleNumbers  avgt   10   23.010 ± 0.443  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10   20.967 ± 0.298  us/op
+ * JsonBenchmark.writeIntNumbers     avgt   10   13.052 ± 0.296  us/op
+ * JsonBenchmark.writeLongNumbers    avgt   10   18.744 ± 0.400  us/op
+ * JsonBenchmark.writeStringAscii    avgt   10    0.618 ± 0.017  us/op
+ * JsonBenchmark.writeStringUtf8     avgt   10    2.002 ± 0.070  us/op
  *
  * @author Florian Enner
  * @since 13 Nov 2019
@@ -64,18 +64,18 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-public class JsonPrinterBenchmark {
+public class JsonBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + JsonPrinterBenchmark.class.getSimpleName() + ".*")
+                .include(".*" + JsonBenchmark.class.getSimpleName() + ".*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();
     }
 
-    final JsonPrinter printer = JsonPrinter.newInstance();
-    final byte[] key = "\"field\":".getBytes();
+    final JsonSink jsonSink = JsonSink.newInstance();
+    final byte[] key = "\"field\":" .getBytes();
     final StringBuilder asciiChars = new StringBuilder().append(
             "this is an ascii string that we can encode entirely in the fast path 0123456789" +
                     "this is an ascii string that we can encode entirely in the fast path 0123456789" +
@@ -111,44 +111,44 @@ public class JsonPrinterBenchmark {
 
     @Benchmark
     public int writeBase64() throws IOException {
-        printer.clear().print(key, rndBytes);
-        return printer.getBuffer().length();
+        jsonSink.clear().writeField(key, rndBytes);
+        return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeStringAscii() throws IOException {
-        printer.clear().print(key, asciiChars);
-        return printer.getBuffer().length();
+        jsonSink.clear().writeField(key, asciiChars);
+        return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeStringUtf8() throws IOException {
-        printer.clear().print(key, utf8Chars);
-        return printer.getBuffer().length();
+        jsonSink.clear().writeField(key, utf8Chars);
+        return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeIntNumbers() throws IOException {
-        printer.clear().print(key, rndInts);
-        return printer.getBuffer().length();
+        jsonSink.clear().writeField(key, rndInts);
+        return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeLongNumbers() throws IOException {
-        printer.clear().print(key, rndLongs);
-        return printer.getBuffer().length();
+        jsonSink.clear().writeField(key, rndLongs);
+        return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeFloatNumbers() throws IOException {
-        printer.clear().print(key, rndFloats);
-        return printer.getBuffer().length();
+        jsonSink.clear().writeField(key, rndFloats);
+        return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeDoubleNumbers() throws IOException {
-        printer.clear().print(key, rndDoubles);
-        return printer.getBuffer().length();
+        jsonSink.clear().writeField(key, rndDoubles);
+        return jsonSink.getBuffer().length();
     }
 
 }

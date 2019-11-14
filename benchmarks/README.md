@@ -22,7 +22,7 @@ We also compared the built-in JSON encoding and found that for this particular b
 
 | Test [msg/ms] | RoboBuffers (JSON) | Protobuf-Java (Binary) | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 1285 | 1125 |  1.1  
+| Car Encode  | 1345 | 1125 |  1.2  
 | Market Data Encode  | 3284 | 3712 |  0.9 
 
 ## Benchmark 2 - File Streams

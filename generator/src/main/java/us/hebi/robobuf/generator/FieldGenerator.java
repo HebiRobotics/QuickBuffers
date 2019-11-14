@@ -344,9 +344,9 @@ public class FieldGenerator {
 
     }
 
-    protected void generatePrintCode(MethodSpec.Builder method) {
-        // TODO: handle enum with strings?
-        method.addStatement(named("printer.print($jsonKeys:T.$field:N, $field:N)"));
+    protected void generateJsonSerializationCode(MethodSpec.Builder method) {
+        // TODO: handle enum with strings instead of numbers?
+        method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N)"));
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
