@@ -198,21 +198,29 @@ public class JsonPrinter implements TextPrinter {
     @Override
     public void print(byte[] key, RepeatedString value) {
         startArray(key);
+        indentLevel++;
         for (int i = 0; i < value.length; i++) {
+            writeNewline();
             StringEncoding.writeQuotedUtf8(value.array[i], output);
             writeComma();
         }
+        indentLevel--;
+        writeNewline();
         finishArray();
     }
 
     @Override
     public void print(byte[] key, RepeatedBytes values) {
         startArray(key);
+        indentLevel++;
         for (int i = 0; i < values.length; i++) {
+            writeNewline();
             final RepeatedByte value = values.get(i);
             Base64Encoding.writeQuotedBase64(value.array, value.length, output);
             writeComma();
         }
+        indentLevel--;
+        writeNewline();
         finishArray();
     }
 
