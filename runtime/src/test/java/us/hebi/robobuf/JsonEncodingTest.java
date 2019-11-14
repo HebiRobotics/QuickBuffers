@@ -24,9 +24,9 @@ package us.hebi.robobuf;
 
 import org.junit.Before;
 import org.junit.Test;
-import us.hebi.robobuf.JsonUtil.Base64Encoding;
-import us.hebi.robobuf.JsonUtil.NumberEncoding;
-import us.hebi.robobuf.JsonUtil.StringEncoding;
+import us.hebi.robobuf.JsonEncoding.Base64Encoding;
+import us.hebi.robobuf.JsonEncoding.NumberEncoding;
+import us.hebi.robobuf.JsonEncoding.StringEncoding;
 import us.hebi.robobuf.ProtoUtil.Charsets;
 
 import java.util.Random;
@@ -98,8 +98,11 @@ public class JsonEncodingTest {
 
     @Test
     public void testDoubleEncoding() throws Exception {
+        double multiplier = 1E-100;
         for (int i = 0; i < n; i++) {
             testDouble(rnd.nextDouble());
+            testDouble(Math.PI * multiplier + 0.1);
+            multiplier *= 10;
         }
         testDouble(100 - 1E-01);
         testDouble(100 - 1E-02);
@@ -125,8 +128,11 @@ public class JsonEncodingTest {
 
     @Test
     public void testFloatEncoding() throws Exception {
+        double multiplier = 1E-100;
         for (int i = 0; i < n; i++) {
             testFloat(rnd.nextFloat());
+            testFloat((float) (Math.PI * multiplier + 0.1));
+            multiplier *= 10;
         }
         testFloat(100 - 1E-01f);
         testFloat(100 - 1E-02f);
@@ -179,12 +185,13 @@ public class JsonEncodingTest {
 
     private void testDouble(double expected) {
         String encoded = encodeDouble(expected);
-        double actual = Double.parseDouble(encoded);
+        double actual = encoded.equals("\"Infinity\"") ? Double.POSITIVE_INFINITY : Double.parseDouble(encoded);
         assertEquals(encoded, expected, actual, 1E-9);
     }
 
     private void testFloat(float expected) {
-        float actual = Float.parseFloat(encodeFloat(expected));
+        String encoded = encodeFloat(expected);
+        float actual = encoded.equals("\"Infinity\"") ? Float.POSITIVE_INFINITY : Float.parseFloat(encoded);
         assertEquals(expected, actual, 1E-6);
     }
 

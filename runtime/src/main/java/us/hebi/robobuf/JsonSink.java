@@ -22,10 +22,10 @@
 
 package us.hebi.robobuf;
 
-import us.hebi.robobuf.JsonUtil.Base64Encoding;
-import us.hebi.robobuf.JsonUtil.BooleanEncoding;
-import us.hebi.robobuf.JsonUtil.NumberEncoding;
-import us.hebi.robobuf.JsonUtil.StringEncoding;
+import us.hebi.robobuf.JsonEncoding.Base64Encoding;
+import us.hebi.robobuf.JsonEncoding.BooleanEncoding;
+import us.hebi.robobuf.JsonEncoding.NumberEncoding;
+import us.hebi.robobuf.JsonEncoding.StringEncoding;
 import us.hebi.robobuf.ProtoUtil.Charsets;
 
 import java.util.Arrays;

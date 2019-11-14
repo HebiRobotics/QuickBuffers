@@ -25,10 +25,13 @@ package us.hebi.robobuf;
 import us.hebi.robobuf.ProtoUtil.Charsets;
 
 /**
+ * Utility methods for encoding values in a JSON
+ * compatible way.
+ *
  * @author Florian Enner
  * @since 12 Nov 2019
  */
-class JsonUtil {
+class JsonEncoding {
 
     static class Base64Encoding {
 
@@ -404,7 +407,7 @@ class JsonUtil {
             }
             final long lval = (long) (val * exp6 + 0.5);
             writeLong(lval / exp6, output);
-            int fval = (int) lval % exp6;
+            int fval = (int) (lval % exp6);
             if (fval == 0) {
                 return;
             }
@@ -447,7 +450,7 @@ class JsonUtil {
             }
             final long lval = (long) (val * exp9 + 0.5);
             writeLong(lval / exp9, output);
-            long fval = (long) lval % exp9;
+            int fval = (int) (lval % exp9); // max int fits ~10^9.3
             if (fval == 0) {
                 return;
             }
@@ -456,7 +459,7 @@ class JsonUtil {
             for (int p = precision9 - 1; p > 0 && fval < POW10[p]; p--) {
                 output.array[output.length++] = '0';
             }
-            writeLong(fval, output);
+            writeInt(fval, output);
             while (output.array[output.length - 1] == '0') {
                 output.length--;
             }
@@ -464,8 +467,8 @@ class JsonUtil {
 
         private static final int precision6 = 6;
         private static final int precision9 = 9;
-        private static final int exp6 = 1000000; // 10^6
-        private static final int exp9 = 1000000000; // 10^9
+        private static final long exp6 = 1000000; // 10^6
+        private static final long exp9 = 1000000000; // 10^9
         private static final int[] POW10 = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 100000000};
 
         // JSON doesn't define -inf etc., so encode as String
