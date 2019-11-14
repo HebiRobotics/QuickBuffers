@@ -42,9 +42,8 @@ class JsonUtil {
         static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
 
             // Size output buffer
-            int pos = output.length;
             final int encodedLength = ((length + 2) / 3) << 2;
-            output.setLength(pos + encodedLength + 2 /* quotes */);
+            int pos = output.addLength(encodedLength + 2 /* quotes */);
             final byte[] buffer = output.array;
             buffer[pos++] = '"';
 
@@ -56,7 +55,7 @@ class JsonUtil {
                 final int bits = (bytes[i] & 0xff) << 16 | (bytes[i + 1] & 0xff) << 8 | (bytes[i + 2] & 0xff);
 
                 // Encode the 24 bits into four 6 bit characters
-                buffer[pos] = BASE64[(bits >>> 18) & 0x3f];
+                buffer[pos/**/] = BASE64[(bits >>> 18) & 0x3f];
                 buffer[pos + 1] = BASE64[(bits >>> 12) & 0x3f];
                 buffer[pos + 2] = BASE64[(bits >>> 6) & 0x3f];
                 buffer[pos + 3] = BASE64[bits & 0x3f];
@@ -69,7 +68,7 @@ class JsonUtil {
                 final int bits = ((bytes[i] & 0xff) << 10) | (remaining == 2 ? ((bytes[i + 1] & 0xff) << 2) : 0);
 
                 // Set last four bytes
-                buffer[pos] = BASE64[bits >> 12];
+                buffer[pos/**/] = BASE64[bits >> 12];
                 buffer[pos + 1] = BASE64[(bits >>> 6) & 0x3f];
                 buffer[pos + 2] = remaining == 2 ? BASE64[bits & 0x3f] : (byte) '=';
                 buffer[pos + 3] = '=';
@@ -97,20 +96,21 @@ class JsonUtil {
         static void writeQuotedUtf8(CharSequence sequence, RepeatedByte output) {
             // Fast-path: no utf8 and escape support
             final int numChars = sequence.length();
-            output.reserve(numChars + 2);
-            output.array[output.length++] = '"';
+            final int pos = output.addLength(numChars + 2) + 1;
+            output.array[pos - 1] = '"';
             int i = 0;
             fastpath:
             {
                 for (; i < numChars; i++) {
                     final char c = sequence.charAt(i);
                     if (c < 128 && CAN_DIRECT_WRITE[c]) {
-                        output.array[output.length++] = (byte) c;
+                        output.array[pos + i] = (byte) c;
                     } else {
+                        output.length = pos + i;
                         break fastpath;
                     }
                 }
-                output.array[output.length++] = '"';
+                output.array[pos + i] = '"';
                 return;
             }
 
@@ -120,23 +120,24 @@ class JsonUtil {
 
                 if (c < 0x80) { // ascii
                     if (CAN_DIRECT_WRITE[c]) {
-                        write(output, (byte) c);
+                        final int offset = output.addLength(1);
+                        output.array[offset] = (byte) c;
                     } else {
                         writeEscapedAscii(c, output);
                     }
 
                 } else if (c < 0x800) { // 11 bits, two UTF-8 bytes
-                    write(output,
-                            (byte) ((0xF << 6) | (c >>> 6)),
-                            (byte) (0x80 | (0x3F & c))
-                    );
+                    final int offset = output.addLength(2);
+                    output.array[offset/**/] = (byte) ((0xF << 6) | (c >>> 6));
+                    output.array[offset + 1] = (byte) (0x80 | (0x3F & c));
+
                 } else if ((c < Character.MIN_SURROGATE || Character.MAX_SURROGATE < c)) {
                     // Maximum single-char code point is 0xFFFF, 16 bits, three UTF-8 bytes
-                    write(output,
-                            (byte) ((0xF << 5) | (c >>> 12)),
-                            (byte) (0x80 | (0x3F & (c >>> 6))),
-                            (byte) (0x80 | (0x3F & c))
-                    );
+                    final int offset = output.addLength(3);
+                    output.array[offset/**/] = (byte) ((0xF << 5) | (c >>> 12));
+                    output.array[offset + 1] = (byte) (0x80 | (0x3F & (c >>> 6)));
+                    output.array[offset + 2] = (byte) (0x80 | (0x3F & c));
+
                 } else {
                     // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
                     final char low;
@@ -144,57 +145,36 @@ class JsonUtil {
                         throw new IllegalArgumentException("Unpaired surrogate at index " + (i - 1));
                     }
                     int codePoint = Character.toCodePoint(c, low);
-                    write(output,
-                            (byte) ((0xF << 4) | (codePoint >>> 18)),
-                            (byte) (0x80 | (0x3F & (codePoint >>> 12))),
-                            (byte) (0x80 | (0x3F & (codePoint >>> 6))),
-                            (byte) (0x80 | (0x3F & codePoint))
-
-                    );
+                    final int offset = output.addLength(4);
+                    output.array[offset/**/] = (byte) ((0xF << 4) | (codePoint >>> 18));
+                    output.array[offset + 1] = (byte) (0x80 | (0x3F & (codePoint >>> 12)));
+                    output.array[offset + 2] = (byte) (0x80 | (0x3F & (codePoint >>> 6)));
+                    output.array[offset + 3] = (byte) (0x80 | (0x3F & codePoint));
                 }
             }
 
-            write(output, (byte) '"');
+            output.reserve(1);
+            output.array[output.length++] = (byte) '"';
 
         }
 
         private static void writeEscapedAscii(char c, RepeatedByte output) {
-            switch (c) {
-                case '"':
-                    write(output, (byte) '\\', (byte) '"');
-                    break;
-                case '\\':
-                    write(output, (byte) '\\', (byte) '\\');
-                    break;
-                case '\b':
-                    write(output, (byte) '\\', (byte) 'b');
-                    break;
-                case '\f':
-                    write(output, (byte) '\\', (byte) 'f');
-                    break;
-                case '\n':
-                    write(output, (byte) '\\', (byte) 'n');
-                    break;
-                case '\r':
-                    write(output, (byte) '\\', (byte) 'r');
-                    break;
-                case '\t':
-                    write(output, (byte) '\\', (byte) 't');
-                    break;
-                default:
-                    writeAsSlashU(c, output);
+            final byte escapeChar = ESCAPE_CHAR[c];
+            if (escapeChar != 0) {
+                // escaped with slash, e.g., \\t
+                final int pos = output.addLength(2);
+                output.array[pos] = '\\';
+                output.array[pos + 1] = escapeChar;
+            } else {
+                // slash-U escaping, e.g., control character
+                final int pos = output.addLength(6);
+                output.array[pos] = '\\';
+                output.array[pos + 1] = 'u';
+                output.array[pos + 2] = ITOA[c >> 12 & 0xf];
+                output.array[pos + 3] = ITOA[c >> 8 & 0xf];
+                output.array[pos + 4] = ITOA[c >> 4 & 0xf];
+                output.array[pos + 5] = ITOA[c & 0xf];
             }
-        }
-
-        private static void writeAsSlashU(int c, RepeatedByte output) {
-            final int pos = output.length;
-            output.setLength(pos + 6);
-            output.array[pos] = '\\';
-            output.array[pos + 1] = 'u';
-            output.array[pos + 2] = ITOA[c >> 12 & 0xf];
-            output.array[pos + 3] = ITOA[c >> 8 & 0xf];
-            output.array[pos + 4] = ITOA[c >> 4 & 0xf];
-            output.array[pos + 5] = ITOA[c & 0xf];
         }
 
         private static final byte[] ITOA = new byte[]{
@@ -202,6 +182,7 @@ class JsonUtil {
                 'a', 'b', 'c', 'd', 'e', 'f'};
 
         private static final boolean[] CAN_DIRECT_WRITE = new boolean[128];
+        private static final byte[] ESCAPE_CHAR = new byte[128];
 
         static {
             for (int i = 0; i < CAN_DIRECT_WRITE.length; i++) {
@@ -209,6 +190,13 @@ class JsonUtil {
                     CAN_DIRECT_WRITE[i] = true;
                 }
             }
+            ESCAPE_CHAR['"'] = '"';
+            ESCAPE_CHAR['\\'] = '\\';
+            ESCAPE_CHAR['\b'] = 'b';
+            ESCAPE_CHAR['\f'] = 'f';
+            ESCAPE_CHAR['\n'] = 'n';
+            ESCAPE_CHAR['\r'] = 'r';
+            ESCAPE_CHAR['\t'] = 't';
         }
 
     }
@@ -232,8 +220,8 @@ class JsonUtil {
 
         public static void writeInt(int value, final RepeatedByte output) {
             output.reserve(12);
-            final byte[] buf = output.array;
             int pos = output.length;
+            final byte[] buf = output.array;
             if (value < 0) {
                 if (value == Integer.MIN_VALUE) {
                     System.arraycopy(MIN_INT, 0, buf, pos, MIN_INT.length);
@@ -296,8 +284,8 @@ class JsonUtil {
 
         public static final void writeLong(long value, final RepeatedByte output) {
             output.reserve(22);
-            final byte[] buf = output.array;
             int pos = output.length;
+            final byte[] buf = output.array;
             if (value < 0) {
                 if (value == Long.MIN_VALUE) {
                     System.arraycopy(MIN_LONG, 0, buf, pos, MIN_LONG.length);
@@ -459,7 +447,7 @@ class JsonUtil {
             }
             final long lval = (long) (val * exp9 + 0.5);
             writeLong(lval / exp9, output);
-            int fval = (int) lval % exp9;
+            long fval = (long) lval % exp9;
             if (fval == 0) {
                 return;
             }
@@ -468,7 +456,7 @@ class JsonUtil {
             for (int p = precision9 - 1; p > 0 && fval < POW10[p]; p--) {
                 output.array[output.length++] = '0';
             }
-            writeInt(fval, output);
+            writeLong(fval, output);
             while (output.array[output.length - 1] == '0') {
                 output.length--;
             }
@@ -502,32 +490,6 @@ class JsonUtil {
         private static final byte[] TRUE_BYTES = "true".getBytes(Charsets.ISO_8859_1);
         private static final byte[] FALSE_BYTES = "false".getBytes(Charsets.ISO_8859_1);
 
-    }
-
-    private static void write(RepeatedByte output, byte b0) {
-        output.reserve(1);
-        output.array[output.length++] = b0;
-    }
-
-    private static void write(RepeatedByte output, byte b0, byte b1) {
-        output.reserve(2);
-        output.array[output.length++] = b0;
-        output.array[output.length++] = b1;
-    }
-
-    private static void write(RepeatedByte output, byte b0, byte b1, byte b2) {
-        output.reserve(3);
-        output.array[output.length++] = b0;
-        output.array[output.length++] = b1;
-        output.array[output.length++] = b2;
-    }
-
-    private static void write(RepeatedByte output, byte b0, byte b1, byte b2, byte b3) {
-        output.reserve(4);
-        output.array[output.length++] = b0;
-        output.array[output.length++] = b1;
-        output.array[output.length++] = b2;
-        output.array[output.length++] = b3;
     }
 
 }

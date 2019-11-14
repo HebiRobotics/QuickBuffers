@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -137,12 +137,33 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      * @param length desired length
      * @return this
      */
-    public final RepeatedFloat setLength(int length) {
+    public final RepeatedFloat setLength(final int length) {
         if (array.length < length) {
             extendCapacityTo(length);
         }
         this.length = length;
         return this;
+    }
+
+    /**
+     * Sets the length to length + offset and returns
+     * the previous length. The internal storage array
+     * may get extended to accomodate at least the
+     * desired length.
+     *
+     * See {@link RepeatedFloat#setLength(int)}
+     *
+     * @param length added to the current length
+     * @return previous length
+     */
+    public final int addLength(final int length) {
+        final int oldLength = this.length;
+        final int newLength = oldLength + length;
+        if (array.length < newLength) {
+            extendCapacityTo(newLength);
+        }
+        this.length = newLength;
+        return oldLength;
     }
 
     @Override

@@ -18,6 +18,13 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 
 Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers improve by another 10-20%. By additionally inlining the small nested fields it'd result in 3-4x the original message throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
 
+We also Protobuf-Java against the built-in JSON encoding and found that for this particular benchmark the performance is very comparable.
+
+| Test [msg/ms] | RoboBuffers (JSON) | Protobuf-Java | Ratio
+| :----------- | :-----------: | :-----------: | :-----------: |
+| Car Encode  | 1285 | 1125 |  1.1  
+| Market Data Encode  | 3284 | 3712 |  0.9 
+
 ## Benchmark 2 - File Streams
 
 We also ran benchmarks for reading and writing streams of delimited protobuf messages with varying contents, which is similar to reading sequentially from a log file. All datasets were loaded into memory and decoded from a byte array. Neither benchmark triggers Protobuf-Java's lazy-parsing of strings, so the results may be slightly off. The benchmark code can be found in the `benchmarks` directory.

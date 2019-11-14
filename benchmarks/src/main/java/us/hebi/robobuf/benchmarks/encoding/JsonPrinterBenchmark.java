@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -37,23 +37,23 @@ import java.util.concurrent.TimeUnit;
 /**
  * === JDK8 ===
  * Benchmark                                Mode  Cnt    Score   Error  Units
- * JsonPrinterBenchmark.writeBase64         avgt   10  235.938 ± 5.254  us/op
- * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   21.629 ± 0.246  us/op
- * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   21.220 ± 0.476  us/op
- * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.147 ± 0.402  us/op
- * JsonPrinterBenchmark.writeLongNumbers    avgt   10   21.321 ± 0.656  us/op
- * JsonPrinterBenchmark.writeStringAscii    avgt   10    1.003 ± 0.007  us/op
- * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.730 ± 0.025  us/op
+ * JsonPrinterBenchmark.writeBase64         avgt   10  255.828 ± 2.703  us/op
+ * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   22.626 ± 0.424  us/op
+ * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   21.293 ± 0.546  us/op
+ * JsonPrinterBenchmark.writeIntNumbers     avgt   10   12.309 ± 0.251  us/op
+ * JsonPrinterBenchmark.writeLongNumbers    avgt   10   19.921 ± 1.030  us/op
+ * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.738 ± 0.011  us/op
+ * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.826 ± 0.029  us/op
  *
  * === JDK12 ===
  * Benchmark                                Mode  Cnt    Score   Error  Units
- * JsonPrinterBenchmark.writeBase64         avgt   10  193.091 ± 3.674  us/op
- * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   22.055 ± 0.440  us/op
- * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   21.044 ± 0.551  us/op
- * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.168 ± 0.271  us/op
- * JsonPrinterBenchmark.writeLongNumbers    avgt   10   20.170 ± 0.550  us/op
- * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.910 ± 0.018  us/op
- * JsonPrinterBenchmark.writeStringUtf8     avgt   10    1.937 ± 0.165  us/op
+ * JsonPrinterBenchmark.writeBase64         avgt   10  215.028 ± 2.393  us/op
+ * JsonPrinterBenchmark.writeDoubleNumbers  avgt   10   23.010 ± 0.443  us/op
+ * JsonPrinterBenchmark.writeFloatNumbers   avgt   10   20.967 ± 0.298  us/op
+ * JsonPrinterBenchmark.writeIntNumbers     avgt   10   13.052 ± 0.296  us/op
+ * JsonPrinterBenchmark.writeLongNumbers    avgt   10   18.744 ± 0.400  us/op
+ * JsonPrinterBenchmark.writeStringAscii    avgt   10    0.618 ± 0.017  us/op
+ * JsonPrinterBenchmark.writeStringUtf8     avgt   10    2.002 ± 0.070  us/op
  *
  * @author Florian Enner
  * @since 13 Nov 2019
