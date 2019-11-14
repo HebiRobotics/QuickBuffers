@@ -523,7 +523,7 @@ public class ProtoSource {
         long result = 0;
         while (shift < 64) {
             final byte b = readRawByte();
-            result |= (long) (b & 0x7F) << shift;
+            result |= (b & 0x7FL) << shift;
             if ((b & 0x80) == 0) {
                 return result;
             }
@@ -534,41 +534,37 @@ public class ProtoSource {
 
     /** Read a 16-bit little-endian integer from the source. */
     public short readRawLittleEndian16() throws IOException {
-        final byte b1 = readRawByte();
-        final byte b2 = readRawByte();
-        return (short) (((b1 & 0xff)) | ((b2 & 0xff) << 8));
+        final int b1 = (readRawByte() & 0xFF);
+        final int b2 = (readRawByte() & 0xFF) << 8;
+        return (short) (b1 | b2);
     }
 
     /** Read a 32-bit little-endian integer from the source. */
     public int readRawLittleEndian32() throws IOException {
-        final byte b1 = readRawByte();
-        final byte b2 = readRawByte();
-        final byte b3 = readRawByte();
-        final byte b4 = readRawByte();
-        return ((b1 & 0xff)) |
-                ((b2 & 0xff) << 8) |
-                ((b3 & 0xff) << 16) |
-                ((b4 & 0xff) << 24);
+        requireRemaining(LITTLE_ENDIAN_32_SIZE);
+        final byte[] buffer = this.buffer;
+        final int offset = bufferPos;
+        bufferPos += LITTLE_ENDIAN_32_SIZE;
+        return (buffer[offset] & 0xFF) |
+                (buffer[offset + 1] & 0xFF) << 8 |
+                (buffer[offset + 2] & 0xFF) << 16 |
+                (buffer[offset + 3] & 0xFF) << 24;
     }
 
     /** Read a 64-bit little-endian integer from the source. */
     public long readRawLittleEndian64() throws IOException {
-        final byte b1 = readRawByte();
-        final byte b2 = readRawByte();
-        final byte b3 = readRawByte();
-        final byte b4 = readRawByte();
-        final byte b5 = readRawByte();
-        final byte b6 = readRawByte();
-        final byte b7 = readRawByte();
-        final byte b8 = readRawByte();
-        return (((long) b1 & 0xff)) |
-                (((long) b2 & 0xff) << 8) |
-                (((long) b3 & 0xff) << 16) |
-                (((long) b4 & 0xff) << 24) |
-                (((long) b5 & 0xff) << 32) |
-                (((long) b6 & 0xff) << 40) |
-                (((long) b7 & 0xff) << 48) |
-                (((long) b8 & 0xff) << 56);
+        requireRemaining(LITTLE_ENDIAN_64_SIZE);
+        final byte[] buffer = this.buffer;
+        final int offset = bufferPos;
+        bufferPos += LITTLE_ENDIAN_64_SIZE;
+        return (buffer[offset] & 0xFFL) |
+                (buffer[offset + 1] & 0xFFL) << 8 |
+                (buffer[offset + 2] & 0xFFL) << 16 |
+                (buffer[offset + 3] & 0xFFL) << 24 |
+                (buffer[offset + 4] & 0xFFL) << 32 |
+                (buffer[offset + 5] & 0xFFL) << 40 |
+                (buffer[offset + 6] & 0xFFL) << 48 |
+                (buffer[offset + 7] & 0xFFL) << 56;
     }
 
     /**

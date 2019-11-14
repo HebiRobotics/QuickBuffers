@@ -14,7 +14,7 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 | Car Encode  | 2854 (381 MB/s) | 1125 (150 MB/s) |  2.5  
 | Car Decode  | 2042 (273 MB/s) | 1166s (149 MB/s) |  1.8  
 | Market Data Encode  | 8267 (504 MB/s) | 3712 (226 MB/s) |  2.2  
-| Market Data Decode  | 5977 (365 MB/s) | 3282 (200 MB/s) |  1.8  
+| Market Data Decode  | 6357 (388 MB/s) | 3282 (200 MB/s) |  1.9  
 
 Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers improve by another 10-20%. By additionally inlining the small nested fields it'd result in 3-4x the original message throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
 
