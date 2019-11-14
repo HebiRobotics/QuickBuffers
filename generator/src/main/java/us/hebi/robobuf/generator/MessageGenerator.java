@@ -504,13 +504,11 @@ class MessageGenerator {
         fields.forEach(f -> {
             String jsonName = f.getInfo().getJsonName();
             CodeBlock.Builder initializer = CodeBlock.builder();
-            initializer.add("new $T{", byte[].class);
-            initializer.add("'$L'", "\\\"");
+            initializer.add("{'$L'", "\\\"");
             for (int i = 0; i < jsonName.length(); i++) {
                 initializer.add(", '$L'", jsonName.charAt(i));
             }
-            initializer.add(", '$L', '$L'", "\\\"", ':');
-            initializer.add("}");
+            initializer.add(", '$L', ':'}", "\\\"");
 
             FieldSpec fieldSpec = FieldSpec.builder(byte[].class, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL)
                     .initializer(initializer.build())

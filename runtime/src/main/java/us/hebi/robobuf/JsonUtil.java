@@ -32,6 +32,13 @@ class JsonUtil {
 
     static class Base64Encoding {
 
+        /**
+         * RFC4648
+         *
+         * @param bytes
+         * @param length
+         * @param output
+         */
         static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
 
             // Size output buffer
@@ -180,13 +187,14 @@ class JsonUtil {
         }
 
         private static void writeAsSlashU(int c, RepeatedByte output) {
-            output.reserve(6);
-            output.array[output.length++] = '\\';
-            output.array[output.length++] = 'u';
-            output.array[output.length++] = ITOA[c >> 12 & 0xf];
-            output.array[output.length++] = ITOA[c >> 8 & 0xf];
-            output.array[output.length++] = ITOA[c >> 4 & 0xf];
-            output.array[output.length++] = ITOA[c & 0xf];
+            final int pos = output.length;
+            output.setLength(pos + 6);
+            output.array[pos] = '\\';
+            output.array[pos + 1] = 'u';
+            output.array[pos + 2] = ITOA[c >> 12 & 0xf];
+            output.array[pos + 3] = ITOA[c >> 8 & 0xf];
+            output.array[pos + 4] = ITOA[c >> 4 & 0xf];
+            output.array[pos + 5] = ITOA[c & 0xf];
         }
 
         private static final byte[] ITOA = new byte[]{
@@ -202,185 +210,6 @@ class JsonUtil {
                 }
             }
         }
-
-    }
-
-    /**
-     * Copied from JDK12's Long.toString() implementation
-     */
-    static class IntegerEncoding {
-
-        static void writeInt(int value, RepeatedByte output) {
-            output.setLength(output.length + stringSize(value));
-            getChars(value, output.length, output.array);
-        }
-
-        static void writeLong(long value, RepeatedByte output) {
-            output.setLength(output.length + stringSize(value));
-            getChars(value, output.length, output.array);
-        }
-
-        /**
-         * Places characters representing the long i into the
-         * character array buf. The characters are placed into
-         * the buffer backwards starting with the least significant
-         * digit at the specified index (exclusive), and working
-         * backwards from there.
-         *
-         * @param i     value to convert
-         * @param index next index, after the least significant digit
-         * @param buf   target buffer, Latin1-encoded
-         * @return index of the most significant digit or minus sign, if present
-         * @implNote This method converts positive inputs into negative
-         * values, to cover the Long.MIN_VALUE case. Converting otherwise
-         * (negative to positive) will expose -Long.MIN_VALUE that overflows
-         * long.
-         */
-        static void getChars(long i, int index, byte[] buf) {
-            long q;
-            int r;
-            int charPos = index;
-
-            boolean negative = (i < 0);
-            if (!negative) {
-                i = -i;
-            }
-
-            // Get 2 digits/iteration using longs until quotient fits into an int
-            while (i <= Integer.MIN_VALUE) {
-                q = i / 100;
-                r = (int) ((q * 100) - i);
-                i = q;
-                buf[--charPos] = DigitOnes[r];
-                buf[--charPos] = DigitTens[r];
-            }
-
-            // Get 2 digits/iteration using ints
-            int q2;
-            int i2 = (int) i;
-            while (i2 <= -100) {
-                q2 = i2 / 100;
-                r = (q2 * 100) - i2;
-                i2 = q2;
-                buf[--charPos] = DigitOnes[r];
-                buf[--charPos] = DigitTens[r];
-            }
-
-            // We know there are at most two digits left at this point.
-            q2 = i2 / 10;
-            r = (q2 * 10) - i2;
-            buf[--charPos] = (byte) ('0' + r);
-
-            // Whatever left is the remaining digit.
-            if (q2 < 0) {
-                buf[--charPos] = (byte) ('0' - q2);
-            }
-
-            if (negative) {
-                buf[--charPos] = (byte) '-';
-            }
-
-        }
-
-        /**
-         * Returns the string representation size for a given int value.
-         *
-         * @param x int value
-         * @return string size
-         *
-         * There are other ways to compute this: e.g. binary search,
-         * but values are biased heavily towards zero, and therefore linear search
-         * wins. The iteration results are also routinely inlined in the generated
-         * code after loop unrolling.
-         */
-        static int stringSize(int x) {
-            int d = 1;
-            if (x >= 0) {
-                d = 0;
-                x = -x;
-            }
-            int p = -10;
-            for (int i = 1; i < 10; i++) {
-                if (x > p)
-                    return i + d;
-                p = 10 * p;
-            }
-            return 10 + d;
-        }
-
-        static int stringSize(long x) {
-            int d = 1;
-            if (x >= 0) {
-                d = 0;
-                x = -x;
-            }
-            long p = -10;
-            for (int i = 1; i < 19; i++) {
-                if (x > p)
-                    return i + d;
-                p = 10 * p;
-            }
-            return 19 + d;
-        }
-
-        final static byte[] DigitTens = {
-                '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-                '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
-                '2', '2', '2', '2', '2', '2', '2', '2', '2', '2',
-                '3', '3', '3', '3', '3', '3', '3', '3', '3', '3',
-                '4', '4', '4', '4', '4', '4', '4', '4', '4', '4',
-                '5', '5', '5', '5', '5', '5', '5', '5', '5', '5',
-                '6', '6', '6', '6', '6', '6', '6', '6', '6', '6',
-                '7', '7', '7', '7', '7', '7', '7', '7', '7', '7',
-                '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
-                '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',
-        };
-
-        final static byte[] DigitOnes = {
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        };
-
-    }
-
-    static class FloatEncoding {
-
-        static void writeFloat(float value, RepeatedByte output) {
-            if (Float.isNaN(value)) {
-                output.addAll(NAN);
-            } else if (Float.isInfinite(value)) {
-                output.addAll(value < 0 ? NEGATIVE_INF : POSITIVE_INF);
-            } else if (((int) value) == value) {
-                IntegerEncoding.writeInt((int) value, output);
-            } else {
-                StringEncoding.writeRawAscii(Float.toString(value), output);
-            }
-        }
-
-        static void writeDouble(double value, RepeatedByte output) {
-            if (Double.isNaN(value)) {
-                output.addAll(NAN);
-            } else if (Double.isInfinite(value)) {
-                output.addAll(value < 0 ? NEGATIVE_INF : POSITIVE_INF);
-            } else if ((long) value == value) {
-                IntegerEncoding.writeLong((long) value, output);
-            } else {
-                StringEncoding.writeRawAscii(Double.toString(value), output);
-            }
-        }
-
-        // JSON doesn't define -inf etc., so encode as String
-        private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(Charsets.ISO_8859_1);
-        private static final byte[] POSITIVE_INF = "\"Infinity\"".getBytes(Charsets.ISO_8859_1);
-        private static final byte[] NAN = "\"NaN\"".getBytes(Charsets.ISO_8859_1);
 
     }
 
@@ -401,11 +230,9 @@ class JsonUtil {
             }
         }
 
-        private static final byte[] MIN_INT = "-2147483648".getBytes();
-
-        public static final void writeInt(int value, final RepeatedByte output) {
+        public static void writeInt(int value, final RepeatedByte output) {
             output.reserve(12);
-            byte[] buf = output.array;
+            final byte[] buf = output.array;
             int pos = output.length;
             if (value < 0) {
                 if (value == Integer.MIN_VALUE) {
@@ -467,11 +294,9 @@ class JsonUtil {
             buf[pos + 2] = (byte) v;
         }
 
-        private static final byte[] MIN_LONG = "-9223372036854775808".getBytes();
-
         public static final void writeLong(long value, final RepeatedByte output) {
             output.reserve(22);
-            byte[] buf = output.array;
+            final byte[] buf = output.array;
             int pos = output.length;
             if (value < 0) {
                 if (value == Long.MIN_VALUE) {
@@ -563,12 +388,16 @@ class JsonUtil {
             output.length = pos + 15;
         }
 
-        private static final int POW10[] = {1, 10, 100, 1000, 10000, 100000, 1000000};
-
-        public static final void writeFloat(float val, final RepeatedByte output) {
+        /**
+         * Writes a floating point number with up to 6 digit after comma precision
+         *
+         * @param val
+         * @param output
+         */
+        public static void writeFloat(float val, final RepeatedByte output) {
             if (val < 0) {
                 if (val == Float.NEGATIVE_INFINITY) {
-                    output.addAll(FloatEncoding.NEGATIVE_INF);
+                    output.addAll(NEGATIVE_INF);
                     return;
                 }
                 output.add((byte) '-');
@@ -576,35 +405,42 @@ class JsonUtil {
             }
             if (val > 0x4ffffff) {
                 if (val == Float.POSITIVE_INFINITY) {
-                    output.addAll(FloatEncoding.POSITIVE_INF);
+                    output.addAll(POSITIVE_INF);
                     return;
                 }
                 StringEncoding.writeRawAscii(Float.toString(val), output);
                 return;
+            } else if (Float.isNaN(val)) {
+                output.addAll(NAN);
+                return;
             }
-            int precision = 6;
-            int exp = 1000000; // 6
-            long lval = (long) (val * exp + 0.5);
-            writeLong(lval / exp, output);
-            long fval = lval % exp;
+            final long lval = (long) (val * exp6 + 0.5);
+            writeLong(lval / exp6, output);
+            int fval = (int) lval % exp6;
             if (fval == 0) {
                 return;
             }
-            output.add((byte) '.');
-            output.reserve(11);
-            for (int p = precision - 1; p > 0 && fval < POW10[p]; p--) {
+            output.reserve(12);
+            output.array[output.length++] = '.';
+            for (int p = precision6 - 1; p > 0 && fval < POW10[p]; p--) {
                 output.array[output.length++] = '0';
             }
-            writeLong(fval, output);
+            writeInt(fval, output);
             while (output.array[output.length - 1] == '0') {
                 output.length--;
             }
         }
 
-        public static final void writeDouble(double val, final RepeatedByte output) {
+        /**
+         * Writes a floating point number with up to 9 digit after comma precision
+         *
+         * @param val
+         * @param output
+         */
+        public static void writeDouble(double val, final RepeatedByte output) {
             if (val < 0) {
                 if (val == Double.NEGATIVE_INFINITY) {
-                    output.addAll(FloatEncoding.NEGATIVE_INF);
+                    output.addAll(NEGATIVE_INF);
                     return;
                 }
                 val = -val;
@@ -612,30 +448,44 @@ class JsonUtil {
             }
             if (val > 0x4ffffff) {
                 if (val == Double.POSITIVE_INFINITY) {
-                    output.addAll(FloatEncoding.POSITIVE_INF);
+                    output.addAll(POSITIVE_INF);
                     return;
                 }
                 StringEncoding.writeRawAscii(Double.toString(val), output);
                 return;
+            } else if (Double.isNaN(val)) {
+                output.addAll(NAN);
+                return;
             }
-            int precision = 6;
-            int exp = 1000000; // 6
-            long lval = (long) (val * exp + 0.5);
-            writeLong(lval / exp, output);
-            long fval = lval % exp;
+            final long lval = (long) (val * exp9 + 0.5);
+            writeLong(lval / exp9, output);
+            int fval = (int) lval % exp9;
             if (fval == 0) {
                 return;
             }
-            output.add((byte) '.');
-            output.reserve(11);
-            for (int p = precision - 1; p > 0 && fval < POW10[p]; p--) {
+            output.reserve(15);
+            output.array[output.length++] = '.';
+            for (int p = precision9 - 1; p > 0 && fval < POW10[p]; p--) {
                 output.array[output.length++] = '0';
             }
-            writeLong(fval, output);
+            writeInt(fval, output);
             while (output.array[output.length - 1] == '0') {
                 output.length--;
             }
         }
+
+        private static final int precision6 = 6;
+        private static final int precision9 = 9;
+        private static final int exp6 = 1000000; // 10^6
+        private static final int exp9 = 1000000000; // 10^9
+        private static final int[] POW10 = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 100000000};
+
+        // JSON doesn't define -inf etc., so encode as String
+        private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(Charsets.ISO_8859_1);
+        private static final byte[] POSITIVE_INF = "\"Infinity\"".getBytes(Charsets.ISO_8859_1);
+        private static final byte[] NAN = "\"NaN\"".getBytes(Charsets.ISO_8859_1);
+        private static final byte[] MIN_INT = "-2147483648".getBytes();
+        private static final byte[] MIN_LONG = "-9223372036854775808".getBytes();
 
     }
 
