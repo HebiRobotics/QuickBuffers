@@ -47,6 +47,9 @@ import java.util.concurrent.TimeUnit;
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  5976.679 ± 196.894  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8267.069 ±  84.955  ops/ms
  *
+ * == No Unsafe - for market decode the standard array source seems to be consistently faster
+ * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  6356.825 ± 195.657  ops/ms
+ *
  * === change .proto definition to use fixed width types for 7+ bit values ===
  * Benchmark                                     Mode  Cnt     Score     Error   Units
  * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  6583.222 ± 206.918  ops/ms

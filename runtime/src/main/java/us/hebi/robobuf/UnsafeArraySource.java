@@ -101,6 +101,34 @@ class UnsafeArraySource extends ProtoSource {
         return UNSAFE.getByte(buffer, baseOffset + bufferPos++);
     }
 
+    /** Read a 32-bit little-endian integer from the source. */
+    public int readRawLittleEndian32() throws IOException {
+        requireRemaining(LITTLE_ENDIAN_32_SIZE);
+        final byte[] buffer = this.buffer;
+        final long offset = baseOffset + bufferPos;
+        bufferPos += LITTLE_ENDIAN_32_SIZE;
+        return (UNSAFE.getByte(buffer, offset) & 0xFF) |
+                (UNSAFE.getByte(buffer, offset + 1) & 0xFF) << 8 |
+                (UNSAFE.getByte(buffer, offset + 2) & 0xFF) << 16 |
+                (UNSAFE.getByte(buffer, offset + 3) & 0xFF) << 24;
+    }
+
+    /** Read a 64-bit little-endian integer from the source. */
+    public long readRawLittleEndian64() throws IOException {
+        requireRemaining(LITTLE_ENDIAN_64_SIZE);
+        final byte[] buffer = this.buffer;
+        final long offset = baseOffset + bufferPos;
+        bufferPos += LITTLE_ENDIAN_64_SIZE;
+        return (UNSAFE.getByte(buffer, offset) & 0xFFL) |
+                (UNSAFE.getByte(buffer, offset + 1) & 0xFFL) << 8 |
+                (UNSAFE.getByte(buffer, offset + 2) & 0xFFL) << 16 |
+                (UNSAFE.getByte(buffer, offset + 3) & 0xFFL) << 24 |
+                (UNSAFE.getByte(buffer, offset + 4) & 0xFFL) << 32 |
+                (UNSAFE.getByte(buffer, offset + 5) & 0xFFL) << 40 |
+                (UNSAFE.getByte(buffer, offset + 6) & 0xFFL) << 48 |
+                (UNSAFE.getByte(buffer, offset + 7) & 0xFFL) << 56;
+    }
+
     /**
      * Subclass that adds additional performance improvements for platforms
      * that support non-aligned access (e.g. reading an int from an address
