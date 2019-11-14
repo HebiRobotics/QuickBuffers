@@ -473,8 +473,25 @@ public class ProtoTests {
 
     @Test
     public void testToString() throws IOException {
+        // known fields
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        msg.setOptionalDouble(103 + 1E-15);
         assertNotNull(msg.toString());
+
+        // add an unknown field
+        final int unknownFieldNumber = 12313;
+        int numBytes = ProtoSink.computeDoubleSize(unknownFieldNumber, Double.NaN);
+        byte[] unknownBytes = msg.getUnknownBytes().setLength(numBytes).array();
+        ProtoSink.newInstance(unknownBytes, 0, numBytes).writeDouble(unknownFieldNumber, Double.NaN);
+        assertNotNull(msg.toString());
+    }
+
+    @Test
+    public void testUnknownFields() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        byte[] expected = msg.clearOptionalInt32().toByteArray(); // one number conflicts
+        byte[] actual = TestAllTypes.NestedMessage.parseFrom(expected).toByteArray();
+        assertArrayEquals(expected, actual);
     }
 
     @Test

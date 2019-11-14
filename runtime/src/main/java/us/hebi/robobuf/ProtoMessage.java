@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -36,10 +36,32 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     private static final long serialVersionUID = 0L;
     protected volatile int cachedSize = -1;
 
-    // Keep the first two bitfields in the parent class so that they
-    // are in the same cache line as the object header
+    // Keep the first bitfield in the parent class so that it
+    // is likely in the same cache line as the object header
     protected int bitField0_;
-    protected int bitField1_;
+
+    // Allow storing unknown bytes so that messages can be routed
+    // without having full knowledge of the definition
+    protected final RepeatedByte unknownBytes;
+    protected static final byte[] unknownBytesJsonKey = {'\"', 'u', 'n', 'k', 'n', 'o', 'w', 'n', 'B', 'y', 't', 'e', 's', '\"', ':'};
+
+    protected ProtoMessage() {
+        this(false);
+    }
+
+    protected ProtoMessage(boolean storeUnknownBytes) {
+        this.unknownBytes = storeUnknownBytes ? RepeatedByte.newEmptyInstance() : null;
+    }
+
+    /**
+     * @return binary representation of all fields with tags that could not be parsed
+     */
+    public final RepeatedByte getUnknownBytes() {
+        if (unknownBytes == null) {
+            throw new IllegalStateException("Storing unknown bytes is not enabled");
+        }
+        return unknownBytes;
+    }
 
     /**
      * Get the number of bytes required to encode this message.
@@ -199,6 +221,34 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
             throw new RuntimeException("Reading from a byte array threw an IOException (should "
                     + "never happen).");
         }
+    }
+
+    /**
+     * Indicates whether another object is "equal to" this one.
+     *
+     * An object is considered equal when it is of the same message
+     * type, contains the same fields (same has state), and all of
+     * the field contents are equal.
+     *
+     * This comparison ignores unknown fields, so the serialized binary
+     * form may not be equal.
+     *
+     * @param obj the reference object with which to compare
+     * @return {@code true} if this object is the same as the obj
+     * argument; {@code false} otherwise.
+     */
+    @Override
+    public abstract boolean equals(Object obj);
+
+    /**
+     * Messages have no immutable state and should not
+     * be used in hashing structures. This implementation
+     * returns a constant value in order to satisfy the
+     * contract.
+     */
+    @Override
+    public final int hashCode() {
+        return 0;
     }
 
     /**

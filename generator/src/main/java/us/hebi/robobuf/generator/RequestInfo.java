@@ -140,6 +140,10 @@ public class RequestInfo {
         return highestNumber < 50; // parameter?
     }
 
+    public boolean getStoreUnknownFields() {
+        return Boolean.parseBoolean(generatorParameters.getOrDefault("store_unknown_fields", "false"));
+    }
+
     private final CodeGeneratorRequest descriptor;
     private final Map<String, String> generatorParameters;
     private final List<FileInfo> files;
@@ -224,6 +228,7 @@ public class RequestInfo {
             super(parentFile, parentTypeId, parentType, isNested, descriptor.getName());
             this.descriptor = descriptor;
             this.fieldCount = descriptor.getFieldCount();
+            this.storeUnknownFields = parentFile.getParentRequest().getStoreUnknownFields();
 
             int fieldIndex = 0;
             for (FieldDescriptorProto desc : descriptor.getFieldList().stream()
@@ -250,6 +255,7 @@ public class RequestInfo {
         private final List<MessageInfo> nestedTypes;
         private final List<EnumInfo> nestedEnums;
         private final ExpectedIncomingOrder expectedIncomingOrder;
+        private final boolean storeUnknownFields;
 
     }
 

@@ -69,6 +69,13 @@ class UnsafeArraySource extends ProtoSource {
     long baseOffset;
 
     @Override
+    public void readBytesFromMark(RepeatedByte store) {
+        final int length = bufferPos - lastTagMark;
+        final int bufferPos = store.addLength(length);
+        UNSAFE.copyMemory(buffer, baseOffset + lastTagMark, store.array, BYTE_ARRAY_OFFSET + bufferPos, length);
+    }
+
+    @Override
     public void readString(StringBuilder output) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);

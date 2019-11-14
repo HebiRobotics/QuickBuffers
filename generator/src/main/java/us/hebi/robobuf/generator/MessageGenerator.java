@@ -29,6 +29,7 @@ import us.hebi.robobuf.generator.RequestInfo.MessageInfo;
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -39,12 +40,6 @@ import static us.hebi.robobuf.generator.BitField.*;
  * @since 07 Aug 2019
  */
 class MessageGenerator {
-
-    MessageGenerator(MessageInfo info) {
-        this.info = info;
-        info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
-        numBitFields = BitField.getNumberOfFields(info.getFields().size());
-    }
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.classBuilder(info.getTypeName())
@@ -87,12 +82,13 @@ class MessageGenerator {
         // Constructor
         type.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
+                .addStatement("super($L)", info.isStoreUnknownFields())
                 .addStatement("$L", BitField.setBit(0)) // dummy for triggering clear
                 .addStatement("clear()")
                 .build());
 
-        // Member state (the first two bitfields are in the parent class)
-        for (int i = 2; i < numBitFields; i++) {
+        // Member state (the first bitfield is in the parent class)
+        for (int i = 1; i < numBitFields; i++) {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
         fields.forEach(f -> f.generateMemberFields(type));
@@ -102,7 +98,6 @@ class MessageGenerator {
         generateCopyFrom(type);
         generateClear(type);
         generateEquals(type);
-        generateHashCode(type);
         generateWriteTo(type);
         generateComputeSerializedSize(type);
         generateMergeFrom(type);
@@ -151,6 +146,10 @@ class MessageGenerator {
             fields.forEach(field -> field.generateClearQuickCode(clear));
         }
 
+        if (info.isStoreUnknownFields()) {
+            clear.addStatement(named("$unknownBytes:N.clear()"));
+        }
+
         clear.addStatement("return this");
         return clear.build();
     }
@@ -194,20 +193,6 @@ class MessageGenerator {
         type.addMethod(equals.build());
     }
 
-    private void generateHashCode(TypeSpec.Builder type) {
-        MethodSpec.Builder hashCode = MethodSpec.methodBuilder("hashCode")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(int.class);
-        hashCode.addJavadoc("" +
-                "Messages have no immutable state and should not\n" +
-                "be used in hashing structures. This implementation\n" +
-                "returns a constant value in order to satisfy the\n" +
-                "contract.\n");
-        hashCode.addStatement("return 0");
-        type.addMethod(hashCode.build());
-    }
-
     private void generateMergeFrom(TypeSpec.Builder type) {
         MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
                 .addAnnotation(Override.class)
@@ -236,13 +221,15 @@ class MessageGenerator {
                 break;
         }
 
+        m.put("readTag", info.isStoreUnknownFields() ? "readTagMarked" : "readTag");
+
         if (enableFallthroughOptimization) {
             mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
-            mergeFrom.addStatement("int tag = input.readTag()");
+            mergeFrom.addStatement(named("int tag = input.$readTag:N()"));
             mergeFrom.beginControlFlow("while (true)");
         } else {
             mergeFrom.beginControlFlow("while (true)");
-            mergeFrom.addStatement("int tag = input.readTag()");
+            mergeFrom.addStatement(named("int tag = input.$readTag:N()"));
         }
         mergeFrom.beginControlFlow("switch (tag)");
 
@@ -262,7 +249,8 @@ class MessageGenerator {
             if (enableFallthroughOptimization) {
                 // try falling to 0 (exit) at last field
                 final int nextCase = (i == sortedFields.size() - 1) ? 0 : getPackedTagOrTag(sortedFields.get(i + 1));
-                mergeFrom.beginControlFlow("if((tag = input.readTag()) != $L)", nextCase);
+                mergeFrom.addCode(named("if ((tag = input.$readTag:N())"));
+                mergeFrom.beginControlFlow(" != $L)", nextCase);
                 mergeFrom.addStatement("break");
                 mergeFrom.endControlFlow();
             } else {
@@ -280,10 +268,15 @@ class MessageGenerator {
         // default case -> skip field
         mergeFrom.beginControlFlow("default:")
                 .beginControlFlow("if (!input.skipField(tag))")
-                .addStatement("return this")
-                .endControlFlow();
+                .addStatement("return this");
+        if (info.isStoreUnknownFields()) {
+            mergeFrom.nextControlFlow("else")
+                    .addStatement(named("input.readBytesFromMark($unknownBytes:N)"));
+        }
+        mergeFrom.endControlFlow();
+
         if (enableFallthroughOptimization) {
-            mergeFrom.addStatement("tag = input.readTag()");
+            mergeFrom.addStatement(named("tag = input.$readTag:N()"));
         }
         mergeFrom.addStatement("break").endControlFlow();
 
@@ -293,7 +286,7 @@ class MessageGenerator {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
                 field.generateMergingCode(mergeFrom);
                 if (enableFallthroughOptimization) {
-                    mergeFrom.addStatement("tag = input.readTag()");
+                    mergeFrom.addStatement(named("tag = input.$readTag:N()"));
                 }
                 mergeFrom.addStatement("break").endControlFlow();
             }
@@ -331,6 +324,12 @@ class MessageGenerator {
                 writeTo.endControlFlow();
             }
         });
+        if (info.isStoreUnknownFields()) {
+            writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
+                    .beginControlFlow("")
+                    .addStatement(named("output.writeRawBytes($unknownBytes:N.array(), 0, $unknownBytes:N.length())"))
+                    .endControlFlow();
+        }
         type.addMethod(writeTo.build());
     }
 
@@ -355,6 +354,9 @@ class MessageGenerator {
                 computeSerializedSize.endControlFlow();
             }
         });
+        if (info.isStoreUnknownFields()) {
+            computeSerializedSize.addStatement(named("size += $unknownBytes:N.length()"));
+        }
         computeSerializedSize.addStatement("return size");
         type.addMethod(computeSerializedSize.build());
     }
@@ -370,6 +372,9 @@ class MessageGenerator {
             copyFrom.addStatement("$1L = other.$1L", BitField.fieldName(i));
         }
         fields.forEach(field -> field.generateCopyFromCode(copyFrom));
+        if (info.isStoreUnknownFields()) {
+            copyFrom.addStatement(named("$unknownBytes:N.copyFrom(other.$unknownBytes:N)"));
+        }
         copyFrom.addStatement("return this"); // TODO: remember dirty bit
         type.addMethod(copyFrom.build());
     }
@@ -466,6 +471,12 @@ class MessageGenerator {
             print.endControlFlow();
         }
 
+        if (info.isStoreUnknownFields()) {
+            print.addCode(named("if ($unknownBytes:N.length() > 0)"))
+                    .beginControlFlow("")
+                    .addStatement(named("printer.print($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
+                    .endControlFlow();
+        }
         type.addMethod(print.build());
     }
 
@@ -519,8 +530,23 @@ class MessageGenerator {
         type.addType(keysClass.build());
     }
 
+    MessageGenerator(MessageInfo info) {
+        this.info = info;
+        info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
+        numBitFields = BitField.getNumberOfFields(info.getFields().size());
+
+        m.put("abstractMessage", RuntimeClasses.AbstractMessage);
+        m.put("unknownBytes", RuntimeClasses.unknownBytesField);
+        m.put("unknownBytesKey", RuntimeClasses.unknownBytesKey);
+    }
+
     final MessageInfo info;
     final List<FieldGenerator> fields = new ArrayList<>();
     final int numBitFields;
+    final HashMap<String, Object> m = new HashMap<>();
+
+    private CodeBlock named(String format, Object... args /* makes IDE hints disappear */) {
+        return CodeBlock.builder().addNamed(format, m).build();
+    }
 
 }
