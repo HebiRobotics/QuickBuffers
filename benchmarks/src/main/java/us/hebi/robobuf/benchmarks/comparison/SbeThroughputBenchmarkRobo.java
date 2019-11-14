@@ -31,7 +31,7 @@ import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.robo.Examples;
 import protos.benchmarks.real_logic.robo.Examples.Car;
 import protos.benchmarks.real_logic.robo.Fix;
-import us.hebi.robobuf.JsonPrinter;
+import us.hebi.robobuf.JsonSink;
 import us.hebi.robobuf.ProtoSink;
 import us.hebi.robobuf.ProtoSource;
 import us.hebi.robobuf.RepeatedByte;
@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit;
  *
  * === JSON
  * Benchmark                                         Mode  Cnt     Score    Error   Units
- * SbeThroughputBenchmarkRobo.testCarEncodeJson     thrpt   10  1285.686 ± 12.371  ops/ms
+ * SbeThroughputBenchmarkRobo.testCarEncodeJson     thrpt   10  1345.246 ± 22.060  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncodeJson  thrpt   10  3284.856 ± 72.124  ops/ms
  *
  * @author Florian Enner
@@ -88,21 +88,22 @@ public class SbeThroughputBenchmarkRobo {
     final ProtoSource source = ProtoSource.newInstance();
     final ProtoSink sink = ProtoSink.newInstance();
 
-    final RepeatedByte jsonBuffer = RepeatedByte.newEmptyInstance().reserve(2048);
-    final JsonPrinter jsonPrinter = JsonPrinter.newInstance(jsonBuffer);
+    final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
 
     @Benchmark
     public int testMarketEncodeJson() throws IOException {
-        jsonBuffer.clear();
-        jsonPrinter.print(buildMarketData(marketData));
-        return jsonBuffer.length();
+        return jsonSink.clear()
+                .writeMessage(buildMarketData(marketData))
+                .getBuffer()
+                .length();
     }
 
     @Benchmark
     public int testCarEncodeJson() throws IOException {
-        jsonBuffer.clear();
-        jsonPrinter.print(buildCarData(car));
-        return jsonBuffer.length();
+        return jsonSink.clear()
+                .writeMessage(buildCarData(car))
+                .getBuffer()
+                .length();
     }
 
     @Benchmark

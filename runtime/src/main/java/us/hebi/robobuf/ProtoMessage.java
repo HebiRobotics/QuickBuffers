@@ -129,14 +129,6 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     }
 
     /**
-     * Prints all fields in this message to the printer
-     *
-     * @param printer output
-     */
-    public void print(TextPrinter printer) {
-    }
-
-    /**
      * Computes the number of bytes required to encode this message. This does
      * not update the cached size.
      */
@@ -155,6 +147,19 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * message being built.
      */
     public abstract ProtoMessage mergeFrom(ProtoSource input) throws IOException;
+
+    /**
+     * Serializes this message in a JSON format compatible with
+     * https://developers.google.com/protocol-buffers/docs/proto3#json.
+     *
+     * The implementation may not fail on missing required fields, so
+     * required fields would need to be checked using {@link ProtoMessage#isInitialized()}.
+     *
+     * @param output json sink
+     */
+    public void writeTo(final JsonSink output) {
+        throw new IllegalStateException("Generated message does not implement JSON output");
+    }
 
     /**
      * Serialize to a byte array.
@@ -257,7 +262,10 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      */
     @Override
     public String toString() {
-        return JsonPrinter.newInstance().setIndentCount(2).print(this).toString();
+        return JsonSink.newPrettyInstance()
+                .reserve(getSerializedSize() * 8)
+                .writeMessage(this)
+                .toString();
     }
 
     /** Provides support for cloning if the method is generated for child classes */
