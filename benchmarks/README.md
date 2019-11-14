@@ -20,7 +20,7 @@ Note that this test was done using the original SBE .proto definitions. If the v
 
 We also compared the built-in JSON encoding and found that for this particular benchmark the message throughput is roughly the same as Protobuf-Java. However, at 559 byte (car) and 435 byte (market) the uncompressed binary sizes are significantly larger.
 
-| Test [msg/ms] | RoboBuffers (JSON) | Protobuf-Java | Ratio
+| Test [msg/ms] | RoboBuffers (JSON) | Protobuf-Java (Binary) | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
 | Car Encode  | 1285 | 1125 |  1.1  
 | Market Data Encode  | 3284 | 3712 |  0.9 
