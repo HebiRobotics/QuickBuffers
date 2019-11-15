@@ -438,7 +438,7 @@ class JsonEncoding {
                         }
                     }
                 }
-                removeTrailingZeros(output, pos);
+                output.length = pos - countTrailingZeros(buffer, pos);
 
             }
         }
@@ -471,7 +471,7 @@ class JsonEncoding {
                         pos += writeThreeDigits(buffer, DIGITS[r1], pos);
                     }
                 }
-                removeTrailingZeros(output, pos);
+                output.length = pos - countTrailingZeros(buffer, pos);
 
             }
         }
@@ -499,7 +499,7 @@ class JsonEncoding {
                 if (r1 != 0) {
                     pos += writeThreeDigits(buffer, DIGITS[r1], pos);
                 }
-                removeTrailingZeros(output, pos);
+                output.length = pos - countTrailingZeros(buffer, pos);
 
             }
         }
@@ -515,13 +515,14 @@ class JsonEncoding {
                     return;
                 }
 
-                final int pos = output.addLength(4);
+                int pos = output.addLength(4);
                 final byte[] buffer = output.array;
-                buffer[pos] = '.';
+                buffer[pos++] = '.';
                 final long q1 = q0 / factor3;
                 final int r1 = (int) (q0 - q1 * 1000);
-                writeThreeDigits(buffer, DIGITS[r1], pos + 1);
-                removeTrailingZeros(output, pos + 4);
+
+                pos += writeThreeDigits(buffer, DIGITS[r1], pos);
+                output.length = pos - countTrailingZeros(buffer, pos);
 
             }
         }
@@ -554,16 +555,12 @@ class JsonEncoding {
             return val;
         }
 
-        // removes up to 2 remaining zeros. We could just encode this information in the
-        // digit int, but readability would suffer quite a bit
-        private static void removeTrailingZeros(final RepeatedByte output, final int pos) {
-            if (output.array[pos - 1] != '0') {
-                output.length = pos;
-            } else if (output.array[pos - 2] != '0') {
-                output.length = pos - 1;
-            } else {
-                output.length = pos - 2;
-            }
+        // Counts up to two trailing zeros. We could just encode this information in
+        // the digit int, but readability would suffer and the benefit is negligible.
+        private static int countTrailingZeros(final byte[] buf, final int pos) {
+            if (buf[pos - 1] != '0') return 0;
+            if (buf[pos - 2] != '0') return 1;
+            return 2;
         }
 
         private static final long factor3 = 1000;

@@ -38,10 +38,10 @@ import java.util.concurrent.TimeUnit;
  * === JDK8 ===
  * Benchmark                         Mode  Cnt    Score   Error  Units
  * JsonBenchmark.writeBase64         avgt   10  255.828 ± 2.703  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10   21.881 ± 0.556  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10   18.804 ± 0.824  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   11.144 ± 0.522  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   16.699 ± 0.580  us/op
+ * JsonBenchmark.writeDoubleNumbers  avgt   10   22.367 ± 0.628  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10   17.659 ± 0.553  us/op
+ * JsonBenchmark.writeIntNumbers     avgt   10   10.796 ± 0.114  us/op
+ * JsonBenchmark.writeLongNumbers    avgt   10   16.351 ± 0.236  us/op
  * JsonBenchmark.writeStringAscii    avgt   10    0.738 ± 0.011  us/op
  * JsonBenchmark.writeStringUtf8     avgt   10    1.826 ± 0.029  us/op
  *
