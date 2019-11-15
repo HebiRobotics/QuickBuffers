@@ -97,23 +97,27 @@ class JsonEncoding {
         }
 
         static void writeQuotedUtf8(CharSequence sequence, RepeatedByte output) {
-            // Fast-path: no utf8 and escape support
             final int numChars = sequence.length();
-            final int pos = output.addLength(numChars + 2) + 1;
-            output.array[pos - 1] = '"';
             int i = 0;
+
+            // Fast-path: no utf8 and escape support
             fastpath:
             {
+                final int offset = output.addLength(numChars + 2) + 1;
+                final byte[] ascii = output.array;
+                ascii[offset - 1] = '"';
+
                 for (; i < numChars; i++) {
                     final char c = sequence.charAt(i);
                     if (c < 128 && CAN_DIRECT_WRITE[c]) {
-                        output.array[pos + i] = (byte) c;
+                        ascii[offset + i] = (byte) c;
                     } else {
-                        output.length = pos + i;
+                        output.length = offset + i;
                         break fastpath;
                     }
                 }
-                output.array[pos + i] = '"';
+
+                ascii[offset + i] = '"';
                 return;
             }
 
@@ -156,8 +160,8 @@ class JsonEncoding {
                 }
             }
 
-            output.reserve(1);
-            output.array[output.length++] = (byte) '"';
+            final int offset = output.addLength(1);
+            output.array[offset] = '"';
 
         }
 
@@ -165,18 +169,18 @@ class JsonEncoding {
             final byte escapeChar = ESCAPE_CHAR[c];
             if (escapeChar != 0) {
                 // escaped with slash, e.g., \\t
-                final int pos = output.addLength(2);
-                output.array[pos] = '\\';
-                output.array[pos + 1] = escapeChar;
+                final int offset = output.addLength(2);
+                output.array[offset] = '\\';
+                output.array[offset + 1] = escapeChar;
             } else {
                 // slash-U escaping, e.g., control character
-                final int pos = output.addLength(6);
-                output.array[pos] = '\\';
-                output.array[pos + 1] = 'u';
-                output.array[pos + 2] = ITOA[c >> 12 & 0xf];
-                output.array[pos + 3] = ITOA[c >> 8 & 0xf];
-                output.array[pos + 4] = ITOA[c >> 4 & 0xf];
-                output.array[pos + 5] = ITOA[c & 0xf];
+                final int offset = output.addLength(6);
+                output.array[offset] = '\\';
+                output.array[offset + 1] = 'u';
+                output.array[offset + 2] = ITOA[c >> 12 & 0xf];
+                output.array[offset + 3] = ITOA[c >> 8 & 0xf];
+                output.array[offset + 4] = ITOA[c >> 4 & 0xf];
+                output.array[offset + 5] = ITOA[c & 0xf];
             }
         }
 
@@ -204,8 +208,34 @@ class JsonEncoding {
 
     }
 
+    /*
+    this implementations contains significant code from https://github.com/ngs-doo/dsl-json/blob/master/LICENSE
+    Copyright (c) 2015, Nova Generacija Softvera d.o.o.
+    All rights reserved.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+    * Neither the name of Nova Generacija Softvera d.o.o. nor the names of its
+      contributors may be used to endorse or promote products derived from this
+      software without specific prior written permission.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    */
+
     /**
-     * Copied from JsonIter / DSL-Platform
+     * Adapted from JsonIter / DSL-Platform
      * https://github.com/json-iterator/java/blob/master/src/main/java/com/jsoniter/output/StreamImplNumber.java
      */
     static class NumberEncoding {
@@ -285,7 +315,7 @@ class JsonEncoding {
             buf[pos + 2] = (byte) v;
         }
 
-        public static final void writeLong(long value, final RepeatedByte output) {
+        public static void writeLong(long value, final RepeatedByte output) {
             output.reserve(22);
             int pos = output.length;
             final byte[] buf = output.array;
@@ -379,97 +409,165 @@ class JsonEncoding {
             output.length = pos + 15;
         }
 
-        /**
-         * Writes a floating point number with up to 6 digit after comma precision
-         *
-         * @param val
-         * @param output
-         */
         public static void writeFloat(float val, final RepeatedByte output) {
-            if (val < 0) {
-                if (val == Float.NEGATIVE_INFINITY) {
-                    output.addAll(NEGATIVE_INF);
+            writeDouble6(val, output);
+        }
+
+        public static void writeDouble(double val, final RepeatedByte output) {
+            final double pval = Math.abs(val);
+            if (pval < max12) {
+                writeDouble12(val, output);
+            } else if (pval < max9) {
+                writeDouble9(val, output);
+            } else if (pval < max6) {
+                writeDouble6(val, output);
+            } else {
+                writeDouble3(val, output);
+            }
+        }
+
+        public static void writeDouble12(final double val, final RepeatedByte output) {
+            final double pval = writeSpecialValues(val, max12, output);
+            if (pval > 0) {
+
+                final long fval = (long) (val * exp12 + 0.5);
+                writeLong(fval / exp12, output);
+                final long q0 = (long) (fval % exp12);
+                if (q0 == 0) {
                     return;
                 }
-                output.add((byte) '-');
-                val = -val;
+
+                final int offset = output.addLength(13);
+                output.array[offset] = '.';
+                final long q4 = q0 / 1000000000000L;
+                final long q3 = q0 / 1000000000;
+                final long q2 = q0 / 1000000;
+                final long q1 = q0 / 1000;
+                final int r4 = (int) (q3 - q4 * 1000);
+                final int r3 = (int) (q2 - q3 * 1000);
+                final int r2 = (int) (q1 - q2 * 1000);
+                final int r1 = (int) (q0 - q1 * 1000);
+                writeBuf(output.array, DIGITS[r4], offset + 1);
+                writeBuf(output.array, DIGITS[r3], offset + 4);
+                writeBuf(output.array, DIGITS[r2], offset + 7);
+                writeBuf(output.array, DIGITS[r1], offset + 10);
+                removeTrailingZeros(output);
+
             }
-            if (val > 0x4ffffff) {
-                if (val == Float.POSITIVE_INFINITY) {
-                    output.addAll(POSITIVE_INF);
+        }
+
+        public static void writeDouble9(final double val, final RepeatedByte output) {
+            final double pval = writeSpecialValues(val, max9, output);
+            if (pval > 0) {
+
+                final long fval = (long) (val * exp9 + 0.5);
+                writeLong(fval / exp9, output);
+                final long q0 = (long) (fval % exp9);
+                if (q0 == 0) {
                     return;
                 }
-                StringEncoding.writeRawAscii(Float.toString(val), output);
-                return;
-            } else if (Float.isNaN(val)) {
-                output.addAll(NAN);
-                return;
+
+                final int offset = output.addLength(10);
+                output.array[offset] = '.';
+                final long q3 = q0 / 1000000000;
+                final long q2 = q0 / 1000000;
+                final long q1 = q0 / 1000;
+                final int r3 = (int) (q2 - q3 * 1000);
+                final int r2 = (int) (q1 - q2 * 1000);
+                final int r1 = (int) (q0 - q1 * 1000);
+                writeBuf(output.array, DIGITS[r3], offset + 1);
+                writeBuf(output.array, DIGITS[r2], offset + 4);
+                writeBuf(output.array, DIGITS[r1], offset + 7);
+                removeTrailingZeros(output);
+
             }
-            final long lval = (long) (val * exp6 + 0.5);
-            writeLong(lval / exp6, output);
-            int fval = (int) (lval % exp6);
-            if (fval == 0) {
-                return;
+        }
+
+        public static void writeDouble6(double val, final RepeatedByte output) {
+            final double pval = writeSpecialValues(val, max6, output);
+            if (pval > 0) {
+
+                final long fval = (long) (val * exp6 + 0.5);
+                writeLong(fval / exp6, output);
+                final long q0 = (long) (fval % exp6);
+                if (q0 == 0) {
+                    return;
+                }
+
+                final int offset = output.addLength(7);
+                output.array[offset] = '.';
+                final long q2 = q0 / 1000000;
+                final long q1 = q0 / 1000;
+                final int r2 = (int) (q1 - q2 * 1000);
+                final int r1 = (int) (q0 - q1 * 1000);
+                writeBuf(output.array, DIGITS[r2], offset + 1);
+                writeBuf(output.array, DIGITS[r1], offset + 4);
+                removeTrailingZeros(output);
+
             }
-            output.reserve(12);
-            output.array[output.length++] = '.';
-            for (int p = precision6 - 1; p > 0 && fval < POW10[p]; p--) {
-                output.array[output.length++] = '0';
-            }
-            writeInt(fval, output);
-            while (output.array[output.length - 1] == '0') {
-                output.length--;
+        }
+
+        public static void writeDouble3(double val, final RepeatedByte output) {
+            final double pval = writeSpecialValues(val, max3, output);
+            if (pval > 0) {
+
+                final long fval = (long) (val * exp3 + 0.5);
+                writeLong(fval / exp3, output);
+                final long q0 = (long) (fval % exp3);
+                if (q0 == 0) {
+                    return;
+                }
+
+                final int offset = output.addLength(4);
+                output.array[offset] = '.';
+                final long q1 = q0 / 1000;
+                final int r1 = (int) (q0 - q1 * 1000);
+                writeBuf(output.array, DIGITS[r1], offset + 1);
+                removeTrailingZeros(output);
+
             }
         }
 
         /**
-         * Writes a floating point number with up to 9 digit after comma precision
-         *
-         * @param val
-         * @param output
+         * @return the positive value, or -1 if no work needs to be done
          */
-        public static void writeDouble(double val, final RepeatedByte output) {
+        private static double writeSpecialValues(final double val, final double maxValue, final RepeatedByte output) {
             if (val < 0) {
                 if (val == Double.NEGATIVE_INFINITY) {
                     output.addAll(NEGATIVE_INF);
-                    return;
+                    return -1;
                 }
-                val = -val;
                 output.add((byte) '-');
+                return -val;
             }
-            if (val > 0x4ffffff) {
+            if (val > maxValue) {
                 if (val == Double.POSITIVE_INFINITY) {
                     output.addAll(POSITIVE_INF);
-                    return;
+                } else {
+                    StringEncoding.writeRawAscii(Double.toString(val), output);
                 }
-                StringEncoding.writeRawAscii(Double.toString(val), output);
-                return;
+                return -1;
             } else if (Double.isNaN(val)) {
                 output.addAll(NAN);
-                return;
+                return -1;
             }
-            final long lval = (long) (val * exp9 + 0.5);
-            writeLong(lval / exp9, output);
-            int fval = (int) (lval % exp9); // max int fits ~10^9.3
-            if (fval == 0) {
-                return;
-            }
-            output.reserve(15);
-            output.array[output.length++] = '.';
-            for (int p = precision9 - 1; p > 0 && fval < POW10[p]; p--) {
-                output.array[output.length++] = '0';
-            }
-            writeInt(fval, output);
+            return val;
+        }
+
+        private static void removeTrailingZeros(final RepeatedByte output) {
             while (output.array[output.length - 1] == '0') {
                 output.length--;
             }
         }
 
-        private static final int precision6 = 6;
-        private static final int precision9 = 9;
-        private static final long exp6 = 1000000; // 10^6
-        private static final long exp9 = 1000000000; // 10^9
-        private static final int[] POW10 = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 100000000};
+        private static final long exp3 = 1000;
+        private static final long exp6 = 1000 * exp3;
+        private static final long exp9 = 1000 * exp6;
+        private static final long exp12 = 1000 * exp9;
+        private static final double max3 = (double) (Long.MAX_VALUE / exp3); // (cast to remove IDE warnings)
+        private static final double max6 = (double) (Long.MAX_VALUE / exp6);
+        private static final double max9 = (double) (Long.MAX_VALUE / exp9);
+        private static final double max12 = (double) (Long.MAX_VALUE / exp12);
 
         // JSON doesn't define -inf etc., so encode as String
         private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(Charsets.ISO_8859_1);

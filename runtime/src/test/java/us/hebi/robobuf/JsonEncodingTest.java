@@ -186,7 +186,7 @@ public class JsonEncodingTest {
     private void testDouble(double expected) {
         String encoded = encodeDouble(expected);
         double actual = encoded.equals("\"Infinity\"") ? Double.POSITIVE_INFINITY : Double.parseDouble(encoded);
-        assertEquals(encoded, expected, actual, 1E-9);
+        assertEquals(encoded, expected, actual, 1E-12);
     }
 
     private void testFloat(float expected) {
