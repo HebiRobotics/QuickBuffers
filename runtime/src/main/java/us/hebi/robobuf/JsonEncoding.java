@@ -251,50 +251,141 @@ class JsonEncoding {
             }
         }
 
-        public static void writeInt(int value, final RepeatedByte output) {
+        public static void writeInt(final int value, final RepeatedByte output) {
             output.reserve(12);
             int pos = output.length;
             final byte[] buf = output.array;
+            final int q0;
             if (value < 0) {
                 if (value == Integer.MIN_VALUE) {
-                    System.arraycopy(MIN_INT, 0, buf, pos, MIN_INT.length);
-                    output.length = pos + MIN_INT.length;
+                    output.addAll(MIN_INT);
                     return;
                 }
-                value = -value;
+                q0 = -value;
                 buf[pos++] = '-';
+            } else {
+                q0 = value;
             }
-            final int q1 = value / 1000;
+            // value <= 10^3
+            final int q1 = q0 / 1000;
             if (q1 == 0) {
-                pos += writeFirstBuf(buf, DIGITS[value], pos);
-                output.length = pos;
+                output.length = pos + writeFirstBuf(buf, DIGITS[q0], pos);
                 return;
             }
-            final int r1 = value - q1 * 1000;
-            final int q2 = q1 / 1000;
+            // value <= 10^6
+            final int r1 = q0 - q1 * 1000;
+            final int q2 = q0 / 1000000;
             if (q2 == 0) {
-                final int v1 = DIGITS[r1];
-                final int v2 = DIGITS[q1];
-                int off = writeFirstBuf(buf, v2, pos);
-                writeBuf(buf, v1, pos + off);
-                output.length = pos + 3 + off;
+                pos += writeFirstBuf(buf, DIGITS[q1], pos);
+                writeBuf(buf, DIGITS[r1], pos);
+                output.length = pos + 3;
                 return;
             }
+            // value <= 10^9
             final int r2 = q1 - q2 * 1000;
-            final long q3 = q2 / 1000;
-            final int v1 = DIGITS[r1];
-            final int v2 = DIGITS[r2];
+            final int q3 = q0 / 1000000000;
             if (q3 == 0) {
                 pos += writeFirstBuf(buf, DIGITS[q2], pos);
-            } else {
-                final int r3 = (int) (q2 - q3 * 1000);
-                buf[pos++] = (byte) (q3 + '0');
-                writeBuf(buf, DIGITS[r3], pos);
-                pos += 3;
+                writeBuf(buf, DIGITS[r2], pos);
+                writeBuf(buf, DIGITS[r1], pos + 3);
+                output.length = pos + 6;
+                return;
             }
-            writeBuf(buf, v2, pos);
-            writeBuf(buf, v1, pos + 3);
-            output.length = pos + 6;
+            // value > 10^9 to max
+            final int r3 = q2 - q3 * 1000;
+            buf[pos++] = (byte) (q3 + '0');
+            writeBuf(buf, DIGITS[r3], pos);
+            writeBuf(buf, DIGITS[r2], pos + 3);
+            writeBuf(buf, DIGITS[r1], pos + 6);
+            output.length = pos + 9;
+        }
+
+        public static void writeLong(final long value, final RepeatedByte output) {
+            output.reserve(22);
+            int pos = output.length;
+            final byte[] buf = output.array;
+            final long q0;
+            if (value < 0) {
+                if (value == Long.MIN_VALUE) {
+                    output.addAll(MIN_LONG);
+                    return;
+                }
+                q0 = -value;
+                buf[pos++] = '-';
+            } else {
+                q0 = value;
+            }
+            // value <= 10^3
+            final long q1 = q0 / factor3;
+            if (q1 == 0) {
+                output.length = pos + writeFirstBuf(buf, DIGITS[(int) q0], pos);
+                return;
+            }
+            // value <= 10^6
+            final int r1 = (int) (q0 - q1 * 1000);
+            final long q2 = q0 / factor6;
+            if (q2 == 0) {
+                pos += writeFirstBuf(buf, DIGITS[(int) q1], pos);
+                writeBuf(buf, DIGITS[r1], pos);
+                output.length = pos + 3;
+                return;
+            }
+            // value <= 10^9
+            final int r2 = (int) (q1 - q2 * 1000);
+            final long q3 = q0 / factor9;
+            if (q3 == 0) {
+                pos += writeFirstBuf(buf, DIGITS[(int) q2], pos);
+                writeBuf(buf, DIGITS[r2], pos + 0);
+                writeBuf(buf, DIGITS[r1], pos + 3);
+                output.length = pos + 6;
+                return;
+            }
+            // value <= 10^12
+            final int r3 = (int) (q2 - q3 * 1000);
+            final long q4 = q0 / factor12;
+            if (q4 == 0) {
+                pos += writeFirstBuf(buf, DIGITS[(int) q3], pos);
+                writeBuf(buf, DIGITS[r3], pos + 0);
+                writeBuf(buf, DIGITS[r2], pos + 3);
+                writeBuf(buf, DIGITS[r1], pos + 6);
+                output.length = pos + 9;
+                return;
+            }
+            // value <= 10^15
+            final int r4 = (int) (q3 - q4 * 1000);
+            final long q5 = q0 / factor15;
+            if (q5 == 0) {
+                pos += writeFirstBuf(buf, DIGITS[(int) q4], pos);
+                writeBuf(buf, DIGITS[r4], pos + 0);
+                writeBuf(buf, DIGITS[r3], pos + 3);
+                writeBuf(buf, DIGITS[r2], pos + 6);
+                writeBuf(buf, DIGITS[r1], pos + 9);
+                output.length = pos + 12;
+                return;
+            }
+            // value <= 10^18
+            final int r5 = (int) (q4 - q5 * 1000);
+            final long q6 = q0 / factor18;
+            if (q6 == 0) {
+                pos += writeFirstBuf(buf, DIGITS[(int) q5], pos);
+                writeBuf(buf, DIGITS[r5], pos + 0);
+                writeBuf(buf, DIGITS[r4], pos + 3);
+                writeBuf(buf, DIGITS[r3], pos + 6);
+                writeBuf(buf, DIGITS[r2], pos + 9);
+                writeBuf(buf, DIGITS[r1], pos + 12);
+                output.length = pos + 15;
+                return;
+            }
+            // value > 10^18 to max
+            final int r6 = (int) (q5 - q6 * 1000);
+            buf[pos++] = (byte) (q6 + '0');
+            writeBuf(buf, DIGITS[r6], pos + 0);
+            writeBuf(buf, DIGITS[r5], pos + 3);
+            writeBuf(buf, DIGITS[r4], pos + 6);
+            writeBuf(buf, DIGITS[r3], pos + 9);
+            writeBuf(buf, DIGITS[r2], pos + 12);
+            writeBuf(buf, DIGITS[r1], pos + 15);
+            output.length = pos + 18;
         }
 
         private static int writeFirstBuf(final byte[] buf, final int v, int pos) {
@@ -315,114 +406,22 @@ class JsonEncoding {
             buf[pos + 2] = (byte) v;
         }
 
-        public static void writeLong(long value, final RepeatedByte output) {
-            output.reserve(22);
-            int pos = output.length;
-            final byte[] buf = output.array;
-            if (value < 0) {
-                if (value == Long.MIN_VALUE) {
-                    System.arraycopy(MIN_LONG, 0, buf, pos, MIN_LONG.length);
-                    output.length = pos + MIN_LONG.length;
-                    return;
-                }
-                value = -value;
-                buf[pos++] = '-';
-            }
-            final long q1 = value / 1000;
-            if (q1 == 0) {
-                pos += writeFirstBuf(buf, DIGITS[(int) value], pos);
-                output.length = pos;
-                return;
-            }
-            final int r1 = (int) (value - q1 * 1000);
-            final long q2 = q1 / 1000;
-            if (q2 == 0) {
-                final int v1 = DIGITS[r1];
-                final int v2 = DIGITS[(int) q1];
-                int off = writeFirstBuf(buf, v2, pos);
-                writeBuf(buf, v1, pos + off);
-                output.length = pos + 3 + off;
-                return;
-            }
-            final int r2 = (int) (q1 - q2 * 1000);
-            final long q3 = q2 / 1000;
-            if (q3 == 0) {
-                final int v1 = DIGITS[r1];
-                final int v2 = DIGITS[r2];
-                final int v3 = DIGITS[(int) q2];
-                pos += writeFirstBuf(buf, v3, pos);
-                writeBuf(buf, v2, pos);
-                writeBuf(buf, v1, pos + 3);
-                output.length = pos + 6;
-                return;
-            }
-            final int r3 = (int) (q2 - q3 * 1000);
-            final int q4 = (int) (q3 / 1000);
-            if (q4 == 0) {
-                final int v1 = DIGITS[r1];
-                final int v2 = DIGITS[r2];
-                final int v3 = DIGITS[r3];
-                final int v4 = DIGITS[(int) q3];
-                pos += writeFirstBuf(buf, v4, pos);
-                writeBuf(buf, v3, pos);
-                writeBuf(buf, v2, pos + 3);
-                writeBuf(buf, v1, pos + 6);
-                output.length = pos + 9;
-                return;
-            }
-            final int r4 = (int) (q3 - q4 * 1000);
-            final int q5 = q4 / 1000;
-            if (q5 == 0) {
-                final int v1 = DIGITS[r1];
-                final int v2 = DIGITS[r2];
-                final int v3 = DIGITS[r3];
-                final int v4 = DIGITS[r4];
-                final int v5 = DIGITS[q4];
-                pos += writeFirstBuf(buf, v5, pos);
-                writeBuf(buf, v4, pos);
-                writeBuf(buf, v3, pos + 3);
-                writeBuf(buf, v2, pos + 6);
-                writeBuf(buf, v1, pos + 9);
-                output.length = pos + 12;
-                return;
-            }
-            final int r5 = q4 - q5 * 1000;
-            final int q6 = q5 / 1000;
-            final int v1 = DIGITS[r1];
-            final int v2 = DIGITS[r2];
-            final int v3 = DIGITS[r3];
-            final int v4 = DIGITS[r4];
-            final int v5 = DIGITS[r5];
-            if (q6 == 0) {
-                pos += writeFirstBuf(buf, DIGITS[q5], pos);
-            } else {
-                final int r6 = q5 - q6 * 1000;
-                buf[pos++] = (byte) (q6 + '0');
-                writeBuf(buf, DIGITS[r6], pos);
-                pos += 3;
-            }
-            writeBuf(buf, v5, pos);
-            writeBuf(buf, v4, pos + 3);
-            writeBuf(buf, v3, pos + 6);
-            writeBuf(buf, v2, pos + 9);
-            writeBuf(buf, v1, pos + 12);
-            output.length = pos + 15;
-        }
-
         public static void writeFloat(float val, final RepeatedByte output) {
             writeDouble6(val, output);
         }
 
-        public static void writeDouble(double val, final RepeatedByte output) {
-            final double pval = Math.abs(val);
-            if (pval < max12) {
-                writeDouble12(val, output);
-            } else if (pval < max9) {
-                writeDouble9(val, output);
-            } else if (pval < max6) {
-                writeDouble6(val, output);
-            } else {
-                writeDouble3(val, output);
+        public static void writeDouble(final double val, final RepeatedByte output) {
+            final double pval = writeSpecialValues(val, max3, output);
+            if (pval > 0) {
+                if (pval < max12) {
+                    writeDouble12(pval, output);
+                } else if (pval < max9) {
+                    writeDouble9(pval, output);
+                } else if (pval < max6) {
+                    writeDouble6(pval, output);
+                } else {
+                    writeDouble3(pval, output);
+                }
             }
         }
 
@@ -430,9 +429,9 @@ class JsonEncoding {
             final double pval = writeSpecialValues(val, max12, output);
             if (pval > 0) {
 
-                final long fval = (long) (val * exp12 + 0.5);
-                writeLong(fval / exp12, output);
-                final long q0 = (long) (fval % exp12);
+                final long fval = (long) (pval * factor12 + 0.5);
+                writeLong(fval / factor12, output);
+                final long q0 = (long) (fval % factor12);
                 if (q0 == 0) {
                     return;
                 }
@@ -460,9 +459,9 @@ class JsonEncoding {
             final double pval = writeSpecialValues(val, max9, output);
             if (pval > 0) {
 
-                final long fval = (long) (val * exp9 + 0.5);
-                writeLong(fval / exp9, output);
-                final long q0 = (long) (fval % exp9);
+                final long fval = (long) (pval * factor9 + 0.5);
+                writeLong(fval / factor9, output);
+                final long q0 = (long) (fval % factor9);
                 if (q0 == 0) {
                     return;
                 }
@@ -483,13 +482,13 @@ class JsonEncoding {
             }
         }
 
-        public static void writeDouble6(double val, final RepeatedByte output) {
+        public static void writeDouble6(final double val, final RepeatedByte output) {
             final double pval = writeSpecialValues(val, max6, output);
             if (pval > 0) {
 
-                final long fval = (long) (val * exp6 + 0.5);
-                writeLong(fval / exp6, output);
-                final long q0 = (long) (fval % exp6);
+                final long fval = (long) (pval * factor6 + 0.5);
+                writeLong(fval / factor6, output);
+                final long q0 = (long) (fval % factor6);
                 if (q0 == 0) {
                     return;
                 }
@@ -507,13 +506,13 @@ class JsonEncoding {
             }
         }
 
-        public static void writeDouble3(double val, final RepeatedByte output) {
+        public static void writeDouble3(final double val, final RepeatedByte output) {
             final double pval = writeSpecialValues(val, max3, output);
             if (pval > 0) {
 
-                final long fval = (long) (val * exp3 + 0.5);
-                writeLong(fval / exp3, output);
-                final long q0 = (long) (fval % exp3);
+                final long fval = (long) (pval * factor3 + 0.5);
+                writeLong(fval / factor3, output);
+                final long q0 = (long) (fval % factor3);
                 if (q0 == 0) {
                     return;
                 }
@@ -531,18 +530,20 @@ class JsonEncoding {
         /**
          * @return the positive value, or -1 if no work needs to be done
          */
-        private static double writeSpecialValues(final double val, final double maxValue, final RepeatedByte output) {
+        private static double writeSpecialValues(double val, final double maxValue, final RepeatedByte output) {
             if (val < 0) {
                 if (val == Double.NEGATIVE_INFINITY) {
                     output.addAll(NEGATIVE_INF);
                     return -1;
                 }
                 output.add((byte) '-');
-                return -val;
+                val = -val;
             }
             if (val > maxValue) {
                 if (val == Double.POSITIVE_INFINITY) {
                     output.addAll(POSITIVE_INF);
+                } else if (val > WHOLE_NUMBER && val < Long.MAX_VALUE) {
+                    NumberEncoding.writeLong((long) val, output);
                 } else {
                     StringEncoding.writeRawAscii(Double.toString(val), output);
                 }
@@ -560,14 +561,19 @@ class JsonEncoding {
             }
         }
 
-        private static final long exp3 = 1000;
-        private static final long exp6 = 1000 * exp3;
-        private static final long exp9 = 1000 * exp6;
-        private static final long exp12 = 1000 * exp9;
-        private static final double max3 = (double) (Long.MAX_VALUE / exp3); // (cast to remove IDE warnings)
-        private static final double max6 = (double) (Long.MAX_VALUE / exp6);
-        private static final double max9 = (double) (Long.MAX_VALUE / exp9);
-        private static final double max12 = (double) (Long.MAX_VALUE / exp12);
+        private static final long factor3 = 1000;
+        private static final long factor6 = 1000 * factor3;
+        private static final long factor9 = 1000 * factor6;
+        private static final long factor12 = 1000 * factor9;
+        private static final long factor15 = 1000 * factor12;
+        private static final long factor18 = 1000 * factor15;
+
+        // Numbers larger than this are whole numbers due to representation error.
+        static final double WHOLE_NUMBER = 1L << 52;
+        static final double max3 = WHOLE_NUMBER / factor3;
+        static final double max6 = WHOLE_NUMBER / factor6;
+        static final double max9 = WHOLE_NUMBER / factor9;
+        static final double max12 = WHOLE_NUMBER / factor12;
 
         // JSON doesn't define -inf etc., so encode as String
         private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(Charsets.ISO_8859_1);

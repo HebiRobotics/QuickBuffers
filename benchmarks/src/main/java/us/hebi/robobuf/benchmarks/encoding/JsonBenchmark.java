@@ -38,20 +38,20 @@ import java.util.concurrent.TimeUnit;
  * === JDK8 ===
  * Benchmark                         Mode  Cnt    Score   Error  Units
  * JsonBenchmark.writeBase64         avgt   10  255.828 ± 2.703  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10   22.626 ± 0.424  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10   21.293 ± 0.546  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   12.309 ± 0.251  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   19.921 ± 1.030  us/op
+ * JsonBenchmark.writeDoubleNumbers  avgt   10   18.893 ± 0.835  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10   16.851 ± 0.701  us/op
+ * JsonBenchmark.writeIntNumbers     avgt   10   11.586 ± 0.557  us/op
+ * JsonBenchmark.writeLongNumbers    avgt   10   19.261 ± 0.757  us/op
  * JsonBenchmark.writeStringAscii    avgt   10    0.738 ± 0.011  us/op
  * JsonBenchmark.writeStringUtf8     avgt   10    1.826 ± 0.029  us/op
  *
  * === JDK12 ===
  * Benchmark                         Mode  Cnt    Score   Error  Units
  * JsonBenchmark.writeBase64         avgt   10  215.028 ± 2.393  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10   23.010 ± 0.443  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10   20.967 ± 0.298  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   13.052 ± 0.296  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   18.744 ± 0.400  us/op
+ * JsonBenchmark.writeDoubleNumbers  avgt   10   19.084 ±  0.246  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10   16.200 ±  0.205  us/op
+ * JsonBenchmark.writeIntNumbers     avgt   10   12.432 ±  0.611  us/op
+ * JsonBenchmark.writeLongNumbers    avgt   10   17.695 ±  0.313  us/op
  * JsonBenchmark.writeStringAscii    avgt   10    0.618 ± 0.017  us/op
  * JsonBenchmark.writeStringUtf8     avgt   10    2.002 ± 0.070  us/op
  *
