@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit;
  *
  * === JSON
  * Benchmark                                         Mode  Cnt     Score    Error   Units
- * SbeThroughputBenchmarkRobo.testCarEncodeJson     thrpt   10  1345.246 ± 22.060  ops/ms
+ * SbeThroughputBenchmarkRobo.testCarEncodeJson     thrpt   10  1423.760 ± 31.877  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncodeJson  thrpt   10  3284.856 ± 72.124  ops/ms
  *
  * @author Florian Enner
