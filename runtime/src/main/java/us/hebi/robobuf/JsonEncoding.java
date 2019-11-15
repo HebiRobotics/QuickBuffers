@@ -255,8 +255,8 @@ class JsonEncoding {
             final int q2 = q0 / 1000000;
             if (q2 == 0) {
                 pos += writeTopDigits(buf, DIGITS[q1], pos);
-                writeThreeDigits(buf, DIGITS[r1], pos);
-                output.length = pos + 3;
+                pos += writeThreeDigits(buf, DIGITS[r1], pos);
+                output.length = pos;
                 return;
             }
             // value <= 10^9
@@ -264,18 +264,18 @@ class JsonEncoding {
             final int q3 = q0 / 1000000000;
             if (q3 == 0) {
                 pos += writeTopDigits(buf, DIGITS[q2], pos);
-                writeThreeDigits(buf, DIGITS[r2], pos);
-                writeThreeDigits(buf, DIGITS[r1], pos + 3);
-                output.length = pos + 6;
+                pos += writeThreeDigits(buf, DIGITS[r2], pos);
+                pos += writeThreeDigits(buf, DIGITS[r1], pos);
+                output.length = pos;
                 return;
             }
             // value > 10^9 to max
             final int r3 = q2 - q3 * 1000;
             buf[pos++] = (byte) ('0' + q3);
-            writeThreeDigits(buf, DIGITS[r3], pos);
-            writeThreeDigits(buf, DIGITS[r2], pos + 3);
-            writeThreeDigits(buf, DIGITS[r1], pos + 6);
-            output.length = pos + 9;
+            pos += writeThreeDigits(buf, DIGITS[r3], pos);
+            pos += writeThreeDigits(buf, DIGITS[r2], pos);
+            pos += writeThreeDigits(buf, DIGITS[r1], pos);
+            output.length = pos;
         }
 
         public static void writeLong(final long value, final RepeatedByte output) {
@@ -304,8 +304,8 @@ class JsonEncoding {
             final long q2 = q0 / factor6;
             if (q2 == 0) {
                 pos += writeTopDigits(buf, DIGITS[(int) q1], pos);
-                writeThreeDigits(buf, DIGITS[r1], pos);
-                output.length = pos + 3;
+                pos += writeThreeDigits(buf, DIGITS[r1], pos);
+                output.length = pos;
                 return;
             }
             // value <= 10^9
@@ -313,9 +313,9 @@ class JsonEncoding {
             final long q3 = q0 / factor9;
             if (q3 == 0) {
                 pos += writeTopDigits(buf, DIGITS[(int) q2], pos);
-                writeThreeDigits(buf, DIGITS[r2], pos + 0);
-                writeThreeDigits(buf, DIGITS[r1], pos + 3);
-                output.length = pos + 6;
+                pos += writeThreeDigits(buf, DIGITS[r2], pos);
+                pos += writeThreeDigits(buf, DIGITS[r1], pos);
+                output.length = pos;
                 return;
             }
             // value <= 10^12
@@ -323,10 +323,10 @@ class JsonEncoding {
             final long q4 = q0 / factor12;
             if (q4 == 0) {
                 pos += writeTopDigits(buf, DIGITS[(int) q3], pos);
-                writeThreeDigits(buf, DIGITS[r3], pos + 0);
-                writeThreeDigits(buf, DIGITS[r2], pos + 3);
-                writeThreeDigits(buf, DIGITS[r1], pos + 6);
-                output.length = pos + 9;
+                pos += writeThreeDigits(buf, DIGITS[r3], pos);
+                pos += writeThreeDigits(buf, DIGITS[r2], pos);
+                pos += writeThreeDigits(buf, DIGITS[r1], pos);
+                output.length = pos;
                 return;
             }
             // value <= 10^15
@@ -334,11 +334,11 @@ class JsonEncoding {
             final long q5 = q0 / factor15;
             if (q5 == 0) {
                 pos += writeTopDigits(buf, DIGITS[(int) q4], pos);
-                writeThreeDigits(buf, DIGITS[r4], pos + 0);
-                writeThreeDigits(buf, DIGITS[r3], pos + 3);
-                writeThreeDigits(buf, DIGITS[r2], pos + 6);
-                writeThreeDigits(buf, DIGITS[r1], pos + 9);
-                output.length = pos + 12;
+                pos += writeThreeDigits(buf, DIGITS[r4], pos);
+                pos += writeThreeDigits(buf, DIGITS[r3], pos);
+                pos += writeThreeDigits(buf, DIGITS[r2], pos);
+                pos += writeThreeDigits(buf, DIGITS[r1], pos);
+                output.length = pos;
                 return;
             }
             // value <= 10^18
@@ -346,24 +346,24 @@ class JsonEncoding {
             final long q6 = q0 / factor18;
             if (q6 == 0) {
                 pos += writeTopDigits(buf, DIGITS[(int) q5], pos);
-                writeThreeDigits(buf, DIGITS[r5], pos + 0);
-                writeThreeDigits(buf, DIGITS[r4], pos + 3);
-                writeThreeDigits(buf, DIGITS[r3], pos + 6);
-                writeThreeDigits(buf, DIGITS[r2], pos + 9);
-                writeThreeDigits(buf, DIGITS[r1], pos + 12);
-                output.length = pos + 15;
+                pos += writeThreeDigits(buf, DIGITS[r5], pos);
+                pos += writeThreeDigits(buf, DIGITS[r4], pos);
+                pos += writeThreeDigits(buf, DIGITS[r3], pos);
+                pos += writeThreeDigits(buf, DIGITS[r2], pos);
+                pos += writeThreeDigits(buf, DIGITS[r1], pos);
+                output.length = pos;
                 return;
             }
             // value > 10^18 to max
             final int r6 = (int) (q5 - q6 * 1000);
             buf[pos++] = (byte) ('0' + q6);
-            writeThreeDigits(buf, DIGITS[r6], pos + 0);
-            writeThreeDigits(buf, DIGITS[r5], pos + 3);
-            writeThreeDigits(buf, DIGITS[r4], pos + 6);
-            writeThreeDigits(buf, DIGITS[r3], pos + 9);
-            writeThreeDigits(buf, DIGITS[r2], pos + 12);
-            writeThreeDigits(buf, DIGITS[r1], pos + 15);
-            output.length = pos + 18;
+            pos += writeThreeDigits(buf, DIGITS[r6], pos);
+            pos += writeThreeDigits(buf, DIGITS[r5], pos);
+            pos += writeThreeDigits(buf, DIGITS[r4], pos);
+            pos += writeThreeDigits(buf, DIGITS[r3], pos);
+            pos += writeThreeDigits(buf, DIGITS[r2], pos);
+            pos += writeThreeDigits(buf, DIGITS[r1], pos);
+            output.length = pos;
         }
 
         private static int writeTopDigits(final byte[] buf, final int v, int pos) {
@@ -379,10 +379,11 @@ class JsonEncoding {
             return numDigits;
         }
 
-        private static void writeThreeDigits(final byte[] buf, final int v, int pos) {
+        private static int writeThreeDigits(final byte[] buf, final int v, int pos) {
             buf[pos] = (byte) (v >>> 16);
             buf[pos + 1] = (byte) (v >>> 8);
             buf[pos + 2] = (byte) v;
+            return 3;
         }
 
         public static void writeFloat(float val, final RepeatedByte output) {
@@ -427,17 +428,13 @@ class JsonEncoding {
                 final int r2 = (int) (q1 - q2 * 1000);
                 final int r1 = (int) (q0 - q1 * 1000);
 
-                writeThreeDigits(buffer, DIGITS[r4], pos);
-                pos += 3;
+                pos += writeThreeDigits(buffer, DIGITS[r4], pos);
                 if ((r3 | r2 | r1) != 0) {
-                    writeThreeDigits(buffer, DIGITS[r3], pos);
-                    pos += 3;
+                    pos += writeThreeDigits(buffer, DIGITS[r3], pos);
                     if ((r2 | r1) != 0) {
-                        writeThreeDigits(buffer, DIGITS[r2], pos);
-                        pos += 3;
+                        pos += writeThreeDigits(buffer, DIGITS[r2], pos);
                         if (r1 != 0) {
-                            writeThreeDigits(buffer, DIGITS[r1], pos);
-                            pos += 3;
+                            pos += writeThreeDigits(buffer, DIGITS[r1], pos);
                         }
                     }
                 }
@@ -467,14 +464,11 @@ class JsonEncoding {
                 final int r2 = (int) (q1 - q2 * 1000);
                 final int r1 = (int) (q0 - q1 * 1000);
 
-                writeThreeDigits(buffer, DIGITS[r3], pos);
-                pos += 3;
+                pos += writeThreeDigits(buffer, DIGITS[r3], pos);
                 if ((r2 | r1) != 0) {
-                    writeThreeDigits(buffer, DIGITS[r2], pos);
-                    pos += 3;
+                    pos += writeThreeDigits(buffer, DIGITS[r2], pos);
                     if (r1 != 0) {
-                        writeThreeDigits(buffer, DIGITS[r1], pos);
-                        pos += 3;
+                        pos += writeThreeDigits(buffer, DIGITS[r1], pos);
                     }
                 }
                 removeTrailingZeros(output, pos);
@@ -501,11 +495,9 @@ class JsonEncoding {
                 final int r2 = (int) (q1 - q2 * 1000);
                 final int r1 = (int) (q0 - q1 * 1000);
 
-                writeThreeDigits(buffer, DIGITS[r2], pos);
-                pos += 3;
+                pos += writeThreeDigits(buffer, DIGITS[r2], pos);
                 if (r1 != 0) {
-                    writeThreeDigits(buffer, DIGITS[r1], pos);
-                    pos += 3;
+                    pos += writeThreeDigits(buffer, DIGITS[r1], pos);
                 }
                 removeTrailingZeros(output, pos);
 
