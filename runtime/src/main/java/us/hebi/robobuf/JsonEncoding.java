@@ -215,20 +215,6 @@ class JsonEncoding {
      */
     static class NumberEncoding {
 
-        private final static int[] DIGITS = new int[1000];
-
-        static {
-            // Builds a lookup table that encodes three character digits
-            // and meta information in the bits of an int
-            for (int i = 0; i < 1000; i++) {
-                int digit100 = '0' + (i / 100);
-                int digit10 = '0' + ((i / 10) % 10);
-                int digit1 = '0' + (i % 10);
-                int numDigits = digit100 == '0' ? digit10 == '0' ? 1 : 2 : 3;
-                DIGITS[i] = numDigits << 24 | digit100 << 16 | digit10 << 8 | digit1;
-            }
-        }
-
         public static void writeInt(final int value, final RepeatedByte output) {
             output.reserve(12);
             int pos = output.length;
@@ -271,7 +257,7 @@ class JsonEncoding {
             }
             // value > 10^9 to max
             final int r3 = q2 - q3 * 1000;
-            buf[pos++] = (byte) ('0' + q3);
+            pos += writeSingleDigit(buf, pos, q3);
             pos += writeThreeDigits(buf, pos, r3);
             pos += writeThreeDigits(buf, pos, r2);
             pos += writeThreeDigits(buf, pos, r1);
@@ -356,7 +342,7 @@ class JsonEncoding {
             }
             // value > 10^18 to max
             final int r6 = (int) (q5 - q6 * 1000);
-            buf[pos++] = (byte) ('0' + q6);
+            pos += writeSingleDigit(buf, pos, q6);
             pos += writeThreeDigits(buf, pos, r6);
             pos += writeThreeDigits(buf, pos, r5);
             pos += writeThreeDigits(buf, pos, r4);
@@ -366,29 +352,34 @@ class JsonEncoding {
             output.length = pos;
         }
 
+        private static int writeSingleDigit(final byte[] buf, final int pos, final long number) {
+            buf[pos] = (byte) ('0' + number);
+            return 1;
+        }
+
         private static int writeFirstDigits(final byte[] buf, final int pos, final long number) {
             return writeFirstDigits(buf, pos, (int) number);
         }
 
         private static int writeFirstDigits(final byte[] buf, int pos, final int number) {
             final int v = DIGITS[number];
-            final int numDigits = v >> 24;
+            final int numDigits = v >> NUM_DIGITS;
             switch (numDigits) {
                 case 3:
-                    buf[pos++] = (byte) (v >>> 16);
+                    buf[pos++] = (byte) (v >>> DIGIT_X00);
                 case 2:
-                    buf[pos++] = (byte) (v >>> 8);
+                    buf[pos++] = (byte) (v >>> DIGIT_0X0);
                 case 1:
-                    buf[pos] = (byte) v;
+                    buf[pos] = (byte) (v >>> DIGIT_00X);
             }
             return numDigits;
         }
 
         private static int writeThreeDigits(final byte[] buf, final int pos, final int number) {
             final int v = DIGITS[number];
-            buf[pos] = (byte) (v >>> 16);
-            buf[pos + 1] = (byte) (v >>> 8);
-            buf[pos + 2] = (byte) v;
+            buf[pos/**/] = (byte) (v >>> DIGIT_X00);
+            buf[pos + 1] = (byte) (v >>> DIGIT_0X0);
+            buf[pos + 2] = (byte) (v >>> DIGIT_00X);
             return 3;
         }
 
@@ -589,6 +580,25 @@ class JsonEncoding {
         private static final byte[] NAN = "\"NaN\"".getBytes(Charsets.ISO_8859_1);
         private static final byte[] MIN_INT = "-2147483648".getBytes();
         private static final byte[] MIN_LONG = "-9223372036854775808".getBytes();
+
+        // lookup table that packs three character digits and
+        // size information into an int. This way we can write
+        // three characters in a single go.
+        private static final int[] DIGITS = new int[1000];
+        private static final int DIGIT_00X = 0;
+        private static final int DIGIT_0X0 = 8;
+        private static final int DIGIT_X00 = 16;
+        private static final int NUM_DIGITS = 24;
+
+        static {
+            for (int i = 0; i < 1000; i++) {
+                int digit100 = '0' + (i / 100);
+                int digit10 = '0' + ((i / 10) % 10);
+                int digit1 = '0' + (i % 10);
+                int numDigits = digit100 == '0' ? digit10 == '0' ? 1 : 2 : 3;
+                DIGITS[i] = numDigits << NUM_DIGITS | digit100 << DIGIT_X00 | digit10 << DIGIT_0X0 | digit1 << DIGIT_00X;
+            }
+        }
 
     }
 
