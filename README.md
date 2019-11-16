@@ -4,6 +4,7 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://
 
 The main differences to Protobuf-Java are
 
+ * The API can be used without allocations
  * Message contents are mutable
  * The [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) was optimized for sequential memory access
  * Nested types are instantiated eagerly
