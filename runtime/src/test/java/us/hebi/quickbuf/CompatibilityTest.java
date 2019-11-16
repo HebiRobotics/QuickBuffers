@@ -24,12 +24,12 @@ package us.hebi.quickbuf;
 
 import com.google.protobuf.ByteString;
 import org.junit.Test;
-import protos.test.java.ForeignEnum;
-import protos.test.java.ForeignMessage;
-import protos.test.java.RepeatedPackables;
-import protos.test.java.TestAllTypes;
-import protos.test.java.TestAllTypes.NestedEnum;
-import protos.test.java.external.ImportEnum;
+import protos.test.protobuf.ForeignEnum;
+import protos.test.protobuf.ForeignMessage;
+import protos.test.protobuf.RepeatedPackables;
+import protos.test.protobuf.TestAllTypes;
+import protos.test.protobuf.TestAllTypes.NestedEnum;
+import protos.test.protobuf.external.ImportEnum;
 
 import java.io.IOException;
 import java.util.Arrays;

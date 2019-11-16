@@ -98,13 +98,13 @@ public class PackedDoublesBenchmark {
 
     @Benchmark
     public Object readProto() throws IOException {
-        return protos.test.java.RepeatedPackables.Packed.parseFrom(input);
+        return protos.test.protobuf.RepeatedPackables.Packed.parseFrom(input);
     }
 
     @Benchmark
     public int readWriteProto() throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(output);
-        protos.test.java.RepeatedPackables.Packed.parseFrom(input)
+        protos.test.protobuf.RepeatedPackables.Packed.parseFrom(input)
                 .writeTo(out);
         return out.getTotalBytesWritten();
     }

@@ -1,7 +1,7 @@
 syntax = "proto2";
 package quickbuf_unittest_import;
 
-option java_package = "protos.test.java.external";
+option java_package = "protos.test.protobuf.external";
 option java_outer_classname = "NamespacesOuterClass";
 option java_multiple_files = true;
 

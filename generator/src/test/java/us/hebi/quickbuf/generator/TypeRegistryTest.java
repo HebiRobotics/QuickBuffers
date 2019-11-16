@@ -37,8 +37,8 @@ public class TypeRegistryTest {
     public void testRequiredTypeMap() {
         TypeRegistry map = RequestInfo.withTypeRegistry(TestRequestLoader.getRequiredRequest()).getTypeRegistry();
         assertTrue(map.typeMap.size() >= 2);
-        assertEquals("protos.test.java.UnittestRequired.SimpleMessage", map.resolveMessageType(".quickbuf_unittest_import.SimpleMessage").toString());
-        assertEquals("protos.test.java.UnittestRequired.TestAllTypesRequired", map.resolveMessageType(".quickbuf_unittest_import.TestAllTypesRequired").toString());
+        assertEquals("protos.test.protobuf.UnittestRequired.SimpleMessage", map.resolveMessageType(".quickbuf_unittest_import.SimpleMessage").toString());
+        assertEquals("protos.test.protobuf.UnittestRequired.TestAllTypesRequired", map.resolveMessageType(".quickbuf_unittest_import.TestAllTypesRequired").toString());
     }
 
     // Uses default namespaces
@@ -48,8 +48,8 @@ public class TypeRegistryTest {
         TypeRegistry map = RequestInfo.withTypeRegistry(request).getTypeRegistry();
 
         assertEquals(8, map.typeMap.entrySet().size());
-        assertEquals("protos.test.java.ContainerMessage", map.resolveMessageType(".quickbuf_unittest.ContainerMessage").toString());
-        assertEquals("protos.test.java.ForeignEnum", map.resolveMessageType(".quickbuf_unittest.ForeignEnum").toString());
+        assertEquals("protos.test.protobuf.ContainerMessage", map.resolveMessageType(".quickbuf_unittest.ContainerMessage").toString());
+        assertEquals("protos.test.protobuf.ForeignEnum", map.resolveMessageType(".quickbuf_unittest.ForeignEnum").toString());
 
         // Make sure lookup directly by typename
         String typeId = request
@@ -57,7 +57,7 @@ public class TypeRegistryTest {
                 .getMessageType(0) // ContainerMessage
                 .getField(6) // optional_nested_import_message
                 .getTypeName();
-        assertEquals("protos.test.java.external.ImportMessage.NestedImportMessage", map.resolveMessageType(typeId).toString());
+        assertEquals("protos.test.protobuf.external.ImportMessage.NestedImportMessage", map.resolveMessageType(typeId).toString());
 
     }
 

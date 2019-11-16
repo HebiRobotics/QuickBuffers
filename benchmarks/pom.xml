@@ -78,7 +78,7 @@
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}</pluginPath>
                                     <type>quickbuf</type>
-                                    <outputOptions>replacePackage=(java)=quickbuf,indent=4,input_order=quickbuf
+                                    <outputOptions>replacePackage=(protobuf)=quickbuf,indent=4,input_order=quickbuf
                                     </outputOptions>
                                     <addSources>main</addSources>
                                 </outputTarget>

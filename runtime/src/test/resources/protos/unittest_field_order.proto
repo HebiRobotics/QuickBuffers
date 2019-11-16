@@ -4,7 +4,7 @@
 syntax = "proto2";
 package quickbuf_unittest;
 
-option java_package = "protos.test.java";
+option java_package = "protos.test.protobuf";
 option java_multiple_files = false;
 
 message ExampleMessage {

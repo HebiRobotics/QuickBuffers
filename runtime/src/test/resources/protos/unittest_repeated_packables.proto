@@ -32,7 +32,7 @@
 
 package protobuf_unittest;
 
-option java_package = "protos.test.java";
+option java_package = "protos.test.protobuf";
 option java_outer_classname = "RepeatedPackables";
 
 enum Enum {

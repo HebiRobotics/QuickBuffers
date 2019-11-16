@@ -33,7 +33,7 @@
 syntax = "proto2";
 package quickbuf_unittest_import;
 
-option java_package = "protos.test.java";
+option java_package = "protos.test.protobuf";
 
 message SimpleMessage {
     required int32 required_field = 1 [deprecated = true];

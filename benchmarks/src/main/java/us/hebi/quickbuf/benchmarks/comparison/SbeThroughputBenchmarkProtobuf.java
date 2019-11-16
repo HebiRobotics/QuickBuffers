@@ -29,8 +29,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import protos.benchmarks.real_logic.java.Examples;
-import protos.benchmarks.real_logic.java.Fix;
+import protos.benchmarks.real_logic.protobuf.Examples;
+import protos.benchmarks.real_logic.protobuf.Fix;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

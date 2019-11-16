@@ -28,8 +28,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import protos.test.java.ForeignMessage;
-import protos.test.java.TestAllTypes;
+import protos.test.protobuf.ForeignMessage;
+import protos.test.protobuf.TestAllTypes;
 
 import java.io.IOException;
 import java.util.Arrays;

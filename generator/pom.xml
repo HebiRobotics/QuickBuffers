@@ -84,13 +84,13 @@
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=java=quickbuf,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/quickbuf/generator"/>
+                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=java=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
+                                    <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=(protobuf)=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
                                 </exec>
