@@ -22,7 +22,7 @@ This library hasn't gone through an official release yet, so the public API shou
 The code generator is setup as a `protoc` plugin. In order to call it, you need to
 
 * Download an appropriate [protoc.exe](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.1`)
-* Download [protoc-gen-quickbuf-1.0-alpha2](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha2/protoc-gen-quickbuf-1.0-alpha2.zip) and extract the files into the same directory or somewhere else on the `$PATH`. 
+* Download [protoc-gen-robobuf-1.0-alpha2](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha2/protoc-gen-robobuf-1.0-alpha2.zip) and extract the files into the same directory or somewhere else on the `$PATH`. 
   * Running the plugin requires Java8 or higher to be installed
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
 * Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
