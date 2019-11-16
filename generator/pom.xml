@@ -73,24 +73,24 @@
 
                                 <mkdir dir="target/test-classes/us/hebi/quickbuf/generator"/>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=required.request,indent=tab,input_order=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
+                                    <arg value="--request_out=request_file=required.request,indent=tab,input_order=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_required.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number,json_use_proto_name=true:target/test-classes/us/hebi/quickbuf/generator"/>
+                                    <arg value="--request_out=request_file=import.request,indent=2,input_order=number,json_use_proto_name=true:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/quickbuf/generator"/>
+                                    <arg value="--request_out=request_file=allTypes.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=(protobuf)=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
+                                    <arg value="--request_out=request_file=repeatedPackables.request,replace_package=(protobuf)=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
                                 </exec>
