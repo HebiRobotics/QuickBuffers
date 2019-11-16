@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -32,22 +32,25 @@ class BitField {
 
     static int BITS_PER_FIELD = 32;
 
+    static int getFieldIndex(int fieldIndex) {
+        return fieldIndex / BITS_PER_FIELD;
+    }
+
+    private static int getBitIndex(int fieldIndex) {
+        return fieldIndex % BITS_PER_FIELD;
+    }
+
     static String hasBit(int hasBitIndex) {
-        int intSlot = hasBitIndex / BITS_PER_FIELD;
-        int indexInSlot = hasBitIndex - (intSlot * BITS_PER_FIELD);
-        return String.format("((bitField%d_ & 0x%08x) != 0)", intSlot, 1 << indexInSlot);
+        return String.format("((bitField%d_ & 0x%08x) != 0)", getFieldIndex(hasBitIndex), 1 << getBitIndex(hasBitIndex));
     }
 
     static String setBit(int hasBitIndex) {
-        int intSlot = hasBitIndex / BITS_PER_FIELD;
-        int indexInSlot = hasBitIndex - (intSlot * BITS_PER_FIELD);
-        return String.format("bitField%d_ |= 0x%08x", intSlot, 1 << indexInSlot);
+        return String.format("bitField%d_ |= 0x%08x", getFieldIndex(hasBitIndex), 1 << getBitIndex(hasBitIndex));
     }
 
     static String clearBit(int hasBitIndex) {
-        int intSlot = hasBitIndex / BITS_PER_FIELD;
-        int indexInSlot = hasBitIndex - (intSlot * BITS_PER_FIELD);
-        return String.format("bitField%d_ = (bitField%d_ & ~0x%08x)", intSlot, intSlot, 1 << indexInSlot);
+        int field = getFieldIndex(hasBitIndex);
+        return String.format("bitField%d_ = (bitField%d_ & ~0x%08x)", field, field, 1 << getBitIndex(hasBitIndex));
     }
 
     static String hasNoBits(int numBitFields) {
