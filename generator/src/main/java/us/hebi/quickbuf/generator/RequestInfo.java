@@ -72,19 +72,19 @@ public class RequestInfo {
     }
 
     /**
-     * replacePackage=pattern=replacement
+     * replace_package=pattern=replacement
      *
      * @param javaPackage
      * @return
      */
     public String applyJavaPackageReplace(String javaPackage) {
-        String replaceOption = generatorParameters.get("replacePackage");
+        String replaceOption = generatorParameters.get("replace_package");
         if (replaceOption == null)
             return javaPackage;
 
         String[] parts = replaceOption.split("=");
         if (parts.length != 2)
-            throw new GeneratorException("'replacePackage' expects 'pattern=replacement'. Found: '" + replaceOption + "'");
+            throw new GeneratorException("'replace_package' expects 'pattern=replacement'. Found: '" + replaceOption + "'");
 
         return javaPackage.replaceAll(parts[0], parts[1]);
     }

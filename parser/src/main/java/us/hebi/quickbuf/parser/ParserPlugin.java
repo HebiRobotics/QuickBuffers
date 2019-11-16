@@ -62,9 +62,9 @@ public class ParserPlugin {
 
         // Figure out file name
         Map<String, String> parameters = ParserUtil.getGeneratorParameters(request);
-        String fileName = parameters.get("requestFile");
+        String fileName = parameters.get("request_file");
         if (fileName == null)
-            return ParserUtil.asError("parameter 'requestFile' is not set");
+            return ParserUtil.asError("parameter 'request_file' is not set");
 
         // Add content
         response.addFile(CodeGeneratorResponse.File.newBuilder()

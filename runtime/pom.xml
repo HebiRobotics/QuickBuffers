@@ -121,7 +121,7 @@
                                     <pluginPath>${project.parent.basedir}
                                     </pluginPath> <!-- for some reason full file paths get omitted, so we rely on forwarding scripts that are in the path :( -->
                                     <type>quickbuf</type>
-                                    <outputOptions>replacePackage=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,json_use_proto_name=false
+                                    <outputOptions>replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,json_use_proto_name=false
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>
