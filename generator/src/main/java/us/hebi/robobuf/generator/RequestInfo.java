@@ -144,6 +144,10 @@ public class RequestInfo {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("store_unknown_fields", "false"));
     }
 
+    public boolean getJsonUseProtoName() {
+        return Boolean.parseBoolean(generatorParameters.getOrDefault("json_use_proto_name", "false"));
+    }
+
     private final CodeGeneratorRequest descriptor;
     private final Map<String, String> generatorParameters;
     private final List<FileInfo> files;
@@ -413,7 +417,10 @@ public class RequestInfo {
             return getTypeName();
         }
 
-        public String getJsonName() {
+        public String getSerializedJsonName() {
+            if (parentFile.getParentRequest().getJsonUseProtoName()) {
+                return getDescriptor().getName();
+            }
             return getDescriptor().getJsonName();
         }
 

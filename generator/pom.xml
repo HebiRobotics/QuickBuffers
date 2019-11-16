@@ -78,7 +78,7 @@
                                     <arg value="${proto.dir}/unittest_required.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number:target/test-classes/us/hebi/robobuf/generator"/>
+                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number,json_use_proto_name=true:target/test-classes/us/hebi/robobuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/namespaces_import.proto"/>

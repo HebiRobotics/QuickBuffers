@@ -40,6 +40,8 @@ Currently available options are
   * stores unknown fields that it encounter during parsing. This allows messages to be passed on without losing information even if the schema is not fully known.
   * the unknown data is stored in binary form, so individual fields cannot be accessed directly. 
   * unknown fields are ignored when comparing with `equals`.
+* **`json_use_proto_name=true|false`** (default = false)
+  * changes the serialized json field names from the default lowerCamelCase (e.g. `myField` or the optional `json_name` override) to the field names in the original proto definition, e.g., `my_field`. [Compatible parsers](https://developers.google.com/protocol-buffers/docs/proto3#json) should be able to parse both cases.
 
 For example, 
 ```bash

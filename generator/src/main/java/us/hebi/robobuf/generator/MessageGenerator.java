@@ -517,7 +517,7 @@ class MessageGenerator {
                 .addModifiers(Modifier.STATIC);
 
         fields.forEach(f -> {
-            String jsonName = f.getInfo().getJsonName();
+            String jsonName = f.getInfo().getSerializedJsonName();
             CodeBlock.Builder initializer = CodeBlock.builder();
             initializer.add("{'$L'", "\\\"");
             for (int i = 0; i < jsonName.length(); i++) {
