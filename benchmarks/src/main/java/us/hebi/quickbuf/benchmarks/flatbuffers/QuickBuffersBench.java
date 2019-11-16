@@ -24,18 +24,18 @@ package us.hebi.quickbuf.benchmarks.flatbuffers;
 
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
-import protos.benchmarks.flatbuffers.robo.*;
+import protos.benchmarks.flatbuffers.quickbuf.*;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
 
 import java.io.IOException;
 
 /**
- * @author Florian Enner < florian @ hebirobotics.com >
+ * @author Florian Enner
  * @since 28 Oct 2019
  */
 @State(Scope.Thread)
-public class QuickBench {
+public class QuickBuffersBench {
 
     static FooBarContainer setData(FooBarContainer fooBarContainer) {
         fooBarContainer.clearQuick()

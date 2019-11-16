@@ -30,8 +30,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
-import protos.test.robo.ForeignMessage;
-import protos.test.robo.TestAllTypes;
+import protos.test.quickbuf.ForeignMessage;
+import protos.test.quickbuf.TestAllTypes;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -59,11 +59,11 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-public class SerializationBenchmark {
+public class SerializationBenchmarkQuickbuf {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SerializationBenchmark.class.getSimpleName() + ".*")
+                .include(".*" + SerializationBenchmarkQuickbuf.class.getSimpleName() + ".*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

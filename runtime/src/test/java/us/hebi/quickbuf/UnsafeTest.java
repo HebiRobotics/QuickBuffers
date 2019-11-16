@@ -25,8 +25,8 @@ package us.hebi.quickbuf;
 import org.junit.Before;
 import org.junit.Test;
 import sun.nio.ch.DirectBuffer;
-import protos.test.robo.RepeatedPackables;
-import protos.test.robo.TestAllTypes;
+import protos.test.quickbuf.RepeatedPackables;
+import protos.test.quickbuf.TestAllTypes;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

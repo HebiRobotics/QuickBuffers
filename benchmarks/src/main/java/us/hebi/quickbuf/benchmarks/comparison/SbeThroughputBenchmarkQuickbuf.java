@@ -28,9 +28,9 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import protos.benchmarks.real_logic.robo.Examples;
-import protos.benchmarks.real_logic.robo.Examples.Car;
-import protos.benchmarks.real_logic.robo.Fix;
+import protos.benchmarks.real_logic.quickbuf.Examples;
+import protos.benchmarks.real_logic.quickbuf.Examples.Car;
+import protos.benchmarks.real_logic.quickbuf.Fix;
 import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
@@ -68,11 +68,11 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-public class SbeThroughputBenchmarkRobo {
+public class SbeThroughputBenchmarkQuickbuf {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SbeThroughputBenchmarkRobo.class.getSimpleName() + ".*")
+                .include(".*" + SbeThroughputBenchmarkQuickbuf.class.getSimpleName() + ".*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

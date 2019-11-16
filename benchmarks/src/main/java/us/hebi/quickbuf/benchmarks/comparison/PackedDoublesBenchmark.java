@@ -31,7 +31,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
-import protos.test.robo.RepeatedPackables.Packed;
+import protos.test.quickbuf.RepeatedPackables.Packed;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

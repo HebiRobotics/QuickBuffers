@@ -35,7 +35,7 @@ import protos.benchmarks.real_logic.java.Fix;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkRobo.*;
+import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuickbuf.*;
 
 /**
  * Throughput test. Comparable to
@@ -57,11 +57,11 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkRobo.
 @Warmup(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-public class SbeThroughputBenchmarkProto {
+public class SbeThroughputBenchmarkProtobuf {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SbeThroughputBenchmarkProto.class.getSimpleName() + ".*")
+                .include(".*" + SbeThroughputBenchmarkProtobuf.class.getSimpleName() + ".*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

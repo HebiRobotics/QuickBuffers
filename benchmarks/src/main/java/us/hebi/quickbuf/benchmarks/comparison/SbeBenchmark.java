@@ -34,8 +34,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.java.Examples;
 import protos.benchmarks.real_logic.java.Fix;
-import protos.benchmarks.real_logic.robo.Examples.Car;
-import protos.benchmarks.real_logic.robo.Fix.MarketDataIncrementalRefreshTrades;
+import protos.benchmarks.real_logic.quickbuf.Examples.Car;
+import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
 import us.hebi.quickbuf.ProtoMessage;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
@@ -123,8 +123,8 @@ public class SbeBenchmark {
 
     // ===================== DATASETS =====================
     final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
-    final byte[] marketDataMessages = multiplyToNumBytes(SbeThroughputBenchmarkRobo.buildMarketData(marketMsg).toByteArray(), MAX_DATASET_SIZE);
-    final byte[] carDataMessages = multiplyToNumBytes(SbeThroughputBenchmarkRobo.buildCarData(carMsg).toByteArray(), MAX_DATASET_SIZE);
+    final byte[] marketDataMessages = multiplyToNumBytes(SbeThroughputBenchmarkQuickbuf.buildMarketData(marketMsg).toByteArray(), MAX_DATASET_SIZE);
+    final byte[] carDataMessages = multiplyToNumBytes(SbeThroughputBenchmarkQuickbuf.buildCarData(carMsg).toByteArray(), MAX_DATASET_SIZE);
     final byte[] output = new byte[MAX_DATASET_SIZE];
 
     // ===================== UNSAFE OPTION DISABLED (e.g. Android) =====================

@@ -28,7 +28,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import protos.benchmarks.flatbuffers.robo.FooBarContainer;
+import protos.benchmarks.flatbuffers.quickbuf.FooBarContainer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -51,16 +51,16 @@ import java.util.concurrent.TimeUnit;
  * BenchRunner.flatHeapEncode               avgt   10  0.821 ± 0.011  us/op
  *
  * === Unsafe Sink
- * BenchRunner.roboDecode                   avgt   10  0.292 ± 0.021  us/op
- * BenchRunner.roboDecodeAndTraverse        avgt   10  0.309 ± 0.011  us/op
- * BenchRunner.roboEncode                   avgt   10  0.312 ± 0.011  us/op
+ * BenchRunner.quickbufDecode                   avgt   10  0.292 ± 0.021  us/op
+ * BenchRunner.quickbufDecodeAndTraverse        avgt   10  0.309 ± 0.011  us/op
+ * BenchRunner.quickbufEncode                   avgt   10  0.312 ± 0.011  us/op
  *
  * === Heap Sink
- * BenchRunner.roboDecode                   avgt   10  0.379 ± 0.031  us/op
- * BenchRunner.roboDecodeAndTraverse        avgt   10  0.408 ± 0.034  us/op
- * BenchRunner.roboEncode                   avgt   10  0.334 ± 0.018  us/op
+ * BenchRunner.quickbufDecode                   avgt   10  0.379 ± 0.031  us/op
+ * BenchRunner.quickbufDecodeAndTraverse        avgt   10  0.408 ± 0.034  us/op
+ * BenchRunner.quickbufEncode                   avgt   10  0.334 ± 0.018  us/op
  *
- * @author Florian Enner < florian @ hebirobotics.com >
+ * @author Florian Enner
  * @since 23 Jan 2015
  */
 @BenchmarkMode(Mode.AverageTime)
@@ -85,7 +85,7 @@ public class BenchRunner {
         this.position = heapDecodeBuffer.position();
     }
 
-    FlatBench flatbuffers = new FlatBench();
+    FlatBuffersBench flatbuffers = new FlatBuffersBench();
     ByteBuffer heapDecodeBuffer = ByteBuffer.allocate(1024);
     ByteBuffer directDecodeBuffer = ByteBuffer.allocateDirect(1024);
     ByteBuffer heapEncodeBuffer = ByteBuffer.allocate(1024);
@@ -115,26 +115,26 @@ public class BenchRunner {
     }
 
     @Benchmark
-    public int roboEncode() {
+    public int quickbufEncode() {
         return quickbuffers.encode();
     }
 
     @Benchmark
-    public Object roboDecode() {
+    public Object quickbufDecode() {
         return quickbuffers.decode();
     }
 
     @Benchmark
-    public long roboTraverse() {
-        return quickbuffers.traverse(roboMsg);
+    public long quickbufTraverse() {
+        return quickbuffers.traverse(quickbufMsg);
     }
 
     @Benchmark
-    public long roboDecodeAndTraverse() {
+    public long quickbufDecodeAndTraverse() {
         return quickbuffers.traverse(quickbuffers.decode());
     }
 
-    QuickBench quickbuffers = new QuickBench();
-    final FooBarContainer roboMsg = QuickBench.setData(FooBarContainer.newInstance());
+    QuickBuffersBench quickbuffers = new QuickBuffersBench();
+    final FooBarContainer quickbufMsg = QuickBuffersBench.setData(FooBarContainer.newInstance());
 
 }

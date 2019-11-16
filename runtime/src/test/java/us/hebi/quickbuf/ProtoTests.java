@@ -23,11 +23,11 @@
 package us.hebi.quickbuf;
 
 import org.junit.Test;
-import protos.test.robo.*;
-import protos.test.robo.TestAllTypes.NestedEnum;
-import protos.test.robo.UnittestFieldOrder.MessageWithMultibyteNumbers;
-import protos.test.robo.UnittestRequired.TestAllTypesRequired;
-import protos.test.robo.external.ImportEnum;
+import protos.test.quickbuf.*;
+import protos.test.quickbuf.TestAllTypes.NestedEnum;
+import protos.test.quickbuf.UnittestFieldOrder.MessageWithMultibyteNumbers;
+import protos.test.quickbuf.UnittestRequired.TestAllTypesRequired;
+import protos.test.quickbuf.external.ImportEnum;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

@@ -52,7 +52,7 @@ public class CompatibilityTest {
     public void testCompatibilityWithProtobufJava() throws IOException {
         byte[] serializedMsg = getCombinedMessage();
         TestAllTypes.Builder expected = TestAllTypes.newBuilder();
-        protos.test.robo.TestAllTypes msg = protos.test.robo.TestAllTypes.newInstance();
+        protos.test.quickbuf.TestAllTypes msg = protos.test.quickbuf.TestAllTypes.newInstance();
 
         // multiple merges to check expanding repeated behavior
         for (int i = 0; i < 3; i++) {
@@ -61,7 +61,7 @@ public class CompatibilityTest {
         }
 
         assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
-        assertEquals(msg, protos.test.robo.TestAllTypes.parseFrom(msg.toByteArray()));
+        assertEquals(msg, protos.test.quickbuf.TestAllTypes.parseFrom(msg.toByteArray()));
 
     }
 

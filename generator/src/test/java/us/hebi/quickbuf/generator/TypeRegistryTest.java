@@ -69,9 +69,9 @@ public class TypeRegistryTest {
 
         assertEquals(10, map.typeMap.entrySet().size());
 
-        assertEquals("protos.test.robo.external.ImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage").toString());
-        assertEquals("protos.test.robo.external.ImportMessage.NestedImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage.NestedImportMessage").toString());
-        assertEquals("protos.test.robo.ForeignEnum", map.resolveMessageType(".quickbuf_unittest.ForeignEnum").toString());
+        assertEquals("protos.test.quickbuf.external.ImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage").toString());
+        assertEquals("protos.test.quickbuf.external.ImportMessage.NestedImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage.NestedImportMessage").toString());
+        assertEquals("protos.test.quickbuf.ForeignEnum", map.resolveMessageType(".quickbuf_unittest.ForeignEnum").toString());
     }
 
 }

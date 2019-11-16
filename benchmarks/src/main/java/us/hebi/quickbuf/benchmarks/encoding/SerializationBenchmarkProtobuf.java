@@ -59,11 +59,11 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-public class SerializationJavaBenchmark {
+public class SerializationBenchmarkProtobuf {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SerializationJavaBenchmark.class.getSimpleName() + ".*")
+                .include(".*" + SerializationBenchmarkProtobuf.class.getSimpleName() + ".*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

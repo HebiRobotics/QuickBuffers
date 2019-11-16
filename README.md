@@ -48,7 +48,7 @@ For example,
 protoc --quickbuf_out= \
     indent=4, \
     input_order=quickbuf, \
-    replacePackage=us.hebi.java|us.hebi.robo: \
+    replacePackage=my.namespace.protobuf|my.namespace.quickbuf: \
     ./path/to/generate`.
 ``` 
 

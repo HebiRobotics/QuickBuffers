@@ -23,9 +23,9 @@
 package us.hebi.quickbuf;
 
 import org.junit.Test;
-import protos.test.robo.RepeatedPackables;
-import protos.test.robo.TestAllTypes;
-import protos.test.robo.UnittestRequired;
+import protos.test.quickbuf.RepeatedPackables;
+import protos.test.quickbuf.TestAllTypes;
+import protos.test.quickbuf.UnittestRequired;
 
 import java.io.IOException;
 

@@ -29,7 +29,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import us.hebi.quickbuf.ProtoSink;
-import protos.test.robo.TestAllTypes;
+import protos.test.quickbuf.TestAllTypes;
 
 import java.io.IOException;
 import java.util.Random;

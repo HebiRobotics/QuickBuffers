@@ -31,11 +31,11 @@ import protos.benchmarks.flatbuffers.fb.Enum;
 import java.nio.ByteBuffer;
 
 /**
- * @author Florian Enner < florian @ hebirobotics.com >
+ * @author Florian Enner
  * @since 27 Jan 2015
  */
 @State(Scope.Thread)
-public class FlatBench {
+public class FlatBuffersBench {
 
     public int encode(ByteBuffer buffer) {
         FlatBufferBuilder builder = new FlatBufferBuilder(buffer);

@@ -28,8 +28,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import protos.test.robo.RepeatedPackables;
-import protos.test.robo.TestAllTypes;
+import protos.test.quickbuf.RepeatedPackables;
+import protos.test.quickbuf.TestAllTypes;
 import us.hebi.quickbuf.ProtoMessage;
 import us.hebi.quickbuf.ProtoSink;
 
