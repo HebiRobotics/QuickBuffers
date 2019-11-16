@@ -22,17 +22,15 @@
 
 package us.hebi.quickbuf;
 
-import us.hebi.quickbuf.ProtoUtil.Charsets;
+import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
 
 /**
- * Utility methods for encoding values in a JSON
- * compatible way.
+ * Utility methods for encoding values in a JSON compatible way.
  *
- * The implementation was inspired by JsonIter, which
- * itself was based on DSL-Platform:
+ * The implementation was inspired by DSL-Platform and JsonIter (copied from DSL)
  *
+ * https://github.com/ngs-doo/dsl-json/blob/master/library/src/main/java/com/dslplatform/json/NumberConverter.java
  * https://github.com/json-iterator/java/blob/master/src/main/java/com/jsoniter/output/StreamImplNumber.java
- * https://github.com/ngs-doo/dsl-json
  *
  * @author Florian Enner
  * @since 12 Nov 2019
@@ -84,7 +82,7 @@ class JsonEncoding {
 
         }
 
-        private static final byte[] CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(Charsets.ISO_8859_1);
+        private static final byte[] CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(ISO_8859_1);
 
     }
 
@@ -213,7 +211,7 @@ class JsonEncoding {
     static class NumberEncoding {
 
         public static void writeInt(final int value, final RepeatedByte output) {
-            output.reserve(12);
+            output.reserve(MAX_INT_SIZE);
             if (value < 0) {
                 if (value == Integer.MIN_VALUE) {
                     output.addAll(MIN_INT);
@@ -227,7 +225,7 @@ class JsonEncoding {
         }
 
         public static void writeLong(final long value, final RepeatedByte output) {
-            output.reserve(22);
+            output.reserve(MAX_LONG_SIZE);
             if (value < 0) {
                 if (value == Long.MIN_VALUE) {
                     output.addAll(MIN_LONG);
@@ -384,6 +382,7 @@ class JsonEncoding {
         }
 
         public static void writeDouble(final double val, final RepeatedByte output) {
+            output.reserve(MAX_FIXED_DOUBLE_SIZE + 1); // sign before subsequent reserve
             final double pval = writeSpecialValues(val, max3, output);
             if (pval > 0) {
                 if (pval < max12) {
@@ -399,7 +398,7 @@ class JsonEncoding {
         }
 
         public static void writeDouble12(final double val, final RepeatedByte output) {
-            output.reserve(22 + 13);
+            output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max12, output);
             if (pval > 0) {
 
@@ -439,7 +438,7 @@ class JsonEncoding {
         }
 
         public static void writeDouble9(final double val, final RepeatedByte output) {
-            output.reserve(22 + 10);
+            output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max9, output);
             if (pval > 0) {
 
@@ -474,7 +473,7 @@ class JsonEncoding {
         }
 
         public static void writeDouble6(final double val, final RepeatedByte output) {
-            output.reserve(22 + 7);
+            output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max6, output);
             if (pval > 0) {
 
@@ -504,7 +503,7 @@ class JsonEncoding {
         }
 
         public static void writeDouble3(final double val, final RepeatedByte output) {
-            output.reserve(22 + 4);
+            output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max3, output);
             if (pval > 0) {
 
@@ -578,16 +577,22 @@ class JsonEncoding {
         static final double max9 = WHOLE_NUMBER / factor9;
         static final double max12 = WHOLE_NUMBER / factor12;
 
-        // JSON doesn't define -inf etc., so encode as String
-        private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(Charsets.ISO_8859_1);
-        private static final byte[] POSITIVE_INF = "\"Infinity\"".getBytes(Charsets.ISO_8859_1);
-        private static final byte[] NAN = "\"NaN\"".getBytes(Charsets.ISO_8859_1);
-        private static final byte[] MIN_INT = "-2147483648".getBytes();
-        private static final byte[] MIN_LONG = "-9223372036854775808".getBytes();
+        // JSON numbers don't allow inf/nan etc., so we need to encode them as String
+        private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(UTF_8);
+        private static final byte[] POSITIVE_INF = "\"Infinity\"".getBytes(UTF_8);
+        private static final byte[] NAN = "\"NaN\"".getBytes(UTF_8);
+        private static final byte[] MIN_INT = "-2147483648".getBytes(UTF_8);
+        private static final byte[] MIN_LONG = "-9223372036854775808".getBytes(UTF_8);
 
-        // lookup table that packs three character digits and
-        // size information into an int. This way we can write
-        // three characters in a single go.
+        // Maximum representation size in characters. Fixed double values get
+        // stored in a long that contains the pre and post comma digits, so
+        // the total number of digits can't be larger than a long with comma.
+        private static final int MAX_INT_SIZE = MIN_INT.length;
+        private static final int MAX_LONG_SIZE = MIN_LONG.length;
+        private static final int MAX_FIXED_DOUBLE_SIZE = MAX_LONG_SIZE + 1;
+
+        // Lookup table that packs three character digits and size information
+        // into an int. This way we can write three characters in a single go.
         private static final int[] THREE_DIGITS = new int[1000];
         private static final int DIGIT_00X = 0;
         private static final int DIGIT_0X0 = 8;
