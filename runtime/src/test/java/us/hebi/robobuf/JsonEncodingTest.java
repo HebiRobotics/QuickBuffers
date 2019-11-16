@@ -25,6 +25,7 @@ package us.hebi.robobuf;
 import org.junit.Before;
 import org.junit.Test;
 import us.hebi.robobuf.JsonEncoding.Base64Encoding;
+import us.hebi.robobuf.JsonEncoding.BooleanEncoding;
 import us.hebi.robobuf.JsonEncoding.NumberEncoding;
 import us.hebi.robobuf.JsonEncoding.StringEncoding;
 import us.hebi.robobuf.ProtoUtil.Charsets;
@@ -58,8 +59,6 @@ public class JsonEncodingTest {
             byte[] actual = java.util.Base64.getDecoder().decode(result); // IntelliJ complains, but works in Maven (test sources 8)
             assertArrayEquals(result, expected, actual);
         }
-        testInt(Integer.MIN_VALUE);
-        testInt(Integer.MAX_VALUE);
     }
 
     @Test
@@ -81,6 +80,8 @@ public class JsonEncodingTest {
     @Test
     public void testIntEncoding() throws Exception {
         for (int i = 0; i < n; i++) {
+            testInt(1 << (i / 1000));
+            testInt(i << (i / 1000));
             testInt(rnd.nextInt());
         }
         testInt(Integer.MIN_VALUE);
@@ -89,7 +90,10 @@ public class JsonEncodingTest {
 
     @Test
     public void testLongEncoding() throws Exception {
+        long testVal = 1;
         for (int i = 0; i < n; i++) {
+            testLong(1 << (i / 100));
+            testLong(i << (i / 100));
             testLong(rnd.nextLong());
         }
         testLong(Long.MIN_VALUE);
@@ -101,7 +105,9 @@ public class JsonEncodingTest {
         double multiplier = 1E-100;
         for (int i = 0; i < n; i++) {
             testDouble(rnd.nextDouble());
+            testDouble(rnd.nextDouble() * rnd.nextLong());
             testDouble(Math.PI * multiplier + 0.1);
+            testDouble(Math.PI * -multiplier + 0.1);
             multiplier *= 10;
         }
         testDouble(100 - 1E-01);
@@ -131,7 +137,9 @@ public class JsonEncodingTest {
         double multiplier = 1E-100;
         for (int i = 0; i < n; i++) {
             testFloat(rnd.nextFloat());
+            testFloat(rnd.nextFloat() * rnd.nextInt());
             testFloat((float) (Math.PI * multiplier + 0.1));
+            testFloat((float) (Math.PI * -multiplier + 0.1));
             multiplier *= 10;
         }
         testFloat(100 - 1E-01f);
@@ -153,23 +161,34 @@ public class JsonEncodingTest {
         assertEquals("\"NaN\"", encodeFloat(Float.NaN));
     }
 
+    @Test
+    public void testBooleanEncoding() throws Exception {
+        assertEquals("true", encodeBoolean(true));
+        assertEquals("false", encodeBoolean(false));
+    }
+
+    private String encodeBoolean(boolean expected) {
+        BooleanEncoding.writeBoolean(expected, bytes);
+        return getString();
+    }
+
     private String encodeInt(int expected) {
-        NumberEncoding.writeInt(expected, bytes.setLength(0));
+        NumberEncoding.writeInt(expected, bytes);
         return getString();
     }
 
     private String encodeLong(long expected) {
-        NumberEncoding.writeLong(expected, bytes.setLength(0));
+        NumberEncoding.writeLong(expected, bytes);
         return getString();
     }
 
     private String encodeDouble(double expected) {
-        NumberEncoding.writeDouble(expected, bytes.setLength(0));
+        NumberEncoding.writeDouble(expected, bytes);
         return getString();
     }
 
     private String encodeFloat(float expected) {
-        NumberEncoding.writeFloat(expected, bytes.setLength(0));
+        NumberEncoding.writeFloat(expected, bytes);
         return getString();
     }
 
@@ -185,14 +204,39 @@ public class JsonEncodingTest {
 
     private void testDouble(double expected) {
         String encoded = encodeDouble(expected);
-        double actual = encoded.equals("\"Infinity\"") ? Double.POSITIVE_INFINITY : Double.parseDouble(encoded);
-        assertEquals(encoded, expected, actual, 1E-9);
+        if (expected == Double.POSITIVE_INFINITY) {
+            assertEquals("\"Infinity\"", encoded);
+        } else if (expected == Double.NEGATIVE_INFINITY) {
+            assertEquals("\"-Infinity\"", encoded);
+        } else if (Double.isNaN(expected)) {
+            assertEquals("\"NaN\"", encoded);
+        } else {
+            double p = Math.abs(expected);
+            if (p > NumberEncoding.max3) {
+                assertEquals(encoded, expected, Double.parseDouble(encoded), 1);
+            } else if (p > NumberEncoding.max6) {
+                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-3);
+            } else if (p > NumberEncoding.max9) {
+                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-6);
+            } else if (p > NumberEncoding.max12) {
+                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-9);
+            } else {
+                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-12);
+            }
+        }
     }
 
     private void testFloat(float expected) {
         String encoded = encodeFloat(expected);
-        float actual = encoded.equals("\"Infinity\"") ? Float.POSITIVE_INFINITY : Float.parseFloat(encoded);
-        assertEquals(expected, actual, 1E-6);
+        if (expected == Float.POSITIVE_INFINITY) {
+            assertEquals("\"Infinity\"", encoded);
+        } else if (expected == Float.NEGATIVE_INFINITY) {
+            assertEquals("\"-Infinity\"", encoded);
+        } else if (Float.isNaN(expected)) {
+            assertEquals("\"NaN\"", encoded);
+        } else {
+            assertEquals(encoded, expected, Float.parseFloat(encoded), 1E-6);
+        }
     }
 
     private void testString(String expected) {
@@ -206,7 +250,11 @@ public class JsonEncodingTest {
     }
 
     private String getString() {
-        return new String(bytes.array, 0, bytes.length, Charsets.UTF_8);
+        try {
+            return new String(bytes.array, 0, bytes.length, Charsets.UTF_8);
+        } finally {
+            bytes.setLength(0);
+        }
     }
 
 }

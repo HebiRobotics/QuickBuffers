@@ -38,22 +38,12 @@ import java.util.concurrent.TimeUnit;
  * === JDK8 ===
  * Benchmark                         Mode  Cnt    Score   Error  Units
  * JsonBenchmark.writeBase64         avgt   10  255.828 ± 2.703  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10   22.626 ± 0.424  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10   21.293 ± 0.546  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   12.309 ± 0.251  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   19.921 ± 1.030  us/op
+ * JsonBenchmark.writeDoubleNumbers  avgt   10   22.074 ± 0.553  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10   17.536 ± 0.324  us/op
+ * JsonBenchmark.writeIntNumbers     avgt   10   10.845 ± 0.240  us/op
+ * JsonBenchmark.writeLongNumbers    avgt   10   16.440 ± 0.339  us/op
  * JsonBenchmark.writeStringAscii    avgt   10    0.738 ± 0.011  us/op
  * JsonBenchmark.writeStringUtf8     avgt   10    1.826 ± 0.029  us/op
- *
- * === JDK12 ===
- * Benchmark                         Mode  Cnt    Score   Error  Units
- * JsonBenchmark.writeBase64         avgt   10  215.028 ± 2.393  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10   23.010 ± 0.443  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10   20.967 ± 0.298  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   13.052 ± 0.296  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   18.744 ± 0.400  us/op
- * JsonBenchmark.writeStringAscii    avgt   10    0.618 ± 0.017  us/op
- * JsonBenchmark.writeStringUtf8     avgt   10    2.002 ± 0.070  us/op
  *
  * @author Florian Enner
  * @since 13 Nov 2019
@@ -104,9 +94,19 @@ public class JsonBenchmark {
         for (int i = 0; i < rndInts.length(); i++) {
             rndInts.array()[i] = rnd.nextInt();
             rndLongs.array()[i] = rnd.nextLong();
-            rndFloats.array()[i] = rnd.nextFloat();
-            rndDoubles.array()[i] = rnd.nextDouble();
+            rndFloats.array()[i] = roundFloat(rnd.nextFloat() * (byte) rnd.nextInt());
+            rndDoubles.array()[i] = roundDouble(rnd.nextDouble() * (byte) rnd.nextInt());
         }
+    }
+
+    private static float roundFloat(float value) {
+        final float factor = 1E5f;
+        return ((long) (value * factor + 0.5)) / factor;
+    }
+
+    private static double roundDouble(double value) {
+        final double factor = 1E8;
+        return ((long) (value * factor + 0.5)) / factor;
     }
 
     @Benchmark
