@@ -31,7 +31,7 @@
 // Author: maxtroy@google.com (Max Cai)
 
 syntax = "proto2";
-package robobuf_unittest_import;
+package quickbuf_unittest_import;
 
 option java_package = "protos.test.java";
 

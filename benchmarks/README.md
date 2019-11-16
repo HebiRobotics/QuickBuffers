@@ -1,4 +1,4 @@
-# RoboBuffers - Benchmarks
+# QuickBuffers - Benchmarks
   
 Below is a comparison with Google's official bindings for a variety of datasets. The performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run using JMH on JDK8 on an Intel NUC8i7BEH.
 
@@ -9,7 +9,7 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 <!-- car mutliplier: 140 * 1000 / (1024*1024) = 0.1335 = -->
 <!-- market multiplier: 64 * 1000 / (1024*1024) = 0.061 = -->
 
-| Test [msg/ms] | RoboBuffers | Protobuf-Java | Ratio
+| Test [msg/ms] | QuickBuffers | Protobuf-Java | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
 | Car Encode  | 2854 (381 MB/s) | 1125 (150 MB/s) |  2.5  
 | Car Decode  | 2042 (273 MB/s) | 1166s (149 MB/s) |  1.8  
@@ -20,7 +20,7 @@ Note that this test was done using the original SBE .proto definitions. If the v
 
 We also compared the built-in JSON encoding and found that for this particular benchmark the message throughput is roughly the same as Protobuf-Java. However, at 559 byte (car) and 435 byte (market) the uncompressed binary sizes are significantly larger.
 
-| Test [msg/ms] | RoboBuffers (JSON) | Protobuf-Java (Binary) | Ratio
+| Test [msg/ms] | QuickBuffers (JSON) | Protobuf-Java (Binary) | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
 | Car Encode  | 1424 | 1125 |  1.3  
 | Market Data Encode  | 3284 | 3712 |  0.9 
@@ -29,7 +29,7 @@ We also compared the built-in JSON encoding and found that for this particular b
 
 We also ran benchmarks for reading and writing streams of delimited protobuf messages with varying contents, which is similar to reading sequentially from a log file. All datasets were loaded into memory and decoded from a byte array. Neither benchmark triggers Protobuf-Java's lazy-parsing of strings, so the results may be slightly off. The benchmark code can be found in the `benchmarks` directory.
 
-|  | RoboBuffers<p>(Unsafe) | RoboBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | `[2]`
+|  | QuickBuffers<p>(Unsafe) | QuickBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | `[2]`
 | ----------- | -----------: | -----------: | -----------: | -----------: | ----------- |
 | **Read**  | | 
 | 1  | 173ms (502 MB/s) | 212ms (410 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 2.0
@@ -53,7 +53,7 @@ We also ran benchmarks for reading and writing streams of delimited protobuf mes
 <!-- | 3  | ms (  MB/s) | ms (  MB/s) | ms (  MB/s)  | ms (  MB/s) | 0 -->
 
 * `[1]` Version 3.9.1 (makes use of `sun.misc.Unsafe` when available)
-* `[2]` `Java / RoboBuffers (Unsafe)`
+* `[2]` `Java / QuickBuffers (Unsafe)`
 * `[3]` Derived from `Write = ((Read + Write) - Read)` which is not necessarily composable
 
  * Dataset Contents
@@ -65,10 +65,10 @@ We also ran benchmarks for reading and writing streams of delimited protobuf mes
    
 ## Benchmark 3 - FlatBuffers
    
-We also compared RoboBuffers against the Java bindings of Google's [FlatBuffers](https://google.github.io/flatbuffers/) project and ported its [official C++ benchmark](https://google.github.io/flatbuffers/flatbuffers_benchmarks.html).
+We also compared QuickBuffers against the Java bindings of Google's [FlatBuffers](https://google.github.io/flatbuffers/) project and ported its [official C++ benchmark](https://google.github.io/flatbuffers/flatbuffers_benchmarks.html).
    
    
-|  | RoboBuffers | FlatBuffers (v1.11.0) | FlatBuffers (v1.10.0) | Ratio`[1]`
+|  | QuickBuffers | FlatBuffers (v1.11.0) | FlatBuffers (v1.10.0) | Ratio`[1]`
 | :----------- | :-----------: | :-----------: | :-----------: | :-----------: |
 | **UnsafeSource / DirectByteBuffer [ns/op]**  
 | Decode             | 292 | 0 | 0 |  0.0 
@@ -84,7 +84,7 @@ We also compared RoboBuffers against the Java bindings of Google's [FlatBuffers]
 | Serialized Size   | 228 bytes | 344 bytes | 344 bytes |  1.5
 | Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 1
 
-* `[1]` `FlatBuffers v1.11.0 / RoboBuffers`
+* `[1]` `FlatBuffers v1.11.0 / QuickBuffers`
 * `[2]` `Traverse = (Decode + Traverse) - Decode`
    
 While the official C++ benchmark shows tremendous performance benefits over Protobuf, the Java implementation has unfortunately been lagging behind a bit. Recent versions have seen some significant performance improvements, but encoding and traversing a `ByteBuffer` still results in more overhead than may be expected.

@@ -3,18 +3,18 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>robobuf-parent</artifactId>
-        <groupId>us.hebi.robobuf</groupId>
+        <artifactId>quickbuf-parent</artifactId>
+        <groupId>us.hebi.quickbuf</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>robobuf-parser</artifactId>
+    <artifactId>quickbuf-parser</artifactId>
 
     <properties>
         <protocPluginName>protoc-gen-request</protocPluginName>
         <finalName>${protocPluginName}-${project.version}</finalName>
-        <javaModuleName>us.hebi.robobuf.parser</javaModuleName>
+        <javaModuleName>us.hebi.quickbuf.parser</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
     </properties>
@@ -49,7 +49,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>us.hebi.robobuf.parser.ParserPlugin</mainClass>
+                                    <mainClass>us.hebi.quickbuf.parser.ParserPlugin</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

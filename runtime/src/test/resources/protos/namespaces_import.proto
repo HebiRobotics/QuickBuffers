@@ -1,5 +1,5 @@
 syntax = "proto2";
-package robobuf_unittest;
+package quickbuf_unittest;
 
 import "namespaces.proto";
 
@@ -28,11 +28,11 @@ message ContainerMessage {
   optional ForeignEnum optional_foreign_enum = 4;
 
   // Defined in a different file and in a different namespace
-  optional robobuf_unittest_import.ImportMessage optional_import_message = 5;
-  optional robobuf_unittest_import.ImportEnum optional_import_enum = 6;
+  optional quickbuf_unittest_import.ImportMessage optional_import_message = 5;
+  optional quickbuf_unittest_import.ImportEnum optional_import_enum = 6;
 
   // Defined in a different file as a nested message
-  optional robobuf_unittest_import.ImportMessage.NestedImportMessage optional_nested_import_message = 7;
+  optional quickbuf_unittest_import.ImportMessage.NestedImportMessage optional_nested_import_message = 7;
 
 }
 

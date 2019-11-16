@@ -2,7 +2,7 @@
 
 ###
 # #%L
-# robobuf-generator
+# quickbuf-generator
 # %%
 # Copyright (C) 2019 HEBI Robotics
 # %%

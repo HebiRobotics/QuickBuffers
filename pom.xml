@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>us.hebi.robobuf</groupId>
-    <artifactId>robobuf-parent</artifactId>
+    <groupId>us.hebi.quickbuf</groupId>
+    <artifactId>quickbuf-parent</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
 
-    <name>RoboBuffers</name>
-    <url>https://github.com/HebiRobotics/RoboBuffers</url>
+    <name>QuickBuffers</name>
+    <url>https://github.com/HebiRobotics/QuickBuffers</url>
     <description>
         Java library for reading and writing Google's Protocol Buffers v2 messages
     </description>
@@ -32,9 +32,9 @@
 
     <!-- Required: source control information: -->
     <scm>
-        <url>https://github.com/HebiRobotics/RoboBuffers</url>
-        <connection>scm:git:git://github.com/HebiRobotics/RoboBuffers.git</connection>
-        <developerConnection>scm:git:git@github.com:HebiRobotics/RoboBuffers.git</developerConnection>
+        <url>https://github.com/HebiRobotics/QuickBuffers</url>
+        <connection>scm:git:git://github.com/HebiRobotics/QuickBuffers.git</connection>
+        <developerConnection>scm:git:git@github.com:HebiRobotics/QuickBuffers.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 

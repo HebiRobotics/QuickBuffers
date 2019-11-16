@@ -5,20 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>robobuf-parent</artifactId>
-        <groupId>us.hebi.robobuf</groupId>
+        <artifactId>quickbuf-parent</artifactId>
+        <groupId>us.hebi.quickbuf</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>robobuf-runtime</artifactId>
+    <artifactId>quickbuf-runtime</artifactId>
 
     <properties>
         <maven.compiler.source>6</maven.compiler.source>
         <maven.compiler.target>6</maven.compiler.target>
-        <apiDirectory>us/hebi/robobuf</apiDirectory>
+        <apiDirectory>us/hebi/quickbuf</apiDirectory>
         <copyFromDir>${basedir}/src/main/java/${apiDirectory}</copyFromDir>
         <copyToDir>${basedir}/target/generated-sources/${apiDirectory}</copyToDir>
-        <javaModuleName>us.hebi.robobuf.runtime</javaModuleName>
+        <javaModuleName>us.hebi.quickbuf.runtime</javaModuleName>
     </properties>
 
     <dependencies>
@@ -120,7 +120,7 @@
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}
                                     </pluginPath> <!-- for some reason full file paths get omitted, so we rely on forwarding scripts that are in the path :( -->
-                                    <type>robobuf</type>
+                                    <type>quickbuf</type>
                                     <outputOptions>replacePackage=protos.test.java=protos.test.robo,indent=4,store_unknown_fields=true,json_use_proto_name=false
                                     </outputOptions>
                                     <addSources>test</addSources>

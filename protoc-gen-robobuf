@@ -1,2 +1,0 @@
-#!/bin/bash
-./generator/target/protoc-gen-robobuf
