@@ -25,7 +25,8 @@ The code generator is setup as a `protoc` plugin. In order to call it, you need 
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
 * Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
 
-Currently available options are
+<details>
+<summary>Currently available options are</summary><p>
 
 * **`indent=2|4|8|tab`** (default = 2)
   * sets the indentation in generated files
@@ -42,6 +43,16 @@ Currently available options are
   * unknown fields are ignored when comparing with `equals`.
 * **`json_use_proto_name=true|false`** (default = false)
   * changes the serialized json field names from the default lowerCamelCase (e.g. `myField` or the optional `json_name` override) to the field names in the original proto definition, e.g., `my_field`. [Compatible parsers](https://developers.google.com/protocol-buffers/docs/proto3#json) should be able to parse both cases.
+
+</p></details> 
+
+| Option | Value | 
+| :----------- | :----------- |
+| **replacePackage** | (regex)&#124;replacement |
+| **indent** | **2**, 4, 8, tab |
+| **input_order** | **quickbuf**, number, none | 
+| **store_unknown_fields** | **false**, true  |
+| **json_use_proto_name** | **false**, true  |                                     
 
 For example, 
 ```bash
