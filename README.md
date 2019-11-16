@@ -7,8 +7,6 @@ The main differences to Protobuf-Java are
  * Message contents are mutable
  * The [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) was optimized for sequential memory access
  * Nested types are instantiated eagerly
- 
-
  * `Extensions` and `Services` are currently not supported
  * `OneOf` constraints are currently not enforced 
  * `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
