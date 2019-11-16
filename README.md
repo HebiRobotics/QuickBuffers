@@ -57,9 +57,9 @@ protoc --quickbuf_out= \
 The generated messages require a runtime library. Released versions will be on Maven Central. The runtime is compatible with Java 6 and higher.
 
 ```XML
-<dependency>
-  <groupId>us.hebi.quickbuf</groupId>
-  <artifactId>quickbuf-runtime</artifactId>
+<dependency> <!-- project was renamed since last release -->
+  <groupId>us.hebi.robobuf</groupId>
+  <artifactId>robobuf-runtime</artifactId>
   <version>1.0-alpha2</version>
 </dependency>
 ```
