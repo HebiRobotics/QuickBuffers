@@ -209,7 +209,7 @@ class JsonEncoding {
     }
 
     /**
-     * Implementation based on JsonIter and DSL-Platform
+     * Implementation was inspired by JsonIter and DSL-Platform
      * https://github.com/json-iterator/java/blob/master/src/main/java/com/jsoniter/output/StreamImplNumber.java
      * https://github.com/ngs-doo/dsl-json
      */
@@ -217,139 +217,133 @@ class JsonEncoding {
 
         public static void writeInt(final int value, final RepeatedByte output) {
             output.reserve(12);
-            int pos = output.length;
-            final byte[] buf = output.array;
-            final int q0;
             if (value < 0) {
                 if (value == Integer.MIN_VALUE) {
                     output.addAll(MIN_INT);
                     return;
                 }
-                q0 = -value;
-                buf[pos++] = '-';
+                output.array[output.length++] = '-';
+                output.length = writePositiveInt(-value, output.array, output.length);
             } else {
-                q0 = value;
+                output.length = writePositiveInt(+value, output.array, output.length);
             }
-            // value <= 10^3
-            final int q1 = q0 / 1000;
-            if (q1 == 0) {
-                output.length = pos + writeFirstDigits(buf, pos, q0);
-                return;
-            }
-            // value <= 10^6
-            final int r1 = q0 - q1 * 1000;
-            final int q2 = q0 / 1000000;
-            if (q2 == 0) {
-                pos += writeFirstDigits(buf, pos, q1);
-                pos += writeThreeDigits(buf, pos, r1);
-                output.length = pos;
-                return;
-            }
-            // value <= 10^9
-            final int r2 = q1 - q2 * 1000;
-            final int q3 = q0 / 1000000000;
-            if (q3 == 0) {
-                pos += writeFirstDigits(buf, pos, q2);
-                pos += writeThreeDigits(buf, pos, r2);
-                pos += writeThreeDigits(buf, pos, r1);
-                output.length = pos;
-                return;
-            }
-            // value > 10^9 to max
-            final int r3 = q2 - q3 * 1000;
-            pos += writeSingleDigit(buf, pos, q3);
-            pos += writeThreeDigits(buf, pos, r3);
-            pos += writeThreeDigits(buf, pos, r2);
-            pos += writeThreeDigits(buf, pos, r1);
-            output.length = pos;
         }
 
         public static void writeLong(final long value, final RepeatedByte output) {
             output.reserve(22);
-            int pos = output.length;
-            final byte[] buf = output.array;
-            final long q0;
             if (value < 0) {
                 if (value == Long.MIN_VALUE) {
                     output.addAll(MIN_LONG);
                     return;
                 }
-                q0 = -value;
-                buf[pos++] = '-';
+                output.array[output.length++] = '-';
+                output.length = writePositiveLong(-value, output.array, output.length);
             } else {
-                q0 = value;
+                output.length = writePositiveLong(+value, output.array, output.length);
             }
-            // value <= 10^3
-            final long q1 = q0 / factor3;
-            if (q1 == 0) {
-                output.length = pos + writeFirstDigits(buf, pos, (int) q0);
-                return;
-            }
-            // value <= 10^6
-            final int r1 = (int) (q0 - q1 * 1000);
-            final long q2 = q0 / factor6;
-            if (q2 == 0) {
+        }
+
+        private static int writePositiveInt(final int q0, final byte[] buf, int pos) {
+            final int q1, q2, q3, q4, q5, q6;
+            if ((q1 = q0 / 1000) == 0) {
+
+                // value < 10^3
+                pos += writeFirstDigits(buf, pos, q0);
+                return pos;
+
+            } else if ((q2 = q0 / 1000000) == 0) {
+
+                // value < 10^6
                 pos += writeFirstDigits(buf, pos, q1);
-                pos += writeThreeDigits(buf, pos, r1);
-                output.length = pos;
-                return;
-            }
-            // value <= 10^9
-            final int r2 = (int) (q1 - q2 * 1000);
-            final long q3 = q0 / factor9;
-            if (q3 == 0) {
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
+            } else if ((q3 = q0 / 1000000000) == 0) {
+
+                // value < 10^9
                 pos += writeFirstDigits(buf, pos, q2);
-                pos += writeThreeDigits(buf, pos, r2);
-                pos += writeThreeDigits(buf, pos, r1);
-                output.length = pos;
-                return;
+                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
+            } else {
+
+                // value > 10^9 to max
+                pos += writeSingleDigit(buf, pos, q3);
+                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
+                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
             }
-            // value <= 10^12
-            final int r3 = (int) (q2 - q3 * 1000);
-            final long q4 = q0 / factor12;
-            if (q4 == 0) {
+        }
+
+        private static int writePositiveLong(final long q0, final byte[] buf, int pos) {
+            final long q1, q2, q3, q4, q5, q6;
+            if ((q1 = q0 / factor3) == 0) {
+
+                // value < 10^3
+                pos += writeFirstDigits(buf, pos, q0);
+                return pos;
+
+            } else if ((q2 = q0 / factor6) == 0) {
+
+                // value < 10^6
+                pos += writeFirstDigits(buf, pos, q1);
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
+            } else if ((q3 = q0 / factor9) == 0) {
+
+                // value < 10^9
+                pos += writeFirstDigits(buf, pos, q2);
+                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
+            } else if ((q4 = q0 / factor12) == 0) {
+
+                // value < 10^12
                 pos += writeFirstDigits(buf, pos, q3);
-                pos += writeThreeDigits(buf, pos, r3);
-                pos += writeThreeDigits(buf, pos, r2);
-                pos += writeThreeDigits(buf, pos, r1);
-                output.length = pos;
-                return;
-            }
-            // value <= 10^15
-            final int r4 = (int) (q3 - q4 * 1000);
-            final long q5 = q0 / factor15;
-            if (q5 == 0) {
+                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
+                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
+            } else if ((q5 = q0 / factor15) == 0) {
+
+                // value < 10^15
                 pos += writeFirstDigits(buf, pos, q4);
-                pos += writeThreeDigits(buf, pos, r4);
-                pos += writeThreeDigits(buf, pos, r3);
-                pos += writeThreeDigits(buf, pos, r2);
-                pos += writeThreeDigits(buf, pos, r1);
-                output.length = pos;
-                return;
-            }
-            // value <= 10^18
-            final int r5 = (int) (q4 - q5 * 1000);
-            final long q6 = q0 / factor18;
-            if (q6 == 0) {
+                pos += writeThreeDigits(buf, pos, (q3 - q4 * 1000));
+                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
+                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
+            } else if ((q6 = q0 / factor18) == 0) {
+
+                // value < 10^18
                 pos += writeFirstDigits(buf, pos, q5);
-                pos += writeThreeDigits(buf, pos, r5);
-                pos += writeThreeDigits(buf, pos, r4);
-                pos += writeThreeDigits(buf, pos, r3);
-                pos += writeThreeDigits(buf, pos, r2);
-                pos += writeThreeDigits(buf, pos, r1);
-                output.length = pos;
-                return;
+                pos += writeThreeDigits(buf, pos, (q4 - q5 * 1000));
+                pos += writeThreeDigits(buf, pos, (q3 - q4 * 1000));
+                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
+                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
+            } else {
+
+                // value > 10^18 to max
+                pos += writeSingleDigit(buf, pos, q6);
+                pos += writeThreeDigits(buf, pos, (q5 - q6 * 1000));
+                pos += writeThreeDigits(buf, pos, (q4 - q5 * 1000));
+                pos += writeThreeDigits(buf, pos, (q3 - q4 * 1000));
+                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
+                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
+                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                return pos;
+
             }
-            // value > 10^18 to max
-            final int r6 = (int) (q5 - q6 * 1000);
-            pos += writeSingleDigit(buf, pos, q6);
-            pos += writeThreeDigits(buf, pos, r6);
-            pos += writeThreeDigits(buf, pos, r5);
-            pos += writeThreeDigits(buf, pos, r4);
-            pos += writeThreeDigits(buf, pos, r3);
-            pos += writeThreeDigits(buf, pos, r2);
-            pos += writeThreeDigits(buf, pos, r1);
-            output.length = pos;
         }
 
         private static int writeSingleDigit(final byte[] buf, final int pos, final long number) {
@@ -373,6 +367,11 @@ class JsonEncoding {
                     buf[pos] = (byte) (v >>> DIGIT_00X);
             }
             return numDigits;
+        }
+
+        private static int writeThreeDigits(final byte[] buf, final int pos, final long number) {
+            writeThreeDigits(buf, pos, (int) number);
+            return 3;
         }
 
         private static int writeThreeDigits(final byte[] buf, final int pos, final int number) {
@@ -403,18 +402,20 @@ class JsonEncoding {
         }
 
         public static void writeDouble12(final double val, final RepeatedByte output) {
+            output.reserve(22 + 13);
             final double pval = writeSpecialValues(val, max12, output);
             if (pval > 0) {
 
+                final byte[] buffer = output.array;
                 final long fval = (long) (pval * factor12 + 0.5);
-                writeLong(fval / factor12, output);
+                int pos = writePositiveLong(fval / factor12, buffer, output.length);
+
                 final long q0 = (long) (fval % factor12);
                 if (q0 == 0) {
+                    output.length = pos;
                     return;
                 }
 
-                int pos = output.addLength(13);
-                final byte[] buffer = output.array;
                 buffer[pos++] = '.';
                 final long q4 = q0 / factor12;
                 final long q3 = q0 / factor9;
@@ -441,18 +442,20 @@ class JsonEncoding {
         }
 
         public static void writeDouble9(final double val, final RepeatedByte output) {
+            output.reserve(22 + 10);
             final double pval = writeSpecialValues(val, max9, output);
             if (pval > 0) {
 
+                final byte[] buffer = output.array;
                 final long fval = (long) (pval * factor9 + 0.5);
-                writeLong(fval / factor9, output);
+                int pos = writePositiveLong(fval / factor9, buffer, output.length);
+
                 final long q0 = (long) (fval % factor9);
                 if (q0 == 0) {
+                    output.length = pos;
                     return;
                 }
 
-                int pos = output.addLength(10);
-                final byte[] buffer = output.array;
                 buffer[pos++] = '.';
                 final long q3 = q0 / factor9;
                 final long q2 = q0 / factor6;
@@ -474,18 +477,20 @@ class JsonEncoding {
         }
 
         public static void writeDouble6(final double val, final RepeatedByte output) {
+            output.reserve(22 + 7);
             final double pval = writeSpecialValues(val, max6, output);
             if (pval > 0) {
 
+                final byte[] buffer = output.array;
                 final long fval = (long) (pval * factor6 + 0.5);
-                writeLong(fval / factor6, output);
+                int pos = writePositiveLong(fval / factor6, buffer, output.length);
+
                 final long q0 = (long) (fval % factor6);
                 if (q0 == 0) {
+                    output.length = pos;
                     return;
                 }
 
-                int pos = output.addLength(7);
-                final byte[] buffer = output.array;
                 buffer[pos++] = '.';
                 final long q2 = q0 / factor6;
                 final long q1 = q0 / factor3;
@@ -502,18 +507,20 @@ class JsonEncoding {
         }
 
         public static void writeDouble3(final double val, final RepeatedByte output) {
+            output.reserve(22 + 4);
             final double pval = writeSpecialValues(val, max3, output);
             if (pval > 0) {
 
+                final byte[] buffer = output.array;
                 final long fval = (long) (pval * factor3 + 0.5);
-                writeLong(fval / factor3, output);
+                int pos = writePositiveLong(fval / factor3, buffer, output.length);
+
                 final long q0 = (long) (fval % factor3);
                 if (q0 == 0) {
+                    output.length = pos;
                     return;
                 }
 
-                int pos = output.addLength(4);
-                final byte[] buffer = output.array;
                 buffer[pos++] = '.';
                 final long q1 = q0 / factor3;
                 final int r1 = (int) (q0 - q1 * 1000);
