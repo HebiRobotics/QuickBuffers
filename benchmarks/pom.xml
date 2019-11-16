@@ -3,24 +3,24 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>robobuf-parent</artifactId>
-        <groupId>us.hebi.robobuf</groupId>
+        <artifactId>quickbuf-parent</artifactId>
+        <groupId>us.hebi.quickbuf</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>robobuf-benchmarks</artifactId>
+    <artifactId>quickbuf-benchmarks</artifactId>
 
     <properties>
-        <javaModuleName>us.hebi.robobuf.benchmarks</javaModuleName>
+        <javaModuleName>us.hebi.quickbuf.benchmarks</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>us.hebi.robobuf</groupId>
-            <artifactId>robobuf-runtime</artifactId>
+            <groupId>us.hebi.quickbuf</groupId>
+            <artifactId>quickbuf-runtime</artifactId>
             <version>${parent.version}</version>
         </dependency>
         <dependency>
@@ -77,8 +77,8 @@
                                 <!-- Generate sources (override package so we don't have name collisions with gen-java) -->
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}</pluginPath>
-                                    <type>robobuf</type>
-                                    <outputOptions>replacePackage=(java)=robo,indent=4,input_order=robobuf
+                                    <type>quickbuf</type>
+                                    <outputOptions>replacePackage=(protobuf)=quickbuf,indent=4,input_order=quickbuf
                                     </outputOptions>
                                     <addSources>main</addSources>
                                 </outputTarget>

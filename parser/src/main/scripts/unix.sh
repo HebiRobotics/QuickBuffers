@@ -2,7 +2,7 @@
 
 ###
 # #%L
-# robobuf-parser
+# quickbuf-parser
 # %%
 # Copyright (C) 2019 HEBI Robotics
 # %%

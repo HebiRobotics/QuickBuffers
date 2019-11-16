@@ -6,7 +6,7 @@ syntax="proto2";
 option optimize_for = LITE_RUNTIME;
 
 package benchpb;
-option java_package = "protos.benchmarks.flatbuffers.java";
+option java_package = "protos.benchmarks.flatbuffers.protobuf";
 option java_outer_classname = "Bench";
 option java_multiple_files = true;
 

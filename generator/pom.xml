@@ -3,21 +3,21 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>robobuf-parent</artifactId>
-        <groupId>us.hebi.robobuf</groupId>
+        <artifactId>quickbuf-parent</artifactId>
+        <groupId>us.hebi.quickbuf</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>robobuf-generator</artifactId>
+    <artifactId>quickbuf-generator</artifactId>
 
     <properties>
-        <protocPluginName>protoc-gen-robobuf</protocPluginName>
+        <protocPluginName>protoc-gen-quickbuf</protocPluginName>
         <finalName>${protocPluginName}-${project.version}</finalName>
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
         <protoc.executable>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.executable>
-        <javaModuleName>us.hebi.robobuf.generator</javaModuleName>
+        <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
     </properties>
@@ -26,8 +26,8 @@
 
         <!-- stores request input as binary that we can load in unit tests -->
         <dependency>
-            <groupId>us.hebi.robobuf</groupId>
-            <artifactId>robobuf-parser</artifactId>
+            <groupId>us.hebi.quickbuf</groupId>
+            <artifactId>quickbuf-parser</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -71,26 +71,26 @@
                                 <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protoc.version}/${protoc.executable}"
                                      dest="../${protoc.executable}" skipexisting="true" verbose="on"/>
 
-                                <mkdir dir="target/test-classes/us/hebi/robobuf/generator"/>
+                                <mkdir dir="target/test-classes/us/hebi/quickbuf/generator"/>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=required.request,indent=tab,input_order=robobuf:target/test-classes/us/hebi/robobuf/generator"/>
+                                    <arg value="--request_out=requestFile=required.request,indent=tab,input_order=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_required.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number:target/test-classes/us/hebi/robobuf/generator"/>
+                                    <arg value="--request_out=requestFile=import.request,indent=2,input_order=number,json_use_proto_name=true:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=java=robo,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/robobuf/generator"/>
+                                    <arg value="--request_out=requestFile=allTypes.request,replacePackage=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=java=robo:target/test-classes/us/hebi/robobuf/generator"/>
+                                    <arg value="--request_out=requestFile=repeatedPackables.request,replacePackage=(protobuf)=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
                                 </exec>
@@ -121,7 +121,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>us.hebi.robobuf.generator.CompilerPlugin</mainClass>
+                                    <mainClass>us.hebi.quickbuf.generator.CompilerPlugin</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -164,7 +164,7 @@
                 <version>3.1.0</version>
                 <configuration>
                     <descriptors>
-                        <descriptor>src/main/assembly/protoc-gen-robobuf.xml</descriptor>
+                        <descriptor>src/main/assembly/protoc-gen-quickbuf.xml</descriptor>
                     </descriptors>
                     <finalName>${finalName}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>

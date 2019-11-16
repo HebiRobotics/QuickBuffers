@@ -2,9 +2,9 @@
 // to check how Google orders items
 
 syntax = "proto2";
-package robobuf_unittest;
+package quickbuf_unittest;
 
-option java_package = "protos.test.java";
+option java_package = "protos.test.protobuf";
 option java_multiple_files = false;
 
 message ExampleMessage {

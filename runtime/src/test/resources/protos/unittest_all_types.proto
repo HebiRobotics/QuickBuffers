@@ -1,11 +1,11 @@
 // Adapted from Google's javanano unit tests
 
 syntax = "proto2";
-package robobuf_unittest;
+package quickbuf_unittest;
 
 import "namespaces.proto";
 
-option java_package = "protos.test.java";
+option java_package = "protos.test.protobuf";
 option java_outer_classname = "AllTypesOuterClass";
 option java_multiple_files = true;
 
@@ -44,11 +44,11 @@ message TestAllTypes {
 
   optional NestedMessage      optional_nested_message  = 18;
   optional ForeignMessage optional_foreign_message = 19;
-  optional robobuf_unittest_import.ImportMessage optional_import_message = 20;
+  optional quickbuf_unittest_import.ImportMessage optional_import_message = 20;
 
   optional NestedEnum      optional_nested_enum     = 21;
   optional ForeignEnum optional_foreign_enum = 22;
-  optional robobuf_unittest_import.ImportEnum  optional_import_enum = 23;
+  optional quickbuf_unittest_import.ImportEnum  optional_import_enum = 23;
 
   optional string optional_string_piece = 24 [ctype=STRING_PIECE];
   optional string optional_cord = 25 [ctype=CORD];
@@ -76,11 +76,11 @@ message TestAllTypes {
 
   repeated NestedMessage      repeated_nested_message  = 48;
   repeated ForeignMessage repeated_foreign_message = 49;
-  repeated robobuf_unittest_import.ImportMessage  repeated_import_message = 50;
+  repeated quickbuf_unittest_import.ImportMessage  repeated_import_message = 50;
 
   repeated NestedEnum      repeated_nested_enum  = 51;
   repeated ForeignEnum repeated_foreign_enum = 52;
-  repeated robobuf_unittest_import.ImportEnum repeated_import_enum = 53;
+  repeated quickbuf_unittest_import.ImportEnum repeated_import_enum = 53;
 
   repeated string repeated_string_piece = 54 [ctype=STRING_PIECE];
   repeated string repeated_cord = 55 [ctype=CORD];
@@ -120,7 +120,7 @@ message TestAllTypes {
 
   optional NestedEnum default_nested_enum = 81 [default = BAR];
   optional ForeignEnum default_foreign_enum = 82 [default = FOREIGN_BAR];
-  optional robobuf_unittest_import.ImportEnum default_import_enum = 83 [default = IMPORT_BAR];
+  optional quickbuf_unittest_import.ImportEnum default_import_enum = 83 [default = IMPORT_BAR];
 
   optional string default_string_piece = 84 [ctype=STRING_PIECE,default="abc"];
   optional string default_cord = 85 [ctype=CORD,default="123"];
