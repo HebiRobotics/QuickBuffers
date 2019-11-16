@@ -28,6 +28,12 @@ import us.hebi.robobuf.ProtoUtil.Charsets;
  * Utility methods for encoding values in a JSON
  * compatible way.
  *
+ * The implementation was inspired by JsonIter, which
+ * itself was based on DSL-Platform:
+ *
+ * https://github.com/json-iterator/java/blob/master/src/main/java/com/jsoniter/output/StreamImplNumber.java
+ * https://github.com/ngs-doo/dsl-json
+ *
  * @author Florian Enner
  * @since 12 Nov 2019
  */
@@ -37,10 +43,6 @@ class JsonEncoding {
 
         /**
          * RFC4648
-         *
-         * @param bytes
-         * @param length
-         * @param output
          */
         static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
 
@@ -58,10 +60,10 @@ class JsonEncoding {
                 final int bits = (bytes[i] & 0xff) << 16 | (bytes[i + 1] & 0xff) << 8 | (bytes[i + 2] & 0xff);
 
                 // Encode the 24 bits into four 6 bit characters
-                buffer[pos/**/] = BASE64[(bits >>> 18) & 0x3f];
-                buffer[pos + 1] = BASE64[(bits >>> 12) & 0x3f];
-                buffer[pos + 2] = BASE64[(bits >>> 6) & 0x3f];
-                buffer[pos + 3] = BASE64[bits & 0x3f];
+                buffer[pos/**/] = CHARS[(bits >>> 18) & 0x3f];
+                buffer[pos + 1] = CHARS[(bits >>> 12) & 0x3f];
+                buffer[pos + 2] = CHARS[(bits >>> 6) & 0x3f];
+                buffer[pos + 3] = CHARS[bits & 0x3f];
             }
 
             // Pad and encode last bits if source isn't even 24 bits
@@ -71,9 +73,9 @@ class JsonEncoding {
                 final int bits = ((bytes[i] & 0xff) << 10) | (remaining == 2 ? ((bytes[i + 1] & 0xff) << 2) : 0);
 
                 // Set last four bytes
-                buffer[pos/**/] = BASE64[bits >> 12];
-                buffer[pos + 1] = BASE64[(bits >>> 6) & 0x3f];
-                buffer[pos + 2] = remaining == 2 ? BASE64[bits & 0x3f] : (byte) '=';
+                buffer[pos/**/] = CHARS[bits >> 12];
+                buffer[pos + 1] = CHARS[(bits >>> 6) & 0x3f];
+                buffer[pos + 2] = remaining == 2 ? CHARS[bits & 0x3f] : (byte) '=';
                 buffer[pos + 3] = '=';
                 pos += 4;
             }
@@ -82,7 +84,7 @@ class JsonEncoding {
 
         }
 
-        private static final byte[] BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(Charsets.ISO_8859_1);
+        private static final byte[] CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(Charsets.ISO_8859_1);
 
     }
 
@@ -208,11 +210,6 @@ class JsonEncoding {
 
     }
 
-    /**
-     * Implementation was inspired by JsonIter and DSL-Platform
-     * https://github.com/json-iterator/java/blob/master/src/main/java/com/jsoniter/output/StreamImplNumber.java
-     * https://github.com/ngs-doo/dsl-json
-     */
     static class NumberEncoding {
 
         public static void writeInt(final int value, final RepeatedByte output) {
@@ -356,8 +353,8 @@ class JsonEncoding {
         }
 
         private static int writeFirstDigits(final byte[] buf, int pos, final int number) {
-            final int v = DIGITS[number];
-            final int numDigits = v >> NUM_DIGITS;
+            final int v = THREE_DIGITS[number];
+            final int numDigits = v >>> NUM_DIGITS;
             switch (numDigits) {
                 case 3:
                     buf[pos++] = (byte) (v >>> DIGIT_X00);
@@ -375,7 +372,7 @@ class JsonEncoding {
         }
 
         private static int writeThreeDigits(final byte[] buf, final int pos, final int number) {
-            final int v = DIGITS[number];
+            final int v = THREE_DIGITS[number];
             buf[pos/**/] = (byte) (v >>> DIGIT_X00);
             buf[pos + 1] = (byte) (v >>> DIGIT_0X0);
             buf[pos + 2] = (byte) (v >>> DIGIT_00X);
@@ -591,7 +588,7 @@ class JsonEncoding {
         // lookup table that packs three character digits and
         // size information into an int. This way we can write
         // three characters in a single go.
-        private static final int[] DIGITS = new int[1000];
+        private static final int[] THREE_DIGITS = new int[1000];
         private static final int DIGIT_00X = 0;
         private static final int DIGIT_0X0 = 8;
         private static final int DIGIT_X00 = 16;
@@ -603,7 +600,7 @@ class JsonEncoding {
                 int digit10 = '0' + ((i / 10) % 10);
                 int digit1 = '0' + (i % 10);
                 int numDigits = digit100 == '0' ? digit10 == '0' ? 1 : 2 : 3;
-                DIGITS[i] = numDigits << NUM_DIGITS | digit100 << DIGIT_X00 | digit10 << DIGIT_0X0 | digit1 << DIGIT_00X;
+                THREE_DIGITS[i] = numDigits << NUM_DIGITS | digit100 << DIGIT_X00 | digit10 << DIGIT_0X0 | digit1 << DIGIT_00X;
             }
         }
 
@@ -613,14 +610,14 @@ class JsonEncoding {
 
         static void writeBoolean(boolean value, RepeatedByte output) {
             if (value) {
-                output.addAll(TRUE_BYTES);
+                output.addAll(TRUE);
             } else {
-                output.addAll(FALSE_BYTES);
+                output.addAll(FALSE);
             }
         }
 
-        private static final byte[] TRUE_BYTES = "true".getBytes(Charsets.ISO_8859_1);
-        private static final byte[] FALSE_BYTES = "false".getBytes(Charsets.ISO_8859_1);
+        private static final byte[] TRUE = {'t', 'r', 'u', 'e'};
+        private static final byte[] FALSE = {'f', 'a', 'l', 's', 'e'};
 
     }
 
