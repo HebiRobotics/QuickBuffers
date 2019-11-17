@@ -275,20 +275,20 @@ class JsonEncoding {
 
         private static int writePositiveLong(final long q0, final byte[] buf, int pos) {
             final long q1, q2, q3, q4, q5, q6;
-            if ((q1 = q0 / factor3) == 0) {
+            if ((q1 = q0 / pow3) == 0) {
 
                 // value < 10^3
                 pos += writeFirstDigits(buf, pos, q0);
                 return pos;
 
-            } else if ((q2 = q0 / factor6) == 0) {
+            } else if ((q2 = q0 / pow6) == 0) {
 
                 // value < 10^6
                 pos += writeFirstDigits(buf, pos, q1);
                 pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
                 return pos;
 
-            } else if ((q3 = q0 / factor9) == 0) {
+            } else if ((q3 = q0 / pow9) == 0) {
 
                 // value < 10^9
                 pos += writeFirstDigits(buf, pos, q2);
@@ -296,7 +296,7 @@ class JsonEncoding {
                 pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
                 return pos;
 
-            } else if ((q4 = q0 / factor12) == 0) {
+            } else if ((q4 = q0 / pow12) == 0) {
 
                 // value < 10^12
                 pos += writeFirstDigits(buf, pos, q3);
@@ -305,7 +305,7 @@ class JsonEncoding {
                 pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
                 return pos;
 
-            } else if ((q5 = q0 / factor15) == 0) {
+            } else if ((q5 = q0 / pow15) == 0) {
 
                 // value < 10^15
                 pos += writeFirstDigits(buf, pos, q4);
@@ -315,7 +315,7 @@ class JsonEncoding {
                 pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
                 return pos;
 
-            } else if ((q6 = q0 / factor18) == 0) {
+            } else if ((q6 = q0 / pow18) == 0) {
 
                 // value < 10^18
                 pos += writeFirstDigits(buf, pos, q5);
@@ -403,20 +403,20 @@ class JsonEncoding {
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * factor12 + 0.5);
-                int pos = writePositiveLong(fval / factor12, buffer, output.length);
+                final long fval = (long) (pval * pow12 + 0.5);
+                int pos = writePositiveLong(fval / pow12, buffer, output.length);
 
-                final long q0 = (long) (fval % factor12);
+                final long q0 = (long) (fval % pow12);
                 if (q0 == 0) {
                     output.length = pos;
                     return;
                 }
 
                 buffer[pos++] = '.';
-                final long q4 = q0 / factor12;
-                final long q3 = q0 / factor9;
-                final long q2 = q0 / factor6;
-                final long q1 = q0 / factor3;
+                final long q4 = q0 / pow12;
+                final long q3 = q0 / pow9;
+                final long q2 = q0 / pow6;
+                final long q1 = q0 / pow3;
                 final int r4 = (int) (q3 - q4 * 1000);
                 final int r3 = (int) (q2 - q3 * 1000);
                 final int r2 = (int) (q1 - q2 * 1000);
@@ -443,19 +443,19 @@ class JsonEncoding {
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * factor9 + 0.5);
-                int pos = writePositiveLong(fval / factor9, buffer, output.length);
+                final long fval = (long) (pval * pow9 + 0.5);
+                int pos = writePositiveLong(fval / pow9, buffer, output.length);
 
-                final long q0 = (long) (fval % factor9);
+                final long q0 = (long) (fval % pow9);
                 if (q0 == 0) {
                     output.length = pos;
                     return;
                 }
 
                 buffer[pos++] = '.';
-                final long q3 = q0 / factor9;
-                final long q2 = q0 / factor6;
-                final long q1 = q0 / factor3;
+                final long q3 = q0 / pow9;
+                final long q2 = q0 / pow6;
+                final long q1 = q0 / pow3;
                 final int r3 = (int) (q2 - q3 * 1000);
                 final int r2 = (int) (q1 - q2 * 1000);
                 final int r1 = (int) (q0 - q1 * 1000);
@@ -478,18 +478,18 @@ class JsonEncoding {
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * factor6 + 0.5);
-                int pos = writePositiveLong(fval / factor6, buffer, output.length);
+                final long fval = (long) (pval * pow6 + 0.5);
+                int pos = writePositiveLong(fval / pow6, buffer, output.length);
 
-                final long q0 = (long) (fval % factor6);
+                final long q0 = (long) (fval % pow6);
                 if (q0 == 0) {
                     output.length = pos;
                     return;
                 }
 
                 buffer[pos++] = '.';
-                final long q2 = q0 / factor6;
-                final long q1 = q0 / factor3;
+                final long q2 = q0 / pow6;
+                final long q1 = q0 / pow3;
                 final int r2 = (int) (q1 - q2 * 1000);
                 final int r1 = (int) (q0 - q1 * 1000);
 
@@ -508,17 +508,17 @@ class JsonEncoding {
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * factor3 + 0.5);
-                int pos = writePositiveLong(fval / factor3, buffer, output.length);
+                final long fval = (long) (pval * pow3 + 0.5);
+                int pos = writePositiveLong(fval / pow3, buffer, output.length);
 
-                final long q0 = (long) (fval % factor3);
+                final long q0 = (long) (fval % pow3);
                 if (q0 == 0) {
                     output.length = pos;
                     return;
                 }
 
                 buffer[pos++] = '.';
-                final long q1 = q0 / factor3;
+                final long q1 = q0 / pow3;
                 final int r1 = (int) (q0 - q1 * 1000);
 
                 pos += writeThreeDigits(buffer, pos, r1);
@@ -563,19 +563,19 @@ class JsonEncoding {
             return 2;
         }
 
-        private static final long factor3 = 1000;
-        private static final long factor6 = 1000 * factor3;
-        private static final long factor9 = 1000 * factor6;
-        private static final long factor12 = 1000 * factor9;
-        private static final long factor15 = 1000 * factor12;
-        private static final long factor18 = 1000 * factor15;
+        private static final long pow3 = 1000;
+        private static final long pow6 = 1000 * pow3;
+        private static final long pow9 = 1000 * pow6;
+        private static final long pow12 = 1000 * pow9;
+        private static final long pow15 = 1000 * pow12;
+        private static final long pow18 = 1000 * pow15;
 
         // Numbers larger than this are whole numbers due to representation error.
         static final double WHOLE_NUMBER = 1L << 52;
-        static final double max3 = WHOLE_NUMBER / factor3;
-        static final double max6 = WHOLE_NUMBER / factor6;
-        static final double max9 = WHOLE_NUMBER / factor9;
-        static final double max12 = WHOLE_NUMBER / factor12;
+        static final double max3 = WHOLE_NUMBER / pow3;
+        static final double max6 = WHOLE_NUMBER / pow6;
+        static final double max9 = WHOLE_NUMBER / pow9;
+        static final double max12 = WHOLE_NUMBER / pow12;
 
         // JSON numbers don't allow inf/nan etc., so we need to encode them as String
         private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(UTF_8);
