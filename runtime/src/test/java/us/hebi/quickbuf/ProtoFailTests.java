@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -28,6 +28,9 @@ import protos.test.quickbuf.TestAllTypes;
 import protos.test.quickbuf.UnittestRequired;
 
 import java.io.IOException;
+import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Florian Enner
@@ -130,6 +133,115 @@ public class ProtoFailTests {
     }
 
     // --------------------------------------------------------------------------------------
+
+    @Test
+    public void testMalformedVarint32() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance();
+        RepeatedByte bytes = msg.getUnknownBytes();
+        Arrays.fill(bytes.setLength(12).array(), (byte) -5); // bad value
+
+        byte[] array = msg.getUnknownBytes().reserve(20).array();
+        array[0] = 1 << 3; // optional int32 in msg
+
+        // 12 byte varint
+        try {
+            bytes.setLength(13).array[12] = 0;
+            TestAllTypes.parseFrom(msg.toByteArray());
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("malformed"));
+        }
+
+        // 11 byte varint
+        try {
+            bytes.setLength(12).array[11] = 0;
+            TestAllTypes.parseFrom(msg.toByteArray());
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("malformed"));
+        }
+
+        // 10 byte -> should work
+        bytes.setLength(11).array[10] = 0;
+        TestAllTypes.parseFrom(msg.toByteArray());
+
+    }
+
+    @Test
+    public void testMalformedVarint64() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance();
+        RepeatedByte bytes = msg.getUnknownBytes();
+        Arrays.fill(bytes.setLength(12).array(), (byte) -5); // bad value
+
+        byte[] array = msg.getUnknownBytes().reserve(20).array();
+        array[0] = 2 << 3; // optional int64 in msg
+
+        // 12 byte varint
+        try {
+            bytes.setLength(13).array[12] = 0;
+            TestAllTypes.parseFrom(msg.toByteArray());
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("malformed"));
+        }
+
+        // 11 byte varint
+        try {
+            bytes.setLength(12).array[11] = 0;
+            TestAllTypes.parseFrom(msg.toByteArray());
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("malformed"));
+        }
+
+        // 10 byte -> should work
+        bytes.setLength(11).array[10] = 0;
+        TestAllTypes.parseFrom(msg.toByteArray());
+
+    }
+
+    @Test
+    public void testVarint32() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance();
+        testVarint32(msg, 0);
+        testVarint32(msg, 1);
+        testVarint32(msg, Integer.MIN_VALUE);
+        testVarint32(msg, Integer.MAX_VALUE);
+        testVarint32(msg, 1 << 7);
+        testVarint32(msg, 1 << 14);
+        testVarint32(msg, 1 << 21);
+        testVarint32(msg, 1 << 28);
+    }
+
+    private void testVarint32(TestAllTypes msg, int value) throws IOException {
+        msg.setOptionalInt32(value);
+        byte[] bytes = msg.toByteArray();
+        msg.clear().mergeFrom(ProtoSource.newInstance(bytes));
+        assertEquals(value, msg.getOptionalInt32());
+    }
+    
+    @Test
+    public void testVarint64() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance();
+        testVarint64(msg, 0);
+        testVarint64(msg, 1);
+        testVarint64(msg, Long.MIN_VALUE);
+        testVarint64(msg, Long.MAX_VALUE);
+        testVarint64(msg, 1L << 7);
+        testVarint64(msg, 1L << 14);
+        testVarint64(msg, 1L << 21);
+        testVarint64(msg, 1L << 28);
+        testVarint64(msg, 1L << 35);
+        testVarint64(msg, 1L << 42);
+        testVarint64(msg, 1L << 49);
+    }
+
+    private void testVarint64(TestAllTypes msg, long value) throws IOException {
+        msg.setOptionalInt64(value);
+        byte[] bytes = msg.toByteArray();
+        msg.clear().mergeFrom(ProtoSource.newInstance(bytes));
+        assertEquals(value, msg.getOptionalInt64());
+    }
 
     @Test(expected = InvalidProtocolBufferException.class)
     public void testTruncatedVarint32() throws IOException {

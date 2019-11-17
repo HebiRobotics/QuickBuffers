@@ -41,12 +41,12 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
  * Throughput test. Comparable to
  * https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html
  *
- * === Protobuf-Java ===
+ * === Protobuf-Java === (OpenJDK13)
  * Benchmark                                      Mode  Cnt     Score     Error   Units
- * SbeThroughputBenchmarkProto.testCarDecode     thrpt   10  1166.297 ±  44.888  ops/ms
- * SbeThroughputBenchmarkProto.testCarEncode     thrpt   10  1125.489 ±  44.215  ops/ms
- * SbeThroughputBenchmarkProto.testMarketDecode  thrpt   10  3282.333 ± 378.696  ops/ms
- * SbeThroughputBenchmarkProto.testMarketEncode  thrpt   10  3711.778 ±  64.323  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testCarDecode     thrpt   10  1270.720 ± 170.138  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testCarEncode     thrpt   10   984.541 ±  12.779  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketDecode  thrpt   10  3305.841 ± 119.879  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketEncode  thrpt   10  3700.373 ±  99.843  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019

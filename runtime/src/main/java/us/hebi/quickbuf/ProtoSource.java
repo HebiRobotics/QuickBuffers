@@ -479,58 +479,85 @@ public class ProtoSource {
 
     // =================================================================
 
-    /**
-     * Read a raw Varint from the source.  If larger than 32 bits, discard the
-     * upper bits.
-     */
     public int readRawVarint32() throws IOException {
-        byte tmp = readRawByte();
-        if (tmp >= 0) {
-            return tmp;
-        }
-        int result = tmp & 0x7f;
-        if ((tmp = readRawByte()) >= 0) {
-            result |= tmp << 7;
+        // See implementation notes for readRawVarint64
+        int x = readRawByte();
+        if (x >= 0) {
+            return x;
+        } else if ((x ^= (readRawByte() << 7)) < 0) {
+            return x ^ signs7;
+        } else if ((x ^= (readRawByte() << 14)) >= 0) {
+            return x ^ signs14;
+        } else if ((x ^= (readRawByte() << 21)) < 0) {
+            return x ^ signs21;
         } else {
-            result |= (tmp & 0x7f) << 7;
-            if ((tmp = readRawByte()) >= 0) {
-                result |= tmp << 14;
-            } else {
-                result |= (tmp & 0x7f) << 14;
-                if ((tmp = readRawByte()) >= 0) {
-                    result |= tmp << 21;
-                } else {
-                    result |= (tmp & 0x7f) << 21;
-                    result |= (tmp = readRawByte()) << 28;
-                    if (tmp < 0) {
-                        // Discard upper 32 bits.
-                        for (int i = 0; i < 5; i++) {
-                            if (readRawByte() >= 0) {
-                                return result;
-                            }
-                        }
-                        throw InvalidProtocolBufferException.malformedVarint();
-                    }
-                }
+
+            // Discard upper 32 bits.
+            final int y = readRawByte();
+            if (y < 0
+                    && readRawByte() < 0
+                    && readRawByte() < 0
+                    && readRawByte() < 0
+                    && readRawByte() < 0
+                    && readRawByte() < 0) {
+                throw InvalidProtocolBufferException.malformedVarint();
             }
+
+            return x ^ (y << 28) ^ signs28i;
         }
-        return result;
     }
 
     /** Read a raw Varint from the source. */
     public long readRawVarint64() throws IOException {
-        int shift = 0;
-        long result = 0;
-        while (shift < 64) {
-            final byte b = readRawByte();
-            result |= (b & 0x7FL) << shift;
-            if ((b & 0x80) == 0) {
-                return result;
-            }
-            shift += 7;
+        // Implementation notes:
+        //
+        // Slightly modified version of the Protobuf-Java method. It
+        // leverages sign extension of (signed) Java bytes. Instead of
+        // eagerly masking the lower 7 bits, the signs can be eliminated
+        // with an xor all at once.
+
+        // values that fit within 32 bit
+        int y;
+        if ((y = readRawByte()) >= 0) {
+            return y;
+        } else if ((y ^= (readRawByte() << 7)) < 0) {
+            return y ^ signs7;
+        } else if ((y ^= (readRawByte() << 14)) >= 0) {
+            return y ^ signs14;
+        } else if ((y ^= (readRawByte() << 21)) < 0) {
+            return y ^ signs21;
         }
-        throw InvalidProtocolBufferException.malformedVarint();
+
+        // values that require 64 bit
+        long x;
+        if ((x = y ^ ((long) readRawByte() << 28)) >= 0L) {
+            return x ^ signs28;
+        } else if ((x ^= ((long) readRawByte() << 35)) < 0L) {
+            return x ^ signs35;
+        } else if ((x ^= ((long) readRawByte() << 42)) >= 0L) {
+            return x ^ signs42;
+        } else if ((x ^= ((long) readRawByte() << 49)) < 0L) {
+            return x ^ signs49;
+        } else {
+            x ^= ((long) readRawByte() << 56) ^ signs56;
+            if (x < 0L) {
+                if (readRawByte() < 0) {
+                    throw InvalidProtocolBufferException.malformedVarint();
+                }
+            }
+            return x;
+        }
     }
+
+    static final int signs7 = ~0 << 7;
+    static final int signs14 = signs7 ^ (~0 << 14);
+    static final int signs21 = signs14 ^ (~0 << 21);
+    static final int signs28i = signs21 ^ (~0 << 28);
+    private static final long signs28 = signs21 ^ (~0 << 28);
+    private static final long signs35 = signs28 ^ (~0L << 35);
+    private static final long signs42 = signs35 ^ (~0L << 42);
+    private static final long signs49 = signs42 ^ (~0L << 49);
+    private static final long signs56 = signs49 ^ (~0L << 56);
 
     /** Read a 16-bit little-endian integer from the source. */
     public short readRawLittleEndian16() throws IOException {

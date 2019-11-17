@@ -96,10 +96,10 @@ public class FieldGenerator {
     }
 
     protected void generateClearQuickCode(MethodSpec.Builder method) {
-        if (info.isRepeated() || info.isBytes()) {
-            method.addNamedCode("$field:N.clear();\n", m);
-        } else if (info.isMessageOrGroup()) {
+        if (info.isMessageOrGroup()) { // includes repeated messages
             method.addNamedCode("$field:N.clearQuick();\n", m);
+        } else if (info.isRepeated() || info.isBytes()) {
+            method.addNamedCode("$field:N.clear();\n", m);
         } else if (info.isString()) {
             method.addNamedCode("$field:N.setLength(0);\n", m);
         } else if (info.isPrimitive() || info.isEnum()) {

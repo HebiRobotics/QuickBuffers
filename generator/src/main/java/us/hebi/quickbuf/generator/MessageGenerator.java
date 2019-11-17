@@ -369,13 +369,22 @@ class MessageGenerator {
                 .returns(info.getTypeName());
         copyFrom.addStatement("cachedSize = other.cachedSize");
         for (int i = 0; i < numBitFields; i++) {
-            copyFrom.addStatement("$1L = other.$1L", BitField.fieldName(i));
+            final int fieldIndex = i;
+            String bitField = BitField.fieldName(fieldIndex);
+
+            // We don't need to copy if neither message has any fields set
+            copyFrom.beginControlFlow("if (($1L | other.$1L) != 0)", bitField);
+            copyFrom.addStatement("$1L = other.$1L", bitField);
+            fields.stream()
+                    .filter(field -> BitField.getFieldIndex(field.info.getFieldIndex()) == fieldIndex)
+                    .forEach(field -> field.generateCopyFromCode(copyFrom));
+            copyFrom.endControlFlow();
         }
-        fields.forEach(field -> field.generateCopyFromCode(copyFrom));
+
         if (info.isStoreUnknownFields()) {
             copyFrom.addStatement(named("$unknownBytes:N.copyFrom(other.$unknownBytes:N)"));
         }
-        copyFrom.addStatement("return this"); // TODO: remember dirty bit
+        copyFrom.addStatement("return this");
         type.addMethod(copyFrom.build());
     }
 
