@@ -26,6 +26,7 @@ import us.hebi.quickbuf.JsonEncoding.Base64Encoding;
 import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
 import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
+import us.hebi.quickbuf.ProtoEnum.EnumConverter;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.util.Arrays;
@@ -70,7 +71,9 @@ public class JsonSink {
      * The output contains extra whitespace to improve human readability
      */
     public static JsonSink newPrettyInstance() {
-        return newInstance(RepeatedByte.newEmptyInstance()).setIndentCount(2);
+        return newInstance(RepeatedByte.newEmptyInstance())
+                .setIndentCount(2)
+                .setWriteEnumStrings(true);
     }
 
     /**
@@ -96,6 +99,21 @@ public class JsonSink {
      */
     public JsonSink setIndentCount(int indentCount) {
         this.indentCount = indentCount;
+        return this;
+    }
+
+    /**
+     * Allows to serialize enums as human readable strings or
+     * as JSON numbers. Compatible parsers are able to parse
+     * either case.
+     *
+     * Unknown values will still be serialized as numbers.
+     *
+     * @param value true if values should use strings
+     * @return this
+     */
+    public JsonSink setWriteEnumStrings(boolean value) {
+        this.writeEnumStrings = value;
         return this;
     }
 
@@ -136,6 +154,12 @@ public class JsonSink {
     public void writeField(byte[] key, boolean value) {
         writeKey(key);
         BooleanEncoding.writeBoolean(value, output);
+        writeMore();
+    }
+
+    public void writeField(byte[] key, int value, EnumConverter converter) {
+        writeKey(key);
+        writeEnumValue(value, converter);
         writeMore();
     }
 
@@ -185,6 +209,15 @@ public class JsonSink {
         writeArrayStart(key);
         for (int i = 0; i < value.length; i++) {
             BooleanEncoding.writeBoolean(value.array[i], output);
+            writeMore();
+        }
+        writeArrayEnd();
+    }
+
+    public void writeField(byte[] key, RepeatedInt value, EnumConverter converter) {
+        writeArrayStart(key);
+        for (int i = 0; i < value.length; i++) {
+            writeEnumValue(value.array[i], converter);
             writeMore();
         }
         writeArrayEnd();
@@ -294,6 +327,17 @@ public class JsonSink {
         trailingSpace = output.length - pos;
     }
 
+    private void writeEnumValue(int number, EnumConverter converter) {
+        if (writeEnumStrings) {
+            ProtoEnum value = converter.forNumber(number);
+            if (value != null) {
+                StringEncoding.writeQuotedUtf8(value.getName(), output);
+                return;
+            }
+        }
+        NumberEncoding.writeInt(number, output);
+    }
+
     protected void removeTrailingComma() {
         // Called after at least one character, so no need to check bounds
         output.length -= trailingSpace;
@@ -326,5 +370,6 @@ public class JsonSink {
     protected int indentLevel = 0;
     protected int indentCount = 0;
     protected int trailingSpace = 0;
+    protected boolean writeEnumStrings = false;
 
 }

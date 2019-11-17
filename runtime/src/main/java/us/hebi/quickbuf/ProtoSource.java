@@ -515,8 +515,6 @@ public class ProtoSource {
         // leverages sign extension of (signed) Java bytes. Instead of
         // eagerly masking the lower 7 bits, the signs can be eliminated
         // with an xor all at once.
-
-        // values that fit within 32 bit
         int y;
         if ((y = readRawByte()) >= 0) {
             return y;
@@ -528,7 +526,6 @@ public class ProtoSource {
             return y ^ signs21;
         }
 
-        // values that require 64 bit
         long x;
         if ((x = y ^ ((long) readRawByte() << 28)) >= 0L) {
             return x ^ signs28;

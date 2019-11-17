@@ -345,8 +345,11 @@ public class FieldGenerator {
     }
 
     protected void generateJsonSerializationCode(MethodSpec.Builder method) {
-        // TODO: handle enum with strings instead of numbers?
-        method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N)"));
+        if (info.isEnum()) {
+            method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N, $type:T.converter())"));
+        } else {
+            method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N)"));
+        }
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {

@@ -44,6 +44,8 @@ class RuntimeClasses {
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");
     public static ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
     public static ClassName JsonSink = ClassName.get(API_PACKAGE, "JsonSink");
+    public static ClassName ProtoEnum = ClassName.get(API_PACKAGE, "ProtoEnum");
+    public static ClassName EnumConverter = ProtoEnum.nestedClass("EnumConverter");
 
     static final String unknownBytesField = "unknownBytes";
     static final String unknownBytesKey = "unknownBytesJsonKey";
