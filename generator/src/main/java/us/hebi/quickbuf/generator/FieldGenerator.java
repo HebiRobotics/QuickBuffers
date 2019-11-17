@@ -50,6 +50,8 @@ public class FieldGenerator {
 
         if (info.isRepeated() && info.isMessageOrGroup()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.getFactory())", RuntimeClasses.RepeatedMessage, info.getTypeName());
+        } else if (info.isRepeated() && info.isEnum()) {
+            field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.converter())", RuntimeClasses.RepeatedEnum, info.getTypeName());
         } else if (info.isRepeated() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
         } else if (info.isMessageOrGroup()) {
@@ -180,8 +182,14 @@ public class FieldGenerator {
                     .addStatement("final int value = input.readInt32()")
                     .beginControlFlow("if ($T.forNumber(value) != null)", typeName)
                     .addNamedCode("$field:N = value;\n", m)
-                    .addNamedCode("$setHas:L;\n", m)
-                    .endControlFlow();
+                    .addNamedCode("$setHas:L;\n", m);
+
+            if (info.getParentTypeInfo().isStoreUnknownFields()) {
+                method.nextControlFlow("else")
+                        .addStatement("input.readBytesFromMark($N)", RuntimeClasses.unknownBytesField);
+            }
+
+            method.endControlFlow();
 
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
@@ -245,19 +253,19 @@ public class FieldGenerator {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
                     "$writePackedTagToOutput:L" +
                     "output.writeRawVarint32(dataSize);\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
+                    "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n", m);
 
         } else if (info.isRepeated()) {
             method.addNamedCode("" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "$writeTagToOutput:L" +
-                    "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
+                    "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n", m);
 
         } else {
@@ -309,31 +317,29 @@ public class FieldGenerator {
     }
 
     protected void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-        if (info.isPacked() && info.isFixedWidth()) {
+        if (info.isFixedWidth() && info.isPacked()) {
             method.addNamedCode("" +
                     "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
-                    "size += dataSize;\n" +
-                    "size += $bytesPerTag:L;\n" +
-                    "size += $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+
+        } else if (info.isFixedWidth() && info.isRepeated()) { // non packed
+            method.addStatement(named("size += ($bytesPerTag:L + $fixedWidth:L) * $field:N.length()"));
 
         } else if (info.isPacked()) {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
-                    "size += dataSize;\n" +
-                    "size += $bytesPerTag:L;\n" +
-                    "size += $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
 
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
-                    "size += dataSize;\n" +
-                    "size += $bytesPerTag:L * $field:N.length();\n", m);
+                    "size += ($bytesPerTag:L * $field:N.length()) + dataSize;\n", m);
 
         } else if (info.isFixedWidth()) {
             method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated
@@ -345,7 +351,7 @@ public class FieldGenerator {
     }
 
     protected void generateJsonSerializationCode(MethodSpec.Builder method) {
-        if (info.isEnum()) {
+        if (info.isEnum() && !info.isRepeated()) {
             method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N, $type:T.converter())"));
         } else {
             method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N)"));
@@ -494,7 +500,7 @@ public class FieldGenerator {
 
             // getCount() & get(index)
             getter.addParameter(int.class, "index", Modifier.FINAL);
-            getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
+            getter.addNamedCode("return $field:N.get(index);\n", m);
 
             MethodSpec getCount = MethodSpec.methodBuilder(info.getGetterName() + "Count")
                     .addAnnotations(info.getMethodAnnotations())
@@ -596,6 +602,8 @@ public class FieldGenerator {
         m.put("valueOrNumber", info.isEnum() ? "value.getNumber()" : "value");
         if (info.isPackable()) m.put("packedTag", info.getPackedTag());
         if (info.isFixedWidth()) m.put("fixedWidth", info.getFixedWidth());
+        if (info.isRepeated())
+            m.put("getRepeatedIndex_i", info.isPrimitive() || info.isEnum() ? "array()[i]" : "get(i)");
 
         // utility classes
         m.put("jsonKeys", getInfo().getParentTypeInfo().getJsonKeysClass());

@@ -58,6 +58,7 @@ class RuntimeClasses {
     private static final ClassName RepeatedString = ClassName.get(API_PACKAGE, "RepeatedString");
     private static final ClassName RepeatedBytes = ClassName.get(API_PACKAGE, "RepeatedBytes");
     static final ClassName RepeatedMessage = ClassName.get(API_PACKAGE, "RepeatedMessage");
+    static final ClassName RepeatedEnum = ClassName.get(API_PACKAGE, "RepeatedEnum");
 
     static ClassName getRepeatedStoreType(FieldDescriptorProto.Type type) {
         switch (type) {
@@ -75,7 +76,6 @@ class RuntimeClasses {
             case TYPE_UINT64:
                 return RepeatedLong;
 
-            case TYPE_ENUM:
             case TYPE_SFIXED32:
             case TYPE_FIXED32:
             case TYPE_SINT32:
@@ -85,6 +85,9 @@ class RuntimeClasses {
 
             case TYPE_BOOL:
                 return RepeatedBoolean;
+
+            case TYPE_ENUM:
+                return RepeatedEnum;
 
             case TYPE_STRING:
                 return RepeatedString;

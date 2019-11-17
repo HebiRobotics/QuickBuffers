@@ -214,10 +214,10 @@ public class JsonSink {
         writeArrayEnd();
     }
 
-    public void writeField(byte[] key, RepeatedInt value, EnumConverter converter) {
+    public void writeField(byte[] key, RepeatedEnum value) {
         writeArrayStart(key);
         for (int i = 0; i < value.length; i++) {
-            writeEnumValue(value.array[i], converter);
+            writeEnumValue(value.array[i], value.converter);
             writeMore();
         }
         writeArrayEnd();
@@ -328,14 +328,12 @@ public class JsonSink {
     }
 
     private void writeEnumValue(int number, EnumConverter converter) {
-        if (writeEnumStrings) {
-            ProtoEnum value = converter.forNumber(number);
-            if (value != null) {
-                StringEncoding.writeQuotedUtf8(value.getName(), output);
-                return;
-            }
+        final ProtoEnum value;
+        if (writeEnumStrings && (value = converter.forNumber(number)) != null) {
+            StringEncoding.writeQuotedUtf8(value.getName(), output);
+        } else {
+            NumberEncoding.writeInt(number, output);
         }
-        NumberEncoding.writeInt(number, output);
     }
 
     protected void removeTrailingComma() {

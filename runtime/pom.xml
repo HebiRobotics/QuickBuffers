@@ -72,6 +72,14 @@
                                 <replace file="${copyToDir}/RepeatedByte.java" token="RepeatedFloat" value="RepeatedByte"/>
                                 <replace file="${copyToDir}/RepeatedByte.java" token="float" value="byte"/>
 
+                                <!-- repeated enums are stored as ints, but require some extra conversion -->
+                                <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedEnumBase.java" />
+                                <replace file="${copyToDir}/RepeatedEnumBase.java" token="RepeatedFloat" value="RepeatedEnumBase"/>
+                                <replace file="${copyToDir}/RepeatedEnumBase.java" token="float" value="int"/>
+                                <replace file="${copyToDir}/RepeatedEnumBase.java" token="get(" value="getNumber("/>
+                                <replace file="${copyToDir}/RepeatedEnumBase.java" token="public final class" value="abstract class"/>
+                                <replace file="${copyToDir}/RepeatedEnumBase.java" token="new RepeatedEnumBase()" value="null"/>
+
                             </tasks>
                         </configuration>
                     </execution>

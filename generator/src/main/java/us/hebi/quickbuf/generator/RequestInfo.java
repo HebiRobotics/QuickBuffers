@@ -266,7 +266,7 @@ public class RequestInfo {
     @Value
     public static class FieldInfo {
 
-        FieldInfo(FileInfo parentFile, TypeInfo parentTypeInfo, ClassName parentType, FieldDescriptorProto descriptor, int fieldIndex) {
+        FieldInfo(FileInfo parentFile, MessageInfo parentTypeInfo, ClassName parentType, FieldDescriptorProto descriptor, int fieldIndex) {
             this.parentFile = parentFile;
             this.parentTypeInfo = parentTypeInfo;
             this.parentType = parentType;
@@ -307,6 +307,8 @@ public class RequestInfo {
 
         public TypeName getRepeatedStoreType() {
             if (isGroup() || isMessage()) {
+                return ParameterizedTypeName.get(repeatedStoreType, getTypeName());
+            } else if (isEnum()) {
                 return ParameterizedTypeName.get(repeatedStoreType, getTypeName());
             }
             return repeatedStoreType;
@@ -425,7 +427,7 @@ public class RequestInfo {
         }
 
         private final FileInfo parentFile;
-        private final TypeInfo parentTypeInfo;
+        private final MessageInfo parentTypeInfo;
         private final ClassName parentType;
         private final ClassName repeatedStoreType;
         private final FieldDescriptorProto descriptor;
