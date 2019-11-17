@@ -471,8 +471,8 @@ class MessageGenerator {
         MethodSpec.Builder writeTo = MethodSpec.methodBuilder("writeTo")
                 .addAnnotation(Override.class)
                 .addParameter(RuntimeClasses.JsonSink, "output", Modifier.FINAL)
-                .addModifiers(Modifier.PUBLIC);
-        writeTo.addStatement("output.writeObjectStart()");
+                .addModifiers(Modifier.PUBLIC)
+                .addStatement("output.writeObjectStart()");
 
         // add every set field
         for (FieldGenerator field : fields) {
