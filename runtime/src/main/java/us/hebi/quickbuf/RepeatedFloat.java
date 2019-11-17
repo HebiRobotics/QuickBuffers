@@ -172,11 +172,6 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     @Override
-    public int hashCode() {
-        return Arrays.hashCode(toArray());
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
