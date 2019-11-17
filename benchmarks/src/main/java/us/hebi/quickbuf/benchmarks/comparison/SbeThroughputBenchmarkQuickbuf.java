@@ -39,25 +39,39 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * === Quickbuf (with Unsafe)
+ * === Quickbuf (JDK8 unsafe)
  * Benchmark                                     Mode  Cnt     Score     Error   Units
- * SbeThroughputBenchmarkRobo.testCarDecode     thrpt   10  2041.544 ±  24.943  ops/ms
- * SbeThroughputBenchmarkRobo.testCarEncode     thrpt   10  2853.995 ± 141.411  ops/ms
- * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  5976.679 ± 196.894  ops/ms
- * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8267.069 ±  84.955  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2059.416 ±  76.329  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2858.469 ±  40.052  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  6196.707 ± 132.391  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8440.097 ± 132.906  ops/ms
  *
- * == No Unsafe - for market decode the standard array source seems to be consistently faster
- * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  6356.825 ± 195.657  ops/ms
+ * === Quickbuf (JDK8 no unsafe)
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  1857.434 ±  69.348  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2688.618 ± 119.564  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  6611.062 ± 185.162  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8132.255 ±  79.923  ops/ms
  *
- * === change .proto definition to use fixed width types for 7+ bit values ===
- * Benchmark                                     Mode  Cnt     Score     Error   Units
- * SbeThroughputBenchmarkRobo.testMarketDecode  thrpt   10  6583.222 ± 206.918  ops/ms
- * SbeThroughputBenchmarkRobo.testMarketEncode  thrpt   10  8716.434 ± 121.461  ops/ms
+ * == Quickbuf (JDK13 unsafe)
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2065.952 ±  72.137  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2669.079 ± 105.421  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  7235.390 ± 234.589  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8036.102 ± 216.636  ops/ms
  *
- * === JSON
+ * == Quickbuf (JDK13 no unsafe)
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2202.553 ± 116.821  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2538.979 ±  56.068  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  7522.434 ± 119.982  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8088.595 ±  94.757  ops/ms
+ *
+ * === JSON (JDK8)
  * Benchmark                                         Mode  Cnt     Score    Error   Units
  * SbeThroughputBenchmarkRobo.testCarEncodeJson     thrpt   10  1423.760 ± 31.877  ops/ms
  * SbeThroughputBenchmarkRobo.testMarketEncodeJson  thrpt   10  3284.856 ± 72.124  ops/ms
+ *
+ * === JSON (JDK13)
+ * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10  1502.202 ±  13.620  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10  3208.274 ± 108.914  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019
@@ -72,7 +86,7 @@ public class SbeThroughputBenchmarkQuickbuf {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SbeThroughputBenchmarkQuickbuf.class.getSimpleName() + ".*")
+                .include(".*" + SbeThroughputBenchmarkQuickbuf.class.getSimpleName() + ".*MarketEncode")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();
@@ -84,11 +98,12 @@ public class SbeThroughputBenchmarkQuickbuf {
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
-    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSource source = ProtoSource.newSafeInstance();
     final ProtoSink sink = ProtoSink.newInstance();
 
     final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
 
+/*
     @Benchmark
     public int testMarketEncodeJson() throws IOException {
         return jsonSink.clear()
@@ -104,6 +119,7 @@ public class SbeThroughputBenchmarkQuickbuf {
                 .getBuffer()
                 .length();
     }
+*/
 
     @Benchmark
     public int testMarketEncode() throws IOException {

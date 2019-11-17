@@ -1,6 +1,6 @@
 # QuickBuffers - Benchmarks
   
-Below is a comparison with Google's official bindings for a variety of datasets. The performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run using JMH on JDK8 on an Intel NUC8i7BEH.
+Below is a comparison with Google's official bindings for a variety of datasets. The performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run using JMH on an Intel NUC8i7BEH. Benchmarks 2 and 3 were run on JDK8 while Benchmark 1 has been updated to JDK13. In general, decoding performance seems to be better on JDK13, but encoding performance is worse for most cases.
 
 ## Benchmark 1 - SBE dataset
 
@@ -11,10 +11,10 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 
 | Test [msg/ms] | QuickBuffers | Protobuf-Java | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 2854 (381 MB/s) | 1125 (150 MB/s) |  2.5  
-| Car Decode  | 2042 (273 MB/s) | 1166s (149 MB/s) |  1.8  
-| Market Data Encode  | 8267 (504 MB/s) | 3712 (226 MB/s) |  2.2  
-| Market Data Decode  | 6357 (388 MB/s) | 3282 (200 MB/s) |  1.9  
+| Car Encode  | 2669 (356 MB/s) | 985 (132 MB/s) |  2.7  
+| Car Decode  | 2203 (294 MB/s) | 1271 (170 MB/s) |  1.7  
+| Market Data Encode  | 8088 (493 MB/s) | 3700 (226 MB/s) |  2.2  
+| Market Data Decode  | 7522 (459 MB/s) | 3306 (202 MB/s) |  2.3  
 
 Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers improve by another 10-20%. By additionally inlining the small nested fields it'd result in 3-4x the original message throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
 
@@ -22,8 +22,8 @@ We also compared the built-in JSON encoding and found that for this particular b
 
 | Test [msg/ms] | QuickBuffers (JSON) | Protobuf-Java (Binary) | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 1424 | 1125 |  1.3  
-| Market Data Encode  | 3284 | 3712 |  0.9 
+| Car Encode  | 1502 | 985 |  1.5  
+| Market Data Encode  | 3208 | 3700 |  0.9 
 
 ## Benchmark 2 - File Streams
 
