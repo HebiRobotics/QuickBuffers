@@ -58,10 +58,10 @@ class JsonEncoding {
                 final int bits = (bytes[i] & 0xff) << 16 | (bytes[i + 1] & 0xff) << 8 | (bytes[i + 2] & 0xff);
 
                 // Encode the 24 bits into four 6 bit characters
-                buffer[pos/**/] = CHARS[(bits >>> 18) & 0x3f];
-                buffer[pos + 1] = CHARS[(bits >>> 12) & 0x3f];
-                buffer[pos + 2] = CHARS[(bits >>> 6) & 0x3f];
-                buffer[pos + 3] = CHARS[bits & 0x3f];
+                buffer[pos/**/] = BASE64[(bits >>> 18) & 0x3f];
+                buffer[pos + 1] = BASE64[(bits >>> 12) & 0x3f];
+                buffer[pos + 2] = BASE64[(bits >>> 6) & 0x3f];
+                buffer[pos + 3] = BASE64[bits & 0x3f];
             }
 
             // Pad and encode last bits if source isn't even 24 bits
@@ -71,9 +71,9 @@ class JsonEncoding {
                 final int bits = ((bytes[i] & 0xff) << 10) | (remaining == 2 ? ((bytes[i + 1] & 0xff) << 2) : 0);
 
                 // Set last four bytes
-                buffer[pos/**/] = CHARS[bits >> 12];
-                buffer[pos + 1] = CHARS[(bits >>> 6) & 0x3f];
-                buffer[pos + 2] = remaining == 2 ? CHARS[bits & 0x3f] : (byte) '=';
+                buffer[pos/**/] = BASE64[bits >> 12];
+                buffer[pos + 1] = BASE64[(bits >>> 6) & 0x3f];
+                buffer[pos + 2] = remaining == 2 ? BASE64[bits & 0x3f] : (byte) '=';
                 buffer[pos + 3] = '=';
                 pos += 4;
             }
@@ -82,7 +82,7 @@ class JsonEncoding {
 
         }
 
-        private static final byte[] CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(ISO_8859_1);
+        private static final byte[] BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes(ASCII);
 
     }
 
@@ -177,17 +177,14 @@ class JsonEncoding {
                 final int offset = output.addLength(6);
                 output.array[offset] = '\\';
                 output.array[offset + 1] = 'u';
-                output.array[offset + 2] = ITOA[c >> 12 & 0xf];
-                output.array[offset + 3] = ITOA[c >> 8 & 0xf];
-                output.array[offset + 4] = ITOA[c >> 4 & 0xf];
-                output.array[offset + 5] = ITOA[c & 0xf];
+                output.array[offset + 2] = BASE16[c >> 12 & 0xf];
+                output.array[offset + 3] = BASE16[c >> 8 & 0xf];
+                output.array[offset + 4] = BASE16[c >> 4 & 0xf];
+                output.array[offset + 5] = BASE16[c & 0xf];
             }
         }
 
-        private static final byte[] ITOA = new byte[]{
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                'a', 'b', 'c', 'd', 'e', 'f'};
-
+        private static final byte[] BASE16 = "0123456789abcdef".getBytes(ASCII);
         private static final boolean[] CAN_DIRECT_WRITE = new boolean[128];
         private static final byte[] ESCAPE_CHAR = new byte[128];
 
@@ -238,143 +235,107 @@ class JsonEncoding {
             }
         }
 
-        private static int writePositiveInt(final int q0, final byte[] buf, int pos) {
-            final int q1, q2, q3, q4, q5, q6;
-            if ((q1 = q0 / 1000) == 0) {
+        private static int writePositiveInt(final int q10, final byte[] buf, int pos) {
+            final int q7, q4, q1; // highest N digits
+            if ((q7 = q10 / pow3) == 0) {
 
                 // value < 10^3
-                pos += writeFirstDigits(buf, pos, q0);
+                pos += writeFirstDigits(buf, pos, q10);
                 return pos;
 
-            } else if ((q2 = q0 / 1000000) == 0) {
+            } else if ((q4 = q10 / pow6) == 0) {
 
                 // value < 10^6
-                pos += writeFirstDigits(buf, pos, q1);
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeFirstDigits(buf, pos, q7);
+                pos += writeThreeDigits(buf, pos, (q10 - q7 * pow3));
                 return pos;
 
-            } else if ((q3 = q0 / 1000000000) == 0) {
+            } else if ((q1 = q10 / pow9) == 0) {
 
                 // value < 10^9
-                pos += writeFirstDigits(buf, pos, q2);
-                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeFirstDigits(buf, pos, q4);
+                pos += writeThreeDigits(buf, pos, (q7 - q4 * pow3));
+                pos += writeThreeDigits(buf, pos, (q10 - q7 * pow3));
                 return pos;
 
             } else {
 
                 // value > 10^9 to max
-                pos += writeSingleDigit(buf, pos, q3);
-                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
-                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeSingleDigit(buf, pos, q1);
+                pos += writeThreeDigits(buf, pos, (q4 - q1 * pow3));
+                pos += writeThreeDigits(buf, pos, (q7 - q4 * pow3));
+                pos += writeThreeDigits(buf, pos, (q10 - q7 * pow3));
                 return pos;
 
             }
         }
 
-        private static int writePositiveLong(final long q0, final byte[] buf, int pos) {
-            final long q1, q2, q3, q4, q5, q6;
-            if ((q1 = q0 / pow3) == 0) {
+        private static int writePositiveLong(final long q19, final byte[] buf, int pos) {
+            final long q16, q13, q10, q7, q4, q1; // highest N digits
+            if ((q16 = q19 / pow3) == 0) {
 
                 // value < 10^3
-                pos += writeFirstDigits(buf, pos, q0);
+                pos += writeFirstDigits(buf, pos, q19);
                 return pos;
 
-            } else if ((q2 = q0 / pow6) == 0) {
+            } else if ((q13 = q19 / pow6) == 0) {
 
                 // value < 10^6
-                pos += writeFirstDigits(buf, pos, q1);
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeFirstDigits(buf, pos, q16);
+                pos += writeThreeDigits(buf, pos, (q19 - q16 * pow3));
                 return pos;
 
-            } else if ((q3 = q0 / pow9) == 0) {
+            } else if ((q10 = q19 / pow9) == 0) {
 
                 // value < 10^9
-                pos += writeFirstDigits(buf, pos, q2);
-                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeFirstDigits(buf, pos, q13);
+                pos += writeThreeDigits(buf, pos, (q16 - q13 * pow3));
+                pos += writeThreeDigits(buf, pos, (q19 - q16 * pow3));
                 return pos;
 
-            } else if ((q4 = q0 / pow12) == 0) {
+            } else if ((q7 = q19 / pow12) == 0) {
 
                 // value < 10^12
-                pos += writeFirstDigits(buf, pos, q3);
-                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
-                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeFirstDigits(buf, pos, q10);
+                pos += writeThreeDigits(buf, pos, (q13 - q10 * pow3));
+                pos += writeThreeDigits(buf, pos, (q16 - q13 * pow3));
+                pos += writeThreeDigits(buf, pos, (q19 - q16 * pow3));
                 return pos;
 
-            } else if ((q5 = q0 / pow15) == 0) {
+            } else if ((q4 = q19 / pow15) == 0) {
 
                 // value < 10^15
-                pos += writeFirstDigits(buf, pos, q4);
-                pos += writeThreeDigits(buf, pos, (q3 - q4 * 1000));
-                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
-                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeFirstDigits(buf, pos, q7);
+                pos += writeThreeDigits(buf, pos, (q10 - q7 * pow3));
+                pos += writeThreeDigits(buf, pos, (q13 - q10 * pow3));
+                pos += writeThreeDigits(buf, pos, (q16 - q13 * pow3));
+                pos += writeThreeDigits(buf, pos, (q19 - q16 * pow3));
                 return pos;
 
-            } else if ((q6 = q0 / pow18) == 0) {
+            } else if ((q1 = q19 / pow18) == 0) {
 
                 // value < 10^18
-                pos += writeFirstDigits(buf, pos, q5);
-                pos += writeThreeDigits(buf, pos, (q4 - q5 * 1000));
-                pos += writeThreeDigits(buf, pos, (q3 - q4 * 1000));
-                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
-                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeFirstDigits(buf, pos, q4);
+                pos += writeThreeDigits(buf, pos, (q7 - q4 * pow3));
+                pos += writeThreeDigits(buf, pos, (q10 - q7 * pow3));
+                pos += writeThreeDigits(buf, pos, (q13 - q10 * pow3));
+                pos += writeThreeDigits(buf, pos, (q16 - q13 * pow3));
+                pos += writeThreeDigits(buf, pos, (q19 - q16 * pow3));
                 return pos;
 
             } else {
 
                 // value > 10^18 to max
-                pos += writeSingleDigit(buf, pos, q6);
-                pos += writeThreeDigits(buf, pos, (q5 - q6 * 1000));
-                pos += writeThreeDigits(buf, pos, (q4 - q5 * 1000));
-                pos += writeThreeDigits(buf, pos, (q3 - q4 * 1000));
-                pos += writeThreeDigits(buf, pos, (q2 - q3 * 1000));
-                pos += writeThreeDigits(buf, pos, (q1 - q2 * 1000));
-                pos += writeThreeDigits(buf, pos, (q0 - q1 * 1000));
+                pos += writeSingleDigit(buf, pos, q1);
+                pos += writeThreeDigits(buf, pos, (q4 - q1 * pow3));
+                pos += writeThreeDigits(buf, pos, (q7 - q4 * pow3));
+                pos += writeThreeDigits(buf, pos, (q10 - q7 * pow3));
+                pos += writeThreeDigits(buf, pos, (q13 - q10 * pow3));
+                pos += writeThreeDigits(buf, pos, (q16 - q13 * pow3));
+                pos += writeThreeDigits(buf, pos, (q19 - q16 * pow3));
                 return pos;
 
             }
-        }
-
-        private static int writeSingleDigit(final byte[] buf, final int pos, final long number) {
-            buf[pos] = (byte) ('0' + number);
-            return 1;
-        }
-
-        private static int writeFirstDigits(final byte[] buf, final int pos, final long number) {
-            return writeFirstDigits(buf, pos, (int) number);
-        }
-
-        private static int writeFirstDigits(final byte[] buf, int pos, final int number) {
-            final int v = THREE_DIGITS[number];
-            final int numDigits = v >>> NUM_DIGITS;
-            switch (numDigits) {
-                case 3:
-                    buf[pos++] = (byte) (v >>> DIGIT_X00);
-                case 2:
-                    buf[pos++] = (byte) (v >>> DIGIT_0X0);
-                case 1:
-                    buf[pos] = (byte) (v >>> DIGIT_00X);
-            }
-            return numDigits;
-        }
-
-        private static int writeThreeDigits(final byte[] buf, final int pos, final long number) {
-            writeThreeDigits(buf, pos, (int) number);
-            return 3;
-        }
-
-        private static int writeThreeDigits(final byte[] buf, final int pos, final int number) {
-            final int v = THREE_DIGITS[number];
-            buf[pos/**/] = (byte) (v >>> DIGIT_X00);
-            buf[pos + 1] = (byte) (v >>> DIGIT_0X0);
-            buf[pos + 2] = (byte) (v >>> DIGIT_00X);
-            return 3;
         }
 
         public static void writeFloat(final float val, final RepeatedByte output) {
@@ -397,132 +358,146 @@ class JsonEncoding {
             }
         }
 
-        public static void writeDouble12(final double val, final RepeatedByte output) {
+        /**
+         * Converts the double to a 64 bit fixed-point number and writes the pre and after
+         * comma digits as two separate values.
+         *
+         * Note that a 64 bit long can hold 19 digits total, so choosing a high fixed
+         * resolution can overflow for large values. For example, a method with 12
+         * digits precision should not be used for values that are larger than 10^7.
+         * If values are unexpectedly large, this method will fall back to writing
+         * only the pre-comma digits.
+         *
+         * {@link #writeDouble(double, RepeatedByte)} adaptively lowers the after
+         * comma precision depending on the value size.
+         */
+        static void writeDouble12(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max12, output);
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * pow12 + 0.5);
-                int pos = writePositiveLong(fval / pow12, buffer, output.length);
+                final long q19 = (long) (pval * pow12 + 0.5);
+                final long q7 = q19 / pow12;
+                int pos = writePositiveInt((int) q7, buffer, output.length);
 
-                final long q0 = (long) (fval % pow12);
-                if (q0 == 0) {
-                    output.length = pos;
-                    return;
-                }
+                final long q12 = q19 - q7 * pow12;
+                if (q12 != 0) {
 
-                buffer[pos++] = '.';
-                final long q4 = q0 / pow12;
-                final long q3 = q0 / pow9;
-                final long q2 = q0 / pow6;
-                final long q1 = q0 / pow3;
-                final int r4 = (int) (q3 - q4 * 1000);
-                final int r3 = (int) (q2 - q3 * 1000);
-                final int r2 = (int) (q1 - q2 * 1000);
-                final int r1 = (int) (q0 - q1 * 1000);
+                    final long q9 = q12 / pow3;
+                    final long q6 = q12 / pow6;
+                    final long q3 = q12 / pow9;
+                    final long r6 = q6 - q3 * pow3;
+                    final long r9 = q9 - q6 * pow3;
+                    final long r12 = q12 - q9 * pow3;
 
-                pos += writeThreeDigits(buffer, pos, r4);
-                if ((r3 | r2 | r1) != 0) {
-                    pos += writeThreeDigits(buffer, pos, r3);
-                    if ((r2 | r1) != 0) {
-                        pos += writeThreeDigits(buffer, pos, r2);
-                        if (r1 != 0) {
-                            pos += writeThreeDigits(buffer, pos, r1);
+                    buffer[pos++] = '.';
+                    pos += writeThreeDigits(buffer, pos, q3);
+                    if ((r6 | r9 | r12) != 0) {
+                        pos += writeThreeDigits(buffer, pos, r6);
+                        if ((r9 | r12) != 0) {
+                            pos += writeThreeDigits(buffer, pos, r9);
+                            if (r12 != 0) {
+                                pos += writeThreeDigits(buffer, pos, r12);
+                            }
                         }
                     }
+
+                    pos -= countTrailingZeros(buffer, pos);
+
                 }
-                output.length = pos - countTrailingZeros(buffer, pos);
+
+                output.length = pos;
 
             }
         }
 
-        public static void writeDouble9(final double val, final RepeatedByte output) {
+        static void writeDouble9(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max9, output);
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * pow9 + 0.5);
-                int pos = writePositiveLong(fval / pow9, buffer, output.length);
+                final long q19 = (long) (pval * pow9 + 0.5);
+                final long q10 = q19 / pow9;
+                int pos = writePositiveLong(q10, buffer, output.length);
 
-                final long q0 = (long) (fval % pow9);
-                if (q0 == 0) {
-                    output.length = pos;
-                    return;
-                }
+                final int q9 = (int) (q19 - q10 * pow9);
+                if (q9 != 0) {
 
-                buffer[pos++] = '.';
-                final long q3 = q0 / pow9;
-                final long q2 = q0 / pow6;
-                final long q1 = q0 / pow3;
-                final int r3 = (int) (q2 - q3 * 1000);
-                final int r2 = (int) (q1 - q2 * 1000);
-                final int r1 = (int) (q0 - q1 * 1000);
+                    final int q6 = q9 / pow3;
+                    final int q3 = q9 / pow6;
+                    final int r6 = q6 - q3 * pow3;
+                    final int r9 = q9 - q6 * pow3;
 
-                pos += writeThreeDigits(buffer, pos, r3);
-                if ((r2 | r1) != 0) {
-                    pos += writeThreeDigits(buffer, pos, r2);
-                    if (r1 != 0) {
-                        pos += writeThreeDigits(buffer, pos, r1);
+                    buffer[pos++] = '.';
+                    pos += writeThreeDigits(buffer, pos, q3);
+                    if ((r6 | r9) != 0) {
+                        pos += writeThreeDigits(buffer, pos, r6);
+                        if (r9 != 0) {
+                            pos += writeThreeDigits(buffer, pos, r9);
+                        }
                     }
+
+                    pos -= countTrailingZeros(buffer, pos);
                 }
-                output.length = pos - countTrailingZeros(buffer, pos);
+
+                output.length = pos;
 
             }
         }
 
-        public static void writeDouble6(final double val, final RepeatedByte output) {
+        static void writeDouble6(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max6, output);
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * pow6 + 0.5);
-                int pos = writePositiveLong(fval / pow6, buffer, output.length);
+                final long q19 = (long) (pval * pow6 + 0.5);
+                final long q13 = q19 / pow6;
+                int pos = writePositiveLong(q13, buffer, output.length);
 
-                final long q0 = (long) (fval % pow6);
-                if (q0 == 0) {
-                    output.length = pos;
-                    return;
+                final int q6 = (int) (q19 - q13 * pow6);
+                if (q6 != 0) {
+
+                    buffer[pos++] = '.';
+                    final int q3 = q6 / pow3;
+                    final int r6 = q6 - q3 * pow3;
+
+                    pos += writeThreeDigits(buffer, pos, q3);
+                    if (r6 != 0) {
+                        pos += writeThreeDigits(buffer, pos, r6);
+                    }
+
+                    pos -= countTrailingZeros(buffer, pos);
+
                 }
 
-                buffer[pos++] = '.';
-                final long q2 = q0 / pow6;
-                final long q1 = q0 / pow3;
-                final int r2 = (int) (q1 - q2 * 1000);
-                final int r1 = (int) (q0 - q1 * 1000);
-
-                pos += writeThreeDigits(buffer, pos, r2);
-                if (r1 != 0) {
-                    pos += writeThreeDigits(buffer, pos, r1);
-                }
-                output.length = pos - countTrailingZeros(buffer, pos);
+                output.length = pos;
 
             }
         }
 
-        public static void writeDouble3(final double val, final RepeatedByte output) {
+        static void writeDouble3(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max3, output);
             if (pval > 0) {
 
                 final byte[] buffer = output.array;
-                final long fval = (long) (pval * pow3 + 0.5);
-                int pos = writePositiveLong(fval / pow3, buffer, output.length);
+                final long q19 = (long) (pval * pow3 + 0.5);
+                final long q16 = q19 / pow3;
+                int pos = writePositiveLong(q16, buffer, output.length);
 
-                final long q0 = (long) (fval % pow3);
-                if (q0 == 0) {
-                    output.length = pos;
-                    return;
+                final int q3 = (int) (q19 - q16 * pow3);
+                if (q3 != 0) {
+
+                    buffer[pos++] = '.';
+                    pos += writeThreeDigits(buffer, pos, q3);
+                    pos -= countTrailingZeros(buffer, pos);
+
                 }
 
-                buffer[pos++] = '.';
-                final long q1 = q0 / pow3;
-                final int r1 = (int) (q0 - q1 * 1000);
-
-                pos += writeThreeDigits(buffer, pos, r1);
-                output.length = pos - countTrailingZeros(buffer, pos);
+                output.length = pos;
 
             }
         }
@@ -555,44 +530,44 @@ class JsonEncoding {
             return val;
         }
 
-        // Counts up to two trailing zeros. We could just encode this information in
-        // the digit int, but readability would suffer and the benefit is negligible.
-        private static int countTrailingZeros(final byte[] buf, final int pos) {
-            if (buf[pos - 1] != '0') return 0;
-            if (buf[pos - 2] != '0') return 1;
-            return 2;
+        private static int writeSingleDigit(final byte[] buf, final int pos, final long number) {
+            buf[pos] = (byte) ('0' + number);
+            return 1;
         }
 
-        private static final long pow3 = 1000;
-        private static final long pow6 = 1000 * pow3;
-        private static final long pow9 = 1000 * pow6;
-        private static final long pow12 = 1000 * pow9;
-        private static final long pow15 = 1000 * pow12;
-        private static final long pow18 = 1000 * pow15;
+        private static int writeFirstDigits(final byte[] buf, final int pos, final long number) {
+            return writeFirstDigits(buf, pos, (int) number);
+        }
 
-        // Numbers larger than this are whole numbers due to representation error.
-        static final double WHOLE_NUMBER = 1L << 52;
-        static final double max3 = WHOLE_NUMBER / pow3;
-        static final double max6 = WHOLE_NUMBER / pow6;
-        static final double max9 = WHOLE_NUMBER / pow9;
-        static final double max12 = WHOLE_NUMBER / pow12;
+        private static int writeThreeDigits(final byte[] buf, final int pos, final long number) {
+            writeThreeDigits(buf, pos, (int) number);
+            return 3;
+        }
 
-        // JSON numbers don't allow inf/nan etc., so we need to encode them as String
-        private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(UTF_8);
-        private static final byte[] POSITIVE_INF = "\"Infinity\"".getBytes(UTF_8);
-        private static final byte[] NAN = "\"NaN\"".getBytes(UTF_8);
-        private static final byte[] MIN_INT = "-2147483648".getBytes(UTF_8);
-        private static final byte[] MIN_LONG = "-9223372036854775808".getBytes(UTF_8);
+        private static int writeFirstDigits(final byte[] buf, int pos, final int number) {
+            final int v = THREE_DIGITS[number];
+            final int numDigits = v >>> NUM_DIGITS;
+            switch (numDigits) {
+                case 3:
+                    buf[pos++] = (byte) (v >>> DIGIT_X00);
+                case 2:
+                    buf[pos++] = (byte) (v >>> DIGIT_0X0);
+                case 1:
+                    buf[pos] = (byte) (v >>> DIGIT_00X);
+            }
+            return numDigits;
+        }
 
-        // Maximum representation size in characters. Fixed double values get
-        // stored in a long that contains the pre and post comma digits, so
-        // the total number of digits can't be larger than a long with comma.
-        private static final int MAX_INT_SIZE = MIN_INT.length;
-        private static final int MAX_LONG_SIZE = MIN_LONG.length;
-        private static final int MAX_FIXED_DOUBLE_SIZE = MAX_LONG_SIZE + 1;
+        private static int writeThreeDigits(final byte[] buf, final int pos, final int number) {
+            final int v = THREE_DIGITS[number];
+            buf[pos/**/] = (byte) (v >>> DIGIT_X00);
+            buf[pos + 1] = (byte) (v >>> DIGIT_0X0);
+            buf[pos + 2] = (byte) (v >>> DIGIT_00X);
+            return 3;
+        }
 
         // Lookup table that packs three character digits and size information
-        // into an int. This way we can write three characters in a single go.
+        // into an int. This way we can write three characters at once.
         private static final int[] THREE_DIGITS = new int[1000];
         private static final int DIGIT_00X = 0;
         private static final int DIGIT_0X0 = 8;
@@ -602,12 +577,49 @@ class JsonEncoding {
         static {
             for (int i = 0; i < 1000; i++) {
                 int digit100 = '0' + (i / 100);
-                int digit10 = '0' + ((i / 10) % 10);
+                int digit10 = '0' + ((i % 100) / 10);
                 int digit1 = '0' + (i % 10);
                 int numDigits = digit100 == '0' ? digit10 == '0' ? 1 : 2 : 3;
                 THREE_DIGITS[i] = numDigits << NUM_DIGITS | digit100 << DIGIT_X00 | digit10 << DIGIT_0X0 | digit1 << DIGIT_00X;
             }
         }
+
+        // Counts up to two trailing zeros. We could just encode this information in
+        // the digit int, but readability would suffer for questionable benefit.
+        private static int countTrailingZeros(final byte[] buf, final int pos) {
+            if (buf[pos - 1] != '0') return 0;
+            if (buf[pos - 2] != '0') return 1;
+            return 2;
+        }
+
+        // Common powers of 10^n
+        private static final int pow3 = 1000;
+        private static final int pow6 = 1000 * pow3;
+        private static final int pow9 = 1000 * pow6;
+        private static final long pow12 = 1000L * pow9;
+        private static final long pow15 = 1000L * pow12;
+        private static final long pow18 = 1000L * pow15;
+
+        // Numbers larger than this are whole numbers due to representation error.
+        static final double WHOLE_NUMBER = 1L << 52;
+        static final double max3 = WHOLE_NUMBER / pow3;
+        static final double max6 = WHOLE_NUMBER / pow6;
+        static final double max9 = WHOLE_NUMBER / pow9;
+        static final double max12 = WHOLE_NUMBER / pow12;
+
+        // JSON numbers don't allow inf/nan etc., so we need to encode them as String
+        private static final byte[] NEGATIVE_INF = "\"-Infinity\"".getBytes(ASCII);
+        private static final byte[] POSITIVE_INF = "\"Infinity\"".getBytes(ASCII);
+        private static final byte[] NAN = "\"NaN\"".getBytes(ASCII);
+        private static final byte[] MIN_INT = "-2147483648".getBytes(ASCII);
+        private static final byte[] MIN_LONG = "-9223372036854775808".getBytes(ASCII);
+
+        // Maximum representation size in characters. Fixed double values get
+        // stored in a long that contains the pre and post comma digits, so
+        // the total number of digits can't be larger than a long with comma.
+        private static final int MAX_INT_SIZE = MIN_INT.length;
+        private static final int MAX_LONG_SIZE = MIN_LONG.length;
+        private static final int MAX_FIXED_DOUBLE_SIZE = MAX_LONG_SIZE + 1;
 
     }
 
