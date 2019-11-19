@@ -1,6 +1,6 @@
 # QuickBuffers - Benchmarks
   
-Below is a comparison with Google's official bindings for a variety of datasets. The performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run using JMH on an Intel NUC8i7BEH. Benchmarks 2 and 3 were run on JDK8 while Benchmark 1 has been updated to JDK13. In general, decoding performance seems to be better on JDK13, but encoding performance is worse for most cases.
+Below is a comparison with Google's official bindings for a variety of datasets. The performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run on JDK8 using JMH on an Intel NUC8i7BEH.
 
 ## Benchmark 1 - SBE dataset
 

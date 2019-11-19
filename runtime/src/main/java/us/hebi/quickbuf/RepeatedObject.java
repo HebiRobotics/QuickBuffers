@@ -99,11 +99,6 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
     }
 
     @Override
-    public final int hashCode() {
-        return Arrays.hashCode(toArray());
-    }
-
-    @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

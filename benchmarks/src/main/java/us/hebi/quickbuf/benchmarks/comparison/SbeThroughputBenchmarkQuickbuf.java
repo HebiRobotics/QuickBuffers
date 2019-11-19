@@ -151,7 +151,7 @@ public class SbeThroughputBenchmarkQuickbuf {
         marketData.clearQuick()
                 .setTransactTime(1234L)
                 .setEventTimeDelta(987)
-                .setMatchEventIndicator(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
+                .setMatchEventIndicatorNumber(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
 
         for (int i = 0; i < 2; i++) {
 
@@ -160,9 +160,9 @@ public class SbeThroughputBenchmarkQuickbuf {
                     .setSecurityId(56789L)
                     .setNumberOfOrders(1)
                     .setRepSeq(1)
-                    .setMdUpdateAction(Fix.MdIncGrp.MdUpdateAction.NEW_VALUE)
-                    .setAggressorSide(Fix.MdIncGrp.Side.BUY_VALUE)
-                    .setMdEntryType(Fix.MdIncGrp.MdEntryType.BID_VALUE);
+                    .setMdUpdateActionNumber(Fix.MdIncGrp.MdUpdateAction.NEW_VALUE)
+                    .setAggressorSideNumber(Fix.MdIncGrp.Side.BUY_VALUE)
+                    .setMdEntryTypeNumber(Fix.MdIncGrp.MdEntryType.BID_VALUE);
             group.getMutableMdEntryPx().setMantissa(50);
             group.getMutableMdEntrySize().setMantissa(10);
 
@@ -175,7 +175,7 @@ public class SbeThroughputBenchmarkQuickbuf {
         car.clearQuick()
                 .setSerialNumber(12345)
                 .setModelYear(2005)
-                .setCode(Car.Model.A_VALUE)
+                .setCodeNumber(Car.Model.A_VALUE)
                 .setAvailable(true);
 
         car.getMutableEngine()

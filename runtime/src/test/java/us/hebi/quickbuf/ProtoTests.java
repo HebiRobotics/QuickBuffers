@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -270,11 +270,11 @@ public class ProtoTests {
     @Test
     public void testRepeatedEnums() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedEnums());
-        assertEquals(4, msg.getRepeatedNestedEnumCount());
-        assertEquals(NestedEnum.FOO, msg.getRepeatedNestedEnum(0));
-        assertEquals(NestedEnum.BAR, msg.getRepeatedNestedEnum(1));
-        assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum(2));
-        assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum(3));
+        assertEquals(4, msg.getRepeatedNestedEnum().length());
+        assertEquals(NestedEnum.FOO, msg.getRepeatedNestedEnum().get(0));
+        assertEquals(NestedEnum.BAR, msg.getRepeatedNestedEnum().get(1));
+        assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum().get(2));
+        assertEquals(NestedEnum.BAZ, msg.getRepeatedNestedEnum().get(3));
         TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }
@@ -462,6 +462,15 @@ public class ProtoTests {
     }
 
     @Test
+    public void clearFirstBit() throws IOException {
+        TestAllTypes.NestedMessage msg = TestAllTypes.NestedMessage.newInstance();
+        msg.setBb(1);
+        assertTrue(msg.hasBb());
+        msg.clearBb();
+        assertFalse(msg.hasBb());
+    }
+
+    @Test
     public void testRepeatableMessageIterator() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedMessages());
         int sum = 0;
@@ -469,6 +478,52 @@ public class ProtoTests {
             sum += foreignMessage.getC();
         }
         assertEquals(3, sum);
+    }
+
+    @Test
+    public void testOneofFields() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance();
+        assertFalse(msg.hasOneofField());
+
+        msg.setOneofFixed64(10);
+        assertTrue(msg.hasOneofField());
+        assertTrue(msg.hasOneofFixed64());
+        byte[] fixed64 = msg.toByteArray();
+
+        msg.getMutableOneofNestedMessage().setBb(2);
+        assertTrue(msg.hasOneofField());
+        assertTrue(msg.hasOneofNestedMessage());
+        assertFalse(msg.hasOneofFixed64());
+        assertEquals(0, msg.getOneofFixed64());
+        byte[] nestedMsg = msg.toByteArray();
+
+        msg.setOneofString("oneOfString");
+        assertTrue(msg.hasOneofField());
+        assertTrue(msg.hasOneofString());
+        assertFalse(msg.hasOneofNestedMessage());
+        assertEquals(0, msg.getOneofNestedMessage().getBb());
+        byte[] string = msg.toByteArray();
+
+        msg.clearOneofField();
+        assertFalse(msg.hasOneofField());
+        assertFalse(msg.hasOneofString());
+        assertFalse(msg.hasOneofNestedMessage());
+        assertEquals("", msg.getOneofString().toString());
+
+        msg.setOneofString("test");
+        assertTrue(msg.hasOneofString());
+        msg.mergeFrom(ProtoSource.newInstance(fixed64));
+        assertTrue(msg.hasOneofFixed64());
+        assertFalse(msg.hasOneofString());
+
+        msg.mergeFrom(ProtoSource.newInstance(nestedMsg));
+        assertTrue(msg.hasOneofNestedMessage());
+        assertFalse(msg.hasOneofFixed64());
+
+        msg.mergeFrom(ProtoSource.newInstance(string));
+        assertTrue(msg.hasOneofString());
+        assertFalse(msg.hasOneofNestedMessage());
+
     }
 
     @Test

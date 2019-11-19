@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -28,6 +28,8 @@ import us.hebi.quickbuf.generator.RequestInfo.EnumInfo;
 
 import javax.lang.model.element.Modifier;
 
+import static javax.lang.model.element.Modifier.*;
+
 /**
  * @author Florian Enner
  * @since 07 Aug 2019
@@ -36,52 +38,99 @@ class EnumGenerator {
 
     EnumGenerator(EnumInfo info) {
         this.info = info;
+        this.converterClass = info.getTypeName().nestedClass(info.getTypeName().simpleName() + "Converter");
     }
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.enumBuilder(info.getTypeName())
-                .addModifiers(Modifier.PUBLIC);
+                .addSuperinterface(RuntimeClasses.ProtoEnum)
+                .addModifiers(PUBLIC);
 
         // Add enum constants
         for (EnumValueDescriptorProto value : info.getValues()) {
-            String constName = value.getName() + "_VALUE";
-            String enumName = NamingUtil.filterKeyword(value.getName());
+            String name = value.getName();
+            String numberField = name + "_VALUE";
+            String enumField = NamingUtil.filterKeyword(name);
 
-            FieldSpec constField = FieldSpec.builder(int.class, constName, Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL).initializer("$L", value.getNumber()).build();
+            type.addEnumConstant(enumField, TypeSpec.anonymousClassBuilder("$S, $L", name, value.getNumber()).build());
 
+            FieldSpec constField = FieldSpec.builder(int.class, numberField, PUBLIC, STATIC, FINAL)
+                    .initializer("$L", value.getNumber())
+                    .build();
             type.addField(constField);
-            type.addEnumConstant(enumName, TypeSpec.anonymousClassBuilder("$L", value.getNumber()).build());
         }
 
-        generateGetValue(type);
-        generateForNumber(type);
+        generateProtoEnumInterface(type);
         generateConstructor(type);
+        generateStaticMethods(type);
+        generateConverter(type);
         return type.build();
     }
 
     private void generateConstructor(TypeSpec.Builder typeSpec) {
         typeSpec.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
-                .addParameter(int.class, "value")
-                .addStatement("this.$1N = $1N", "value")
+                .addParameter(String.class, "name")
+                .addParameter(int.class, "number")
+                .addStatement("this.$1N = $1N", "name")
+                .addStatement("this.$1N = $1N", "number")
                 .build());
-        typeSpec.addField(FieldSpec.builder(int.class, "value", Modifier.PRIVATE, Modifier.FINAL).build());
+        typeSpec.addField(FieldSpec.builder(String.class, "name", Modifier.PRIVATE, FINAL).build());
+        typeSpec.addField(FieldSpec.builder(int.class, "number", Modifier.PRIVATE, FINAL).build());
     }
 
-    private void generateGetValue(TypeSpec.Builder typeSpec) {
+    private void generateProtoEnumInterface(TypeSpec.Builder typeSpec) {
+        typeSpec.addMethod(MethodSpec.methodBuilder("getName")
+                .addAnnotation(Override.class)
+                .addModifiers(PUBLIC)
+                .returns(String.class)
+                .addStatement("return name")
+                .build());
+
         typeSpec.addMethod(MethodSpec.methodBuilder("getNumber")
-                .addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .addModifiers(PUBLIC)
                 .returns(int.class)
-                .addStatement("return value")
+                .addStatement("return number")
                 .build());
     }
 
-    private void generateForNumber(TypeSpec.Builder typeSpec) {
+    private void generateStaticMethods(TypeSpec.Builder typeSpec) {
+
+        typeSpec.addMethod(MethodSpec.methodBuilder("converter")
+                .addModifiers(PUBLIC, STATIC)
+                .returns(converterClass)
+                .addStatement("return $T.INSTANCE", converterClass)
+                .build());
+
+        typeSpec.addMethod(MethodSpec.methodBuilder("forNumber")
+                .addModifiers(PUBLIC, STATIC)
+                .returns(info.getTypeName())
+                .addParameter(TypeName.INT, "value")
+                .addStatement("return $T.INSTANCE.forNumber(value)", converterClass)
+                .build());
+
+        typeSpec.addMethod(MethodSpec.methodBuilder("forNumberOr")
+                .addModifiers(PUBLIC, STATIC)
+                .returns(info.getTypeName())
+                .addParameter(int.class, "number")
+                .addParameter(info.getTypeName(), "other")
+                .addStatement("$T value = forNumber(number)", info.getTypeName())
+                .addStatement("return value == null ? other : value")
+                .build());
+
+    }
+
+    private void generateConverter(TypeSpec.Builder typeSpec) {
+        TypeSpec.Builder decoder = TypeSpec.enumBuilder(converterClass)
+                .addSuperinterface(ParameterizedTypeName.get(RuntimeClasses.EnumConverter, info.getTypeName()))
+                .addEnumConstant("INSTANCE");
 
         MethodSpec.Builder forNumber = MethodSpec.methodBuilder("forNumber")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addAnnotation(Override.class)
+                .addModifiers(PUBLIC, FINAL)
                 .returns(info.getTypeName())
-                .addParameter(TypeName.INT, "value");
+                .addParameter(TypeName.INT, "value", FINAL);
 
         if (info.isUsingArrayLookup()) {
 
@@ -92,7 +141,7 @@ class EnumGenerator {
             forNumber.addStatement("return lookup[value]");
 
             TypeName arrayType = ArrayTypeName.of(info.getTypeName());
-            typeSpec.addField(FieldSpec.builder(arrayType, "lookup", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+            decoder.addField(FieldSpec.builder(arrayType, "lookup", Modifier.PRIVATE, STATIC, FINAL)
                     .initializer("new $T[$L]", info.getTypeName(), info.getHighestNumber() + 1)
                     .build());
 
@@ -100,7 +149,7 @@ class EnumGenerator {
             for (EnumValueDescriptorProto value : info.getValues()) {
                 initBlock.addStatement("lookup[$L] = $L", value.getNumber(), NamingUtil.filterKeyword(value.getName()));
             }
-            typeSpec.addStaticBlock(initBlock.build());
+            decoder.addStaticBlock(initBlock.build());
 
         } else {
 
@@ -114,19 +163,10 @@ class EnumGenerator {
 
         }
 
-        typeSpec.addMethod(forNumber.build());
-
-        typeSpec.addMethod(MethodSpec.methodBuilder("forNumberOr")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(info.getTypeName())
-                .addParameter(int.class, "number")
-                .addParameter(info.getTypeName(), "other")
-                .addStatement("$T value = forNumber(number)", info.getTypeName())
-                .addStatement("return value == null ? other : value")
-                .build());
-
+        typeSpec.addType(decoder.addMethod(forNumber.build()).build());
     }
 
     final EnumInfo info;
+    final ClassName converterClass;
 
 }

@@ -50,6 +50,8 @@ public class FieldGenerator {
 
         if (info.isRepeated() && info.isMessageOrGroup()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.getFactory())", RuntimeClasses.RepeatedMessage, info.getTypeName());
+        } else if (info.isRepeated() && info.isEnum()) {
+            field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.converter())", RuntimeClasses.RepeatedEnum, info.getTypeName());
         } else if (info.isRepeated() || info.isBytes()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
         } else if (info.isMessageOrGroup()) {
@@ -74,21 +76,21 @@ public class FieldGenerator {
 
     protected void generateClearCode(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isMessageOrGroup()) {
-            method.addNamedCode("$field:N.clear();\n", m);
+            method.addStatement(named("$field:N.clear()"));
 
         } else if (info.isPrimitive() || info.isEnum()) {
-            method.addNamedCode("$field:N = $default:L;\n", m);
+            method.addStatement(named("$field:N = $default:L"));
 
         } else if (info.isString()) {
-            method.addNamedCode("$field:N.setLength(0);\n", m);
+            method.addStatement(named("$field:N.setLength(0)"));
             if (info.hasDefaultValue()) {
-                method.addNamedCode("$field:N.append($default:S);\n", m);
+                method.addStatement(named("$field:N.append($default:S)"));
             }
 
         } else if (info.isBytes()) {
-            method.addNamedCode("$field:N.clear();\n", m);
+            method.addStatement(named("$field:N.clear()"));
             if (info.hasDefaultValue())
-                method.addNamedCode("$field:N.copyFrom($defaultField:N);\n", m);
+                method.addStatement(named("$field:N.copyFrom($defaultField:N)"));
 
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
@@ -97,11 +99,11 @@ public class FieldGenerator {
 
     protected void generateClearQuickCode(MethodSpec.Builder method) {
         if (info.isMessageOrGroup()) { // includes repeated messages
-            method.addNamedCode("$field:N.clearQuick();\n", m);
+            method.addStatement(named("$field:N.clearQuick()"));
         } else if (info.isRepeated() || info.isBytes()) {
-            method.addNamedCode("$field:N.clear();\n", m);
+            method.addStatement(named("$field:N.clear()"));
         } else if (info.isString()) {
-            method.addNamedCode("$field:N.setLength(0);\n", m);
+            method.addStatement(named("$field:N.setLength(0)"));
         } else if (info.isPrimitive() || info.isEnum()) {
             // do nothing
         } else {
@@ -111,14 +113,14 @@ public class FieldGenerator {
 
     protected void generateCopyFromCode(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup()) {
-            method.addNamedCode("$field:N.copyFrom(other.$field:N);\n", m);
+            method.addStatement(named("$field:N.copyFrom(other.$field:N)"));
 
         } else if (info.isPrimitive() || info.isEnum()) {
-            method.addNamedCode("$field:N = other.$field:N;\n", m);
+            method.addStatement(named("$field:N = other.$field:N"));
 
         } else if (info.isString()) {
-            method.addNamedCode("$field:N.setLength(0);\n", m);
-            method.addNamedCode("$field:N.append(other.$field:N);\n", m);
+            method.addStatement(named("$field:N.setLength(0)"));
+            method.addStatement(named("$field:N.append(other.$field:N)"));
 
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
@@ -149,6 +151,7 @@ public class FieldGenerator {
     protected void generateMergingCode(MethodSpec.Builder method) {
         if (info.isRepeated()) {
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement("int nextTagPosition")
                     .addNamedCode("do {$>\n" +
                             "// look ahead for more items so we resize only once\n" +
@@ -163,25 +166,34 @@ public class FieldGenerator {
                             "nextTagPosition = input.getPosition();\n" +
                             "$<} while (input.readTag() == $tag:L);\n" +
                             "input.rewindToPosition(nextTagPosition);\n", m)
-                    .addNamedCode("$setHas:L;\n", m);
+                    .addStatement(named("$setHas:L"));
 
         } else if (info.isString() || info.isMessageOrGroup() || info.isBytes()) {
             method
-                    .addNamedCode("input.read$capitalizedType:L($field:N$secondArgs:L);\n", m)
-                    .addNamedCode("$setHas:L;\n", m);
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("input.read$capitalizedType:L($field:N$secondArgs:L)"))
+                    .addStatement(named("$setHas:L"));
 
         } else if (info.isPrimitive()) {
             method
-                    .addNamedCode("$field:N = input.read$capitalizedType:L();\n", m)
-                    .addNamedCode("$setHas:L;\n", m);
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$field:N = input.read$capitalizedType:L()"))
+                    .addStatement(named("$setHas:L"));
 
         } else if (info.isEnum()) {
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement("final int value = input.readInt32()")
                     .beginControlFlow("if ($T.forNumber(value) != null)", typeName)
-                    .addNamedCode("$field:N = value;\n", m)
-                    .addNamedCode("$setHas:L;\n", m)
-                    .endControlFlow();
+                    .addStatement(named("$field:N = value"))
+                    .addStatement(named("$setHas:L"));
+
+            if (info.getParentTypeInfo().isStoreUnknownFields()) {
+                method.nextControlFlow("else")
+                        .addStatement("input.readBytesFromMark($N)", RuntimeClasses.unknownBytesField);
+            }
+
+            method.endControlFlow();
 
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
@@ -192,14 +204,16 @@ public class FieldGenerator {
         if (info.isFixedWidth()) {
 
             // For fixed width types we can copy the raw memory
-            method.addNamedCode("input.readPacked$capitalizedType:L($field:N);\n", m);
-            method.addNamedCode("$setHas:L;\n", m);
+            method.addCode(clearOtherOneOfs);
+            method.addStatement(named("input.readPacked$capitalizedType:L($field:N)"));
+            method.addStatement(named("$setHas:L"));
 
         } else if (info.isPrimitive() || info.isEnum()) {
 
             // We don't know how many items there actually are, so we need to
             // look-ahead once we run out of space in the backing store.
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement("final int length = input.readRawVarint32()")
                     .addStatement("final int limit = input.pushLimit(length)")
                     .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
@@ -210,19 +224,19 @@ public class FieldGenerator {
                     .addStatement("final int position = input.getPosition()")
                     .addStatement("int count = 0")
                     .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
-                    .addNamedCode("input.read$capitalizedType:L();\n", m)
+                    .addStatement(named("input.read$capitalizedType:L()"))
                     .addStatement("count++")
                     .endControlFlow()
                     .addStatement("input.rewindToPosition(position)")
-                    .addNamedCode("$field:N.reserve(count);\n", m)
+                    .addStatement(named("$field:N.reserve(count)"))
                     .endControlFlow()
 
                     // Add data
-                    .addNamedCode("$field:N.add(input.read$capitalizedType:L());\n", m)
+                    .addStatement(named("$field:N.add(input.read$capitalizedType:L())"))
                     .endControlFlow()
 
                     .addStatement("input.popLimit(limit)")
-                    .addNamedCode("$setHas:L;\n", m);
+                    .addStatement(named("$setHas:L"));
 
         } else {
             // Only primitives and enums can be packed
@@ -245,25 +259,25 @@ public class FieldGenerator {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
                     "$writePackedTagToOutput:L" +
                     "output.writeRawVarint32(dataSize);\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
+                    "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n", m);
 
         } else if (info.isRepeated()) {
             method.addNamedCode("" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "$writeTagToOutput:L" +
-                    "output.write$capitalizedType:LNoTag($field:N.get(i));\n" +
+                    "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n", m);
 
         } else {
             // unroll varint tag loop
             method.addNamedCode("$writeTagToOutput:L", m);
-            method.addNamedCode("output.write$capitalizedType:LNoTag($field:N);\n", m); // non-repeated
+            method.addStatement(named("output.write$capitalizedType:LNoTag($field:N)")); // non-repeated
         }
     }
 
@@ -309,54 +323,55 @@ public class FieldGenerator {
     }
 
     protected void generateComputeSerializedSizeCode(MethodSpec.Builder method) {
-        if (info.isPacked() && info.isFixedWidth()) {
+        if (info.isFixedWidth() && info.isPacked()) {
             method.addNamedCode("" +
                     "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
-                    "size += dataSize;\n" +
-                    "size += $bytesPerTag:L;\n" +
-                    "size += $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+
+        } else if (info.isFixedWidth() && info.isRepeated()) { // non packed
+            method.addStatement(named("size += ($bytesPerTag:L + $fixedWidth:L) * $field:N.length()"));
 
         } else if (info.isPacked()) {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
-                    "size += dataSize;\n" +
-                    "size += $bytesPerTag:L;\n" +
-                    "size += $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
 
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.get(i));\n" +
+                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
-                    "size += dataSize;\n" +
-                    "size += $bytesPerTag:L * $field:N.length();\n", m);
+                    "size += ($bytesPerTag:L * $field:N.length()) + dataSize;\n", m);
 
         } else if (info.isFixedWidth()) {
             method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated
 
         } else {
-            method.addNamedCode("size += $bytesPerTag:L + $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N);\n", m); // non-repeated
+            method.addStatement(named("size += $bytesPerTag:L + $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N)")); // non-repeated
         }
 
     }
 
     protected void generateJsonSerializationCode(MethodSpec.Builder method) {
-        // TODO: handle enum with strings instead of numbers?
-        method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N)"));
+        if (info.isEnum() && !info.isRepeated()) {
+            method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N, $type:T.converter())"));
+        } else {
+            method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N)"));
+        }
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
         generateHasMethod(type);
+        generateClearMethod(type);
+        generateGetMethods(type);
         if (info.isEnum()) {
             generateExtraEnumAccessors(type);
         }
-        generateGetMethods(type);
         generateSetMethods(type);
-        generateClearMethod(type);
     }
 
     protected void generateHasMethod(TypeSpec.Builder type) {
@@ -364,7 +379,7 @@ public class FieldGenerator {
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(TypeName.BOOLEAN)
-                .addNamedCode("return $getHas:L;\n", m)
+                .addStatement(named("return $getHas:L"))
                 .build());
     }
 
@@ -376,10 +391,10 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.add($valueOrNumber:L);\n" +
-                            "return this;\n", m)
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$setHas:L"))
+                    .addStatement(named("$field:N.add(value)"))
+                    .addStatement(named("return this"))
                     .build();
             type.addMethod(adder);
 
@@ -389,17 +404,10 @@ public class FieldGenerator {
                     .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
                     .varargs(true)
                     .returns(info.getParentType())
-                    .addNamedCode("$setHas:L;\n", m);
-            if (!info.isEnum()) {
-                addAll.addNamedCode("$field:N.addAll(values);\n", m);
-            } else {
-                addAll.addNamedCode("" +
-                        "$field:N.reserve(values.length);\n" +
-                        "for ($type:T value : values) {$>\n" +
-                        "$field:N.add($valueOrNumber:L);\n" +
-                        "$<}\n", m);
-            }
-            addAll.addStatement("return this");
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$setHas:L"))
+                    .addStatement(named("$field:N.addAll(values)"))
+                    .addStatement(named("return this"));
             type.addMethod(addAll.build());
 
         } else if (info.isMessageOrGroup()) {
@@ -408,9 +416,10 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .returns(info.getParentType())
                     .addParameter(typeName, "value", Modifier.FINAL)
-                    .addNamedCode("$setHas:L;\n", m)
-                    .addNamedCode("$field:N.copyFrom(value);\n", m)
-                    .addStatement("return this")
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$setHas:L"))
+                    .addStatement(named("$field:N.copyFrom(value)"))
+                    .addStatement(named("return this"))
                     .build();
             type.addMethod(setter);
 
@@ -420,6 +429,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addNamedCode("" +
                             "$setHas:L;\n" +
                             "$field:N.setLength(0);\n" +
@@ -434,6 +444,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getTypeName(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addNamedCode("" +
                             "$setHas:L;\n" +
                             "$field:N = $valueOrNumber:L;\n" +
@@ -447,80 +458,88 @@ public class FieldGenerator {
 
     /**
      * Enums are odd because they need to be converter back and forth and they
-     * don't have the same type as the internal/repeated store. In this case we give
-     * raw access to the int number, but also add convenience wrappers to get
-     * the enum value.
+     * don't have the same type as the internal/repeated store. The normal
+     * accessors provide access to the enum value, but for performance reasons
+     * we also add accessors for the internal storage type that do not require
+     * conversions.
      *
      * @param type
      */
     protected void generateExtraEnumAccessors(TypeSpec.Builder type) {
-
-        MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
-                .addAnnotations(info.getMethodAnnotations())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(typeName);
+        if (!info.isEnum())
+            return;
 
         if (!info.isRepeated()) {
 
-            // getField() that maps from int to enum
-            if (!info.hasDefaultValue()) {
-                getter.addNamedCode("return $type:T.forNumber($field:N);\n", m);
-            } else {
-                getter.addNamedCode("return $type:T.forNumberOr($field:N, $defaultEnumValue:L);\n", m);
-            }
+            // Overload to get the internal store without conversion
+            MethodSpec.Builder getNumber = MethodSpec.methodBuilder(info.getGetterName() + "Number")
+                    .addAnnotations(info.getMethodAnnotations())
+                    .addJavadoc(named("" +
+                            "Gets the value of the internal enum store. The result is\n" +
+                            "equivalent to {@link $message:T#$getMethod:N()}.getNumber().\n"))
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(int.class)
+                    .addStatement(named("return $field:N"));
 
-            // We also want an overload to set the internal value directly.
-            // For repeated enums people can just use the mutable store.
-            MethodSpec setNumber = MethodSpec.methodBuilder(info.getSetterName())
+            // Overload to set the internal value without conversion
+            MethodSpec.Builder setNumber = MethodSpec.methodBuilder(info.getSetterName() + "Number")
                     .addAnnotations(info.getMethodAnnotations())
                     .addJavadoc(named("" +
                             "Sets the value of the internal enum store. This does not\n" +
                             "do any validity checks, so be sure to use appropriate value\n" +
-                            "constants from {@link $type:T}.\n"))
+                            "constants from {@link $type:T}. Setting an invalid value\n" +
+                            "can cause {@link $message:T#$getMethod:N()} to return null\n"))
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(info.getStoreType(), "value", Modifier.FINAL)
+                    .addParameter(int.class, "value", Modifier.FINAL)
                     .returns(info.getParentType())
                     .addNamedCode("" +
                             "$setHas:L;\n" +
                             "$field:N = value;\n" +
-                            "return this;\n", m)
-                    .build();
-            type.addMethod(setNumber);
+                            "return this;\n", m);
+
+            type.addMethod(getNumber.build());
+            type.addMethod(setNumber.build());
 
         } else {
 
-            // getCount() & get(index)
-            getter.addParameter(int.class, "index", Modifier.FINAL);
-            getter.addNamedCode("return $type:T.forNumber($field:N.get(index));\n", m);
-
-            MethodSpec getCount = MethodSpec.methodBuilder(info.getGetterName() + "Count")
+            MethodSpec adder = MethodSpec.methodBuilder(info.getAdderName() + "Number")
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(int.class)
-                    .addNamedCode("return $field:N.length();\n", m)
+                    .addParameter(int.class, "value", Modifier.FINAL)
+                    .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$setHas:L"))
+                    .addStatement(named("$field:N.add(value)"))
+                    .addStatement(named("return this"))
                     .build();
-            type.addMethod(getCount);
+            type.addMethod(adder);
+
+            MethodSpec.Builder addAll = MethodSpec.methodBuilder("addAll" + info.getUpperName() + "Numbers")
+                    .addAnnotations(info.getMethodAnnotations())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(ArrayTypeName.of(int.class), "values", Modifier.FINAL)
+                    .varargs(true)
+                    .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$setHas:L"))
+                    .addStatement(named("$field:N.addAll(values)"))
+                    .addStatement(named("return this"));
+            type.addMethod(addAll.build());
+
         }
-        type.addMethod(getter.build());
     }
 
     protected void generateGetMethods(TypeSpec.Builder type) {
-        // We are adding another getter for enums with the same name
-        String getterName = info.getGetterName();
-        if (info.isEnum() && !info.isRepeated()) {
-            getterName += "Number";
-        }
-
-        MethodSpec.Builder getter = MethodSpec.methodBuilder(getterName)
+        MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addAnnotations(info.getMethodAnnotations())
-                .addModifiers(Modifier.PUBLIC)
-                .returns(storeType)
-                .addNamedCode("return $field:N;\n", m);
+                .addModifiers(Modifier.PUBLIC);
 
-        if (info.isEnum()) {
-            getter.addJavadoc(named("" +
-                    "Gets the value of the internal enum store. The result is\n" +
-                    "equivalent to {@link #$getMethod:N()}.getNumber().\n"));
+        if (!info.isEnum() || info.isRepeated()) {
+            getter.returns(storeType).addStatement(named("return $field:N"));
+        } else if (!info.hasDefaultValue()) {
+            getter.returns(typeName).addStatement(named("return $type:T.forNumber($field:N)"));
+        } else {
+            getter.returns(typeName).addStatement(named("return $type:T.forNumberOr($field:N, $defaultEnumValue:L)"));
         }
 
         if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes() || info.isString()) {
@@ -538,8 +557,9 @@ public class FieldGenerator {
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
-                    .addNamedCode("$setHas:L;\n", m)
-                    .addNamedCode("return $field:N;\n", m)
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$setHas:L"))
+                    .addStatement(named("return $field:N"))
                     .build();
 
             type.addMethod(getter.build());
@@ -555,16 +575,26 @@ public class FieldGenerator {
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
-                .addNamedCode("$clearHas:L;\n", m);
+                .addStatement(named("$clearHas:L"));
         generateClearCode(method);
         method.addStatement("return this");
         type.addMethod(method.build());
+    }
+
+    private CodeBlock generateClearOtherOneOfs() {
+        if (!info.hasOtherOneOfFields())
+            return EMPTY_BLOCK;
+
+        return CodeBlock.builder()
+                .addStatement("$N()", info.getClearName() + "OneOf")
+                .build();
     }
 
     protected FieldGenerator(RequestInfo.FieldInfo info) {
         this.info = info;
         typeName = info.getTypeName();
         storeType = info.getStoreType();
+        clearOtherOneOfs = generateClearOtherOneOfs();
 
         // Common-variable map for named arguments
         m.put("field", info.getFieldName());
@@ -593,6 +623,8 @@ public class FieldGenerator {
         m.put("valueOrNumber", info.isEnum() ? "value.getNumber()" : "value");
         if (info.isPackable()) m.put("packedTag", info.getPackedTag());
         if (info.isFixedWidth()) m.put("fixedWidth", info.getFixedWidth());
+        if (info.isRepeated())
+            m.put("getRepeatedIndex_i", info.isPrimitive() || info.isEnum() ? "array()[i]" : "get(i)");
 
         // utility classes
         m.put("jsonKeys", getInfo().getParentTypeInfo().getJsonKeysClass());
@@ -605,6 +637,8 @@ public class FieldGenerator {
     protected final RequestInfo.FieldInfo info;
     protected final TypeName typeName;
     protected final TypeName storeType;
+    protected final CodeBlock clearOtherOneOfs;
+    private static final CodeBlock EMPTY_BLOCK = CodeBlock.builder().build();
 
     protected final HashMap<String, Object> m = new HashMap<>();
 

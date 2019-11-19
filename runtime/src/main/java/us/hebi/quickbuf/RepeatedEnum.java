@@ -22,70 +22,97 @@
 
 package us.hebi.quickbuf;
 
+import us.hebi.quickbuf.ProtoEnum.EnumConverter;
+
 import java.util.Arrays;
 
 /**
- * Class that represents the data for a repeated float field.
+ * Enum values are internally stored as an integers. This class
+ * contains helper methods to convert to and from the enum
+ * representations.
  *
  * @author Florian Enner
- * @since 09 Aug 2019
+ * @since 17 Nov 2019
  */
-public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
+public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<RepeatedEnum<E>> {
 
-    public static RepeatedFloat newEmptyInstance() {
-        return new RepeatedFloat();
+    @SuppressWarnings("unchecked")
+    public static <E extends ProtoEnum> RepeatedEnum<E> newEmptyInstance(EnumConverter<E> converter) {
+        return new RepeatedEnum(converter);
     }
 
-    RepeatedFloat() {
+    public E get(int index) {
+        return converter.forNumber(getNumber(index));
     }
 
-    @Override
-    protected void extendCapacityTo(int desiredSize) {
-        final float[] newValues = new float[desiredSize];
-        System.arraycopy(array, 0, newValues, 0, length);
-        this.array = newValues;
-    }
-
-    public float get(int index) {
+    public int getNumber(int index) {
         checkIndex(index);
         return array[index];
     }
 
-    public RepeatedFloat set(int index, float value) {
+    public RepeatedEnum<E> set(int index, E value) {
+        return set(index, value.getNumber());
+    }
+
+    public RepeatedEnum<E> set(int index, int value) {
         checkIndex(index);
         array[index] = value;
         return this;
     }
 
-    public RepeatedFloat add(final float value) {
+    public RepeatedEnum<E> add(final E value) {
+        return add(value.getNumber());
+    }
+
+    public RepeatedEnum<E> add(final int value) {
         reserve(1);
         array[length++] = value;
         return this;
     }
 
-    public RepeatedFloat addAll(final float[] values) {
-        return addAll(values, 0, values.length);
-    }
-
-    public RepeatedFloat addAll(final float[] buffer, final int offset, final int length) {
-        final int pos = this.length;
-        setLength(pos + length);
+    public RepeatedEnum<E> addAll(final int[] buffer, final int offset, final int length) {
+        final int pos = addLength(length);
         System.arraycopy(buffer, offset, array, pos, length);
         return this;
     }
 
-    public RepeatedFloat copyFrom(final float[] buffer) {
-        return copyFrom(buffer, 0, buffer.length);
-    }
-
-    public RepeatedFloat copyFrom(final float[] buffer, final int offset, final int length) {
-        setLength(length);
-        System.arraycopy(buffer, offset, array, 0, length);
+    public RepeatedEnum<E> addAll(final E[] buffer, final int offset, final int length) {
+        final int pos = addLength(length);
+        for (int i = 0; i < length; i++) {
+            array[pos + i] = buffer[i].getNumber();
+        }
         return this;
     }
 
+    public RepeatedEnum<E> addAll(final int... values) {
+        return addAll(values, 0, values.length);
+    }
+
+    public RepeatedEnum<E> addAll(final E... values) {
+        return addAll(values, 0, values.length);
+    }
+
+    public RepeatedEnum<E> copyFrom(final int[] buffer) {
+        return setLength(0).addAll(buffer);
+    }
+
+    public RepeatedEnum<E> copyFrom(final int[] buffer, final int offset, final int length) {
+        return setLength(0).addAll(buffer, offset, length);
+    }
+
+    public RepeatedEnum<E> copyFrom(final E[] buffer) {
+        return setLength(0).addAll(buffer);
+    }
+
+    public RepeatedEnum<E> copyFrom(final E[] buffer, final int offset, final int length) {
+        return setLength(0).addAll(buffer, offset, length);
+    }
+
     @Override
-    public void copyFrom(RepeatedFloat other) {
+    public void copyFrom(RepeatedEnum<E> other) {
+        if (converter != other.converter) {
+            throw new IllegalArgumentException("Enum types do not match");
+        }
         if (other.length > length) {
             extendCapacityTo(other.length);
         }
@@ -107,7 +134,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      *
      * @return copy of valid data
      */
-    public final float[] toArray() {
+    public final int[] toArray() {
         if (length == 0) return EMPTY_ARRAY;
         return Arrays.copyOf(array, length);
     }
@@ -121,7 +148,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      *
      * @return internal storage array
      */
-    public final float[] array() {
+    public final int[] array() {
         return array;
     }
 
@@ -137,7 +164,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      * @param length desired length
      * @return this
      */
-    public final RepeatedFloat setLength(final int length) {
+    public final RepeatedEnum<E> setLength(final int length) {
         if (array.length < length) {
             extendCapacityTo(length);
         }
@@ -151,7 +178,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
      * may get extended to accomodate at least the
      * desired length.
      *
-     * See {@link RepeatedFloat#setLength(int)}
+     * See {@link RepeatedEnum#setLength(int)}
      *
      * @param length added to the current length
      * @return previous length
@@ -167,6 +194,13 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     }
 
     @Override
+    protected void extendCapacityTo(int desiredSize) {
+        final int[] newValues = new int[desiredSize];
+        System.arraycopy(array, 0, newValues, 0, length);
+        this.array = newValues;
+    }
+
+    @Override
     public String toString() {
         return Arrays.toString(toArray());
     }
@@ -175,19 +209,26 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RepeatedFloat other = (RepeatedFloat) o;
+        RepeatedEnum other = (RepeatedEnum) o;
 
-        if (length != other.length)
+        if (converter != other.converter || length != other.length)
             return false;
 
         for (int i = 0; i < length; i++) {
-            if (!ProtoUtil.isEqual(array[i], other.array[i]))
+            if (array[i] != other.array[i])
                 return false;
         }
         return true;
     }
 
-    float[] array = EMPTY_ARRAY;
-    private static final float[] EMPTY_ARRAY = new float[0];
+    private RepeatedEnum(EnumConverter<E> converter) {
+        if (converter == null)
+            throw new NullPointerException();
+        this.converter = converter;
+    }
+
+    final EnumConverter<E> converter;
+    int[] array = EMPTY_ARRAY;
+    private static final int[] EMPTY_ARRAY = new int[0];
 
 }

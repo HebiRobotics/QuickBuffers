@@ -26,6 +26,7 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
+import com.google.protobuf.DescriptorProtos.OneofDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.squareup.javapoet.*;
 import lombok.EqualsAndHashCode;
@@ -249,7 +250,13 @@ public class RequestInfo {
                     .map(desc -> new EnumInfo(parentFile, typeId, typeName, true, desc))
                     .collect(Collectors.toList());
 
+            int oneOfIndex = 0;
+            for (OneofDescriptorProto desc : descriptor.getOneofDeclList()) {
+                oneOfs.add(new OneOfInfo(parentFile, this, typeName, desc, oneOfIndex++));
+            }
+
             expectedIncomingOrder = getParentFile().getParentRequest().getExpectedIncomingOrder();
+            numBitFields = BitField.getNumberOfFields(fields.size());
 
         }
 
@@ -258,15 +265,17 @@ public class RequestInfo {
         private final List<FieldInfo> fields = new ArrayList<>();
         private final List<MessageInfo> nestedTypes;
         private final List<EnumInfo> nestedEnums;
+        private final List<OneOfInfo> oneOfs = new ArrayList<>();
         private final ExpectedIncomingOrder expectedIncomingOrder;
         private final boolean storeUnknownFields;
+        private final int numBitFields;
 
     }
 
     @Value
     public static class FieldInfo {
 
-        FieldInfo(FileInfo parentFile, TypeInfo parentTypeInfo, ClassName parentType, FieldDescriptorProto descriptor, int fieldIndex) {
+        FieldInfo(FileInfo parentFile, MessageInfo parentTypeInfo, ClassName parentType, FieldDescriptorProto descriptor, int fieldIndex) {
             this.parentFile = parentFile;
             this.parentTypeInfo = parentTypeInfo;
             this.parentType = parentType;
@@ -307,6 +316,8 @@ public class RequestInfo {
 
         public TypeName getRepeatedStoreType() {
             if (isGroup() || isMessage()) {
+                return ParameterizedTypeName.get(repeatedStoreType, getTypeName());
+            } else if (isEnum()) {
                 return ParameterizedTypeName.get(repeatedStoreType, getTypeName());
             }
             return repeatedStoreType;
@@ -417,15 +428,40 @@ public class RequestInfo {
             return getTypeName();
         }
 
-        public String getSerializedJsonName() {
-            if (parentFile.getParentRequest().getJsonUseProtoName()) {
-                return getDescriptor().getName();
-            }
-            return getDescriptor().getJsonName();
+        // Used for serialization
+        public String getPrimaryJsonName() {
+            return parentFile.getParentRequest().getJsonUseProtoName() ?
+                    descriptor.getName() : descriptor.getJsonName();
+        }
+
+        // Parsing should support both
+        public String getSecondaryJsonName() {
+            return !parentFile.getParentRequest().getJsonUseProtoName() ?
+                    descriptor.getName() : descriptor.getJsonName();
+        }
+
+        public boolean hasOtherOneOfFields() {
+            return descriptor.hasOneofIndex()
+                    && getParentTypeInfo()
+                    .getOneOfs()
+                    .get(descriptor.getOneofIndex())
+                    .getFields().size() > 1;
+        }
+
+        public List<FieldInfo> getOtherOneOfFields() {
+            if (!descriptor.hasOneofIndex())
+                return Collections.emptyList();
+
+            final int index = descriptor.getOneofIndex();
+            return parentTypeInfo.getFields().stream()
+                    .filter(field -> field.getDescriptor().hasOneofIndex())
+                    .filter(field -> field.getDescriptor().getOneofIndex() == index)
+                    .filter(field -> field != this)
+                    .collect(Collectors.toList());
         }
 
         private final FileInfo parentFile;
-        private final TypeInfo parentTypeInfo;
+        private final MessageInfo parentTypeInfo;
         private final ClassName parentType;
         private final ClassName repeatedStoreType;
         private final FieldDescriptorProto descriptor;
@@ -472,6 +508,39 @@ public class RequestInfo {
         private final EnumDescriptorProto descriptor;
         private final int highestNumber;
         private final boolean usingArrayLookup;
+
+    }
+
+    @Value
+    public static class OneOfInfo {
+        OneOfInfo(FileInfo parentFile, MessageInfo parentTypeInfo, ClassName parentType, OneofDescriptorProto descriptor, int oneOfIndex) {
+            this.parentFile = parentFile;
+            this.parentTypeInfo = parentTypeInfo;
+            this.parentType = parentType;
+            this.descriptor = descriptor;
+            this.oneOfIndex = oneOfIndex;
+
+            upperName = NamingUtil.toUpperCamel(descriptor.getName());
+            hazzerName = "has" + upperName;
+            clearName = "clear" + upperName;
+
+        }
+
+        public List<FieldInfo> getFields() {
+            return parentTypeInfo.getFields().stream()
+                    .filter(field -> field.getDescriptor().hasOneofIndex())
+                    .filter(field -> field.getDescriptor().getOneofIndex() == oneOfIndex)
+                    .collect(Collectors.toList());
+        }
+
+        private final FileInfo parentFile;
+        private final MessageInfo parentTypeInfo;
+        private final ClassName parentType;
+        private final OneofDescriptorProto descriptor;
+        private final int oneOfIndex;
+        private final String upperName;
+        private final String hazzerName;
+        private final String clearName;
 
     }
 

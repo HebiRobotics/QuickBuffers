@@ -4,15 +4,18 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://
 
 The main differences to Protobuf-Java are
 
- * The API can be used without allocations
  * Message contents are mutable
+ * The API can be used without allocations
  * The [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) was optimized for sequential memory access
  * Nested types are instantiated eagerly
- * `Extensions` and `Services` are currently not supported
- * `OneOf` constraints are currently not enforced 
+ * A JSON serializer that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
+ * Unknown fields are retained as raw bytes and cannot be accessed as fields
+ 
+ Missing Features
  * `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
+ * `Extensions` and `Services` are currently not supported
 
-For performance comparisons please refer to [benchmarks](./benchmarks).
+While the performance benefits depend heavily on the use case and message format, most common use cases should see a roughly 2x performance improvement in both encoding and decoding speed over `Protobuf-Java 3.9.1`. For more detailed comparisons see the [benchmarks](./benchmarks) section.
 
 ## Getting Started
 
