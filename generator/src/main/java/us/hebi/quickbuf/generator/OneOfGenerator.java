@@ -75,7 +75,7 @@ public class OneOfGenerator {
                         .collect(Collectors.toList());
                 int[] otherBits = BitField.generateBitset(otherFields);
 
-                MethodSpec.Builder clearOthers = MethodSpec.methodBuilder(field.getClearName() + "OneOf")
+                MethodSpec.Builder clearOthers = MethodSpec.methodBuilder(field.getClearOtherOneOfName())
                         .addModifiers(Modifier.PRIVATE)
                         .beginControlFlow("if ($L)", BitField.hasAnyBit(otherBits));
 

@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -63,6 +63,15 @@ class FieldUtil {
         if ((value & (0xffffffff << 28)) == 0) return 4;
         return 5;
     }
+
+    static final Comparator<FieldDescriptorProto> GroupOneOfFields = new Comparator<FieldDescriptorProto>() {
+        @Override
+        public int compare(FieldDescriptorProto o1, FieldDescriptorProto o2) {
+            int n1 = o1.hasOneofIndex() ? o1.getOneofIndex() : -1;
+            int n2 = o2.hasOneofIndex() ? o2.getOneofIndex() : -1;
+            return n2 - n1;
+        }
+    };
 
     /**
      * Sort fields according to their specified field number. This is used as the serialization order

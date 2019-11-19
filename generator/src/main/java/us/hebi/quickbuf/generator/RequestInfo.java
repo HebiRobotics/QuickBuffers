@@ -35,10 +35,7 @@ import lombok.ToString;
 import lombok.Value;
 import us.hebi.quickbuf.parser.ParserUtil;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static us.hebi.quickbuf.generator.Preconditions.*;
@@ -235,11 +232,27 @@ public class RequestInfo {
             this.fieldCount = descriptor.getFieldCount();
             this.storeUnknownFields = parentFile.getParentRequest().getStoreUnknownFields();
 
-            int fieldIndex = 0;
-            for (FieldDescriptorProto desc : descriptor.getFieldList().stream()
+            // Sort fields by serialization order such that they are accessed in a
+            // sequential access pattern.
+            List<FieldDescriptorProto> sortedFields = descriptor.getFieldList().stream()
                     .sorted(FieldUtil.MemoryLayoutSorter)
+                    .collect(Collectors.toList());
+
+            // Build bitfield index map. In the case of OneOf fields we want them grouped
+            // together so that we can check all has states in as few bitfield comparisons
+            // as possible. If there are no OneOf fields, the order will match the field
+            // order.
+            int bitIndex = 0;
+            Map<FieldDescriptorProto, Integer> bitIndices = new HashMap<>();
+            for (FieldDescriptorProto desc : sortedFields.stream()
+                    .sorted(FieldUtil.GroupOneOfFields)
                     .collect(Collectors.toList())) {
-                fields.add(new FieldInfo(parentFile, this, typeName, desc, fieldIndex++));
+                bitIndices.put(desc, bitIndex++);
+            }
+
+            // Build map
+            for (FieldDescriptorProto desc : sortedFields) {
+                fields.add(new FieldInfo(parentFile, this, typeName, desc, bitIndices.get(desc)));
             }
 
             nestedTypes = descriptor.getNestedTypeList().stream()
@@ -275,16 +288,16 @@ public class RequestInfo {
     @Value
     public static class FieldInfo {
 
-        FieldInfo(FileInfo parentFile, MessageInfo parentTypeInfo, ClassName parentType, FieldDescriptorProto descriptor, int fieldIndex) {
+        FieldInfo(FileInfo parentFile, MessageInfo parentTypeInfo, ClassName parentType, FieldDescriptorProto descriptor, int bitIndex) {
             this.parentFile = parentFile;
             this.parentTypeInfo = parentTypeInfo;
             this.parentType = parentType;
             this.descriptor = descriptor;
-            this.fieldIndex = fieldIndex;
+            this.bitIndex = bitIndex;
 
-            hasBit = BitField.hasBit(fieldIndex);
-            setBit = BitField.setBit(fieldIndex);
-            clearBit = BitField.clearBit(fieldIndex);
+            hasBit = BitField.hasBit(bitIndex);
+            setBit = BitField.setBit(bitIndex);
+            clearBit = BitField.clearBit(bitIndex);
             if (isGroup()) {
                 // name is all lowercase, so convert the type name instead (e.g. ".package.OptionalGroup")
                 String name = descriptor.getTypeName();
@@ -440,12 +453,13 @@ public class RequestInfo {
                     descriptor.getName() : descriptor.getJsonName();
         }
 
+        public String getClearOtherOneOfName() {
+            return getContainingOneOf().getClearName() + "Other" + upperName;
+        }
+
         public boolean hasOtherOneOfFields() {
             return descriptor.hasOneofIndex()
-                    && getParentTypeInfo()
-                    .getOneOfs()
-                    .get(descriptor.getOneofIndex())
-                    .getFields().size() > 1;
+                    && getContainingOneOf().getFields().size() > 1;
         }
 
         public List<FieldInfo> getOtherOneOfFields() {
@@ -460,12 +474,18 @@ public class RequestInfo {
                     .collect(Collectors.toList());
         }
 
+        private OneOfInfo getContainingOneOf() {
+            return getParentTypeInfo()
+                    .getOneOfs()
+                    .get(descriptor.getOneofIndex());
+        }
+
         private final FileInfo parentFile;
         private final MessageInfo parentTypeInfo;
         private final ClassName parentType;
         private final ClassName repeatedStoreType;
         private final FieldDescriptorProto descriptor;
-        private final int fieldIndex;
+        private final int bitIndex;
         private final String hasBit;
         private final String setBit;
         private final String clearBit;

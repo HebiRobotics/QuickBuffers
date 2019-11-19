@@ -381,7 +381,7 @@ class MessageGenerator {
             copyFrom.beginControlFlow("if (($1L | other.$1L) != 0)", bitField);
             copyFrom.addStatement("$1L = other.$1L", bitField);
             fields.stream()
-                    .filter(field -> BitField.getFieldIndex(field.info.getFieldIndex()) == fieldIndex)
+                    .filter(field -> BitField.getFieldIndex(field.info.getBitIndex()) == fieldIndex)
                     .forEach(field -> field.generateCopyFromCode(copyFrom));
             copyFrom.endControlFlow();
         }
@@ -473,7 +473,7 @@ class MessageGenerator {
 
         // add every set field
         for (FieldGenerator field : fields) {
-            writeTo.beginControlFlow("if ($L)", BitField.hasBit(field.getInfo().getFieldIndex()));
+            writeTo.beginControlFlow("if ($L)", BitField.hasBit(field.getInfo().getBitIndex()));
             field.generateJsonSerializationCode(writeTo);
             writeTo.endControlFlow();
         }

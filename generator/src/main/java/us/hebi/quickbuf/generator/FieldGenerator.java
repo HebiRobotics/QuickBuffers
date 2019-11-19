@@ -586,7 +586,7 @@ public class FieldGenerator {
             return EMPTY_BLOCK;
 
         return CodeBlock.builder()
-                .addStatement("$N()", info.getClearName() + "OneOf")
+                .addStatement("$N()", info.getClearOtherOneOfName())
                 .build();
     }
 

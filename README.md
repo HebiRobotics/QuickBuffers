@@ -10,6 +10,7 @@ The main differences to Protobuf-Java are
  * Nested types are instantiated eagerly
  * A JSON serializer that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
  * Unknown fields are retained as raw bytes and cannot be accessed as fields
+ * There is no reflection API or any other use of reflections. No ProGuard config is needed.
  
  Missing Features
  * `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
