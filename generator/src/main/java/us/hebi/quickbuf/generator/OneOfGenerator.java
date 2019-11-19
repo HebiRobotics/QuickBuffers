@@ -66,7 +66,7 @@ public class OneOfGenerator {
         type.addMethod(has.build());
         type.addMethod(clear.build());
 
-        // Add a utility method that clears all fields other than itself
+        // Add a utility method that clears all but one fields
         if (fields.size() > 1) {
             for (FieldInfo field : fields) {
 

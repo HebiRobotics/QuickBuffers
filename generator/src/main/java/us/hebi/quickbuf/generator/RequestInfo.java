@@ -146,6 +146,10 @@ public class RequestInfo {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("json_use_proto_name", "false"));
     }
 
+    public boolean getEnforceHasChecks() {
+        return Boolean.parseBoolean(generatorParameters.getOrDefault("enforce_has_checks", "false"));
+    }
+
     private final CodeGeneratorRequest descriptor;
     private final Map<String, String> generatorParameters;
     private final List<FileInfo> files;
@@ -231,6 +235,8 @@ public class RequestInfo {
             this.descriptor = descriptor;
             this.fieldCount = descriptor.getFieldCount();
             this.storeUnknownFields = parentFile.getParentRequest().getStoreUnknownFields();
+            this.expectedIncomingOrder = getParentFile().getParentRequest().getExpectedIncomingOrder();
+            this.enforceHasChecks = getParentFile().getParentRequest().getEnforceHasChecks();
 
             // Sort fields by serialization order such that they are accessed in a
             // sequential access pattern.
@@ -268,7 +274,6 @@ public class RequestInfo {
                 oneOfs.add(new OneOfInfo(parentFile, this, typeName, desc, oneOfIndex++));
             }
 
-            expectedIncomingOrder = getParentFile().getParentRequest().getExpectedIncomingOrder();
             numBitFields = BitField.getNumberOfFields(fields.size());
 
         }
@@ -282,6 +287,7 @@ public class RequestInfo {
         private final ExpectedIncomingOrder expectedIncomingOrder;
         private final boolean storeUnknownFields;
         private final int numBitFields;
+        private final boolean enforceHasChecks;
 
     }
 

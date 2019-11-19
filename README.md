@@ -44,6 +44,7 @@ The code generator is setup as a `protoc` plugin. In order to call it, you need 
 * **store_unknown_fields** stores unknown fields that it encounter during parsing. This allows messages to be passed on without losing information even if the schema is not fully known 
   * unknown fields are stored in binary form, so individual fields cannot be accessed directly 
   * unknown fields are ignored when comparing with `equals`
+* **enforce_has_checks** throws an exception when accessing fields that were not set
 * **json_use_proto_name** changes the serialized json field names to match the original proto definition (`my_field`) instead of the default lowerCamelCase (`myField`) or `json_name` override option. [Compatible parsers](https://developers.google.com/protocol-buffers/docs/proto3#json) should be able to parse both cases.
 
 </p></details> 
@@ -54,6 +55,7 @@ The code generator is setup as a `protoc` plugin. In order to call it, you need 
 | **replace_package** | (pattern)&#124;replacement |
 | **input_order** | **quickbuf**, number, none | 
 | **store_unknown_fields** | **false**, true  |
+| **enforce_has_checks** | **false**, true  |                                     
 | **json_use_proto_name** | **false**, true  |                                     
 
 For example, 
