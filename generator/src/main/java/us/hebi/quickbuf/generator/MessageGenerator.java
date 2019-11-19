@@ -24,6 +24,7 @@ package us.hebi.quickbuf.generator;
 
 import com.squareup.javapoet.*;
 import us.hebi.quickbuf.generator.RequestInfo.ExpectedIncomingOrder;
+import us.hebi.quickbuf.generator.RequestInfo.FieldInfo;
 import us.hebi.quickbuf.generator.RequestInfo.MessageInfo;
 
 import javax.lang.model.element.Modifier;
@@ -32,8 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static us.hebi.quickbuf.generator.BitField.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Florian Enner
@@ -92,6 +92,11 @@ class MessageGenerator {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
         fields.forEach(f -> f.generateMemberFields(type));
+
+        // OneOf Accessors
+        info.getOneOfs().stream()
+                .map(OneOfGenerator::new)
+                .forEach(oneOf -> oneOf.generateMemberMethods(type));
 
         // Fields accessors
         fields.forEach(f -> f.generateMemberMethods(type));
@@ -319,7 +324,7 @@ class MessageGenerator {
                 // no need to check has state again
                 f.generateSerializationCode(writeTo);
             } else {
-                writeTo.beginControlFlow("if " + f.getInfo().getHasBit());
+                writeTo.beginControlFlow("if ($L)", f.getInfo().getHasBit());
                 f.generateSerializationCode(writeTo);
                 writeTo.endControlFlow();
             }
@@ -349,7 +354,7 @@ class MessageGenerator {
                 // no need to check has state again
                 f.generateComputeSerializedSizeCode(computeSerializedSize);
             } else {
-                computeSerializedSize.beginControlFlow("if " + f.getInfo().getHasBit());
+                computeSerializedSize.beginControlFlow("if ($L)", f.getInfo().getHasBit());
                 f.generateComputeSerializedSizeCode(computeSerializedSize);
                 computeSerializedSize.endControlFlow();
             }
@@ -420,7 +425,7 @@ class MessageGenerator {
         // Check sub-messages (including optional and repeated)
         fields.stream()
                 .map(FieldGenerator::getInfo)
-                .filter(RequestInfo.FieldInfo::isMessageOrGroup)
+                .filter(FieldInfo::isMessageOrGroup)
                 .forEach(field -> {
                     if (field.isRequired()) {
                         // has bit was already checked
@@ -445,26 +450,18 @@ class MessageGenerator {
 
     private void insertOnMissingRequiredBits(MethodSpec.Builder method, Consumer<MethodSpec.Builder> onCondition) {
         // check if all required bits are set
-        final int numFields = fields.size();
-        int i = 0;
-        for (int bitFieldIndex = 0; bitFieldIndex < numBitFields && i < numFields; bitFieldIndex++) {
+        List<FieldInfo> requiredFields = fields.stream()
+                .map(FieldGenerator::getInfo)
+                .filter(FieldInfo::isRequired)
+                .collect(Collectors.toList());
 
-            // Generate a single number that contains all required bits
-            int bits = 0;
-            for (int bit = 0; bit < BITS_PER_FIELD && i < numFields; bit++, i++) {
-                if (fields.get(i).getInfo().isRequired()) {
-                    bits |= 1 << bit;
-                }
-            }
-
-            // Check up to 32 fields at the same time
-            if (bits != 0) {
-                method.beginControlFlow("if ($L)", BitField.isMissingRequiredBits(bitFieldIndex, bits));
-                onCondition.accept(method);
-                method.endControlFlow();
-            }
-
+        if (requiredFields.size() > 0) {
+            int[] bitset = BitField.generateBitset(requiredFields);
+            method.beginControlFlow("if ($L)", BitField.isMissingAnyBit(bitset));
+            onCondition.accept(method);
+            method.endControlFlow();
         }
+
     }
 
     private void generateWriteToJson(TypeSpec.Builder type) {
@@ -526,7 +523,7 @@ class MessageGenerator {
                 .addModifiers(Modifier.STATIC);
 
         fields.forEach(f -> {
-            String jsonName = f.getInfo().getSerializedJsonName();
+            String jsonName = f.getInfo().getPrimaryJsonName();
             CodeBlock.Builder initializer = CodeBlock.builder();
             initializer.add("{'$L'", "\\\"");
             for (int i = 0; i < jsonName.length(); i++) {
@@ -546,7 +543,7 @@ class MessageGenerator {
     MessageGenerator(MessageInfo info) {
         this.info = info;
         info.getFields().forEach(f -> fields.add(new FieldGenerator(f)));
-        numBitFields = BitField.getNumberOfFields(info.getFields().size());
+        numBitFields = info.getNumBitFields();
 
         m.put("abstractMessage", RuntimeClasses.AbstractMessage);
         m.put("unknownBytes", RuntimeClasses.unknownBytesField);

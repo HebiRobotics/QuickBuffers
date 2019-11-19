@@ -144,6 +144,10 @@ message TestAllTypes {
     NestedEnum oneof_enum = 116;
   }
 
+  oneof oneof_field2 {
+    uint32 oneof2_uint32 = 117;
+  }
+
   // Try to fail with internally used argument names
   optional int32 value = 10001;
   repeated int32 values = 10002;

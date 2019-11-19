@@ -462,6 +462,15 @@ public class ProtoTests {
     }
 
     @Test
+    public void clearFirstBit() throws IOException {
+        TestAllTypes.NestedMessage msg = TestAllTypes.NestedMessage.newInstance();
+        msg.setBb(1);
+        assertTrue(msg.hasBb());
+        msg.clearBb();
+        assertFalse(msg.hasBb());
+    }
+
+    @Test
     public void testRepeatableMessageIterator() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedMessages());
         int sum = 0;
@@ -469,6 +478,52 @@ public class ProtoTests {
             sum += foreignMessage.getC();
         }
         assertEquals(3, sum);
+    }
+
+    @Test
+    public void testOneofFields() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance();
+        assertFalse(msg.hasOneofField());
+
+        msg.setOneofFixed64(10);
+        assertTrue(msg.hasOneofField());
+        assertTrue(msg.hasOneofFixed64());
+        byte[] fixed64 = msg.toByteArray();
+
+        msg.getMutableOneofNestedMessage().setBb(2);
+        assertTrue(msg.hasOneofField());
+        assertTrue(msg.hasOneofNestedMessage());
+        assertFalse(msg.hasOneofFixed64());
+        assertEquals(0, msg.getOneofFixed64());
+        byte[] nestedMsg = msg.toByteArray();
+
+        msg.setOneofString("oneOfString");
+        assertTrue(msg.hasOneofField());
+        assertTrue(msg.hasOneofString());
+        assertFalse(msg.hasOneofNestedMessage());
+        assertEquals(0, msg.getOneofNestedMessage().getBb());
+        byte[] string = msg.toByteArray();
+
+        msg.clearOneofField();
+        assertFalse(msg.hasOneofField());
+        assertFalse(msg.hasOneofString());
+        assertFalse(msg.hasOneofNestedMessage());
+        assertEquals("", msg.getOneofString().toString());
+
+        msg.setOneofString("test");
+        assertTrue(msg.hasOneofString());
+        msg.mergeFrom(ProtoSource.newInstance(fixed64));
+        assertTrue(msg.hasOneofFixed64());
+        assertFalse(msg.hasOneofString());
+
+        msg.mergeFrom(ProtoSource.newInstance(nestedMsg));
+        assertTrue(msg.hasOneofNestedMessage());
+        assertFalse(msg.hasOneofFixed64());
+
+        msg.mergeFrom(ProtoSource.newInstance(string));
+        assertTrue(msg.hasOneofString());
+        assertFalse(msg.hasOneofNestedMessage());
+
     }
 
     @Test

@@ -151,6 +151,7 @@ public class FieldGenerator {
     protected void generateMergingCode(MethodSpec.Builder method) {
         if (info.isRepeated()) {
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement("int nextTagPosition")
                     .addNamedCode("do {$>\n" +
                             "// look ahead for more items so we resize only once\n" +
@@ -169,16 +170,19 @@ public class FieldGenerator {
 
         } else if (info.isString() || info.isMessageOrGroup() || info.isBytes()) {
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("input.read$capitalizedType:L($field:N$secondArgs:L)"))
                     .addStatement(named("$setHas:L"));
 
         } else if (info.isPrimitive()) {
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$field:N = input.read$capitalizedType:L()"))
                     .addStatement(named("$setHas:L"));
 
         } else if (info.isEnum()) {
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement("final int value = input.readInt32()")
                     .beginControlFlow("if ($T.forNumber(value) != null)", typeName)
                     .addStatement(named("$field:N = value"))
@@ -200,6 +204,7 @@ public class FieldGenerator {
         if (info.isFixedWidth()) {
 
             // For fixed width types we can copy the raw memory
+            method.addCode(clearOtherOneOfs);
             method.addStatement(named("input.readPacked$capitalizedType:L($field:N)"));
             method.addStatement(named("$setHas:L"));
 
@@ -208,6 +213,7 @@ public class FieldGenerator {
             // We don't know how many items there actually are, so we need to
             // look-ahead once we run out of space in the backing store.
             method
+                    .addCode(clearOtherOneOfs)
                     .addStatement("final int length = input.readRawVarint32()")
                     .addStatement("final int limit = input.pushLimit(length)")
                     .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
@@ -385,6 +391,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.add(value)"))
                     .addStatement(named("return this"))
@@ -397,6 +404,7 @@ public class FieldGenerator {
                     .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
                     .varargs(true)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.addAll(values)"))
                     .addStatement(named("return this"));
@@ -408,6 +416,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .returns(info.getParentType())
                     .addParameter(typeName, "value", Modifier.FINAL)
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.copyFrom(value)"))
                     .addStatement(named("return this"))
@@ -420,6 +429,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addNamedCode("" +
                             "$setHas:L;\n" +
                             "$field:N.setLength(0);\n" +
@@ -434,6 +444,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getTypeName(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addNamedCode("" +
                             "$setHas:L;\n" +
                             "$field:N = $valueOrNumber:L;\n" +
@@ -496,6 +507,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(int.class, "value", Modifier.FINAL)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.add(value)"))
                     .addStatement(named("return this"))
@@ -508,6 +520,7 @@ public class FieldGenerator {
                     .addParameter(ArrayTypeName.of(int.class), "values", Modifier.FINAL)
                     .varargs(true)
                     .returns(info.getParentType())
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.addAll(values)"))
                     .addStatement(named("return this"));
@@ -544,6 +557,7 @@ public class FieldGenerator {
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
+                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("return $field:N"))
                     .build();
@@ -567,10 +581,20 @@ public class FieldGenerator {
         type.addMethod(method.build());
     }
 
+    private CodeBlock generateClearOtherOneOfs() {
+        if (!info.hasOtherOneOfFields())
+            return EMPTY_BLOCK;
+
+        return CodeBlock.builder()
+                .addStatement("$N()", info.getClearName() + "OneOf")
+                .build();
+    }
+
     protected FieldGenerator(RequestInfo.FieldInfo info) {
         this.info = info;
         typeName = info.getTypeName();
         storeType = info.getStoreType();
+        clearOtherOneOfs = generateClearOtherOneOfs();
 
         // Common-variable map for named arguments
         m.put("field", info.getFieldName());
@@ -613,6 +637,8 @@ public class FieldGenerator {
     protected final RequestInfo.FieldInfo info;
     protected final TypeName typeName;
     protected final TypeName storeType;
+    protected final CodeBlock clearOtherOneOfs;
+    private static final CodeBlock EMPTY_BLOCK = CodeBlock.builder().build();
 
     protected final HashMap<String, Object> m = new HashMap<>();
 

@@ -22,6 +22,10 @@
 
 package us.hebi.quickbuf.generator;
 
+import us.hebi.quickbuf.generator.RequestInfo.FieldInfo;
+
+import java.util.List;
+
 /**
  * Utilities for creating protobuf-like bit-sets to keep has state
  *
@@ -36,12 +40,12 @@ class BitField {
         return fieldIndex / BITS_PER_FIELD;
     }
 
-    private static int getBitIndex(int fieldIndex) {
+    static int getBitIndex(int fieldIndex) {
         return fieldIndex % BITS_PER_FIELD;
     }
 
     static String hasBit(int hasBitIndex) {
-        return String.format("((bitField%d_ & 0x%08x) != 0)", getFieldIndex(hasBitIndex), 1 << getBitIndex(hasBitIndex));
+        return String.format("(bitField%d_ & 0x%08x) != 0", getFieldIndex(hasBitIndex), 1 << getBitIndex(hasBitIndex));
     }
 
     static String setBit(int hasBitIndex) {
@@ -50,7 +54,7 @@ class BitField {
 
     static String clearBit(int hasBitIndex) {
         int field = getFieldIndex(hasBitIndex);
-        return String.format("bitField%d_ = (bitField%d_ & ~0x%08x)", field, field, 1 << getBitIndex(hasBitIndex));
+        return String.format("bitField%d_ &= ~0x%08x", field, 1 << getBitIndex(hasBitIndex));
     }
 
     static String hasNoBits(int numBitFields) {
@@ -61,8 +65,39 @@ class BitField {
         return output + ") == 0)";
     }
 
-    static String isMissingRequiredBits(int bitFieldIndex, int requiredBits) {
-        return String.format("((bitField%d_ & 0x%08x) != 0x%08x)", bitFieldIndex, requiredBits, requiredBits);
+    static String isMissingAnyBit(int[] bitset) {
+        StringBuilder builder = new StringBuilder();
+        int usedFields = 0;
+        for (int i = 0; i < bitset.length; i++) {
+            if (bitset[i] == 0) continue;
+            builder.append(usedFields++ == 0 ? "(" : " || ");
+            builder.append(String.format("((bitField%d_ & 0x%08x) != 0x%08x)",
+                    i, bitset[i], bitset[i]));
+        }
+        builder.append(usedFields > 0 ? ")" : "true");
+        return builder.toString();
+    }
+
+    static String hasAnyBit(int[] bitset) {
+        StringBuilder builder = new StringBuilder();
+        int usedFields = 0;
+        for (int i = 0; i < bitset.length; i++) {
+            if (bitset[i] == 0) continue;
+            builder.append(usedFields++ == 0 ? "((" : " | ");
+            builder.append(String.format("(bitField%d_ & 0x%08x)", i, bitset[i]));
+        }
+        builder.append(usedFields > 0 ? ") != 0)" : "true");
+        return builder.toString();
+    }
+
+    static int[] generateBitset(List<FieldInfo> fields) {
+        int maxIndex = fields.stream().mapToInt(FieldInfo::getFieldIndex).max().orElse(0);
+        int[] bits = new int[getNumberOfFields(maxIndex) + 1];
+        for (FieldInfo field : fields) {
+            int fieldIndex = getFieldIndex(field.getFieldIndex());
+            bits[fieldIndex] |= 1 << getBitIndex(field.getFieldIndex());
+        }
+        return bits;
     }
 
     /**
