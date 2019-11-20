@@ -23,10 +23,10 @@ The main differences to Protobuf-Java are
 You can find the latest release on Maven Central at the coordinates below. The runtime is compatible with Java 6 and higher.
 
 ```XML
-<dependency> <!-- project was renamed since last release -->
-  <groupId>us.hebi.robobuf</groupId>
-  <artifactId>robobuf-runtime</artifactId>
-  <version>1.0-alpha2</version>
+<dependency>
+  <groupId>us.hebi.quickbuf</groupId>
+  <artifactId>quickbuf-runtime</artifactId>
+  <version>1.0-alpha3</version>
 </dependency>
 ```
 
@@ -48,7 +48,7 @@ For this reason the `generator` modules requires the packaged output of the `par
 The code generator is setup as a `protoc` plugin. In order to call it, you need to
 
 * Download an appropriate [protoc.exe](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.1`)
-* Download [protoc-gen-robobuf-1.0-alpha2](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha2/protoc-gen-robobuf-1.0-alpha2.zip) and extract the files into the same directory or somewhere else on the `$PATH`. 
+* Download [protoc-gen-quickbuf-1.0-alpha3](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha3/protoc-gen-quickbuf-1.0-alpha3.zip) and extract the files into the same directory or somewhere else on the `$PATH`. 
   * Running the plugin requires Java8 or higher to be installed
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
 * Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
