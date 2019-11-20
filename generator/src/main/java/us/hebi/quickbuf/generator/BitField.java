@@ -91,11 +91,11 @@ class BitField {
     }
 
     static int[] generateBitset(List<FieldInfo> fields) {
-        int maxIndex = fields.stream().mapToInt(FieldInfo::getFieldIndex).max().orElse(0);
+        int maxIndex = fields.stream().mapToInt(FieldInfo::getBitIndex).max().orElse(0);
         int[] bits = new int[getNumberOfFields(maxIndex) + 1];
         for (FieldInfo field : fields) {
-            int fieldIndex = getFieldIndex(field.getFieldIndex());
-            bits[fieldIndex] |= 1 << getBitIndex(field.getFieldIndex());
+            int fieldIndex = getFieldIndex(field.getBitIndex());
+            bits[fieldIndex] |= 1 << getBitIndex(field.getBitIndex());
         }
         return bits;
     }

@@ -73,7 +73,7 @@
 
                                 <mkdir dir="target/test-classes/us/hebi/quickbuf/generator"/>
                                 <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=request_file=required.request,indent=tab,input_order=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
+                                    <arg value="--request_out=request_file=required.request,indent=tab,input_order=quickbuf,enforce_has_checks=true:target/test-classes/us/hebi/quickbuf/generator"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_required.proto"/>
                                 </exec>

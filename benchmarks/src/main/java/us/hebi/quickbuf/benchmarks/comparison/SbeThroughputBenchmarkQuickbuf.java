@@ -54,9 +54,9 @@ import java.util.concurrent.TimeUnit;
  *
  * == Quickbuf (JDK13 unsafe)
  * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2065.952 ±  72.137  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2669.079 ± 105.421  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2808.291 ±  47.251  ops/ms
  * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  7235.390 ± 234.589  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8036.102 ± 216.636  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8163.815 ± 122.698  ops/ms
  *
  * == Quickbuf (JDK13 no unsafe)
  * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2202.553 ± 116.821  ops/ms
@@ -70,8 +70,8 @@ import java.util.concurrent.TimeUnit;
  * SbeThroughputBenchmarkRobo.testMarketEncodeJson  thrpt   10  3284.856 ± 72.124  ops/ms
  *
  * === JSON (JDK13)
- * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10  1502.202 ±  13.620  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10  3208.274 ± 108.914  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10  1514.938 ± 29.468  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10  3337.626 ± 56.037  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019
@@ -86,7 +86,7 @@ public class SbeThroughputBenchmarkQuickbuf {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SbeThroughputBenchmarkQuickbuf.class.getSimpleName() + ".*MarketEncode")
+                .include(".*" + SbeThroughputBenchmarkQuickbuf.class.getSimpleName() + ".*Json.*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();
@@ -98,12 +98,11 @@ public class SbeThroughputBenchmarkQuickbuf {
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
-    final ProtoSource source = ProtoSource.newSafeInstance();
+    final ProtoSource source = ProtoSource.newInstance();
     final ProtoSink sink = ProtoSink.newInstance();
 
     final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
 
-/*
     @Benchmark
     public int testMarketEncodeJson() throws IOException {
         return jsonSink.clear()
@@ -119,7 +118,6 @@ public class SbeThroughputBenchmarkQuickbuf {
                 .getBuffer()
                 .length();
     }
-*/
 
     @Benchmark
     public int testMarketEncode() throws IOException {

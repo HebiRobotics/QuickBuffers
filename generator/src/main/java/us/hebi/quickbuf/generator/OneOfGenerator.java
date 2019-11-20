@@ -66,7 +66,7 @@ public class OneOfGenerator {
         type.addMethod(has.build());
         type.addMethod(clear.build());
 
-        // Add a utility method that clears all fields other than itself
+        // Add a utility method that clears all but one fields
         if (fields.size() > 1) {
             for (FieldInfo field : fields) {
 
@@ -75,7 +75,7 @@ public class OneOfGenerator {
                         .collect(Collectors.toList());
                 int[] otherBits = BitField.generateBitset(otherFields);
 
-                MethodSpec.Builder clearOthers = MethodSpec.methodBuilder(field.getClearName() + "OneOf")
+                MethodSpec.Builder clearOthers = MethodSpec.methodBuilder(field.getClearOtherOneOfName())
                         .addModifiers(Modifier.PRIVATE)
                         .beginControlFlow("if ($L)", BitField.hasAnyBit(otherBits));
 

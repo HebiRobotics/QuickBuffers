@@ -71,7 +71,7 @@ class JsonEncoding {
                 final int bits = ((bytes[i] & 0xff) << 10) | (remaining == 2 ? ((bytes[i + 1] & 0xff) << 2) : 0);
 
                 // Set last four bytes
-                buffer[pos/**/] = BASE64[bits >> 12];
+                buffer[pos/**/] = BASE64[bits >>> 12];
                 buffer[pos + 1] = BASE64[(bits >>> 6) & 0x3f];
                 buffer[pos + 2] = remaining == 2 ? BASE64[bits & 0x3f] : (byte) '=';
                 buffer[pos + 3] = '=';

@@ -190,7 +190,7 @@ public class FieldGenerator {
 
             if (info.getParentTypeInfo().isStoreUnknownFields()) {
                 method.nextControlFlow("else")
-                        .addStatement("input.readBytesFromMark($N)", RuntimeClasses.unknownBytesField);
+                        .addStatement("input.copyBytesSinceMark($N)", RuntimeClasses.unknownBytesField);
             }
 
             method.endControlFlow();
@@ -334,7 +334,8 @@ public class FieldGenerator {
         } else if (info.isPacked()) {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                    "final int length = $field:N.length();\n" +
+                    "for (int i = 0; i < length; i++) {$>\n" +
                     "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
                     "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
@@ -342,10 +343,11 @@ public class FieldGenerator {
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                    "final int length = $field:N.length();\n" +
+                    "for (int i = 0; i < length; i++) {$>\n" +
                     "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
-                    "size += ($bytesPerTag:L * $field:N.length()) + dataSize;\n", m);
+                    "size += ($bytesPerTag:L * length) + dataSize;\n", m);
 
         } else if (info.isFixedWidth()) {
             method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated
@@ -479,6 +481,7 @@ public class FieldGenerator {
                             "equivalent to {@link $message:T#$getMethod:N()}.getNumber().\n"))
                     .addModifiers(Modifier.PUBLIC)
                     .returns(int.class)
+                    .addCode(enforceHasCheck)
                     .addStatement(named("return $field:N"));
 
             // Overload to set the internal value without conversion
@@ -532,7 +535,8 @@ public class FieldGenerator {
     protected void generateGetMethods(TypeSpec.Builder type) {
         MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addAnnotations(info.getMethodAnnotations())
-                .addModifiers(Modifier.PUBLIC);
+                .addModifiers(Modifier.PUBLIC)
+                .addCode(enforceHasCheck);
 
         if (!info.isEnum() || info.isRepeated()) {
             getter.returns(storeType).addStatement(named("return $field:N"));
@@ -586,7 +590,19 @@ public class FieldGenerator {
             return EMPTY_BLOCK;
 
         return CodeBlock.builder()
-                .addStatement("$N()", info.getClearName() + "OneOf")
+                .addStatement("$N()", info.getClearOtherOneOfName())
+                .build();
+    }
+
+    private CodeBlock generateEnforceHasCheck() {
+        if (!info.getParentTypeInfo().isEnforceHasChecks())
+            return EMPTY_BLOCK;
+
+        return CodeBlock.builder()
+                .beginControlFlow("if (!$N())", info.getHazzerName())
+                .addStatement("throw new $T($S)", IllegalStateException.class,
+                        "Field is not set. Check has state before accessing.")
+                .endControlFlow()
                 .build();
     }
 
@@ -595,6 +611,7 @@ public class FieldGenerator {
         typeName = info.getTypeName();
         storeType = info.getStoreType();
         clearOtherOneOfs = generateClearOtherOneOfs();
+        enforceHasCheck = generateEnforceHasCheck();
 
         // Common-variable map for named arguments
         m.put("field", info.getFieldName());
@@ -638,6 +655,7 @@ public class FieldGenerator {
     protected final TypeName typeName;
     protected final TypeName storeType;
     protected final CodeBlock clearOtherOneOfs;
+    protected final CodeBlock enforceHasCheck;
     private static final CodeBlock EMPTY_BLOCK = CodeBlock.builder().build();
 
     protected final HashMap<String, Object> m = new HashMap<>();
