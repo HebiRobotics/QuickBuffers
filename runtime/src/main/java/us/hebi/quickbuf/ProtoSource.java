@@ -208,7 +208,7 @@ public class ProtoSource {
      * Copies the bytes from the last position marked by {@link ProtoSource#readTagMarked()}.
      * This allows to efficiently store unknown (skipped) bytes.
      */
-    public void readBytesFromMark(RepeatedByte store) {
+    public void copyBytesSinceMark(RepeatedByte store) {
         store.addAll(buffer, lastTagMark, bufferPos - lastTagMark);
     }
 

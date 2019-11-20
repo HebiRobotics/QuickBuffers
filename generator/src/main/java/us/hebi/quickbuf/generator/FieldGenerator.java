@@ -190,7 +190,7 @@ public class FieldGenerator {
 
             if (info.getParentTypeInfo().isStoreUnknownFields()) {
                 method.nextControlFlow("else")
-                        .addStatement("input.readBytesFromMark($N)", RuntimeClasses.unknownBytesField);
+                        .addStatement("input.copyBytesSinceMark($N)", RuntimeClasses.unknownBytesField);
             }
 
             method.endControlFlow();
@@ -334,7 +334,8 @@ public class FieldGenerator {
         } else if (info.isPacked()) {
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                    "final int length = $field:N.length();\n" +
+                    "for (int i = 0; i < length; i++) {$>\n" +
                     "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
                     "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
@@ -342,10 +343,11 @@ public class FieldGenerator {
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +
                     "int dataSize = 0;\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
+                    "final int length = $field:N.length();\n" +
+                    "for (int i = 0; i < length; i++) {$>\n" +
                     "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
                     "$<}\n" +
-                    "size += ($bytesPerTag:L * $field:N.length()) + dataSize;\n", m);
+                    "size += ($bytesPerTag:L * length) + dataSize;\n", m);
 
         } else if (info.isFixedWidth()) {
             method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated

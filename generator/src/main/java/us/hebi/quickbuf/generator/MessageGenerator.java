@@ -276,7 +276,7 @@ class MessageGenerator {
                 .addStatement("return this");
         if (info.isStoreUnknownFields()) {
             mergeFrom.nextControlFlow("else")
-                    .addStatement(named("input.readBytesFromMark($unknownBytes:N)"));
+                    .addStatement(named("input.copyBytesSinceMark($unknownBytes:N)"));
         }
         mergeFrom.endControlFlow();
 
