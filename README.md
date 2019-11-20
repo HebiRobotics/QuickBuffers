@@ -1,28 +1,49 @@
 # QuickBuffers - Fast Protocol Buffers without Allocations
 
-QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency and high throughput use cases. It can be used in zero-allocation environments and supports off-heap use cases.
+QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency and high throughput use cases. It can be used in zero-allocation environments and supports off-heap memory.
 
 The main differences to Protobuf-Java are
 
- * Message contents are mutable
- * The API can be used without allocations
- * The [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) was optimized for sequential memory access
- * Nested types are instantiated eagerly
+ * A roughly 2x performance improvement in both encoding and decoding speed`[1]`
  * A JSON serializer that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
- * Unknown fields are retained as raw bytes and cannot be accessed as fields
- * There is no reflection API or any other use of reflections. No ProGuard config is needed.
- 
- Missing Features
+ * A significantly smaller code size than the `java` and `javalite` options
+ * Messages as well as all other parts of the API are mutable and reusable
+ * The [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) was optimized for sequential memory access
+ * There is no reflection API or any use of reflections (no ProGuard config  needed)
+
+ Unsupported Features
  * `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
  * `Extensions` and `Services` are currently not supported
+ * Unknown fields are retained as raw bytes and cannot be accessed as fields
 
-While the performance benefits depend heavily on the use case and message format, most common use cases should see a roughly 2x performance improvement in both encoding and decoding speed over `Protobuf-Java 3.9.1`. For more detailed comparisons see the [benchmarks](./benchmarks) section.
+`[1]` The performance benefits depend heavily on the use case and message format, but most common use cases should see a roughly 2x performance improvement in both encoding and decoding speed over `Protobuf-Java 3.9.1`. For more information see the [benchmarks](./benchmarks) section.
 
-## Getting Started
+## Runtime Library
 
-This library hasn't gone through an official release yet, so the public API should be considered a work-in-progress that is subject to change. Please let us know in case you have any feedback.
+You can find the latest release on Maven Central at the coordinates below. The runtime is compatible with Java 6 and higher.
 
-### Generating Messages
+```XML
+<dependency> <!-- project was renamed since last release -->
+  <groupId>us.hebi.robobuf</groupId>
+  <artifactId>robobuf-runtime</artifactId>
+  <version>1.0-alpha2</version>
+</dependency>
+```
+
+Be aware that this library is currently still in a pre-release state, and that the public API should be considered a work-in-progress that may be subject to (likely minor) changes.
+
+<details>
+<summary>Building from Source</summary><p>
+
+The project can be built with `mvn package` using JDK8 through JDK11.
+
+Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
+
+For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
+
+</p></details> 
+
+## Generating Messages
 
 The code generator is setup as a `protoc` plugin. In order to call it, you need to
 
@@ -67,35 +88,11 @@ protoc --quickbuf_out= \
     ./path/to/generate`.
 ``` 
 
-### Runtime Library
-
-The generated messages require a runtime library. Released versions will be on Maven Central. The runtime is compatible with Java 6 and higher.
-
-```XML
-<dependency> <!-- project was renamed since last release -->
-  <groupId>us.hebi.robobuf</groupId>
-  <artifactId>robobuf-runtime</artifactId>
-  <version>1.0-alpha2</version>
-</dependency>
-```
-
-<details>
-<summary>Building from Source</summary><p>
-
-The project can be built with `mvn package` using JDK8 through JDK11.
-
-Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
-
-For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work.
-
-</p></details> 
-
 ## Basic Usage
 
-We tried to keep the public API as close to Google's official Java bindings as possible, so for many use cases the required changes should be minimal.
+Overall, we tried to keep the public API as close to Google's `Protobuf-Java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
 
-All nested object types (e.g. messages, repeated fields, etc.) have `getField()` and `getMutableField()` accessors. Both return the internal storage, but the `getField()` getter should be considered read-only.
-
+All nested object types such as message or repeated fields have `getField()` and `getMutableField()` accessors. Both return the same internal storage object, but `getField()` should be considered read-only. Once a field is cleared, it should also no longer be modified.
 
 <details>
 <summary>Primitive Fields</summary><p>
@@ -165,7 +162,7 @@ msg.getMutableNestedMessage().setPrimitiveValue(0);
 <details>
 <summary>String Fields</summary><p>
 
-`String` objects are immutable, so fields accept `CharSequence` and return `StringBuilder` objects instead.
+Java `String` objects are immutable, so the API differs from Protobuf-Java in that accessors accept `CharSequence` arguments and return `StringBuilder` objects instead. `StringBuilder` can be converted via `toString()`, but you may want to use a `StringInterner` to share references if you receive many identical strings.
 
 ```proto
 // .proto
@@ -195,19 +192,17 @@ msg.getMutableOptionalString()
     .append("text"); // field is now 'my-text'
 ```
 
-If you receive messages with many identical Strings, you may want to use a `StringInterner` to share already existing references.
-
 </p></details> 
 
 <details>
 <summary>Repeated Fields</summary><p>
 
-They currently work mostly the same as String fields, e.g.,
+Repeated scalar fields work mostly the same as String fields, but the internal `array()` can be accessed directly if needed. Repeated messages and object types provide a `next()` method that adds one element and provides a mutable reference to it.
 
 ```proto
 // .proto
 message SimpleMessage {
-    repeated   double repeated_double   = 42;
+    repeated double repeated_double   = 42;
 }
 ```
 
@@ -231,7 +226,7 @@ Note that repeated stores can currently only expand, but we may add something si
 
 ### Serialization
 
-Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the moment we only support contiguous blocks of memory, i.e., `byte[]`, and we we have no immediate plans on supporting `ByteBuffer` or `InputStream` due to the significant performance penalties involved.
+Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the moment we only support contiguous blocks of memory, i.e., `byte[]`.
 
 ```Java
 // Create data
