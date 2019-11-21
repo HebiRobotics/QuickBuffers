@@ -4,12 +4,12 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://
 
 The main differences to Protobuf-Java are
 
+ * All parts of the API are mutable and reusable
  * A roughly 2x performance improvement in both encoding and decoding speed`[1]`
  * A JSON serializer that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
- * A significantly smaller code size than the `java` and `javalite` options
- * Messages as well as all other parts of the API are mutable and reusable
- * The [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) was optimized for sequential memory access
- * There is no reflection API or any use of reflections (no ProGuard config  needed)
+ * A [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) that was optimized for sequential memory access
+ * Significantly smaller code size than the `java` and `javalite` options
+ * No reflection API or any use of reflections (no ProGuard config  needed)
 
  Unsupported Features
  * `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
@@ -45,13 +45,82 @@ For this reason the `generator` modules requires the packaged output of the `par
 
 ## Generating Messages
 
-The code generator is setup as a `protoc` plugin. In order to call it, you need to
+The code generator is setup as a `protoc` plugin that gets called by the official protobuf compiler. You can either generate the message sources manually, or use build system plugins to generate the sources automatically each time.
+
+<details>
+<summary>Manual Generation</summary><p>
 
 * Download an appropriate [protoc.exe](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.1`)
 * Download [protoc-gen-quickbuf-1.0-alpha3](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha3/protoc-gen-quickbuf-1.0-alpha3.zip) and extract the files into the same directory or somewhere else on the `$PATH`. 
   * Running the plugin requires Java8 or higher to be installed
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
 * Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
+
+</p></details>
+
+<details>
+<summary>Maven Configuration</summary><p>
+
+The configuration below downloads the QuickBuffers generator plugin, puts it on the correct path, and executes protoc using the `protoc-jar-maven-plugin`. The default settings assume that the proto files are located in `src/main/protobuf`.
+
+```XML
+<build>
+    <plugins>
+
+        <!-- Downloads QuickBuffers generator plugin -->
+        <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.8</version>
+            <executions>
+                <execution>
+                    <id>download-quickbuf-plugin</id>
+                    <phase>generate-sources</phase>
+                    <configuration>
+                        <tasks>
+                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha3/protoc-gen-quickbuf-1.0-alpha3.zip"
+                                 dest="../protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
+                            <unzip src="../protoc-gen-quickbuf.zip" dest=".." overwrite="false"/>
+                        </tasks>
+                    </configuration>
+                    <goals>
+                        <goal>run</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+
+        <!-- Calls protoc.exe and generate messages -->
+        <plugin>
+            <groupId>com.github.os72</groupId>
+            <artifactId>protoc-jar-maven-plugin</artifactId>
+            <version>3.8.0</version>
+            <executions>
+                <execution>
+                    <phase>generate-sources</phase>
+                    <goals>
+                        <goal>run</goal>
+                    </goals>
+                    <configuration>
+                        <protocVersion>3.9.1</protocVersion>
+
+                        <!-- plugin configuration, options, etc. -->
+                        <outputTargets>
+                            <outputTarget>
+                                <type>quickbuf</type>
+                                <outputOptions>store_unknown_fields=false</outputOptions>
+                            </outputTarget>
+                        </outputTargets>
+
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+
+    </plugins>
+</build>
+```
+
+</p></details> 
 
 <details>
 <summary>Currently available options are</summary><p>
