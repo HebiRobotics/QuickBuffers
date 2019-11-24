@@ -39,7 +39,7 @@ public class QuickBuffersBench {
 
     static FooBarContainer setData(FooBarContainer fooBarContainer) {
         fooBarContainer.clearQuick()
-                .setFruitNumber(anEnum)
+                .setFruitValue(anEnum)
                 .setInitialized(initialized)
                 .setLocation(location);
 

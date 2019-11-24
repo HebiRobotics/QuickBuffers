@@ -29,7 +29,8 @@ import java.util.Arrays;
 /**
  * Enum values are internally stored as an integers. This class
  * contains helper methods to convert to and from the enum
- * representations.
+ * representations. The *Value methods access the internal
+ * storage directly and do not go through any validity checks.
  *
  * @author Florian Enner
  * @since 17 Nov 2019
@@ -42,38 +43,19 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
     }
 
     public E get(int index) {
-        return converter.forNumber(getNumber(index));
-    }
-
-    public int getNumber(int index) {
-        checkIndex(index);
-        return array[index];
+        return converter.forNumber(getValue(index));
     }
 
     public RepeatedEnum<E> set(int index, E value) {
-        return set(index, value.getNumber());
-    }
-
-    public RepeatedEnum<E> set(int index, int value) {
-        checkIndex(index);
-        array[index] = value;
-        return this;
+        return setValue(index, value.getNumber());
     }
 
     public RepeatedEnum<E> add(final E value) {
-        return add(value.getNumber());
+        return addValue(value.getNumber());
     }
 
-    public RepeatedEnum<E> add(final int value) {
-        reserve(1);
-        array[length++] = value;
-        return this;
-    }
-
-    public RepeatedEnum<E> addAll(final int[] buffer, final int offset, final int length) {
-        final int pos = addLength(length);
-        System.arraycopy(buffer, offset, array, pos, length);
-        return this;
+    public RepeatedEnum<E> addAll(final E... values) {
+        return addAll(values, 0, values.length);
     }
 
     public RepeatedEnum<E> addAll(final E[] buffer, final int offset, final int length) {
@@ -82,22 +64,6 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
             array[pos + i] = buffer[i].getNumber();
         }
         return this;
-    }
-
-    public RepeatedEnum<E> addAll(final int... values) {
-        return addAll(values, 0, values.length);
-    }
-
-    public RepeatedEnum<E> addAll(final E... values) {
-        return addAll(values, 0, values.length);
-    }
-
-    public RepeatedEnum<E> copyFrom(final int[] buffer) {
-        return setLength(0).addAll(buffer);
-    }
-
-    public RepeatedEnum<E> copyFrom(final int[] buffer, final int offset, final int length) {
-        return setLength(0).addAll(buffer, offset, length);
     }
 
     public RepeatedEnum<E> copyFrom(final E[] buffer) {
@@ -118,6 +84,41 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
         }
         System.arraycopy(other.array, 0, array, 0, other.length);
         length = other.length;
+    }
+
+    public int getValue(int index) {
+        checkIndex(index);
+        return array[index];
+    }
+
+    public RepeatedEnum<E> setValue(int index, int value) {
+        checkIndex(index);
+        array[index] = value;
+        return this;
+    }
+
+    public RepeatedEnum<E> addValue(final int value) {
+        reserve(1);
+        array[length++] = value;
+        return this;
+    }
+
+    public RepeatedEnum<E> addAllValues(final int... values) {
+        return addAllValues(values, 0, values.length);
+    }
+
+    public RepeatedEnum<E> addAllValues(final int[] buffer, final int offset, final int length) {
+        final int pos = addLength(length);
+        System.arraycopy(buffer, offset, array, pos, length);
+        return this;
+    }
+
+    public RepeatedEnum<E> copyFromValues(final int[] buffer) {
+        return setLength(0).addAllValues(buffer);
+    }
+
+    public RepeatedEnum<E> copyFromValues(final int[] buffer, final int offset, final int length) {
+        return setLength(0).addAllValues(buffer, offset, length);
     }
 
     /**
