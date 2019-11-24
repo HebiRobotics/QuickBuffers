@@ -251,7 +251,7 @@ public class RequestInfo {
             int bitIndex = 0;
             Map<FieldDescriptorProto, Integer> bitIndices = new HashMap<>();
             for (FieldDescriptorProto desc : sortedFields.stream()
-                    .sorted(FieldUtil.GroupOneOfFields)
+                    .sorted(FieldUtil.GroupOneOfAndRequiredBits)
                     .collect(Collectors.toList())) {
                 bitIndices.put(desc, bitIndex++);
             }

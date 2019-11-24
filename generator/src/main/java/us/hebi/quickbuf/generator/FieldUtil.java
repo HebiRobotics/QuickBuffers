@@ -64,11 +64,16 @@ class FieldUtil {
         return 5;
     }
 
-    static final Comparator<FieldDescriptorProto> GroupOneOfFields = new Comparator<FieldDescriptorProto>() {
+    /**
+     * OneOf bits and required bits should be close together so that it is more likely for them to be checked in
+     * a single bit comparison. This sorter groups all required fields, followed by OneOf groups, followed by
+     * everything else.
+     */
+    static final Comparator<FieldDescriptorProto> GroupOneOfAndRequiredBits = new Comparator<FieldDescriptorProto>() {
         @Override
         public int compare(FieldDescriptorProto o1, FieldDescriptorProto o2) {
-            int n1 = o1.hasOneofIndex() ? o1.getOneofIndex() : -1;
-            int n2 = o2.hasOneofIndex() ? o2.getOneofIndex() : -1;
+            int n1 = o1.hasOneofIndex() ? o1.getOneofIndex() : (o1.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
+            int n2 = o2.hasOneofIndex() ? o2.getOneofIndex() : (o2.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
             return n2 - n1;
         }
     };
