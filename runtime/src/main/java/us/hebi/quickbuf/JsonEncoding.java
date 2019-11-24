@@ -393,16 +393,16 @@ class JsonEncoding {
 
                     buffer[pos++] = '.';
                     pos += writeThreeDigits(buffer, pos, q3);
-                    if ((r6 | r9 | r12) != 0) {
+                    if (r12 != 0) {
                         pos += writeThreeDigits(buffer, pos, r6);
-                        if ((r9 | r12) != 0) {
-                            pos += writeThreeDigits(buffer, pos, r9);
-                            if (r12 != 0) {
-                                pos += writeThreeDigits(buffer, pos, r12);
-                            }
-                        }
+                        pos += writeThreeDigits(buffer, pos, r9);
+                        pos += writeThreeDigits(buffer, pos, r12);
+                    } else if (r9 != 0) {
+                        pos += writeThreeDigits(buffer, pos, r6);
+                        pos += writeThreeDigits(buffer, pos, r9);
+                    } else if (r6 != 0) {
+                        pos += writeThreeDigits(buffer, pos, r6);
                     }
-
                     pos -= countTrailingZeros(buffer, pos);
 
                 }
@@ -432,13 +432,12 @@ class JsonEncoding {
 
                     buffer[pos++] = '.';
                     pos += writeThreeDigits(buffer, pos, q3);
-                    if ((r6 | r9) != 0) {
+                    if (r9 != 0) {
                         pos += writeThreeDigits(buffer, pos, r6);
-                        if (r9 != 0) {
-                            pos += writeThreeDigits(buffer, pos, r9);
-                        }
+                        pos += writeThreeDigits(buffer, pos, r9);
+                    } else if (r6 != 0) {
+                        pos += writeThreeDigits(buffer, pos, r6);
                     }
-
                     pos -= countTrailingZeros(buffer, pos);
                 }
 
@@ -468,7 +467,6 @@ class JsonEncoding {
                     if (r6 != 0) {
                         pos += writeThreeDigits(buffer, pos, r6);
                     }
-
                     pos -= countTrailingZeros(buffer, pos);
 
                 }
