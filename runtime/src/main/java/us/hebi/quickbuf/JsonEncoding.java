@@ -392,18 +392,21 @@ class JsonEncoding {
                     final long r12 = q12 - q9 * pow3;
 
                     buffer[pos++] = '.';
-                    pos += writeThreeDigits(buffer, pos, q3);
                     if (r12 != 0) {
+                        pos += writeThreeDigits(buffer, pos, q3);
                         pos += writeThreeDigits(buffer, pos, r6);
                         pos += writeThreeDigits(buffer, pos, r9);
-                        pos += writeThreeDigits(buffer, pos, r12);
+                        pos += writeFinalDigits(buffer, pos, r12);
                     } else if (r9 != 0) {
+                        pos += writeThreeDigits(buffer, pos, q3);
                         pos += writeThreeDigits(buffer, pos, r6);
-                        pos += writeThreeDigits(buffer, pos, r9);
+                        pos += writeFinalDigits(buffer, pos, r9);
                     } else if (r6 != 0) {
-                        pos += writeThreeDigits(buffer, pos, r6);
+                        pos += writeThreeDigits(buffer, pos, q3);
+                        pos += writeFinalDigits(buffer, pos, r6);
+                    } else {
+                        pos += writeFinalDigits(buffer, pos, q3);
                     }
-                    pos -= countTrailingZeros(buffer, pos);
 
                 }
 
@@ -431,14 +434,16 @@ class JsonEncoding {
                     final int r9 = q9 - q6 * pow3;
 
                     buffer[pos++] = '.';
-                    pos += writeThreeDigits(buffer, pos, q3);
                     if (r9 != 0) {
+                        pos += writeThreeDigits(buffer, pos, q3);
                         pos += writeThreeDigits(buffer, pos, r6);
-                        pos += writeThreeDigits(buffer, pos, r9);
+                        pos += writeFinalDigits(buffer, pos, r9);
                     } else if (r6 != 0) {
-                        pos += writeThreeDigits(buffer, pos, r6);
+                        pos += writeThreeDigits(buffer, pos, q3);
+                        pos += writeFinalDigits(buffer, pos, r6);
+                    } else {
+                        pos += writeFinalDigits(buffer, pos, q3);
                     }
-                    pos -= countTrailingZeros(buffer, pos);
                 }
 
                 output.length = pos;
@@ -463,11 +468,12 @@ class JsonEncoding {
                     final int q3 = q6 / pow3;
                     final int r6 = q6 - q3 * pow3;
 
-                    pos += writeThreeDigits(buffer, pos, q3);
                     if (r6 != 0) {
-                        pos += writeThreeDigits(buffer, pos, r6);
+                        pos += writeThreeDigits(buffer, pos, q3);
+                        pos += writeFinalDigits(buffer, pos, r6);
+                    } else {
+                        pos += writeFinalDigits(buffer, pos, q3);
                     }
-                    pos -= countTrailingZeros(buffer, pos);
 
                 }
 
@@ -488,11 +494,8 @@ class JsonEncoding {
 
                 final int q3 = (int) (q19 - q16 * pow3);
                 if (q3 != 0) {
-
                     buffer[pos++] = '.';
-                    pos += writeThreeDigits(buffer, pos, q3);
-                    pos -= countTrailingZeros(buffer, pos);
-
+                    pos += writeFinalDigits(buffer, pos, q3);
                 }
 
                 output.length = pos;
@@ -537,6 +540,10 @@ class JsonEncoding {
             return writeFirstDigits(buf, pos, (int) number);
         }
 
+        private static int writeFinalDigits(final byte[] buf, int pos, final long number) {
+            return writeFinalDigits(buf, pos, (int) number);
+        }
+
         private static int writeThreeDigits(final byte[] buf, final int pos, final long number) {
             writeThreeDigits(buf, pos, (int) number);
             return 3;
@@ -556,6 +563,20 @@ class JsonEncoding {
             return numDigits;
         }
 
+        private static int writeFinalDigits(final byte[] buf, int pos, final int number) {
+            final int v = THREE_DIGITS[number];
+            final int numDigits = (v >>> NUM_FINAL_DIGITS) & 0xF;
+            switch (numDigits) {
+                case 3:
+                    buf[pos + 2] = (byte) (v >>> DIGIT_00X);
+                case 2:
+                    buf[pos + 1] = (byte) (v >>> DIGIT_0X0);
+                case 1:
+                    buf[pos/**/] = (byte) (v >>> DIGIT_X00);
+            }
+            return numDigits;
+        }
+
         private static int writeThreeDigits(final byte[] buf, final int pos, final int number) {
             final int v = THREE_DIGITS[number];
             buf[pos/**/] = (byte) (v >>> DIGIT_X00);
@@ -570,24 +591,19 @@ class JsonEncoding {
         private static final int DIGIT_00X = 0;
         private static final int DIGIT_0X0 = 8;
         private static final int DIGIT_X00 = 16;
-        private static final int NUM_DIGITS = 24;
+        private static final int NUM_DIGITS = 28;
+        private static final int NUM_FINAL_DIGITS = 24;
 
         static {
             for (int i = 0; i < 1000; i++) {
                 int digit100 = '0' + (i / 100);
                 int digit10 = '0' + ((i % 100) / 10);
                 int digit1 = '0' + (i % 10);
-                int numDigits = digit100 == '0' ? digit10 == '0' ? 1 : 2 : 3;
-                THREE_DIGITS[i] = numDigits << NUM_DIGITS | digit100 << DIGIT_X00 | digit10 << DIGIT_0X0 | digit1 << DIGIT_00X;
+                int numDigits = digit100 == '0' ? digit10 == '0' ? 1 : 2 : 3; // before comma
+                int numFinalDigits = digit1 == '0' ? digit10 == '0' ? 1 : 2 : 3; // after comma
+                THREE_DIGITS[i] = numDigits << NUM_DIGITS | numFinalDigits << NUM_FINAL_DIGITS |
+                        digit100 << DIGIT_X00 | digit10 << DIGIT_0X0 | digit1 << DIGIT_00X;
             }
-        }
-
-        // Counts up to two trailing zeros. We could just encode this information in
-        // the digit int, but readability would suffer for questionable benefit.
-        private static int countTrailingZeros(final byte[] buf, final int pos) {
-            if (buf[pos - 1] != '0') return 0;
-            if (buf[pos - 2] != '0') return 1;
-            return 2;
         }
 
         // Common powers of 10^n
