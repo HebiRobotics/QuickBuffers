@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -910,11 +910,15 @@ public abstract class ProtoSink {
         return computeRawVarint32Size(WireFormat.makeTag(fieldNumber, 0));
     }
 
+    public void writeRawVarint32(int value) throws IOException {
+        writeRawVarint32_1(value);
+    }
+
     /**
      * Encode and write a varint.  {@code value} is treated as
      * unsigned, so it won't be sign-extended if negative.
      */
-    public void writeRawVarint32(int value) throws IOException {
+    public void writeRawVarint32_1(int value) throws IOException {
         while (true) {
             if ((value & ~0x7F) == 0) {
                 writeRawByte(value);
@@ -924,6 +928,176 @@ public abstract class ProtoSink {
                 value >>>= 7;
             }
         }
+    }
+
+    public void writeRawVarint32_2(int value) throws IOException {
+        final int b1, b2, b3, b4;
+
+        if ((b1 = value >>> 7) == 0) {
+            writeRawByte((byte) value);
+
+        } else if ((b2 = value >>> 14) == 0) {
+            writeRawByte(((byte) (value & 0x7F) | 0x80));
+            writeRawByte(((byte) b1));
+
+        } else if ((b3 = value >>> 21) == 0) {
+            writeRawByte(((byte) (value & 0x7F) | 0x80));
+            writeRawByte(((byte) (b1 & 0x7F) | 0x80));
+            writeRawByte(((byte) b2));
+
+        } else if ((b4 = value >>> 28) == 0) {
+            writeRawByte(((byte) (value & 0x7F) | 0x80));
+            writeRawByte(((byte) (b1 & 0x7F) | 0x80));
+            writeRawByte(((byte) (b2 & 0x7F) | 0x80));
+            writeRawByte(((byte) b3));
+
+        } else {
+            writeRawByte(((byte) (value & 0x7F) | 0x80));
+            writeRawByte(((byte) (b1 & 0x7F) | 0x80));
+            writeRawByte(((byte) (b2 & 0x7F) | 0x80));
+            writeRawByte(((byte) (b3 & 0x7F) | 0x80));
+            writeRawByte(((byte) b4));
+
+        }
+    }
+
+    public void writeRawVarint32_3(int value) throws IOException {
+        final int b1;
+        if ((b1 = value >>> 7) == 0) {
+            writeRawByte((byte) value);
+            return;
+        }
+
+        final int b2, b3, b4;
+        if ((b2 = value >>> 14) == 0) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) b1);
+
+        } else if ((b3 = value >>> 21) == 0) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) b2);
+
+        } else if ((b4 = value >>> 28) == 0) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) (b2 | 0x80));
+            writeRawByte((byte) b3);
+
+        } else {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) (b2 | 0x80));
+            writeRawByte((byte) (b3 | 0x80));
+            writeRawByte((byte) b4);
+
+        }
+    }
+
+    public void writeRawVarint32_4(int value) throws IOException {
+        if ((value & shift7) == 0) {
+            writeRawByte((byte) value);
+            return;
+        }
+
+        final int b1 = value >>> 7;
+        if (b1 < 128) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1));
+            return;
+        }
+
+        final int b2 = value >>> 14;
+        if (b2 < 128) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) (b2));
+            return;
+        }
+
+        final int b3 = value >>> 21;
+        if (b3 < 128) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) (b2 | 0x80));
+            writeRawByte((byte) (b3));
+            return;
+        }
+
+        final int b4 = value >>> 28;
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (b1 | 0x80));
+        writeRawByte((byte) (b2 | 0x80));
+        writeRawByte((byte) (b3 | 0x80));
+        writeRawByte((byte) (b4));
+
+    }
+
+    public void writeRawVarint32_5(int value) throws IOException {
+        if ((value & shift7) == 0) {
+            writeRawByte((byte) value);
+
+        } else if ((value & shift14) == 0) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (value >>> 7));
+
+        } else if ((value & shift21) == 0) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) ((value >>> 7) | 0x80));
+            writeRawByte((byte) (value >>> 14));
+
+        } else if ((value & shift28) == 0) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) ((value >>> 7) | 0x80));
+            writeRawByte((byte) ((value >>> 14) | 0x80));
+            writeRawByte((byte) (value >>> 21));
+
+        } else {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) ((value >>> 7) | 0x80));
+            writeRawByte((byte) ((value >>> 14) | 0x80));
+            writeRawByte((byte) ((value >>> 21) | 0x80));
+            writeRawByte((byte) (value >>> 28));
+        }
+
+    }
+
+    private static final int shift7 = ~0 << 7;
+    private static final int shift14 = ~0 << 14;
+    private static final int shift21 = ~0 << 21;
+    private static final int shift28 = ~0 << 28;
+
+    public void writeRawVarint32_6(int value) throws IOException {
+        if ((value & (~0 << 7)) == 0) {
+            writeRawByte((byte) value);
+            return;
+        }
+
+        final int b1, b2, b3;
+        if ((b1 = value >>> 7) < 128) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1));
+
+        } else if ((b2 = value >>> 14) < 128) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) (b2));
+
+        } else if ((b3 = value >>> 21) < 128) {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) (b2 | 0x80));
+            writeRawByte((byte) (b3));
+
+        } else {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (b1 | 0x80));
+            writeRawByte((byte) (b2 | 0x80));
+            writeRawByte((byte) (b3 | 0x80));
+            writeRawByte((byte) (value >>> 28));
+
+        }
+
     }
 
     /**
