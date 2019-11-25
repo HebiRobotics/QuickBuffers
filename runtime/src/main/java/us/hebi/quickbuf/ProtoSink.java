@@ -942,11 +942,6 @@ public abstract class ProtoSink {
         }
     }
 
-    private static final int upper25 = ~0 << 7;
-    private static final int upper18 = ~0 << 14;
-    private static final int upper11 = ~0 << 21;
-    private static final int upper4 = ~0 << 28;
-
     /**
      * Compute the number of bytes that would be needed to encode a varint.
      * {@code value} is treated as unsigned, so it won't be sign-extended if
@@ -960,32 +955,115 @@ public abstract class ProtoSink {
         return 5;
     }
 
+    private static final int upper25 = ~0 << 7;
+    private static final int upper18 = ~0 << 14;
+    private static final int upper11 = ~0 << 21;
+    private static final int upper4 = ~0 << 28;
+
     /** Encode and write a varint. */
-    public void writeRawVarint64(long value) throws IOException {
-        while (true) {
-            if ((value & ~0x7FL) == 0) {
-                writeRawByte((int) value);
-                return;
-            } else {
-                writeRawByte(((int) value & 0x7F) | 0x80);
-                value >>>= 7;
-            }
+    public void writeRawVarint64(final long value) throws IOException {
+        if ((value & upper57) == 0) {
+            writeRawByte((byte) value);
+
+        } else if ((value & upper50) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) (value >>> 7));
+
+        } else if ((value & upper43) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) (value >>> 14));
+
+        } else if ((value & upper36) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) ((value >>> 14) | 0x80L));
+            writeRawByte((byte) (value >>> 21));
+
+        } else if ((value & upper29) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) ((value >>> 14) | 0x80L));
+            writeRawByte((byte) ((value >>> 21) | 0x80L));
+            writeRawByte((byte) (value >>> 28));
+
+        } else if ((value & upper22) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) ((value >>> 14) | 0x80L));
+            writeRawByte((byte) ((value >>> 21) | 0x80L));
+            writeRawByte((byte) ((value >>> 28) | 0x80L));
+            writeRawByte((byte) (value >>> 35));
+
+        } else if ((value & upper15) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) ((value >>> 14) | 0x80L));
+            writeRawByte((byte) ((value >>> 21) | 0x80L));
+            writeRawByte((byte) ((value >>> 28) | 0x80L));
+            writeRawByte((byte) ((value >>> 35) | 0x80L));
+            writeRawByte((byte) (value >>> 42));
+
+        } else if ((value & upper8) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) ((value >>> 14) | 0x80L));
+            writeRawByte((byte) ((value >>> 21) | 0x80L));
+            writeRawByte((byte) ((value >>> 28) | 0x80L));
+            writeRawByte((byte) ((value >>> 35) | 0x80L));
+            writeRawByte((byte) ((value >>> 42) | 0x80L));
+            writeRawByte((byte) (value >>> 49));
+
+        } else if ((value & upper1) == 0) {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) ((value >>> 14) | 0x80L));
+            writeRawByte((byte) ((value >>> 21) | 0x80L));
+            writeRawByte((byte) ((value >>> 28) | 0x80L));
+            writeRawByte((byte) ((value >>> 35) | 0x80L));
+            writeRawByte((byte) ((value >>> 42) | 0x80L));
+            writeRawByte((byte) ((value >>> 49) | 0x80L));
+            writeRawByte((byte) (value >>> 56));
+
+        } else {
+            writeRawByte((byte) (value | 0x80L));
+            writeRawByte((byte) ((value >>> 7) | 0x80L));
+            writeRawByte((byte) ((value >>> 14) | 0x80L));
+            writeRawByte((byte) ((value >>> 21) | 0x80L));
+            writeRawByte((byte) ((value >>> 28) | 0x80L));
+            writeRawByte((byte) ((value >>> 35) | 0x80L));
+            writeRawByte((byte) ((value >>> 42) | 0x80L));
+            writeRawByte((byte) ((value >>> 49) | 0x80L));
+            writeRawByte((byte) ((value >>> 56) | 0x80L));
+            writeRawByte((byte) (value >>> 63));
+
         }
+
     }
 
     /** Compute the number of bytes that would be needed to encode a varint. */
     public static int computeRawVarint64Size(final long value) {
-        if ((value & (0xffffffffffffffffL << 7)) == 0) return 1;
-        if ((value & (0xffffffffffffffffL << 14)) == 0) return 2;
-        if ((value & (0xffffffffffffffffL << 21)) == 0) return 3;
-        if ((value & (0xffffffffffffffffL << 28)) == 0) return 4;
-        if ((value & (0xffffffffffffffffL << 35)) == 0) return 5;
-        if ((value & (0xffffffffffffffffL << 42)) == 0) return 6;
-        if ((value & (0xffffffffffffffffL << 49)) == 0) return 7;
-        if ((value & (0xffffffffffffffffL << 56)) == 0) return 8;
-        if ((value & (0xffffffffffffffffL << 63)) == 0) return 9;
+        if ((value & upper57) == 0) return 1;
+        if ((value & upper50) == 0) return 2;
+        if ((value & upper43) == 0) return 3;
+        if ((value & upper36) == 0) return 4;
+        if ((value & upper29) == 0) return 5;
+        if ((value & upper22) == 0) return 6;
+        if ((value & upper15) == 0) return 7;
+        if ((value & upper8) == 0) return 8;
+        if ((value & upper1) == 0) return 9;
         return 10;
     }
+
+    private static final long upper57 = ~0L << 7;
+    private static final long upper50 = ~0L << 14;
+    private static final long upper43 = ~0L << 21;
+    private static final long upper36 = ~0L << 28;
+    private static final long upper29 = ~0L << 35;
+    private static final long upper22 = ~0L << 42;
+    private static final long upper15 = ~0L << 49;
+    private static final long upper8 = ~0L << 56;
+    private static final long upper1 = ~0L << 63;
 
     /** Write a little-endian 16-bit integer. */
     public void writeRawLittleEndian16(final short value) throws IOException {
