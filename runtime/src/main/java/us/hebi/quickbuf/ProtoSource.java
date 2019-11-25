@@ -546,11 +546,11 @@ public class ProtoSource {
         }
     }
 
-    static final int signs7 = ~0 << 7;
-    static final int signs14 = signs7 ^ (~0 << 14);
-    static final int signs21 = signs14 ^ (~0 << 21);
-    static final int signs28i = signs21 ^ (~0 << 28);
-    private static final long signs28 = signs21 ^ (~0 << 28);
+    private static final int signs7 = ~0 << 7;
+    private static final int signs14 = signs7 ^ (~0 << 14);
+    private static final int signs21 = signs14 ^ (~0 << 21);
+    private static final int signs28i = signs21 ^ (~0 << 28);
+    private static final long signs28 = signs21 ^ (~0L << 28);
     private static final long signs35 = signs28 ^ (~0L << 35);
     private static final long signs42 = signs35 ^ (~0L << 42);
     private static final long signs49 = signs42 ^ (~0L << 49);

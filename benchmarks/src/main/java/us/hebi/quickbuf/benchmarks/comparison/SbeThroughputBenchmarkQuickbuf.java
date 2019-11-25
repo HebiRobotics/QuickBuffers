@@ -31,6 +31,7 @@ import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.quickbuf.Examples;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix;
+import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
 import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
@@ -92,7 +93,7 @@ public class SbeThroughputBenchmarkQuickbuf {
         new Runner(options).run();
     }
 
-    final Fix.MarketDataIncrementalRefreshTrades marketData = Fix.MarketDataIncrementalRefreshTrades.newInstance();
+    final MarketDataIncrementalRefreshTrades marketData = MarketDataIncrementalRefreshTrades.newInstance();
     final byte[] marketDecodeBuffer = buildMarketData(marketData).toByteArray();
     final Car car = Car.newInstance();
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
@@ -102,6 +103,54 @@ public class SbeThroughputBenchmarkQuickbuf {
     final ProtoSink sink = ProtoSink.newInstance();
 
     final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
+    final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());
+    final Car carFast = buildCarData(Car.newInstance());
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public int testMarketComputeSizeOnly() throws IOException {
+        return marketDataFast.getSerializedSize();
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public int testCarComputeSizeOnly() throws IOException {
+        return carFast.getSerializedSize();
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public int testMarketWriteOnly() throws IOException {
+        sink.wrap(encodeBuffer);
+        marketDataFast.writeTo(sink);
+        return sink.position();
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public Object testMarketBuildOnly() throws IOException {
+        return buildMarketData(marketDataFast);
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public Object testCarBuildOnly() throws IOException {
+        return buildCarData(carFast);
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public int testCarEncodeWriteOnly() throws IOException {
+        sink.wrap(encodeBuffer);
+        carFast.writeTo(sink);
+        return sink.position();
+    }
 
     @Benchmark
     public int testMarketEncodeJson() throws IOException {
@@ -145,11 +194,11 @@ public class SbeThroughputBenchmarkQuickbuf {
         return car.clearQuick().mergeFrom(source);
     }
 
-    static Fix.MarketDataIncrementalRefreshTrades buildMarketData(Fix.MarketDataIncrementalRefreshTrades marketData) {
+    static MarketDataIncrementalRefreshTrades buildMarketData(MarketDataIncrementalRefreshTrades marketData) {
         marketData.clearQuick()
                 .setTransactTime(1234L)
                 .setEventTimeDelta(987)
-                .setMatchEventIndicatorValue(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
+                .setMatchEventIndicatorValue(MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
 
         for (int i = 0; i < 2; i++) {
 
