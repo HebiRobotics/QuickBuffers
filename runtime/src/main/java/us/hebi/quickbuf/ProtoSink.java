@@ -910,143 +910,24 @@ public abstract class ProtoSink {
         return computeRawVarint32Size(WireFormat.makeTag(fieldNumber, 0));
     }
 
-    public void writeRawVarint32(int value) throws IOException {
-        writeRawVarint32_1(value);
-    }
-
     /**
      * Encode and write a varint.  {@code value} is treated as
      * unsigned, so it won't be sign-extended if negative.
      */
-    public void writeRawVarint32_1(int value) throws IOException {
-        while (true) {
-            if ((value & ~0x7F) == 0) {
-                writeRawByte(value);
-                return;
-            } else {
-                writeRawByte((value & 0x7F) | 0x80);
-                value >>>= 7;
-            }
-        }
-    }
-
-    public void writeRawVarint32_2(int value) throws IOException {
-        final int b1, b2, b3, b4;
-
-        if ((b1 = value >>> 7) == 0) {
+    public void writeRawVarint32(final int value) throws IOException {
+        if ((value & upper25) == 0) {
             writeRawByte((byte) value);
 
-        } else if ((b2 = value >>> 14) == 0) {
-            writeRawByte(((byte) (value & 0x7F) | 0x80));
-            writeRawByte(((byte) b1));
-
-        } else if ((b3 = value >>> 21) == 0) {
-            writeRawByte(((byte) (value & 0x7F) | 0x80));
-            writeRawByte(((byte) (b1 & 0x7F) | 0x80));
-            writeRawByte(((byte) b2));
-
-        } else if ((b4 = value >>> 28) == 0) {
-            writeRawByte(((byte) (value & 0x7F) | 0x80));
-            writeRawByte(((byte) (b1 & 0x7F) | 0x80));
-            writeRawByte(((byte) (b2 & 0x7F) | 0x80));
-            writeRawByte(((byte) b3));
-
-        } else {
-            writeRawByte(((byte) (value & 0x7F) | 0x80));
-            writeRawByte(((byte) (b1 & 0x7F) | 0x80));
-            writeRawByte(((byte) (b2 & 0x7F) | 0x80));
-            writeRawByte(((byte) (b3 & 0x7F) | 0x80));
-            writeRawByte(((byte) b4));
-
-        }
-    }
-
-    public void writeRawVarint32_3(int value) throws IOException {
-        final int b1;
-        if ((b1 = value >>> 7) == 0) {
-            writeRawByte((byte) value);
-            return;
-        }
-
-        final int b2, b3, b4;
-        if ((b2 = value >>> 14) == 0) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) b1);
-
-        } else if ((b3 = value >>> 21) == 0) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) b2);
-
-        } else if ((b4 = value >>> 28) == 0) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) (b2 | 0x80));
-            writeRawByte((byte) b3);
-
-        } else {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) (b2 | 0x80));
-            writeRawByte((byte) (b3 | 0x80));
-            writeRawByte((byte) b4);
-
-        }
-    }
-
-    public void writeRawVarint32_4(int value) throws IOException {
-        if ((value & shift7) == 0) {
-            writeRawByte((byte) value);
-            return;
-        }
-
-        final int b1 = value >>> 7;
-        if (b1 < 128) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1));
-            return;
-        }
-
-        final int b2 = value >>> 14;
-        if (b2 < 128) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) (b2));
-            return;
-        }
-
-        final int b3 = value >>> 21;
-        if (b3 < 128) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) (b2 | 0x80));
-            writeRawByte((byte) (b3));
-            return;
-        }
-
-        final int b4 = value >>> 28;
-        writeRawByte((byte) (value | 0x80));
-        writeRawByte((byte) (b1 | 0x80));
-        writeRawByte((byte) (b2 | 0x80));
-        writeRawByte((byte) (b3 | 0x80));
-        writeRawByte((byte) (b4));
-
-    }
-
-    public void writeRawVarint32_5(int value) throws IOException {
-        if ((value & shift7) == 0) {
-            writeRawByte((byte) value);
-
-        } else if ((value & shift14) == 0) {
+        } else if ((value & upper18) == 0) {
             writeRawByte((byte) (value | 0x80));
             writeRawByte((byte) (value >>> 7));
 
-        } else if ((value & shift21) == 0) {
+        } else if ((value & upper11) == 0) {
             writeRawByte((byte) (value | 0x80));
             writeRawByte((byte) ((value >>> 7) | 0x80));
             writeRawByte((byte) (value >>> 14));
 
-        } else if ((value & shift28) == 0) {
+        } else if ((value & upper4) == 0) {
             writeRawByte((byte) (value | 0x80));
             writeRawByte((byte) ((value >>> 7) | 0x80));
             writeRawByte((byte) ((value >>> 14) | 0x80));
@@ -1059,46 +940,12 @@ public abstract class ProtoSink {
             writeRawByte((byte) ((value >>> 21) | 0x80));
             writeRawByte((byte) (value >>> 28));
         }
-
     }
 
-    private static final int shift7 = ~0 << 7;
-    private static final int shift14 = ~0 << 14;
-    private static final int shift21 = ~0 << 21;
-    private static final int shift28 = ~0 << 28;
-
-    public void writeRawVarint32_6(int value) throws IOException {
-        if ((value & (~0 << 7)) == 0) {
-            writeRawByte((byte) value);
-            return;
-        }
-
-        final int b1, b2, b3;
-        if ((b1 = value >>> 7) < 128) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1));
-
-        } else if ((b2 = value >>> 14) < 128) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) (b2));
-
-        } else if ((b3 = value >>> 21) < 128) {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) (b2 | 0x80));
-            writeRawByte((byte) (b3));
-
-        } else {
-            writeRawByte((byte) (value | 0x80));
-            writeRawByte((byte) (b1 | 0x80));
-            writeRawByte((byte) (b2 | 0x80));
-            writeRawByte((byte) (b3 | 0x80));
-            writeRawByte((byte) (value >>> 28));
-
-        }
-
-    }
+    private static final int upper25 = ~0 << 7;
+    private static final int upper18 = ~0 << 14;
+    private static final int upper11 = ~0 << 21;
+    private static final int upper4 = ~0 << 28;
 
     /**
      * Compute the number of bytes that would be needed to encode a varint.
@@ -1106,10 +953,10 @@ public abstract class ProtoSink {
      * negative.
      */
     public static int computeRawVarint32Size(final int value) {
-        if ((value & (0xffffffff << 7)) == 0) return 1;
-        if ((value & (0xffffffff << 14)) == 0) return 2;
-        if ((value & (0xffffffff << 21)) == 0) return 3;
-        if ((value & (0xffffffff << 28)) == 0) return 4;
+        if ((value & upper25) == 0) return 1;
+        if ((value & upper18) == 0) return 2;
+        if ((value & upper11) == 0) return 3;
+        if ((value & upper4) == 0) return 4;
         return 5;
     }
 
