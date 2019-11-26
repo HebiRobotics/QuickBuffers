@@ -300,6 +300,21 @@ public class ProtoTests {
 
         assertEquals("optionalString\uD83D\uDCA9", actual.getOptionalString());
         assertEquals("hello!", actual.getOptionalCord());
+
+        // Custom decoder
+        final String testString = "decoder-test\uD83D\uDCA9";
+        msg.clearQuick().setDecoder(testString);
+        actual = TestAllTypes.parseFrom(msg.toByteArray());
+        assertEquals("customString", actual.getDecoder(new Utf8Decoder() {
+            @Override
+            public String decode(byte[] bytes, int offset, int length) {
+                assertEquals(0, offset);
+                assertEquals(testString.getBytes(UTF_8).length, length);
+                return "customString"; // just for testing - should be a valid string
+            }
+        }));
+        assertEquals("customString", actual.getDecoder()); // test caching
+
     }
 
     @Test

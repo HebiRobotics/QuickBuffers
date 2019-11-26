@@ -51,8 +51,8 @@ import java.util.concurrent.TimeUnit;
  *
  * === QuickBuffers (Unsafe) ===
  * Benchmark                                Mode  Cnt   Score    Error  Units
- * SbeBenchmark.carUnsafeQuickRead           avgt   10  31.637 ± 1.663  ms/op
- * SbeBenchmark.carUnsafeQuickReadReadWrite  avgt   10  50.290 ± 1.393  ms/op
+ * SbeBenchmark.carUnsafeQuickRead           avgt   10  30.661 ± 2.892  ms/op
+ * SbeBenchmark.carUnsafeQuickReadReadWrite  avgt   10  47.498 ± 2.198  ms/op
  * SbeBenchmark.marketUnsafeQuickRead        avgt   10  21.946 ± 0.997  ms/op
  * SbeBenchmark.marketUnsafeQuickReadWrite   avgt   10  35.220 ± 1.000  ms/op
  *

@@ -59,7 +59,7 @@ import static us.hebi.quickbuf.benchmarks.UnsafeUtil.*;
  * With the above code the unsafe loop is optimized the same as a standard array iteration,
  * but there are non-obvious modifications that can have huge performance impacts, e.g.,
  * if the 'remaining' variable changes from int to long, the performance goes down 50%. I
- * assume that this causes the JIT to not pick up on the array pattern and optimize it
+ * assume that this causes the JIT to not pick up on the same pattern and optimizes it
  * differently.
  *
  * Benchmark                                              Mode  Cnt    Score   Error  Units

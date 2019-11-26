@@ -30,26 +30,26 @@ We also compared the built-in JSON encoding and found that for this particular b
 
 ## Benchmark 2 - File Streams
 
-We also ran benchmarks for reading and writing streams of delimited protobuf messages with varying contents, which is similar to reading sequentially from a log file. All datasets were loaded into memory and decoded from a byte array. Neither benchmark triggers Protobuf-Java's lazy-parsing of strings, so the results may be slightly off. The benchmark code can be found in the `benchmarks` directory.
+We also ran benchmarks for reading and writing streams of delimited protobuf messages with varying contents, which is similar to reading sequentially from a log file. All datasets were loaded into memory and decoded from a byte array. This benchmark does not trigger lazy-parsing of strings, so it is primarily indicative of forwarding use cases. The benchmark code can be found in the `benchmarks` directory.
 
 |  | QuickBuffers<p>(Unsafe) | QuickBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | `[2]`
 | ----------- | -----------: | -----------: | -----------: | -----------: | ----------- |
 | **Read**  | | 
 | 1  | 144ms (604 MB/s) | 149ms (584 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 2.4
-| 2  | 89ms (640 MB/s)` | 97ms (588 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.9
-| 3  | 31ms (323 MB/s) | 35ms (286 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 2.1
+| 2  | 79ms (722 MB/s)` | 90ms (633 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 2.1
+| 3  | 30ms (333 MB/s) | 35ms (286 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 2.2
 | 4  | 21ms (476 MB/s) | 21ms (476 MB/s) | 47ms (214 MB/s)  | 155ms (65 MB/s) | 2.2
 | 5 | 9.8ms (6.5 GB/s) | 44ms (1.5 GB/s) |  103ms (621 MB/s)  | 92ms (696 MB/s) | 10.5
 |  **Write**`[3]`  | | |
 | 1 | 99ms (879 MB/s)  | 155ms (561 MB/s) | 157ms (554 MB/s)  | 718ms (121 MB/s)  | 1.6
-| 2 | 70ms (814 MB/s)  | 86ms (663 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 2.0
-| 3  | 19ms (526 MB/s) | 21ms (476 MB/s) | 29ms (344 MB/s)  | 101ms (99 MB/s) | 1.5
+| 2 | 58ms (983 MB/s)  | 79ms (722 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 2.4
+| 3  | 17ms (588 MB/s) | 21ms (476 MB/s) | 29ms (344 MB/s)  | 101ms (99 MB/s) | 1.7
 | 4  | 14ms (714 MB/s) | 17ms (588 MB/s) | 42ms (238 MB/s)  | 97ms (103 MB/s) | 3.0
 | 5 | 6.2ms (10 GB/s)  | 46ms (1.4 GB/s) | 16ms (4.0 GB/s)  | 21ms (3.0 GB/s) | 2.5
 | **Read + Write** |  | 
 | 1  | 243ms (358 MB/s) | 304ms (286 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 2.1
-| 2 | 159ms (358 MB/s) | 183ms (311 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.9
-| 3  | 50ms (200 MB/s) | 56ms (179 MB/s) | 94ms (106 MB/s)  | 248ms (40 MB/s) | 1.9
+| 2 | 137ms (416 MB/s) | 169ms (337 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 2.2
+| 3  | 47ms (213 MB/s) | 56ms (179 MB/s) | 94ms (106 MB/s)  | 248ms (40 MB/s) | 2.0
 | 4  | 35ms (286 MB/s) | 38ms (263 MB/s) | 89ms (112 MB/s)  | 252ms (40 MB/s) | 2.5
 | 5  | 16ms (4.0 GB/s) | 90ms (711 MB/s) | 119ms (537 MB/s)  | 113ms (566 MB/s) | 7.4
 

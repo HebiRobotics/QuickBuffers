@@ -154,6 +154,7 @@ message TestAllTypes {
   optional int32 other = 10003;
   optional int32 input = 100004;
   optional int32 output = 100005;
+  optional string decoder = 100006;
 
 }
 

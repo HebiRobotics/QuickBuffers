@@ -531,6 +531,18 @@ public class FieldGenerator {
             type.addMethod(getter.build());
         }
 
+        // Add an overload for Strings that let users choose a custom Utf8Decoder
+        if (!info.isRepeated() && info.isString()) {
+            MethodSpec.Builder getterWithDecoder = MethodSpec.methodBuilder(info.getGetterName())
+                    .addAnnotations(info.getMethodAnnotations())
+                    .addParameter(RuntimeClasses.Utf8Decoder, "decoder", Modifier.FINAL)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addCode(enforceHasCheck)
+                    .returns(typeName)
+                    .addStatement(named("return this.$field:N.getString(decoder)"));
+            type.addMethod(getterWithDecoder.build());
+        }
+
     }
 
     protected void generateClearMethod(TypeSpec.Builder type) {
