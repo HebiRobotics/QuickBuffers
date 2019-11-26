@@ -199,6 +199,12 @@ public class JsonSink {
         writeMore();
     }
 
+    public void writeField(byte[] key, Utf8String value) {
+        writeKey(key);
+        StringEncoding.writeQuotedUtf8(value, output);
+        writeMore();
+    }
+
     public void writeField(byte[] key, RepeatedByte value) {
         writeKey(key);
         Base64Encoding.writeQuotedBase64(value.array, value.length, output);

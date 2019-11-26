@@ -22,6 +22,8 @@
 
 package us.hebi.quickbuf;
 
+import java.util.Arrays;
+
 import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
 
 /**
@@ -96,6 +98,48 @@ class JsonEncoding {
             }
         }
 
+        static void writeQuotedUtf8(Utf8String sequence, RepeatedByte output) {
+            final int numBytes = sequence.getSerializedSize();
+            final byte[] utf8 = sequence.getBytes();
+            int i = 0;
+
+            // Fast-path: no escape support
+            fastpath:
+            {
+                final int offset = output.addLength(numBytes + 2) + 1;
+                final byte[] out = output.array;
+                out[offset - 1] = '"';
+
+                for (; i < numBytes; i++) {
+                    final byte c = utf8[i];
+                    if (CAN_DIRECT_WRITE_UTF8[c & 0xFF]) {
+                        out[offset + i] = c;
+                    } else {
+                        output.length = offset + i;
+                        break fastpath;
+                    }
+                }
+
+                out[offset + i] = '"';
+                return;
+            }
+
+            // Slow-path: with escape support
+            for (; i < numBytes; i++) {
+                final byte c = utf8[i];
+                if (CAN_DIRECT_WRITE_UTF8[c & 0xFF]) {
+                    final int offset = output.addLength(1);
+                    output.array[offset] = c;
+                } else {
+                    writeEscapedAscii((char) c, output);
+                }
+            }
+
+            final int offset = output.addLength(1);
+            output.array[offset] = '"';
+
+        }
+
         static void writeQuotedUtf8(CharSequence sequence, RepeatedByte output) {
             final int numChars = sequence.length();
             int i = 0;
@@ -109,7 +153,7 @@ class JsonEncoding {
 
                 for (; i < numChars; i++) {
                     final char c = sequence.charAt(i);
-                    if (c < 128 && CAN_DIRECT_WRITE[c]) {
+                    if (c < 128 && CAN_DIRECT_WRITE_ASCII[c]) {
                         ascii[offset + i] = (byte) c;
                     } else {
                         output.length = offset + i;
@@ -126,7 +170,7 @@ class JsonEncoding {
                 final char c = sequence.charAt(i);
 
                 if (c < 0x80) { // ascii
-                    if (CAN_DIRECT_WRITE[c]) {
+                    if (CAN_DIRECT_WRITE_ASCII[c]) {
                         final int offset = output.addLength(1);
                         output.array[offset] = (byte) c;
                     } else {
@@ -185,14 +229,17 @@ class JsonEncoding {
         }
 
         private static final byte[] BASE16 = "0123456789abcdef".getBytes(ASCII);
-        private static final boolean[] CAN_DIRECT_WRITE = new boolean[128];
+        private static final boolean[] CAN_DIRECT_WRITE_ASCII = new boolean[128];
+        private static final boolean[] CAN_DIRECT_WRITE_UTF8 = new boolean[256];
         private static final byte[] ESCAPE_CHAR = new byte[128];
 
         static {
-            for (int i = 0; i < CAN_DIRECT_WRITE.length; i++) {
+            Arrays.fill(CAN_DIRECT_WRITE_UTF8, true);
+            for (int i = 0; i < CAN_DIRECT_WRITE_ASCII.length; i++) {
                 if (i > 31 && i < 126 && i != '"' && i != '\\') {
-                    CAN_DIRECT_WRITE[i] = true;
+                    CAN_DIRECT_WRITE_ASCII[i] = true;
                 }
+                CAN_DIRECT_WRITE_UTF8[i] = CAN_DIRECT_WRITE_ASCII[i];
             }
             ESCAPE_CHAR['"'] = '"';
             ESCAPE_CHAR['\\'] = '\\';

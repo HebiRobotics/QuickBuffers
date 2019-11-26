@@ -58,7 +58,11 @@ public class FieldGenerator {
         } else if (info.isMessageOrGroup()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
         } else if (info.isString()) {
-            field.addModifiers(Modifier.FINAL).initializer("new $T(0)", storeType);
+            if (!info.hasDefaultValue()) {
+                field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
+            } else {
+                field.addModifiers(Modifier.FINAL).initializer("$T.newInstanceWithDefault($S)", storeType, info.getDefaultValue());
+            }
         } else if (info.isPrimitive() || info.isEnum()) {
             // no initializer needed
         } else {
@@ -76,17 +80,11 @@ public class FieldGenerator {
     }
 
     protected void generateClearCode(MethodSpec.Builder method) {
-        if (info.isRepeated() || info.isMessageOrGroup()) {
+        if (info.isRepeated() || info.isMessageOrGroup() || info.isString()) {
             method.addStatement(named("$field:N.clear()"));
 
         } else if (info.isPrimitive() || info.isEnum()) {
             method.addStatement(named("$field:N = $default:L"));
-
-        } else if (info.isString()) {
-            method.addStatement(named("$field:N.setLength(0)"));
-            if (info.hasDefaultValue()) {
-                method.addStatement(named("$field:N.append($default:S)"));
-            }
 
         } else if (info.isBytes()) {
             method.addStatement(named("$field:N.clear()"));
@@ -101,10 +99,8 @@ public class FieldGenerator {
     protected void generateClearQuickCode(MethodSpec.Builder method) {
         if (info.isMessageOrGroup()) { // includes repeated messages
             method.addStatement(named("$field:N.clearQuick()"));
-        } else if (info.isRepeated() || info.isBytes()) {
+        } else if (info.isRepeated() || info.isBytes() || info.isString()) {
             method.addStatement(named("$field:N.clear()"));
-        } else if (info.isString()) {
-            method.addStatement(named("$field:N.setLength(0)"));
         } else if (info.isPrimitive() || info.isEnum()) {
             // do nothing
         } else {
@@ -113,15 +109,11 @@ public class FieldGenerator {
     }
 
     protected void generateCopyFromCode(MethodSpec.Builder method) {
-        if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup()) {
+        if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
             method.addStatement(named("$field:N.copyFrom(other.$field:N)"));
 
         } else if (info.isPrimitive() || info.isEnum()) {
             method.addStatement(named("$field:N = other.$field:N"));
-
-        } else if (info.isString()) {
-            method.addStatement(named("$field:N.setLength(0)"));
-            method.addStatement(named("$field:N.append(other.$field:N)"));
 
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
@@ -129,11 +121,8 @@ public class FieldGenerator {
     }
 
     protected void generateEqualsStatement(MethodSpec.Builder method) {
-        if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup()) {
+        if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
             method.addNamedCode("$field:N.equals(other.$field:N)", m);
-
-        } else if (info.isString()) {
-            method.addNamedCode("$protoUtil:T.isEqual($field:N, other.$field:N)", m);
 
         } else if (typeName == TypeName.DOUBLE) {
             method.addNamedCode("Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N)", m);
@@ -421,31 +410,16 @@ public class FieldGenerator {
                     .addStatement(named("return this"));
             type.addMethod(addAll.build());
 
-        } else if (info.isMessageOrGroup()) {
+        } else if (info.isMessageOrGroup() || info.isString()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(info.getParentType())
-                    .addParameter(typeName, "value", Modifier.FINAL)
+                    .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .addCode(clearOtherOneOfs)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.copyFrom(value)"))
                     .addStatement(named("return this"))
-                    .build();
-            type.addMethod(setter);
-
-        } else if (info.isString()) {
-            MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
-                    .addAnnotations(info.getMethodAnnotations())
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
-                    .returns(info.getParentType())
-                    .addCode(clearOtherOneOfs)
-                    .addNamedCode("" +
-                            "$setHas:L;\n" +
-                            "$field:N.setLength(0);\n" +
-                            "$field:N.append(value);\n" +
-                            "return this;\n", m)
                     .build();
             type.addMethod(setter);
 
@@ -517,15 +491,21 @@ public class FieldGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .addCode(enforceHasCheck);
 
-        if (!info.isEnum() || info.isRepeated()) {
+        if (info.isRepeated()) {
             getter.returns(storeType).addStatement(named("return $field:N"));
-        } else if (!info.hasDefaultValue()) {
-            getter.returns(typeName).addStatement(named("return $type:T.forNumber($field:N)"));
+        } else if (info.isString()) {
+            getter.returns(typeName).addStatement(named("return $field:N.getString()"));
+        } else if (info.isEnum()) {
+            if (info.hasDefaultValue()) {
+                getter.returns(typeName).addStatement(named("return $type:T.forNumberOr($field:N, $defaultEnumValue:L)"));
+            } else {
+                getter.returns(typeName).addStatement(named("return $type:T.forNumber($field:N)"));
+            }
         } else {
-            getter.returns(typeName).addStatement(named("return $type:T.forNumberOr($field:N, $defaultEnumValue:L)"));
+            getter.returns(typeName).addStatement(named("return $field:N"));
         }
 
-        if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes() || info.isString()) {
+        if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
             getter.addJavadoc(named("" +
                     "This method returns the internal storage object without modifying any has state.\n" +
                     "The returned object should not be modified and be treated as read-only.\n" +

@@ -403,6 +403,15 @@ public class ProtoSource {
     }
 
     /** Read a {@code string} field value from the source. */
+    public void readString(final Utf8String store) throws IOException {
+        final int numBytes = readRawVarint32();
+        requireRemaining(numBytes);
+        store.setSerializedSize(numBytes);
+        System.arraycopy(buffer, bufferPos, store.getBytes(), 0, numBytes);
+        bufferPos += numBytes;
+    }
+
+    /** Read a {@code string} field value from the source. */
     public void readString(StringBuilder output) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
@@ -546,10 +555,10 @@ public class ProtoSource {
         }
     }
 
-    private static final int signs7 = ~0 << 7;
-    private static final int signs14 = signs7 ^ (~0 << 14);
-    private static final int signs21 = signs14 ^ (~0 << 21);
-    private static final int signs28i = signs21 ^ (~0 << 28);
+    static final int signs7 = ~0 << 7;
+    static final int signs14 = signs7 ^ (~0 << 14);
+    static final int signs21 = signs14 ^ (~0 << 21);
+    static final int signs28i = signs21 ^ (~0 << 28);
     private static final long signs28 = signs21 ^ (~0L << 28);
     private static final long signs35 = signs28 ^ (~0L << 35);
     private static final long signs42 = signs35 ^ (~0L << 42);

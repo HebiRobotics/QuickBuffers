@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -74,8 +74,6 @@ import static us.hebi.quickbuf.WireFormat.*;
  * @author Florian Enner
  */
 public abstract class ProtoSink {
-    /* max bytes per java UTF-16 char in UTF-8 */
-    protected static final int MAX_UTF8_EXPANSION = 3;
 
     protected ProtoSink() {
     }
@@ -473,6 +471,13 @@ public abstract class ProtoSink {
     }
 
     /** Write a {@code string} field to the sink. */
+    public void writeStringNoTag(final Utf8String value) throws IOException {
+        final int length = value.getSerializedSize();
+        writeRawVarint32(length);
+        writeRawBytes(value.getBytes(), 0, length);
+    }
+
+    /** Write a {@code string} field to the sink. */
     public abstract void writeStringNoTag(final CharSequence value) throws IOException;
 
     /** Write a {@code group} field to the sink. */
@@ -751,6 +756,15 @@ public abstract class ProtoSink {
      */
     public static int computeBoolSizeNoTag(final boolean value) {
         return 1;
+    }
+
+    /**
+     * Compute the number of bytes that would be needed to encode a
+     * {@code string} field.
+     */
+    public static int computeStringSizeNoTag(final Utf8String value) {
+        final int length = value.getSerializedSize();
+        return computeRawVarint32Size(length) + length;
     }
 
     /**

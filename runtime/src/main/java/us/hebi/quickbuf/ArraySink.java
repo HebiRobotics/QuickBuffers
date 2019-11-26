@@ -95,7 +95,7 @@ class ArraySink extends ProtoSink {
         // constant varint length - saves measuring length of the string.
         try {
             final int minLengthVarIntSize = computeRawVarint32Size(value.length());
-            final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * MAX_UTF8_EXPANSION);
+            final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * Utf8.MAX_UTF8_EXPANSION);
             if (minLengthVarIntSize == maxLengthVarIntSize) {
                 int startPosition = position + minLengthVarIntSize;
                 int endPosition = Utf8.encodeArray(value, buffer, startPosition, spaceLeft() - minLengthVarIntSize);

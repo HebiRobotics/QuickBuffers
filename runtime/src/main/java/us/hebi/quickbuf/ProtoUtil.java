@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+
+import static us.hebi.quickbuf.ProtoSource.*;
 
 /**
  * Utility methods for working with protobuf messages
@@ -80,37 +82,30 @@ public class ProtoUtil {
      * @return value of the decoded varint
      */
     public static int readRawVarint32(InputStream input) throws IOException {
-        byte tmp = readRawByte(input);
-        if (tmp >= 0) {
-            return tmp;
-        }
-        int result = tmp & 0x7f;
-        if ((tmp = readRawByte(input)) >= 0) {
-            result |= tmp << 7;
+        int x = readRawByte(input);
+        if (x >= 0) {
+            return x;
+        } else if ((x ^= (readRawByte(input) << 7)) < 0) {
+            return x ^ signs7;
+        } else if ((x ^= (readRawByte(input) << 14)) >= 0) {
+            return x ^ signs14;
+        } else if ((x ^= (readRawByte(input) << 21)) < 0) {
+            return x ^ signs21;
         } else {
-            result |= (tmp & 0x7f) << 7;
-            if ((tmp = readRawByte(input)) >= 0) {
-                result |= tmp << 14;
-            } else {
-                result |= (tmp & 0x7f) << 14;
-                if ((tmp = readRawByte(input)) >= 0) {
-                    result |= tmp << 21;
-                } else {
-                    result |= (tmp & 0x7f) << 21;
-                    result |= (tmp = readRawByte(input)) << 28;
-                    if (tmp < 0) {
-                        // Discard upper 32 bits.
-                        for (int i = 0; i < 5; i++) {
-                            if (readRawByte(input) >= 0) {
-                                return result;
-                            }
-                        }
-                        throw InvalidProtocolBufferException.malformedVarint();
-                    }
-                }
+
+            // Discard upper 32 bits.
+            final int y = readRawByte(input);
+            if (y < 0
+                    && readRawByte(input) < 0
+                    && readRawByte(input) < 0
+                    && readRawByte(input) < 0
+                    && readRawByte(input) < 0
+                    && readRawByte(input) < 0) {
+                throw InvalidProtocolBufferException.malformedVarint();
             }
+
+            return x ^ (y << 28) ^ signs28i;
         }
-        return result;
     }
 
     private static byte readRawByte(InputStream input) throws IOException {
@@ -140,8 +135,22 @@ public class ProtoUtil {
         return true;
     }
 
+    /**
+     * Decodes utf8 bytes into a reusable StringBuilder object. Going through a builder
+     * has benefits on JDK8, but is (significantly) slower when decoding ascii on JDK13.
+     */
+    public static void decodeUtf8(byte[] bytes, int offset, int length, StringBuilder output) {
+        Utf8.decodeArray(bytes, offset, length, output);
+    }
 
     // =========== Internal utility methods used by the runtime API ===========
+
+    static final Utf8Decoder DEFAULT_UTF8_DECODER = new Utf8Decoder() {
+        @Override
+        public String decode(byte[] bytes, int offset, int length) {
+            return new String(bytes, offset, length, Charsets.UTF_8);
+        }
+    };
 
     static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 

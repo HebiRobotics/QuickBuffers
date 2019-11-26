@@ -32,6 +32,9 @@ import static us.hebi.quickbuf.UnsafeAccess.*;
  */
 class Utf8 {
 
+    /* max bytes per java UTF-16 char in UTF-8 */
+    static final int MAX_UTF8_EXPANSION = 3;
+
     /**
      * Returns the number of bytes in the UTF-8-encoded form of {@code sequence}. For a string,
      * this method is equivalent to {@code string.getBytes(UTF_8).length}, but is more efficient in
@@ -492,4 +495,5 @@ class Utf8 {
             super("Unpaired surrogate at index " + index + " of " + length);
         }
     }
+
 }

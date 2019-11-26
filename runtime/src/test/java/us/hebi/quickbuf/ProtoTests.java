@@ -290,17 +290,16 @@ public class ProtoTests {
 
         // Mutable getter
         assertFalse(msg.hasOptionalCord());
-        msg.getMutableOptionalCord()
-                .append("he")
-                .append("llo!");
+        StringBuilder builder = new StringBuilder().append("he").append("llo!");
+        msg.setOptionalCord(builder);
         assertTrue(msg.hasOptionalCord());
 
         // Parse
         TestAllTypes actual = TestAllTypes.parseFrom(msg.toByteArray());
         assertEquals(msg, actual);
 
-        assertEquals("optionalString\uD83D\uDCA9", actual.getOptionalString().toString());
-        assertEquals("hello!", actual.getOptionalCord().toString());
+        assertEquals("optionalString\uD83D\uDCA9", actual.getOptionalString());
+        assertEquals("hello!", actual.getOptionalCord());
     }
 
     @Test
