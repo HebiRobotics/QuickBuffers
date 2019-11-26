@@ -11,10 +11,10 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 
 | Test [msg/ms] | QuickBuffers | Protobuf-Java | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 2808 (375 MB/s) | 985 (132 MB/s) |  2.9  
-| Car Decode  | 2266 (303 MB/s) | 1271 (170 MB/s) |  1.8  
-| Market Data Encode  | 8163 (498 MB/s) | 3700 (226 MB/s) |  2.2  
-| Market Data Decode  | 7535 (460 MB/s) | 3306 (202 MB/s) |  2.3  
+| Car Encode  | 3649 (487 MB/s) | 985 (132 MB/s) |  3.7  
+| Car Decode  | 2329 (311 MB/s) | 1271 (170 MB/s) |  1.8  
+| Market Data Encode  | 12964 (791 MB/s) | 3700 (226 MB/s) |  3.5  
+| Market Data Decode  | 9805 (598 MB/s) | 3306 (202 MB/s) |  3.0  
 
 Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers improve by another 10-20%. By additionally inlining the small nested fields it'd result in 3-4x the original message throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
 
@@ -35,22 +35,22 @@ We also ran benchmarks for reading and writing streams of delimited protobuf mes
 |  | QuickBuffers<p>(Unsafe) | QuickBuffers<p>(without Unsafe) | Java`[1]`| JavaLite`[1]` | `[2]`
 | ----------- | -----------: | -----------: | -----------: | -----------: | ----------- |
 | **Read**  | | 
-| 1  | 173ms (502 MB/s) | 212ms (410 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 2.0
-| 2  | 102ms (559 MB/s)` | 118ms (483 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.7
-| 3  | 34ms (297 MB/s) | 44ms (226 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 1.9
-| 4  | 25ms (400 MB/s) | 28ms (353 MB/s) | 47ms (214 MB/s)  | 155ms (65 MB/s) | 1.9
+| 1  | 144ms (604 MB/s) | 149ms (584 MB/s) |  344ms (253 MB/s)  | 567ms (153 MB/s) | 2.4
+| 2  | 89ms (640 MB/s)` | 97ms (588 MB/s) | 169ms (337 MB/s)  | 378ms (150 MB/s) | 1.9
+| 3  | 31ms (323 MB/s) | 35ms (286 MB/s) | 65ms (153 MB/s)  | 147ms (68 MB/s) | 2.1
+| 4  | 21ms (476 MB/s) | 21ms (476 MB/s) | 47ms (214 MB/s)  | 155ms (65 MB/s) | 2.2
 | 5 | 9.8ms (6.5 GB/s) | 44ms (1.5 GB/s) |  103ms (621 MB/s)  | 92ms (696 MB/s) | 10.5
 |  **Write**`[3]`  | | |
-| 1 | 118ms (737 MB/s)  | 165ms (527 MB/s) | 157ms (554 MB/s)  | 718ms (121 MB/s)  | 1.3
-| 2 | 71ms (802 MB/s)  | 101ms (564 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 1.9
-| 3  | 23ms (435 MB/s) | 29ms (344 MB/s) | 29ms (344 MB/s)  | 101ms (99 MB/s) | 1.3
-| 4  | 16ms (625 MB/s) | 23ms (434 MB/s) | 42ms (238 MB/s)  | 97ms (103 MB/s) | 2.6
+| 1 | 99ms (879 MB/s)  | 155ms (561 MB/s) | 157ms (554 MB/s)  | 718ms (121 MB/s)  | 1.6
+| 2 | 70ms (814 MB/s)  | 86ms (663 MB/s) | 137ms (416 MB/s)  | 308ms (188 MB/s) | 2.0
+| 3  | 19ms (526 MB/s) | 21ms (476 MB/s) | 29ms (344 MB/s)  | 101ms (99 MB/s) | 1.5
+| 4  | 14ms (714 MB/s) | 17ms (588 MB/s) | 42ms (238 MB/s)  | 97ms (103 MB/s) | 3.0
 | 5 | 6.2ms (10 GB/s)  | 46ms (1.4 GB/s) | 16ms (4.0 GB/s)  | 21ms (3.0 GB/s) | 2.5
 | **Read + Write** |  | 
-| 1  | 291ms (299 MB/s) | 377ms (231 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 1.7
-| 2 | 173ms (329 MB/s) | 219ms (260 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.8
-| 3  | 57ms (176 MB/s) | 73ms (138 MB/s) | 94ms (106 MB/s)  | 248ms (40 MB/s) | 1.6
-| 4  | 41ms (244 MB/s) | 51ms (196 MB/s) | 89ms (112 MB/s)  | 252ms (40 MB/s) | 2.2
+| 1  | 243ms (358 MB/s) | 304ms (286 MB/s) | 501ms (174 MB/s)  | 1285 ms (68 MB/s) | 2.1
+| 2 | 159ms (358 MB/s) | 183ms (311 MB/s) | 306ms (186 MB/s)  | 686 ms (83 MB/s) | 1.9
+| 3  | 50ms (200 MB/s) | 56ms (179 MB/s) | 94ms (106 MB/s)  | 248ms (40 MB/s) | 1.9
+| 4  | 35ms (286 MB/s) | 38ms (263 MB/s) | 89ms (112 MB/s)  | 252ms (40 MB/s) | 2.5
 | 5  | 16ms (4.0 GB/s) | 90ms (711 MB/s) | 119ms (537 MB/s)  | 113ms (566 MB/s) | 7.4
 
 <!-- | 3  | ms (  MB/s) | ms (  MB/s) | ms (  MB/s)  | ms (  MB/s) | 0 -->
@@ -74,15 +74,15 @@ We also compared QuickBuffers against the Java bindings of Google's [FlatBuffers
 |  | QuickBuffers | FlatBuffers (v1.11.0) | FlatBuffers (v1.10.0) | Ratio`[1]`
 | :----------- | :-----------: | :-----------: | :-----------: | :-----------: |
 | **UnsafeSource / DirectByteBuffer [ns/op]**  
-| Decode             | 292 | 0 | 0 |  0.0 
-| Traverse           | 17 | 234 | 321 |  13.8
-| Encode             | 312 | 457 | 649 |  1.5
-| Encode + Decode + Traverse | 621 | 691 | 970 |  1.1
+| Decode             | 237 | 0 | 0 |  0.0 
+| Traverse           | 22 | 234 | 321 |  10.6
+| Encode             | 233 | 457 | 649 |  2.0
+| Encode + Decode + Traverse | 492 | 691 | 970 |  1.4
 | **ArraySource / HeapByteBuffer [ns/op]**  
-| Decode             | 379 | 0 | 0 |  0.0  
-| Traverse           | 29 | 381 | 427 |  13.1
-| Encode             | 334 | 626 | 821 |  1.9
-| Encode + Decode + Traverse | 742 | 1007 | 1248 |  1.4
+| Decode             | 278 | 0 | 0 |  0.0  
+| Traverse           | 23 | 381 | 427 |  16.6
+| Encode             | 274 | 626 | 821 |  2.3
+| Encode + Decode + Traverse | 575 | 1007 | 1248 |  1.8
 | **Other**  
 | Serialized Size   | 228 bytes | 344 bytes | 344 bytes |  1.5
 | Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 1

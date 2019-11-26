@@ -51,16 +51,16 @@ import java.util.concurrent.TimeUnit;
  *
  * === QuickBuffers (Unsafe) ===
  * Benchmark                                Mode  Cnt   Score    Error  Units
- * SbeBenchmark.carUnsafeQuickRead           avgt   10  33.602 ± 0.568  ms/op
- * SbeBenchmark.carUnsafeQuickReadReadWrite  avgt   10  56.860 ± 1.176  ms/op
- * SbeBenchmark.marketUnsafeQuickRead        avgt   10  25.022 ± 1.249  ms/op
- * SbeBenchmark.marketUnsafeQuickReadWrite   avgt   10  41.227 ± 0.612  ms/op
+ * SbeBenchmark.carUnsafeQuickRead           avgt   10  31.637 ± 1.663  ms/op
+ * SbeBenchmark.carUnsafeQuickReadReadWrite  avgt   10  50.290 ± 1.393  ms/op
+ * SbeBenchmark.marketUnsafeQuickRead        avgt   10  21.946 ± 0.997  ms/op
+ * SbeBenchmark.marketUnsafeQuickReadWrite   avgt   10  35.220 ± 1.000  ms/op
  *
  * === QuickBuffers (Safe) ===
- * SbeBenchmark.carQuickRead                    avgt   10   44.306 ±  1.814  ms/op -- 226 MB/s
- * SbeBenchmark.carQuickReadWrite               avgt   10   72.673 ±  3.227  ms/op -- 138 MB/s
- * SbeBenchmark.marketQuickRead                 avgt   10   28.309 ±  0.242  ms/op -- 353 MB/s
- * SbeBenchmark.marketQuickReadWrite            avgt   10   51.189 ±  0.979  ms/op -- 196 MB/s
+ * SbeBenchmark.carQuickRead          avgt   10  35.540 ± 2.008  ms/op
+ * SbeBenchmark.carQuickReadWrite     avgt   10  55.914 ± 3.173  ms/op
+ * SbeBenchmark.marketQuickRead       avgt   10  21.027 ± 0.871  ms/op
+ * SbeBenchmark.marketQuickReadWrite  avgt   10  38.426 ± 0.743  ms/op
  *
  * === Protobuf-Java
  * Benchmark                          Mode  Cnt   Score    Error  Units
