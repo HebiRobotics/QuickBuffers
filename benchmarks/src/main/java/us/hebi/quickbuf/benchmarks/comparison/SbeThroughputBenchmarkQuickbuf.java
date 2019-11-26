@@ -71,8 +71,8 @@ import java.util.concurrent.TimeUnit;
  * SbeThroughputBenchmarkRobo.testMarketEncodeJson  thrpt   10  3284.856 ± 72.124  ops/ms
  *
  * === JSON (JDK13)
- * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10  1514.938 ± 29.468  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10  3337.626 ± 56.037  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10   1599.151 ±   18.887  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10   3690.897 ±   46.368  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019
@@ -105,6 +105,12 @@ public class SbeThroughputBenchmarkQuickbuf {
     final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
     final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());
     final Car carFast = buildCarData(Car.newInstance());
+
+    {
+        // pre-compute size so we can copy the cached size in copyFrom
+        marketDataFast.getSerializedSize();
+        carFast.getSerializedSize();
+    }
 
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
@@ -166,6 +172,20 @@ public class SbeThroughputBenchmarkQuickbuf {
                 .writeMessage(buildCarData(car))
                 .getBuffer()
                 .length();
+    }
+
+    @Benchmark
+    public int testMarketEncodeFast() throws IOException { // no size computation
+        sink.wrap(encodeBuffer);
+        marketData.copyFrom(marketDataFast).writeTo(sink);
+        return sink.position();
+    }
+
+    @Benchmark
+    public int testCarEncodeFast() throws IOException { // no size computation
+        sink.wrap(encodeBuffer);
+        car.copyFrom(carFast).writeTo(sink);
+        return sink.position();
     }
 
     @Benchmark

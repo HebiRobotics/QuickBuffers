@@ -917,10 +917,10 @@ public abstract class ProtoSink {
     public void writeRawVarint32(int value) throws IOException {
         while (true) {
             if ((value & ~0x7F) == 0) {
-                writeRawByte(value);
+                writeRawByte((byte) value);
                 return;
             } else {
-                writeRawByte((value & 0x7F) | 0x80);
+                writeRawByte((byte) (value | 0x80));
                 value >>>= 7;
             }
         }
@@ -943,27 +943,38 @@ public abstract class ProtoSink {
     public void writeRawVarint64(long value) throws IOException {
         while (true) {
             if ((value & ~0x7FL) == 0) {
-                writeRawByte((int) value);
+                writeRawByte((byte) value);
                 return;
             } else {
-                writeRawByte(((int) value & 0x7F) | 0x80);
+                writeRawByte((((int) value) | 0x80));
                 value >>>= 7;
             }
         }
     }
 
     /** Compute the number of bytes that would be needed to encode a varint. */
-    public static int computeRawVarint64Size(final long value) {
-        if ((value & (0xffffffffffffffffL << 7)) == 0) return 1;
-        if ((value & (0xffffffffffffffffL << 14)) == 0) return 2;
-        if ((value & (0xffffffffffffffffL << 21)) == 0) return 3;
-        if ((value & (0xffffffffffffffffL << 28)) == 0) return 4;
-        if ((value & (0xffffffffffffffffL << 35)) == 0) return 5;
-        if ((value & (0xffffffffffffffffL << 42)) == 0) return 6;
-        if ((value & (0xffffffffffffffffL << 49)) == 0) return 7;
-        if ((value & (0xffffffffffffffffL << 56)) == 0) return 8;
-        if ((value & (0xffffffffffffffffL << 63)) == 0) return 9;
-        return 10;
+    public static int computeRawVarint64Size(long value) {
+        // handle two popular special cases up front ...
+        if ((value & (~0L << 7)) == 0L) {
+            return 1;
+        }
+        if (value < 0L) {
+            return 10;
+        }
+        // ... leaving us with 8 remaining, which we can divide and conquer
+        int n = 2;
+        if ((value & (~0L << 35)) != 0L) {
+            n += 4;
+            value >>>= 28;
+        }
+        if ((value & (~0L << 21)) != 0L) {
+            n += 2;
+            value >>>= 14;
+        }
+        if ((value & (~0L << 14)) != 0L) {
+            n += 1;
+        }
+        return n;
     }
 
     /** Write a little-endian 16-bit integer. */

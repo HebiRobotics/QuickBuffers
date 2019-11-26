@@ -18,15 +18,15 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 
 Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers improve by another 10-20%. By additionally inlining the small nested fields it'd result in 3-4x the original message throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
 
-We also compared the built-in JSON encoding and found that for this particular benchmark the message throughput is roughly the same as Protobuf-Java. However, at 559 byte (car) and 435 byte (market) the uncompressed binary sizes are significantly larger.
+We also compared the built-in JSON encoding and found that for this particular benchmark the message throughput is on par with Protobuf-Java. However, at 559 byte (car) and 435 byte (market) the uncompressed binary sizes are significantly larger.
 
 <!-- car mutliplier: 559 * 1000 / (1024*1024) = 0.5331 = -->
 <!-- market multiplier: 435 * 1000 / (1024*1024) = 0.415 = -->
 
 | Test [msg/ms] | QuickBuffers (JSON) | Protobuf-Java (Binary) | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 1515 (808 MB/s) | 985 |  1.5  
-| Market Data Encode  | 3338 (1.4 GB/s) | 3700 |  0.9 
+| Car Encode  | 1599 (852 MB/s) | 985 |  1.6  
+| Market Data Encode  | 3691 (1.5 GB/s) | 3700 |  1.0 
 
 ## Benchmark 2 - File Streams
 

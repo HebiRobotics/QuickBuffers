@@ -205,12 +205,18 @@ public class ProtoFailTests {
         TestAllTypes msg = TestAllTypes.newInstance();
         testVarint32(msg, 0);
         testVarint32(msg, 1);
+        testVarint32(msg, -1);
+        testVarint32(msg, -128);
         testVarint32(msg, Integer.MIN_VALUE);
         testVarint32(msg, Integer.MAX_VALUE);
         testVarint32(msg, 1 << 7);
         testVarint32(msg, 1 << 14);
         testVarint32(msg, 1 << 21);
         testVarint32(msg, 1 << 28);
+        testVarint32(msg, ~0 << 7);
+        testVarint32(msg, ~0 << 14);
+        testVarint32(msg, ~0 << 21);
+        testVarint32(msg, ~0 << 28);
     }
 
     private void testVarint32(TestAllTypes msg, int value) throws IOException {
@@ -225,6 +231,8 @@ public class ProtoFailTests {
         TestAllTypes msg = TestAllTypes.newInstance();
         testVarint64(msg, 0);
         testVarint64(msg, 1);
+        testVarint64(msg, -1);
+        testVarint64(msg, -128);
         testVarint64(msg, Long.MIN_VALUE);
         testVarint64(msg, Long.MAX_VALUE);
         testVarint64(msg, 1L << 7);
@@ -234,6 +242,13 @@ public class ProtoFailTests {
         testVarint64(msg, 1L << 35);
         testVarint64(msg, 1L << 42);
         testVarint64(msg, 1L << 49);
+        testVarint64(msg, ~0L << 7);
+        testVarint64(msg, ~0L << 14);
+        testVarint64(msg, ~0L << 21);
+        testVarint64(msg, ~0L << 28);
+        testVarint64(msg, ~0L << 35);
+        testVarint64(msg, ~0L << 42);
+        testVarint64(msg, ~0L << 49);
     }
 
     private void testVarint64(TestAllTypes msg, long value) throws IOException {
