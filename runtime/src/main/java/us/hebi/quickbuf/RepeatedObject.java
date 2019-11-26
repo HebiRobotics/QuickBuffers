@@ -31,21 +31,21 @@ import java.util.Arrays;
  * @author Florian Enner
  * @since 14 Aug 2019
  */
-abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends RepeatedField<SubType, T> {
+abstract class RepeatedObject<SubType extends RepeatedObject<SubType, STORE, IN, OUT>, STORE, IN, OUT> extends RepeatedField<SubType, OUT> {
 
-    public final T next() {
+    public final STORE next() {
         reserve(1);
         return array[length++];
     }
 
     @Override
-    protected T getValueAt(int index) {
+    protected OUT getValueAt(int index) {
         return get(index);
     }
 
-    public final T get(int index) {
+    public final OUT get(int index) {
         checkIndex(index);
-        return array[index];
+        return getIndex0(index);
     }
 
     public final void set(int index, IN value) {
@@ -83,8 +83,10 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
         if (other.length > length) {
             extendCapacityTo(other.length);
         }
-        copyDataFrom0(other);
         length = other.length;
+        for (int i = 0; i < length; i++) {
+            copyFrom0(array[i], other.array[i]);
+        }
     }
 
     @Override
@@ -92,14 +94,9 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
         return array.length;
     }
 
-    public final T[] toArray() {
-        if (length == 0) return EMPTY;
-        return Arrays.copyOf(array, length);
-    }
-
     @Override
     public final String toString() {
-        return Arrays.toString(toArray());
+        return Arrays.toString(Arrays.copyOf(array, length));
     }
 
     @Override
@@ -118,6 +115,10 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
         return true;
     }
 
+    private boolean isEqual(STORE a, Object b) {
+        return (a == b) || (a != null && a.equals(b));
+    }
+
     @Override
     public final void clear() {
         for (int i = 0; i < length; i++) {
@@ -128,7 +129,7 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
 
     @Override
     protected final void extendCapacityTo(int desiredSize) {
-        final T[] newValues = allocateArray0(desiredSize);
+        final STORE[] newValues = allocateArray0(desiredSize);
         System.arraycopy(array, 0, newValues, 0, length);
         this.array = newValues;
         for (int i = length; i < array.length; i++) {
@@ -136,19 +137,19 @@ abstract class RepeatedObject<SubType extends RepeatedObject, T, IN> extends Rep
         }
     }
 
-    protected abstract void copyDataFrom0(SubType other);
+    protected abstract void copyFrom0(STORE store, STORE other);
 
     protected abstract void clearIndex0(int index);
 
     protected abstract void setIndex0(int index, IN value);
 
-    protected abstract boolean isEqual(T a, Object b);
+    protected abstract OUT getIndex0(int index);
 
-    protected abstract T createEmpty();
+    protected abstract STORE createEmpty();
 
-    protected abstract T[] allocateArray0(int desiredSize);
+    protected abstract STORE[] allocateArray0(int desiredSize);
 
-    final T[] EMPTY = allocateArray0(0);
-    protected T[] array = EMPTY;
+    final STORE[] EMPTY = allocateArray0(0);
+    protected STORE[] array = EMPTY;
 
 }

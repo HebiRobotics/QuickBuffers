@@ -60,9 +60,9 @@ public class ProtoTests {
             assertEquals(-50, msg.getDefaultSfixed64());
             assertEquals(51.5f, msg.getDefaultFloat(), 0);
             assertEquals(52.0e3, msg.getDefaultDouble(), 0.0);
-            assertEquals("hello", msg.getDefaultString().toString());
+            assertEquals("hello", msg.getDefaultString());
             assertEquals("world", new String(msg.getDefaultBytes().toArray(), UTF_8));
-            assertEquals("dünya", msg.getDefaultStringNonascii().toString());
+            assertEquals("dünya", msg.getDefaultStringNonascii());
             assertEquals("dünyab", new String(msg.getDefaultBytesNonascii().toArray(), UTF_8));
             assertEquals(NestedEnum.BAR, msg.getDefaultNestedEnum());
             assertEquals(ForeignEnum.FOREIGN_BAR, msg.getDefaultForeignEnum());
@@ -306,14 +306,13 @@ public class ProtoTests {
     public void testRepeatedStrings() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedStrings());
         assertEquals(4, msg.getRepeatedString().length());
-        assertEquals("hello", msg.getRepeatedString().get(0).toString());
-        assertEquals("world", msg.getRepeatedString().get(1).toString());
-        assertEquals("ascii", msg.getRepeatedString().get(2).toString());
-        assertEquals("utf8\uD83D\uDCA9", msg.getRepeatedString().get(3).toString());
+        assertEquals("hello", msg.getRepeatedString().get(0));
+        assertEquals("world", msg.getRepeatedString().get(1));
+        assertEquals("ascii", msg.getRepeatedString().get(2));
+        assertEquals("utf8\uD83D\uDCA9", msg.getRepeatedString().get(3));
 
         TestAllTypes msg2 = TestAllTypes.newInstance();
-        msg2.getMutableRepeatedString()
-                .copyFrom(msg.getRepeatedString().toArray());
+        msg2.getMutableRepeatedString().copyFrom(msg.getRepeatedString());
 
         TestAllTypes actual = TestAllTypes.parseFrom(msg2.toByteArray());
         assertEquals(msg, actual);
@@ -507,7 +506,7 @@ public class ProtoTests {
         assertFalse(msg.hasOneofField());
         assertFalse(msg.hasOneofString());
         assertFalse(msg.hasOneofNestedMessage());
-        assertEquals("", msg.getOneofString().toString());
+        assertEquals("", msg.getOneofString());
 
         msg.setOneofString("test");
         assertTrue(msg.hasOneofString());
