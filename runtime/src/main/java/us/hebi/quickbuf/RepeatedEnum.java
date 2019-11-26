@@ -35,11 +35,16 @@ import java.util.Arrays;
  * @author Florian Enner
  * @since 17 Nov 2019
  */
-public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<RepeatedEnum<E>> {
+public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<RepeatedEnum<E>, E> {
 
     @SuppressWarnings("unchecked")
     public static <E extends ProtoEnum> RepeatedEnum<E> newEmptyInstance(EnumConverter<E> converter) {
         return new RepeatedEnum(converter);
+    }
+
+    @Override
+    protected E getValueAt(int index) {
+        return get(index);
     }
 
     public E get(int index) {

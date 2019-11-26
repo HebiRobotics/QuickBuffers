@@ -52,24 +52,25 @@
                                 <mkdir dir="${copyToDir}"/>
 
                                 <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedDouble.java" />
-                                <replace file="${copyToDir}/RepeatedDouble.java" token="RepeatedFloat" value="RepeatedDouble"/>
+                                <replace file="${copyToDir}/RepeatedDouble.java" token="Float" value="Double"/>
                                 <replace file="${copyToDir}/RepeatedDouble.java" token="float" value="double"/>
 
                                 <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedLong.java" />
-                                <replace file="${copyToDir}/RepeatedLong.java" token="RepeatedFloat" value="RepeatedLong"/>
+                                <replace file="${copyToDir}/RepeatedLong.java" token="Float" value="Long"/>
                                 <replace file="${copyToDir}/RepeatedLong.java" token="float" value="long"/>
 
                                 <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedInt.java" />
                                 <replace file="${copyToDir}/RepeatedInt.java" token="RepeatedFloat" value="RepeatedInt"/>
+                                <replace file="${copyToDir}/RepeatedInt.java" token="Float" value="Integer"/>
                                 <replace file="${copyToDir}/RepeatedInt.java" token="float" value="int"/>
 
                                 <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedBoolean.java" />
-                                <replace file="${copyToDir}/RepeatedBoolean.java" token="RepeatedFloat" value="RepeatedBoolean"/>
+                                <replace file="${copyToDir}/RepeatedBoolean.java" token="Float" value="Boolean"/>
                                 <replace file="${copyToDir}/RepeatedBoolean.java" token="float" value="boolean"/>
 
                                 <!-- the 'bytes' type is really the same as a repeated byte in disguise -->
                                 <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedByte.java" />
-                                <replace file="${copyToDir}/RepeatedByte.java" token="RepeatedFloat" value="RepeatedByte"/>
+                                <replace file="${copyToDir}/RepeatedByte.java" token="Float" value="Byte"/>
                                 <replace file="${copyToDir}/RepeatedByte.java" token="float" value="byte"/>
 
                             </tasks>
