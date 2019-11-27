@@ -472,9 +472,9 @@ public abstract class ProtoSink {
 
     /** Write a {@code string} field to the sink. */
     public void writeStringNoTag(final Utf8String value) throws IOException {
-        final int length = value.getSerializedSize();
+        final int length = value.size();
         writeRawVarint32(length);
-        writeRawBytes(value.getBytes(), 0, length);
+        writeRawBytes(value.bytes(), 0, length);
     }
 
     /** Write a {@code string} field to the sink. */
@@ -763,7 +763,7 @@ public abstract class ProtoSink {
      * {@code string} field.
      */
     public static int computeStringSizeNoTag(final Utf8String value) {
-        final int length = value.getSerializedSize();
+        final int length = value.size();
         return computeRawVarint32Size(length) + length;
     }
 

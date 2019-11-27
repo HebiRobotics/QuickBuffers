@@ -53,18 +53,26 @@ public class FieldGenerator {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.getFactory())", RuntimeClasses.RepeatedMessage, info.getTypeName());
         } else if (info.isRepeated() && info.isEnum()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.converter())", RuntimeClasses.RepeatedEnum, info.getTypeName());
-        } else if (info.isRepeated() || info.isBytes()) {
+        } else if (info.isRepeated()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
+        } else if (info.isBytes()) {
+            if (!info.hasDefaultValue()) {
+                field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
+            } else {
+                field.addModifiers(Modifier.FINAL).initializer(named("$storeType:T.newInstance($defaultField:N)"));
+            }
         } else if (info.isMessageOrGroup()) {
             field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
         } else if (info.isString()) {
             if (!info.hasDefaultValue()) {
                 field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
             } else {
-                field.addModifiers(Modifier.FINAL).initializer("$T.newInstanceWithDefault($S)", storeType, info.getDefaultValue());
+                field.addModifiers(Modifier.FINAL).initializer(named("$storeType:T.newInstance($default:S)"));
             }
         } else if (info.isPrimitive() || info.isEnum()) {
-            // no initializer needed
+            if (info.hasDefaultValue()) {
+                field.initializer(named("$default:L"));
+            }
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
@@ -80,17 +88,24 @@ public class FieldGenerator {
     }
 
     protected void generateClearCode(MethodSpec.Builder method) {
-        if (info.isRepeated() || info.isMessageOrGroup() || info.isString()) {
+        if (info.isRepeated() || info.isMessageOrGroup()) {
             method.addStatement(named("$field:N.clear()"));
 
         } else if (info.isPrimitive() || info.isEnum()) {
             method.addStatement(named("$field:N = $default:L"));
 
+        } else if (info.isString()) {
+            if (info.hasDefaultValue()) {
+                method.addStatement(named("$field:N.copyFrom($default:S)"));
+            } else {
+                method.addStatement(named("$field:N.clear()"));
+            }
         } else if (info.isBytes()) {
-            method.addStatement(named("$field:N.clear()"));
-            if (info.hasDefaultValue())
+            if (info.hasDefaultValue()) {
                 method.addStatement(named("$field:N.copyFrom($defaultField:N)"));
-
+            } else {
+                method.addStatement(named("$field:N.clear()"));
+            }
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
@@ -531,15 +546,14 @@ public class FieldGenerator {
             type.addMethod(getter.build());
         }
 
-        // Add an overload for Strings that let users choose a custom Utf8Decoder
+        // Add an overload for Strings that let users get the backing Utf8Bytes
         if (!info.isRepeated() && info.isString()) {
-            MethodSpec.Builder getterWithDecoder = MethodSpec.methodBuilder(info.getGetterName())
+            MethodSpec.Builder getterWithDecoder = MethodSpec.methodBuilder(info.getGetterName() + "Bytes")
                     .addAnnotations(info.getMethodAnnotations())
-                    .addParameter(RuntimeClasses.Utf8Decoder, "decoder", Modifier.FINAL)
                     .addModifiers(Modifier.PUBLIC)
                     .addCode(enforceHasCheck)
-                    .returns(typeName)
-                    .addStatement(named("return this.$field:N.getString(decoder)"));
+                    .returns(storeType)
+                    .addStatement(named("return this.$field:N"));
             type.addMethod(getterWithDecoder.build());
         }
 
@@ -591,6 +605,7 @@ public class FieldGenerator {
             m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + "_VALUE" : "0");
             m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
         }
+        m.put("storeType", storeType);
         m.put("commentLine", info.getJavadoc());
         m.put("getMutableMethod", info.getMutableGetterName());
         m.put("getMethod", info.getGetterName());

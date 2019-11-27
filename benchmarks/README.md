@@ -16,7 +16,7 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 | Market Data Encode  | 12964 (791 MB/s) | 3700 (226 MB/s) |  3.5  
 | Market Data Decode  | 9805 (598 MB/s) | 3306 (202 MB/s) |  3.0  
 
-Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the market data numbers improve by another 10-20%. By additionally inlining the small nested fields it'd result in 3-4x the original message throughput of Protobuf-Java. The choice of type can have a huge impact on the performance.
+Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the results improve by 30-50%. By additionally inlining the small nested fields it'd result in more than 5x the original message throughput. Overall, be aware that there is a significant trade-off between wire size and encoding speed.
 
 We also compared the built-in JSON encoding and found that for this particular benchmark the message throughput is on par with Protobuf-Java. However, at 559 byte (car) and 435 byte (market) the uncompressed binary sizes are significantly larger.
 
@@ -74,22 +74,22 @@ We also compared QuickBuffers against the Java bindings of Google's [FlatBuffers
 |  | QuickBuffers | FlatBuffers (v1.11.0) | FlatBuffers (v1.10.0) | Ratio`[1]`
 | :----------- | :-----------: | :-----------: | :-----------: | :-----------: |
 | **UnsafeSource / DirectByteBuffer [ns/op]**  
-| Decode             | 237 | 0 | 0 |  0.0 
-| Traverse           | 22 | 234 | 321 |  10.6
+| Decode             | 177 | 0 | 0 |  0.0 
+| Traverse           | 125 | 234 | 321 |  1.9
 | Encode             | 233 | 457 | 649 |  2.0
-| Encode + Decode + Traverse | 492 | 691 | 970 |  1.4
+| Encode + Decode + Traverse | 523 | 691 | 970 |  1.3
 | **ArraySource / HeapByteBuffer [ns/op]**  
-| Decode             | 278 | 0 | 0 |  0.0  
-| Traverse           | 23 | 381 | 427 |  16.6
-| Encode             | 274 | 626 | 821 |  2.3
-| Encode + Decode + Traverse | 575 | 1007 | 1248 |  1.8
+| Decode             | 213 | 0 | 0 |  0.0  
+| Traverse           | 133 | 381 | 427 |  2.9
+| Encode             | 268 | 626 | 821 |  2.3
+| Encode + Decode + Traverse | 614 | 1007 | 1248 |  1.6
 | **Other**  
 | Serialized Size   | 228 bytes | 344 bytes | 344 bytes |  1.5
 | Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 1
 
 * `[1]` `FlatBuffers v1.11.0 / QuickBuffers`
-* `[2]` `Traverse = (Decode + Traverse) - Decode`
+* `[2]` `Traverse = (Decode + Traverse) - Decode` (includes lazy utf8 parsing)
    
 While the official C++ benchmark shows tremendous performance benefits over Protobuf, the Java implementation has unfortunately been lagging behind a bit. Recent versions have seen some significant performance improvements, but encoding and traversing a `ByteBuffer` still results in more overhead than may be expected.
 
-Also be aware that the benchmark was created with a bias for FlatBuffers. The original data is mostly comprised of large varint numbers (e.g. a 10 byte int64) and repeated messages with multiple levels of nesting, which is a particularly bad case for Protobuf. Messages with a flatter hierarchy and more fixed-size scalar types should fare much better.
+It is also worth noting that the benchmark was created with a bias for FlatBuffers. The original data is mostly comprised of large varint numbers (e.g. a 10 byte int64) and repeated messages with multiple levels of nesting, which is a particularly bad case for Protobuf. Messages with a flatter hierarchy and more fixed-size scalar types should fare much better.

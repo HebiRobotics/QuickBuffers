@@ -34,29 +34,44 @@ import java.util.Arrays;
 public final class Utf8String {
 
     public static Utf8String newEmptyInstance() {
-        return new Utf8String("");
+        return new Utf8String();
     }
 
-    public static Utf8String newInstanceWithDefault(String defaultValue) {
-        return new Utf8String(defaultValue);
+    public static Utf8String newInstance(String initialValue) {
+        return newEmptyInstance().copyFrom(initialValue);
     }
 
-    byte[] getBytes() {
+    /**
+     * Internal backing array. Only call after
+     * size() or setSize().
+     *
+     * @return internal backing array
+     */
+    byte[] bytes() {
         return bytes;
     }
 
-    int getSerializedSize() {
+    /**
+     * Gets the number of bytes.
+     *
+     * @return size in bytes
+     */
+    public int size() {
+        ensureSerialized();
+        return serializedSize;
+    }
+
+    void setSize(final int size) {
+        ensureCapacity(size);
+        serializedSize = size;
+        string = null;
+    }
+
+    private void ensureSerialized() {
         if (serializedSize < 0) {
             ensureCapacity((string.length() * Utf8.MAX_UTF8_EXPANSION));
             serializedSize = Utf8.encodeArray(string, bytes, 0, bytes.length);
         }
-        return serializedSize;
-    }
-
-    void setSerializedSize(final int size) {
-        ensureCapacity(size);
-        serializedSize = size;
-        string = null;
     }
 
     public String getString() {
@@ -70,6 +85,16 @@ public final class Utf8String {
         return string;
     }
 
+    public StringBuilder getChars(StringBuilder store) {
+        store.setLength(0);
+        if (string == null) {
+            Utf8.decodeArray(bytes, 0, serializedSize, store);
+        } else {
+            store.append(string);
+        }
+        return store;
+    }
+
     public Utf8String copyFrom(CharSequence other) {
         if (other instanceof String) {
             // Store reference and encode lazily
@@ -80,6 +105,12 @@ public final class Utf8String {
             serializedSize = Utf8.encodeArray(other, bytes, 0, bytes.length);
             string = null;
         }
+        return this;
+    }
+
+    public Utf8String copyFromUtf8(final byte[] bytes, final int offset, final int length) {
+        setSize(length);
+        System.arraycopy(bytes, offset, this.bytes, 0, length);
         return this;
     }
 
@@ -100,7 +131,8 @@ public final class Utf8String {
     }
 
     public void clear() {
-        copyFrom(defaultValue);
+        serializedSize = 0;
+        string = "";
     }
 
     @Override
@@ -113,7 +145,7 @@ public final class Utf8String {
             return string.equals(other.string);
         }
 
-        if (getSerializedSize() != other.getSerializedSize())
+        if (size() != other.size())
             return false;
 
         for (int i = 0; i < serializedSize; i++) {
@@ -212,13 +244,11 @@ public final class Utf8String {
      */
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
-    Utf8String(final String defaultValue) {
-        this.defaultValue = defaultValue;
+    private Utf8String() {
     }
 
     private int serializedSize = 0;
     private byte[] bytes = ProtoUtil.EMPTY_BYTE_ARRAY;
     private String string = "";
-    private final String defaultValue;
 
 }

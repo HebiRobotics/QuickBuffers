@@ -94,7 +94,7 @@ public class QuickBuffersBench {
 
             sum += fooBar.getPostfix();
             sum += (long) fooBar.getRating();
-            sum += fooBar.getName().length();
+            sum += fooBar.getNameBytes().getChars(chars).length();
 
             Bar bar = fooBar.getSibling();
             sum += bar.getRatio();
@@ -113,6 +113,7 @@ public class QuickBuffersBench {
 
     }
 
+    final StringBuilder chars = new StringBuilder(32);
     final FooBarContainer encodeMsg = setData(FooBarContainer.newInstance());
 
     byte[] encodeBuffer = encodeMsg.toByteArray();

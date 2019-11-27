@@ -406,8 +406,8 @@ public class ProtoSource {
     public void readString(final Utf8String store) throws IOException {
         final int numBytes = readRawVarint32();
         requireRemaining(numBytes);
-        store.setSerializedSize(numBytes);
-        System.arraycopy(buffer, bufferPos, store.getBytes(), 0, numBytes);
+        store.setSize(numBytes);
+        System.arraycopy(buffer, bufferPos, store.bytes(), 0, numBytes);
         bufferPos += numBytes;
     }
 

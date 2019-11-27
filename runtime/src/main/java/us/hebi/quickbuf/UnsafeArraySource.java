@@ -86,8 +86,8 @@ class UnsafeArraySource extends ProtoSource {
     public void readString(final Utf8String store) throws IOException {
         final int numBytes = readRawVarint32();
         requireRemaining(numBytes);
-        store.setSerializedSize(numBytes);
-        UNSAFE.copyMemory(buffer, baseOffset + bufferPos, store.getBytes(), BYTE_ARRAY_OFFSET, numBytes);
+        store.setSize(numBytes);
+        UNSAFE.copyMemory(buffer, baseOffset + bufferPos, store.bytes(), BYTE_ARRAY_OFFSET, numBytes);
         bufferPos += numBytes;
     }
 

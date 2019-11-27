@@ -83,8 +83,6 @@ class MessageGenerator {
         type.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
                 .addStatement("super($L)", info.isStoreUnknownFields())
-                .addStatement("$L", BitField.setBit(0)) // dummy for triggering clear
-                .addStatement("clear()")
                 .build());
 
         // Member state (the first bitfield is in the parent class)

@@ -99,8 +99,8 @@ class JsonEncoding {
         }
 
         static void writeQuotedUtf8(Utf8String sequence, RepeatedByte output) {
-            final int numBytes = sequence.getSerializedSize();
-            final byte[] utf8 = sequence.getBytes();
+            final int numBytes = sequence.size();
+            final byte[] utf8 = sequence.bytes();
             int i = 0;
 
             // Fast-path: no escape support

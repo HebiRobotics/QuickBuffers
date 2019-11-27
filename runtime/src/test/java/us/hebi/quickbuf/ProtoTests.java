@@ -305,7 +305,7 @@ public class ProtoTests {
         final String testString = "decoder-test\uD83D\uDCA9";
         msg.clearQuick().setDecoder(testString);
         actual = TestAllTypes.parseFrom(msg.toByteArray());
-        assertEquals("customString", actual.getDecoder(new Utf8Decoder() {
+        assertEquals("customString", actual.getDecoderBytes().getString(new Utf8Decoder() {
             @Override
             public String decode(byte[] bytes, int offset, int length) {
                 assertEquals(0, offset);

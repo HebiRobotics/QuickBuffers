@@ -425,7 +425,7 @@ public class RequestInfo {
         }
 
         public boolean hasDefaultValue() {
-            return !defaultValue.isEmpty();
+            return descriptor.hasDefaultValue();
         }
 
         public boolean isDeprecated() {

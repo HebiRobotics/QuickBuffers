@@ -36,6 +36,10 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
         return new RepeatedFloat();
     }
 
+    public static RepeatedFloat newInstance(float[] initialValue) {
+        return newEmptyInstance().copyFrom(initialValue);
+    }
+
     RepeatedFloat() {
     }
 
