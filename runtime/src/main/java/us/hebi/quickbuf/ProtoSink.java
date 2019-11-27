@@ -1041,6 +1041,200 @@ public abstract class ProtoSink {
 
     }
 
+    // ------- more varint64 tests -------
+
+    public void writeRawVarint64_2(long value) throws IOException {
+        if ((value & (~0L << 28)) == 0L) {
+            // 4 byte -> write as int
+            writeRawVarint32((int) value);
+        } else {
+            // 5 byte and higher -> write as long
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) ((value >>> 7) | 0x80));
+            writeRawByte((byte) ((value >>> 14) | 0x80));
+            writeRawByte((byte) ((value >>> 21) | 0x80));
+            value >>>= 28;
+            while (true) {
+                if ((value & ~0x7FL) == 0) {
+                    writeRawByte((byte) value);
+                    return;
+                } else {
+                    writeRawByte((((int) value) | 0x80));
+                    value >>>= 7;
+                }
+            }
+        }
+    }
+
+    public void writeRawVarint64_3(final long value) throws IOException {
+        switch (computeRawVarint64Size(value)) {
+            case 1:
+                writeVarint64OneByte(value);
+                break;
+            case 2:
+                writeVarint64TwoBytes(value);
+                break;
+            case 3:
+                writeVarint64ThreeBytes(value);
+                break;
+            case 4:
+                writeVarint64FourBytes(value);
+                break;
+            case 5:
+                writeVarint64FiveBytes(value);
+                break;
+            case 6:
+                writeVarint64SixBytes(value);
+                break;
+            case 7:
+                writeVarint64SevenBytes(value);
+                break;
+            case 8:
+                writeVarint64EightBytes(value);
+                break;
+            case 9:
+                writeVarint64NineBytes(value);
+                break;
+            case 10:
+                writeVarint64TenBytes(value);
+                break;
+        }
+    }
+
+    /*
+    if ((value & (0xffffffff << 14)) == 0) return 2;
+    if ((value & (0xffffffff << 21)) == 0) return 3;
+    if ((value & (0xffffffff << 28)) == 0) return 4;
+    if ((value & (0xffffffff << 35)) == 0) return 5;
+
+    if ((value & (0xffffffff << 42)) == 0) return 6;
+    if ((value & (0xffffffff << 49)) == 0) return 7;
+    if ((value & (0xffffffff << 56)) == 0) return 8;
+    if ((value & (0xffffffff << 63)) == 0) return 9;
+     */
+    public void writeRawVarint64_4(final long value) throws IOException {
+        if ((value & (~0L << 7)) == 0L) { // 1 byte
+            writeVarint64OneByte(value);
+        } else if (value < 0L) { // 10 bytes
+            writeVarint64TenBytes(value);
+        } else if ((value & (~0L << 35)) == 0) { // 2-5 bytes
+            if ((value & (~0L << 21)) == 0) { // 2-3 bytes
+                if ((value & (~0L << 14)) == 0) {
+                    writeVarint64TwoBytes(value);
+                } else {
+                    writeVarint64ThreeBytes(value);
+                }
+            } else { // 4-5 bytes
+                if ((value & (~0L << 28)) == 0) {
+                    writeVarint64FourBytes(value);
+                } else {
+                    writeVarint64FiveBytes(value);
+                }
+            }
+        } else { // 6-9 bytes
+            if ((value & (~0L << 49)) == 0) { // 6-7 bytes
+                if ((value & (~0L << 42)) == 0) {
+                    writeVarint64SixBytes(value);
+                } else {
+                    writeVarint64SevenBytes(value);
+                }
+            } else { // 8-9 bytes
+                if ((value & (~0L << 56)) == 0) {
+                    writeVarint64EightBytes(value);
+                } else {
+                    writeVarint64NineBytes(value);
+                }
+            }
+        }
+    }
+
+    private void writeVarint64OneByte(final long value) throws IOException {
+        writeRawByte((byte) value);
+    }
+
+    private void writeVarint64TwoBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (value >>> 7));
+    }
+
+    private void writeVarint64ThreeBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) ((value >>> 7) | 0x80));
+        writeRawByte((byte) (value >>> 14));
+    }
+
+    private void writeVarint64FourBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) ((value >>> 7) | 0x80));
+        writeRawByte((byte) ((value >>> 14) | 0x80));
+        writeRawByte((byte) (value >>> 21));
+    }
+
+    private void writeVarint64FiveBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (((value >>> 7)) | 0x80));
+        writeRawByte((byte) (((value >>> 14)) | 0x80));
+        writeRawByte((byte) (((value >>> 21)) | 0x80));
+        writeRawByte((byte) (value >>> 28));
+    }
+
+    private void writeVarint64SixBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (((value >>> 7)) | 0x80));
+        writeRawByte((byte) (((value >>> 14)) | 0x80));
+        writeRawByte((byte) (((value >>> 21)) | 0x80));
+        writeRawByte((byte) (((value >>> 28)) | 0x80));
+        writeRawByte((byte) (value >>> 35));
+    }
+
+    private void writeVarint64SevenBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (((value >>> 7)) | 0x80));
+        writeRawByte((byte) (((value >>> 14)) | 0x80));
+        writeRawByte((byte) (((value >>> 21)) | 0x80));
+        writeRawByte((byte) (((value >>> 28)) | 0x80));
+        writeRawByte((byte) (((value >>> 35)) | 0x80));
+        writeRawByte((byte) (value >>> 42));
+    }
+
+    private void writeVarint64EightBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (((value >>> 7)) | 0x80));
+        writeRawByte((byte) (((value >>> 14)) | 0x80));
+        writeRawByte((byte) (((value >>> 21)) | 0x80));
+        writeRawByte((byte) (((value >>> 28)) | 0x80));
+        writeRawByte((byte) (((value >>> 35)) | 0x80));
+        writeRawByte((byte) (((value >>> 42)) | 0x80));
+        writeRawByte((byte) (value >>> 49));
+    }
+
+    private void writeVarint64NineBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (((value >>> 7)) | 0x80));
+        writeRawByte((byte) (((value >>> 14)) | 0x80));
+        writeRawByte((byte) (((value >>> 21)) | 0x80));
+        writeRawByte((byte) (((value >>> 28)) | 0x80));
+        writeRawByte((byte) (((value >>> 35)) | 0x80));
+        writeRawByte((byte) (((value >>> 42)) | 0x80));
+        writeRawByte((byte) (((value >>> 49)) | 0x80));
+        writeRawByte((byte) (value >>> 56));
+    }
+
+    private void writeVarint64TenBytes(final long value) throws IOException {
+        writeRawByte((byte) (value | 0x80));
+        writeRawByte((byte) (((value >>> 7)) | 0x80));
+        writeRawByte((byte) (((value >>> 14)) | 0x80));
+        writeRawByte((byte) (((value >>> 21)) | 0x80));
+        writeRawByte((byte) (((value >>> 28)) | 0x80));
+        writeRawByte((byte) (((value >>> 35)) | 0x80));
+        writeRawByte((byte) (((value >>> 42)) | 0x80));
+        writeRawByte((byte) (((value >>> 49)) | 0x80));
+        writeRawByte((byte) (((value >>> 56)) | 0x80));
+        writeRawByte((byte) (value >>> 63));
+    }
+
+    // ------- test varint64 end -------
+
     /** Compute the number of bytes that would be needed to encode a varint. */
     public static int computeRawVarint64Size(final long value) {
         if ((value & upper57) == 0) return 1;
