@@ -993,28 +993,28 @@ public abstract class ProtoSink {
 
     /** Write a little-endian 16-bit integer. */
     public void writeRawLittleEndian16(final short value) throws IOException {
-        writeRawByte((byte) ((value) & 0xFF));
-        writeRawByte((byte) ((value >> 8) & 0xFF));
+        writeRawByte((byte) (value & 0xFF));
+        writeRawByte((byte) (value >>> 8));
     }
 
     /** Write a little-endian 32-bit integer. */
     public void writeRawLittleEndian32(final int value) throws IOException {
-        writeRawByte((byte) ((value) & 0xFF));
-        writeRawByte((byte) ((value >> 8) & 0xFF));
-        writeRawByte((byte) ((value >> 16) & 0xFF));
-        writeRawByte((byte) ((value >> 24) & 0xFF));
+        writeRawByte((byte) (value & 0xFF));
+        writeRawByte((byte) (value >>> 8));
+        writeRawByte((byte) (value >>> 16));
+        writeRawByte((byte) (value >>> 24));
     }
 
     /** Write a little-endian 64-bit integer. */
     public void writeRawLittleEndian64(final long value) throws IOException {
-        writeRawByte((byte) ((value) & 0xFF));
-        writeRawByte((byte) ((value >> 8) & 0xFF));
-        writeRawByte((byte) ((value >> 16) & 0xFF));
-        writeRawByte((byte) ((value >> 24) & 0xFF));
-        writeRawByte((byte) ((value >> 32) & 0xFF));
-        writeRawByte((byte) ((value >> 40) & 0xFF));
-        writeRawByte((byte) ((value >> 48) & 0xFF));
-        writeRawByte((byte) ((value >> 56) & 0xFF));
+        writeRawByte((byte) (value & 0xFF));
+        writeRawByte((byte) (value >>> 8));
+        writeRawByte((byte) (value >>> 16));
+        writeRawByte((byte) (value >>> 24));
+        writeRawByte((byte) (value >>> 32));
+        writeRawByte((byte) (value >>> 40));
+        writeRawByte((byte) (value >>> 48));
+        writeRawByte((byte) (value >>> 56));
     }
 
     /**
