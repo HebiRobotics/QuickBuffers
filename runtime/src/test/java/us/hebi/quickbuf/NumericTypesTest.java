@@ -69,6 +69,32 @@ public class NumericTypesTest {
     }
 
     @Test
+    public void testFixed32() throws IOException {
+        testFixed32(0);
+        testFixed32(1);
+        testFixed32(-1);
+        testFixed32(-128);
+        testFixed32(Integer.MIN_VALUE);
+        testFixed32(Integer.MAX_VALUE);
+        for (int i = 1; i < n; i++) {
+            testFixed32(rnd.nextInt() % (int) Math.pow(n, 3));
+        }
+    }
+
+    @Test
+    public void testFixed64() throws IOException {
+        testFixed64(0);
+        testFixed64(1);
+        testFixed64(-1);
+        testFixed64(-128);
+        testFixed64(Long.MIN_VALUE);
+        testFixed64(Long.MAX_VALUE);
+        for (int i = 1; i < n; i++) {
+            testFixed64(rnd.nextLong() % (long) Math.pow(n, 6));
+        }
+    }
+
+    @Test
     public void testFloat() throws IOException {
         testFloat(Float.POSITIVE_INFINITY);
         testFloat(Float.NEGATIVE_INFINITY);
@@ -98,6 +124,14 @@ public class NumericTypesTest {
 
     private void testVarint64(long value) throws IOException {
         assertEquals(value, encodeAndDecode(msg.setOptionalInt64(value)).getOptionalInt64());
+    }
+
+    private void testFixed32(int value) throws IOException {
+        assertEquals(value, encodeAndDecode(msg.setOptionalFixed32(value)).getOptionalFixed32());
+    }
+
+    private void testFixed64(long value) throws IOException {
+        assertEquals(value, encodeAndDecode(msg.setOptionalFixed64(value)).getOptionalFixed64());
     }
 
     private void testFloat(float value) throws IOException {
