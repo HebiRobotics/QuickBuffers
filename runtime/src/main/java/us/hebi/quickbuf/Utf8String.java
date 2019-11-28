@@ -95,17 +95,19 @@ public final class Utf8String {
         return store;
     }
 
+    /**
+     * Holds on to immutable Strings and lazily encodes them, or
+     * encodes the sequence directly if it is not a String.
+     *
+     * @param other
+     * @return
+     */
     public Utf8String copyFrom(CharSequence other) {
-        if (other instanceof String) {
-            // Store reference and encode lazily
-            copyFrom((String) other);
-        } else {
-            // Store in encoded utf8 form
-            ensureCapacityInternal((other.length() * Utf8.MAX_UTF8_EXPANSION));
-            serializedSize = Utf8.encodeArray(other, bytes, 0, bytes.length);
-            string = null;
-        }
-        return this;
+        return other instanceof String ? copyFrom((String) other) : copyFromEncoded(other);
+    }
+
+    public Utf8String copyFromUtf8(final byte[] bytes) {
+        return copyFromUtf8(bytes, 0, bytes.length);
     }
 
     public Utf8String copyFromUtf8(final byte[] bytes, final int offset, final int length) {
@@ -114,6 +116,26 @@ public final class Utf8String {
         return this;
     }
 
+    /**
+     * Encodes the sequence immediately and does not hold on to the reference
+     *
+     * @param other sequence
+     * @return this
+     */
+    public Utf8String copyFromEncoded(CharSequence other) {
+        // Store in encoded utf8 form
+        ensureCapacityInternal((other.length() * Utf8.MAX_UTF8_EXPANSION));
+        serializedSize = Utf8.encodeArray(other, bytes, 0, bytes.length);
+        string = null;
+        return this;
+    }
+
+    /**
+     * Holds on to the reference of the String and encodes it when required.
+     *
+     * @param other string
+     * @return this
+     */
     public Utf8String copyFrom(String other) {
         serializedSize = -1;
         string = other;

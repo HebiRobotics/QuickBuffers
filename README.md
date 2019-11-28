@@ -247,7 +247,8 @@ public final class SimpleMessage {
     public SimpleMessage clearOptionalString(); // sets length = 0
     public boolean hasOptionalString();
     public String getOptionalString(); // lazily converted string
-    public String getOptionalStringBytes(); // internal Utf8String
+    public Utf8String getOptionalStringBytes(); // internal representation -> treat as read-only
+    public Utf8String getMutableOptionalStringBytes(); // internal representation -> may be modified until has state is cleared
 
     private final StringBuilder optionalString = new StringBuilder(0);
 }

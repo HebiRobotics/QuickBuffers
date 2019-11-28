@@ -13,7 +13,7 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 | :----------- | :-----------: | :-----------: | :-----------: |
 | Car Encode  | 3649 (487 MB/s) | 985 (132 MB/s) |  3.7  
 | Car Decode  | 2329 (311 MB/s) | 1271 (170 MB/s) |  1.8  
-| Market Data Encode  | 12964 (791 MB/s) | 3700 (226 MB/s) |  3.5  
+| Market Data Encode  | 13177 (804 MB/s) | 3700 (226 MB/s) |  3.6  
 | Market Data Decode  | 9805 (598 MB/s) | 3306 (202 MB/s) |  3.0  
 
 Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the results improve by 30-50%. By additionally inlining the small nested fields it'd result in more than 5x the original message throughput. Overall, be aware that there is a significant trade-off between wire size and encoding speed.

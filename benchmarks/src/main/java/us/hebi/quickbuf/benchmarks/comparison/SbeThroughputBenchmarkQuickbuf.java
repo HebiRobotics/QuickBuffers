@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit;
  * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2160.508 ±  95.135  ops/ms
  * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3648.551 ±  57.977  ops/ms
  * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   9361.098 ±  38.584  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  12964.788 ± 175.684  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  13176.648 ± 343.073  ops/ms
  *
  * == Quickbuf (JDK13 no unsafe)
  * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2329.465 ±  90.888  ops/ms
@@ -159,7 +159,7 @@ public class SbeThroughputBenchmarkQuickbuf {
     }
 
     @Benchmark
-    public int testMarketEncodeJson() throws IOException {
+    public int testMarketJsonEncode() throws IOException {
         return jsonSink.clear()
                 .writeMessage(buildMarketData(marketData))
                 .getBuffer()
@@ -167,7 +167,7 @@ public class SbeThroughputBenchmarkQuickbuf {
     }
 
     @Benchmark
-    public int testCarEncodeJson() throws IOException {
+    public int testCarJsonEncode() throws IOException {
         return jsonSink.clear()
                 .writeMessage(buildCarData(car))
                 .getBuffer()

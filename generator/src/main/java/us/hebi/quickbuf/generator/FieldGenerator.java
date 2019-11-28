@@ -548,13 +548,24 @@ public class FieldGenerator {
 
         // Add an overload for Strings that let users get the backing Utf8Bytes
         if (!info.isRepeated() && info.isString()) {
-            MethodSpec.Builder getterWithDecoder = MethodSpec.methodBuilder(info.getGetterName() + "Bytes")
+
+            type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Bytes")
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
-                    .addCode(enforceHasCheck)
                     .returns(storeType)
-                    .addStatement(named("return this.$field:N"));
-            type.addMethod(getterWithDecoder.build());
+                    .addCode(enforceHasCheck)
+                    .addStatement(named("return this.$field:N"))
+                    .build());
+
+            type.addMethod(MethodSpec.methodBuilder(info.getMutableGetterName() + "Bytes")
+                    .addAnnotations(info.getMethodAnnotations())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(storeType)
+                    .addCode(clearOtherOneOfs)
+                    .addStatement(named("$setHas:L"))
+                    .addStatement(named("return this.$field:N"))
+                    .build());
+
         }
 
     }
