@@ -574,10 +574,10 @@ public class ProtoSource {
 
     /** Read a 32-bit little-endian integer from the source. */
     public int readRawLittleEndian32() throws IOException {
-        requireRemaining(LITTLE_ENDIAN_32_SIZE);
+        requireRemaining(SIZEOF_FIXED_32);
         final byte[] buffer = this.buffer;
         final int offset = bufferPos;
-        bufferPos += LITTLE_ENDIAN_32_SIZE;
+        bufferPos += SIZEOF_FIXED_32;
         return (buffer[offset] & 0xFF) |
                 (buffer[offset + 1] & 0xFF) << 8 |
                 (buffer[offset + 2] & 0xFF) << 16 |
@@ -586,10 +586,10 @@ public class ProtoSource {
 
     /** Read a 64-bit little-endian integer from the source. */
     public long readRawLittleEndian64() throws IOException {
-        requireRemaining(LITTLE_ENDIAN_64_SIZE);
+        requireRemaining(SIZEOF_FIXED_64);
         final byte[] buffer = this.buffer;
         final int offset = bufferPos;
-        bufferPos += LITTLE_ENDIAN_64_SIZE;
+        bufferPos += SIZEOF_FIXED_64;
         return (buffer[offset] & 0xFFL) |
                 (buffer[offset + 1] & 0xFFL) << 8 |
                 (buffer[offset + 2] & 0xFFL) << 16 |

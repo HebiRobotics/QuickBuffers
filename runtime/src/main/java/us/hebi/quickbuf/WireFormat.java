@@ -65,9 +65,6 @@ package us.hebi.quickbuf;
  */
 final class WireFormat {
 
-    static final int LITTLE_ENDIAN_32_SIZE = 4;
-    static final int LITTLE_ENDIAN_64_SIZE = 8;
-
     // Do not allow instantiation.
     private WireFormat() {
     }

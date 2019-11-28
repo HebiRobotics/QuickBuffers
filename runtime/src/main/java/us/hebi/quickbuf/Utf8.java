@@ -177,7 +177,7 @@ class Utf8 {
                             final byte[] bytes,
                             final long baseOffset,
                             final int offset,
-                            final int length) throws ProtoSink.OutOfSpaceException {
+                            final int length) {
         int utf16Length = sequence.length();
         long j = baseOffset + offset;
         int i = 0;

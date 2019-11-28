@@ -111,10 +111,10 @@ class UnsafeArraySource extends ProtoSource {
 
     /** Read a 32-bit little-endian integer from the source. */
     public int readRawLittleEndian32() throws IOException {
-        requireRemaining(LITTLE_ENDIAN_32_SIZE);
+        requireRemaining(SIZEOF_FIXED_32);
         final byte[] buffer = this.buffer;
         final long offset = baseOffset + bufferPos;
-        bufferPos += LITTLE_ENDIAN_32_SIZE;
+        bufferPos += SIZEOF_FIXED_32;
         return (UNSAFE.getByte(buffer, offset) & 0xFF) |
                 (UNSAFE.getByte(buffer, offset + 1) & 0xFF) << 8 |
                 (UNSAFE.getByte(buffer, offset + 2) & 0xFF) << 16 |
@@ -123,10 +123,10 @@ class UnsafeArraySource extends ProtoSource {
 
     /** Read a 64-bit little-endian integer from the source. */
     public long readRawLittleEndian64() throws IOException {
-        requireRemaining(LITTLE_ENDIAN_64_SIZE);
+        requireRemaining(SIZEOF_FIXED_64);
         final byte[] buffer = this.buffer;
         final long offset = baseOffset + bufferPos;
-        bufferPos += LITTLE_ENDIAN_64_SIZE;
+        bufferPos += SIZEOF_FIXED_64;
         return (UNSAFE.getByte(buffer, offset) & 0xFFL) |
                 (UNSAFE.getByte(buffer, offset + 1) & 0xFFL) << 8 |
                 (UNSAFE.getByte(buffer, offset + 2) & 0xFFL) << 16 |
@@ -220,9 +220,9 @@ class UnsafeArraySource extends ProtoSource {
         @Override
         public double readDouble() throws IOException {
             if (IS_LITTLE_ENDIAN) {
-                requireRemaining(LITTLE_ENDIAN_64_SIZE);
+                requireRemaining(SIZEOF_FIXED_64);
                 final double value = UNSAFE.getDouble(buffer, baseOffset + bufferPos);
-                bufferPos += LITTLE_ENDIAN_64_SIZE;
+                bufferPos += SIZEOF_FIXED_64;
                 return value;
             } else {
                 return Double.longBitsToDouble(readRawLittleEndian64());
@@ -232,9 +232,9 @@ class UnsafeArraySource extends ProtoSource {
         @Override
         public float readFloat() throws IOException {
             if (IS_LITTLE_ENDIAN) {
-                requireRemaining(LITTLE_ENDIAN_32_SIZE);
+                requireRemaining(SIZEOF_FIXED_32);
                 final float value = UNSAFE.getFloat(buffer, baseOffset + bufferPos);
-                bufferPos += LITTLE_ENDIAN_32_SIZE;
+                bufferPos += SIZEOF_FIXED_32;
                 return value;
             } else {
                 return Float.intBitsToFloat(readRawLittleEndian32());
@@ -251,17 +251,17 @@ class UnsafeArraySource extends ProtoSource {
 
         @Override
         public int readRawLittleEndian32() throws IOException {
-            requireRemaining(LITTLE_ENDIAN_32_SIZE);
+            requireRemaining(SIZEOF_FIXED_32);
             final int value = UNSAFE.getInt(buffer, baseOffset + bufferPos);
-            bufferPos += LITTLE_ENDIAN_32_SIZE;
+            bufferPos += SIZEOF_FIXED_32;
             return IS_LITTLE_ENDIAN ? value : Integer.reverseBytes(value);
         }
 
         @Override
         public long readRawLittleEndian64() throws IOException {
-            requireRemaining(LITTLE_ENDIAN_64_SIZE);
+            requireRemaining(SIZEOF_FIXED_64);
             final long value = UNSAFE.getLong(buffer, baseOffset + bufferPos);
-            bufferPos += LITTLE_ENDIAN_64_SIZE;
+            bufferPos += SIZEOF_FIXED_64;
             return IS_LITTLE_ENDIAN ? value : Long.reverseBytes(value);
         }
 

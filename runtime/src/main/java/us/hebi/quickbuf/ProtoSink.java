@@ -694,7 +694,7 @@ public abstract class ProtoSink {
      * {@code double} field, including tag.
      */
     public static int computeDoubleSizeNoTag(final double value) {
-        return LITTLE_ENDIAN_64_SIZE;
+        return SIZEOF_FIXED_64;
     }
 
     /**
@@ -702,7 +702,7 @@ public abstract class ProtoSink {
      * {@code float} field, including tag.
      */
     public static int computeFloatSizeNoTag(final float value) {
-        return LITTLE_ENDIAN_32_SIZE;
+        return SIZEOF_FIXED_32;
     }
 
     /**
@@ -739,7 +739,7 @@ public abstract class ProtoSink {
      * {@code fixed64} field.
      */
     public static int computeFixed64SizeNoTag(final long value) {
-        return LITTLE_ENDIAN_64_SIZE;
+        return SIZEOF_FIXED_64;
     }
 
     /**
@@ -747,7 +747,7 @@ public abstract class ProtoSink {
      * {@code fixed32} field.
      */
     public static int computeFixed32SizeNoTag(final int value) {
-        return LITTLE_ENDIAN_32_SIZE;
+        return SIZEOF_FIXED_32;
     }
 
     /**
@@ -822,7 +822,7 @@ public abstract class ProtoSink {
      * {@code sfixed32} field.
      */
     public static int computeSFixed32SizeNoTag(final int value) {
-        return LITTLE_ENDIAN_32_SIZE;
+        return SIZEOF_FIXED_32;
     }
 
     /**
@@ -830,7 +830,7 @@ public abstract class ProtoSink {
      * {@code sfixed64} field.
      */
     public static int computeSFixed64SizeNoTag(final long value) {
-        return LITTLE_ENDIAN_64_SIZE;
+        return SIZEOF_FIXED_64;
     }
 
     /**
@@ -912,7 +912,12 @@ public abstract class ProtoSink {
     }
 
     /** Write part of an array of bytes. */
-    public abstract void writeRawBytes(final byte[] value, int offset, int length) throws IOException;
+    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
+        final int limit = offset + length;
+        for (int i = offset; i < limit; i++) {
+            writeRawByte(value[i]);
+        }
+    }
 
     /** Encode and write a tag. */
     public void writeTag(final int fieldNumber, final int wireType) throws IOException {
