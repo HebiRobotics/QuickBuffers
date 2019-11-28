@@ -102,7 +102,6 @@ public class SbeThroughputBenchmarkQuickbuf {
     final ProtoSource source = ProtoSource.newInstance();
     final ProtoSink sink = ProtoSink.newInstance();
 
-    final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
     final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());
     final Car carFast = buildCarData(Car.newInstance());
 
@@ -159,22 +158,6 @@ public class SbeThroughputBenchmarkQuickbuf {
     }
 
     @Benchmark
-    public int testMarketJsonEncode() throws IOException {
-        return jsonSink.clear()
-                .writeMessage(buildMarketData(marketData))
-                .getBuffer()
-                .length();
-    }
-
-    @Benchmark
-    public int testCarJsonEncode() throws IOException {
-        return jsonSink.clear()
-                .writeMessage(buildCarData(car))
-                .getBuffer()
-                .length();
-    }
-
-    @Benchmark
     public int testMarketEncodeFast() throws IOException { // no size computation
         sink.wrap(encodeBuffer);
         marketData.copyFrom(marketDataFast).writeTo(sink);
@@ -214,7 +197,7 @@ public class SbeThroughputBenchmarkQuickbuf {
         return car.clearQuick().mergeFrom(source);
     }
 
-    static MarketDataIncrementalRefreshTrades buildMarketData(MarketDataIncrementalRefreshTrades marketData) {
+    public static MarketDataIncrementalRefreshTrades buildMarketData(MarketDataIncrementalRefreshTrades marketData) {
         marketData.clearQuick()
                 .setTransactTime(1234L)
                 .setEventTimeDelta(987)
@@ -238,7 +221,7 @@ public class SbeThroughputBenchmarkQuickbuf {
         return marketData;
     }
 
-    static Car buildCarData(Car car) {
+    public static Car buildCarData(Car car) {
         car.clearQuick()
                 .setSerialNumber(12345)
                 .setModelYear(2005)

@@ -372,10 +372,13 @@ public class FieldGenerator {
     }
 
     protected void generateJsonSerializationCode(MethodSpec.Builder method) {
-        if (info.isEnum() && !info.isRepeated()) {
-            method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N, $type:T.converter())"));
+
+        if (info.isRepeated()) {
+            method.addStatement(named("output.writeRepeated$capitalizedType:L($fieldNames:T.$field:N, $field:N)"));
+        } else if (info.isEnum()) {
+            method.addStatement(named("output.write$capitalizedType:L($fieldNames:T.$field:N, $field:N, $type:T.converter())"));
         } else {
-            method.addStatement(named("output.writeField($jsonKeys:T.$field:N, $field:N)"));
+            method.addStatement(named("output.write$capitalizedType:L($fieldNames:T.$field:N, $field:N)"));
         }
     }
 
@@ -641,7 +644,7 @@ public class FieldGenerator {
             m.put("getRepeatedIndex_i", info.isPrimitive() || info.isEnum() ? "array()[i]" : "get(i)");
 
         // utility classes
-        m.put("jsonKeys", getInfo().getParentTypeInfo().getJsonKeysClass());
+        m.put("fieldNames", getInfo().getParentTypeInfo().getFieldNamesClass());
         m.put("abstractMessage", RuntimeClasses.AbstractMessage);
         m.put("protoSource", RuntimeClasses.ProtoSource);
         m.put("protoSink", RuntimeClasses.ProtoSink);

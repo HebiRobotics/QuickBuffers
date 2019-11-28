@@ -65,7 +65,7 @@ public class JsonBenchmark {
     }
 
     final JsonSink jsonSink = JsonSink.newInstance();
-    final byte[] key = "\"field\":" .getBytes();
+    final FieldName name = FieldName.forField("field");
     final StringBuilder asciiChars = new StringBuilder().append(
             "this is an ascii string that we can encode entirely in the fast path 0123456789" +
                     "this is an ascii string that we can encode entirely in the fast path 0123456789" +
@@ -111,43 +111,43 @@ public class JsonBenchmark {
 
     @Benchmark
     public int writeBase64() throws IOException {
-        jsonSink.clear().writeField(key, rndBytes);
+        jsonSink.clear().writeBytes(name, rndBytes);
         return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeStringAscii() throws IOException {
-        jsonSink.clear().writeField(key, asciiChars);
+        jsonSink.clear().writeString(name, asciiChars);
         return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeStringUtf8() throws IOException {
-        jsonSink.clear().writeField(key, utf8Chars);
+        jsonSink.clear().writeString(name, utf8Chars);
         return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeIntNumbers() throws IOException {
-        jsonSink.clear().writeField(key, rndInts);
+        jsonSink.clear().writeRepeatedInt32(name, rndInts);
         return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeLongNumbers() throws IOException {
-        jsonSink.clear().writeField(key, rndLongs);
+        jsonSink.clear().writeRepeatedInt64(name, rndLongs);
         return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeFloatNumbers() throws IOException {
-        jsonSink.clear().writeField(key, rndFloats);
+        jsonSink.clear().writeRepeatedFloat(name, rndFloats);
         return jsonSink.getBuffer().length();
     }
 
     @Benchmark
     public int writeDoubleNumbers() throws IOException {
-        jsonSink.clear().writeField(key, rndDoubles);
+        jsonSink.clear().writeRepeatedDouble(name, rndDoubles);
         return jsonSink.getBuffer().length();
     }
 

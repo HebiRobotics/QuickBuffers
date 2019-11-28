@@ -26,18 +26,19 @@ import us.hebi.quickbuf.JsonEncoding.Base64Encoding;
 import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
 import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
-import us.hebi.quickbuf.ProtoEnum.EnumConverter;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Prints proto messages in a JSON compatible format
+ * Json output using a custom encoder that does not require
+ * any intermediate memory allocations.
  *
  * @author Florian Enner
  * @since 26 Oct 2019
  */
-public class JsonSink {
+public class JsonSink extends AbstractJsonSink<JsonSink> {
 
     /**
      * Create a new {@code JsonSink} that writes directly to the
@@ -76,6 +77,14 @@ public class JsonSink {
                 .setWriteEnumStrings(true);
     }
 
+    // ==================== Extra API ====================
+
+    @Override
+    public JsonSink setWriteEnumStrings(boolean value) {
+        super.setWriteEnumStrings(value);
+        return this;
+    }
+
     /**
      * Changes the output to the given buffer
      *
@@ -86,6 +95,16 @@ public class JsonSink {
         if (output == null)
             throw new NullPointerException();
         this.output = output;
+        return this;
+    }
+
+    /**
+     * Clears the internal buffer
+     *
+     * @return this
+     */
+    public JsonSink clear() {
+        this.output.clear();
         return this;
     }
 
@@ -103,21 +122,6 @@ public class JsonSink {
     }
 
     /**
-     * Allows to serialize enums as human readable strings or
-     * as JSON numbers. Compatible parsers are able to parse
-     * either case.
-     *
-     * Unknown values will still be serialized as numbers.
-     *
-     * @param value true if values should use strings
-     * @return this
-     */
-    public JsonSink setWriteEnumStrings(boolean value) {
-        this.writeEnumStrings = value;
-        return this;
-    }
-
-    /**
      * Ensures that the underlying buffer can hold at least
      * the desired number of bytes.
      *
@@ -130,16 +134,6 @@ public class JsonSink {
     }
 
     /**
-     * Clears the internal buffer
-     *
-     * @return this
-     */
-    public JsonSink clear() {
-        this.output.clear();
-        return this;
-    }
-
-    /**
      * @return internal output buffer
      */
     public RepeatedByte getBuffer() {
@@ -147,184 +141,118 @@ public class JsonSink {
     }
 
     public JsonSink writeMessage(ProtoMessage value) {
-        value.writeTo(this);
+        try {
+            value.writeTo(this);
+        } catch (IOException e) {
+            IllegalStateException unexpected = new IllegalStateException("IOException while writing to memory");
+            unexpected.initCause(e);
+            throw unexpected;
+        }
         return this;
     }
 
-    public void writeField(byte[] key, boolean value) {
-        writeKey(key);
-        BooleanEncoding.writeBoolean(value, output);
-        writeMore();
-    }
+    // ==================== Encoding Implementations ====================
 
-    public void writeField(byte[] key, int value, EnumConverter converter) {
-        writeKey(key);
-        writeEnumValue(value, converter);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, int value) {
-        writeKey(key);
-        NumberEncoding.writeInt(value, output);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, long value) {
-        writeKey(key);
-        NumberEncoding.writeLong(value, output);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, float value) {
-        writeKey(key);
-        NumberEncoding.writeFloat(value, output);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, double value) {
-        writeKey(key);
-        NumberEncoding.writeDouble(value, output);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, ProtoMessage value) {
-        writeKey(key);
-        value.writeTo(this);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, StringBuilder value) {
-        writeKey(key);
-        StringEncoding.writeQuotedUtf8(value, output);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, Utf8String value) {
-        writeKey(key);
-        StringEncoding.writeQuotedUtf8(value, output);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, RepeatedByte value) {
-        writeKey(key);
-        Base64Encoding.writeQuotedBase64(value.array, value.length, output);
-        writeMore();
-    }
-
-    public void writeField(byte[] key, RepeatedBoolean value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            BooleanEncoding.writeBoolean(value.array[i], output);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedEnum value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            writeEnumValue(value.array[i], value.converter);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedInt value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            NumberEncoding.writeInt(value.array[i], output);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedLong value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            NumberEncoding.writeLong(value.array[i], output);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedFloat value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            NumberEncoding.writeFloat(value.array[i], output);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedDouble value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            NumberEncoding.writeDouble(value.array[i], output);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedMessage value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            writeMessage((ProtoMessage) value.array[i]);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedString value) {
-        writeArrayStart(key);
-        for (int i = 0; i < value.length; i++) {
-            StringEncoding.writeQuotedUtf8(value.array[i], output);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    public void writeField(byte[] key, RepeatedBytes values) {
-        writeArrayStart(key);
-        for (int i = 0; i < values.length; i++) {
-            final RepeatedByte value = values.get(i);
-            Base64Encoding.writeQuotedBase64(value.array, value.length, output);
-            writeMore();
-        }
-        writeArrayEnd();
-    }
-
-    protected void writeKey(byte[] key) {
+    @Override
+    protected void writeFieldName(final FieldName name) {
+        final byte[] key = name.asJsonKey();
         final int pos = output.addLength(key.length);
         System.arraycopy(key, 0, output.array, pos, key.length);
     }
 
-    public void writeObjectStart() {
+    @Override
+    protected void writeNumber(double value) {
+        NumberEncoding.writeDouble(value, output);
+        writeMore();
+    }
+
+    @Override
+    protected void writeNumber(float value) {
+        NumberEncoding.writeFloat(value, output);
+        writeMore();
+    }
+
+    @Override
+    protected void writeNumber(long value) {
+        NumberEncoding.writeLong(value, output);
+        writeMore();
+    }
+
+    @Override
+    protected void writeNumber(int value) {
+        NumberEncoding.writeInt(value, output);
+        writeMore();
+    }
+
+    @Override
+    protected void writeBoolean(boolean value) {
+        BooleanEncoding.writeBoolean(value, output);
+        writeMore();
+    }
+
+    @Override
+    protected void writeString(Utf8String value) {
+        StringEncoding.writeQuotedUtf8(value, output);
+        writeMore();
+    }
+
+    @Override
+    protected void writeString(CharSequence value) {
+        StringEncoding.writeQuotedUtf8(value, output);
+        writeMore();
+    }
+
+    @Override
+    protected void writeBinary(RepeatedByte value) {
+        Base64Encoding.writeQuotedBase64(value.array, value.length, output);
+        writeMore();
+    }
+
+    @Override
+    public void writeMessageValue(ProtoMessage value) throws IOException {
+        value.writeTo(this);
+        writeMore();
+    }
+
+    @Override
+    public JsonSink beginObject() {
         writeChar('{');
         indentLevel++;
         writeNewline();
+        return this;
     }
 
-    public void writeObjectEnd() {
+    @Override
+    public JsonSink endObject() {
         indentLevel--;
         removeTrailingComma();
         writeNewline();
         writeChar('}');
+        return this;
     }
 
-    protected void writeArrayStart(byte[] key) {
-        writeKey(key);
+    @Override
+    protected void beginArray() {
         writeChar('[');
         indentLevel++;
         writeNewline();
     }
 
-    protected void writeArrayEnd() {
+    @Override
+    protected void endArray() {
         removeTrailingComma();
         indentLevel--;
         writeNewline();
         writeChar(']');
         writeMore();
     }
+
+    @Override
+    protected JsonSink thisObj() {
+        return this;
+    }
+
+    // ==================== Utilities ====================
 
     private final void writeMore() {
         final int pos = output.length;
@@ -333,16 +261,7 @@ public class JsonSink {
         trailingSpace = output.length - pos;
     }
 
-    private void writeEnumValue(int number, EnumConverter converter) {
-        final ProtoEnum value;
-        if (writeEnumStrings && (value = converter.forNumber(number)) != null) {
-            StringEncoding.writeQuotedUtf8(value.getName(), output);
-        } else {
-            NumberEncoding.writeInt(number, output);
-        }
-    }
-
-    protected void removeTrailingComma() {
+    private void removeTrailingComma() {
         // Called after at least one character, so no need to check bounds
         output.length -= trailingSpace;
         trailingSpace = 0;
@@ -374,6 +293,5 @@ public class JsonSink {
     protected int indentLevel = 0;
     protected int indentCount = 0;
     protected int trailingSpace = 0;
-    protected boolean writeEnumStrings = false;
 
 }
