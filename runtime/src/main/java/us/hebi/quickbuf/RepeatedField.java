@@ -22,11 +22,13 @@
 
 package us.hebi.quickbuf;
 
+import java.util.Iterator;
+
 /**
  * @author Florian Enner
  * @since 10 Aug 2019
  */
-abstract class RepeatedField<RepeatedType extends RepeatedField> {
+abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> implements Iterable<GenericType> {
 
     public final int length() {
         return length;
@@ -34,6 +36,34 @@ abstract class RepeatedField<RepeatedType extends RepeatedField> {
 
     public final int remainingCapacity() {
         return capacity() - length;
+    }
+
+    protected abstract GenericType getValueAt(int index);
+
+    @Override
+    public GenericIterator iterator() {
+        return new GenericIterator(length);
+    }
+
+    class GenericIterator implements Iterator<GenericType> {
+
+        GenericIterator(int maxLength) {
+            this.maxLength = maxLength;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return position < maxLength;
+        }
+
+        @Override
+        public GenericType next() {
+            return getValueAt(position++);
+        }
+
+        private int position = 0;
+        private final int maxLength;
+
     }
 
     /**

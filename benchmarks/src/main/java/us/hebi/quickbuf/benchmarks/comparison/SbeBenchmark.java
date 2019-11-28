@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -51,16 +51,16 @@ import java.util.concurrent.TimeUnit;
  *
  * === QuickBuffers (Unsafe) ===
  * Benchmark                                Mode  Cnt   Score    Error  Units
- * SbeBenchmark.carUnsafeRoboRead           avgt   10  33.602 ± 0.568  ms/op
- * SbeBenchmark.carUnsafeRoboReadReadWrite  avgt   10  56.860 ± 1.176  ms/op
- * SbeBenchmark.marketUnsafeRoboRead        avgt   10  25.022 ± 1.249  ms/op
- * SbeBenchmark.marketUnsafeRoboReadWrite   avgt   10  41.227 ± 0.612  ms/op
+ * SbeBenchmark.carUnsafeQuickRead           avgt   10  30.661 ± 2.892  ms/op
+ * SbeBenchmark.carUnsafeQuickReadReadWrite  avgt   10  47.498 ± 2.198  ms/op
+ * SbeBenchmark.marketUnsafeQuickRead        avgt   10  21.946 ± 0.997  ms/op
+ * SbeBenchmark.marketUnsafeQuickReadWrite   avgt   10  35.220 ± 1.000  ms/op
  *
  * === QuickBuffers (Safe) ===
- * SbeBenchmark.carRoboRead                    avgt   10   44.306 ±  1.814  ms/op -- 226 MB/s
- * SbeBenchmark.carRoboReadWrite               avgt   10   72.673 ±  3.227  ms/op -- 138 MB/s
- * SbeBenchmark.marketRoboRead                 avgt   10   28.309 ±  0.242  ms/op -- 353 MB/s
- * SbeBenchmark.marketRoboReadWrite            avgt   10   51.189 ±  0.979  ms/op -- 196 MB/s
+ * SbeBenchmark.carQuickRead          avgt   10  35.540 ± 2.008  ms/op
+ * SbeBenchmark.carQuickReadWrite     avgt   10  55.914 ± 3.173  ms/op
+ * SbeBenchmark.marketQuickRead       avgt   10  21.027 ± 0.871  ms/op
+ * SbeBenchmark.marketQuickReadWrite  avgt   10  38.426 ± 0.743  ms/op
  *
  * === Protobuf-Java
  * Benchmark                          Mode  Cnt   Score    Error  Units
@@ -129,44 +129,44 @@ public class SbeBenchmark {
 
     // ===================== UNSAFE OPTION DISABLED (e.g. Android) =====================
     @Benchmark
-    public int marketRoboRead() throws IOException {
-        return readRobo(source.wrap(marketDataMessages), marketMsg);
+    public int marketQuickRead() throws IOException {
+        return readQuick(source.wrap(marketDataMessages), marketMsg);
     }
 
     @Benchmark
-    public int marketRoboReadWrite() throws IOException {
-        return readWriteRobo(source.wrap(marketDataMessages), marketMsg, sink.wrap(output));
+    public int marketQuickReadWrite() throws IOException {
+        return readWriteQuick(source.wrap(marketDataMessages), marketMsg, sink.wrap(output));
     }
 
     @Benchmark
-    public int carRoboRead() throws IOException {
-        return readRobo(source.wrap(carDataMessages), carMsg);
+    public int carQuickRead() throws IOException {
+        return readQuick(source.wrap(carDataMessages), carMsg);
     }
 
     @Benchmark
-    public int carRoboReadWrite() throws IOException {
-        return readWriteRobo(source.wrap(carDataMessages), carMsg, sink.wrap(output));
+    public int carQuickReadWrite() throws IOException {
+        return readWriteQuick(source.wrap(carDataMessages), carMsg, sink.wrap(output));
     }
 
     // ===================== UNSAFE OPTION ENABLED =====================
     @Benchmark
-    public int marketUnsafeRoboRead() throws IOException {
-        return readRobo(unsafeSource.wrap(marketDataMessages), marketMsg);
+    public int marketUnsafeQuickRead() throws IOException {
+        return readQuick(unsafeSource.wrap(marketDataMessages), marketMsg);
     }
 
     @Benchmark
-    public int marketUnsafeRoboReadWrite() throws IOException {
-        return readWriteRobo(unsafeSource.wrap(marketDataMessages), marketMsg, unsafeSink.wrap(output));
+    public int marketUnsafeQuickReadWrite() throws IOException {
+        return readWriteQuick(unsafeSource.wrap(marketDataMessages), marketMsg, unsafeSink.wrap(output));
     }
 
     @Benchmark
-    public int carUnsafeRoboRead() throws IOException {
-        return readRobo(unsafeSource.wrap(carDataMessages), carMsg);
+    public int carUnsafeQuickRead() throws IOException {
+        return readQuick(unsafeSource.wrap(carDataMessages), carMsg);
     }
 
     @Benchmark
-    public int carUnsafeRoboReadReadWrite() throws IOException {
-        return readWriteRobo(unsafeSource.wrap(carDataMessages), carMsg, unsafeSink.wrap(output));
+    public int carUnsafeQuickReadReadWrite() throws IOException {
+        return readWriteQuick(unsafeSource.wrap(carDataMessages), carMsg, unsafeSink.wrap(output));
     }
 
     // ===================== STOCK PROTOBUF =====================
@@ -191,7 +191,7 @@ public class SbeBenchmark {
     }
 
     // ===================== UTIL METHODS =====================
-    static int readRobo(final ProtoSource source, final ProtoMessage message) throws IOException {
+    static int readQuick(final ProtoSource source, final ProtoMessage message) throws IOException {
         while (!source.isAtEnd()) {
             final int length = source.readRawVarint32();
             int limit = source.pushLimit(length);
@@ -201,17 +201,11 @@ public class SbeBenchmark {
         return source.getPosition();
     }
 
-    static int readWriteRobo(final ProtoSource source, final ProtoMessage message, final ProtoSink sink) throws IOException {
+    static int readWriteQuick(final ProtoSource source, final ProtoMessage message, final ProtoSink sink) throws IOException {
         while (!source.isAtEnd()) {
-            // read delimited
-            final int length = source.readRawVarint32();
-            int limit = source.pushLimit(length);
-            message.clearQuick().mergeFrom(source);
-            source.popLimit(limit);
-
-            // write delimited
-            sink.writeRawVarint32(message.getSerializedSize());
-            message.writeTo(sink);
+            // read/write delimited
+            source.readMessage(message.clearQuick());
+            sink.writeMessageNoTag(message);
         }
         return sink.position();
     }

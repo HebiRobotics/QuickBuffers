@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -74,8 +74,6 @@ import static us.hebi.quickbuf.WireFormat.*;
  * @author Florian Enner
  */
 public abstract class ProtoSink {
-    /* max bytes per java UTF-16 char in UTF-8 */
-    protected static final int MAX_UTF8_EXPANSION = 3;
 
     protected ProtoSink() {
     }
@@ -473,6 +471,13 @@ public abstract class ProtoSink {
     }
 
     /** Write a {@code string} field to the sink. */
+    public void writeStringNoTag(final Utf8String value) throws IOException {
+        final int length = value.size();
+        writeRawVarint32(length);
+        writeRawBytes(value.bytes(), 0, length);
+    }
+
+    /** Write a {@code string} field to the sink. */
     public abstract void writeStringNoTag(final CharSequence value) throws IOException;
 
     /** Write a {@code group} field to the sink. */
@@ -689,7 +694,7 @@ public abstract class ProtoSink {
      * {@code double} field, including tag.
      */
     public static int computeDoubleSizeNoTag(final double value) {
-        return LITTLE_ENDIAN_64_SIZE;
+        return SIZEOF_FIXED_64;
     }
 
     /**
@@ -697,7 +702,7 @@ public abstract class ProtoSink {
      * {@code float} field, including tag.
      */
     public static int computeFloatSizeNoTag(final float value) {
-        return LITTLE_ENDIAN_32_SIZE;
+        return SIZEOF_FIXED_32;
     }
 
     /**
@@ -734,7 +739,7 @@ public abstract class ProtoSink {
      * {@code fixed64} field.
      */
     public static int computeFixed64SizeNoTag(final long value) {
-        return LITTLE_ENDIAN_64_SIZE;
+        return SIZEOF_FIXED_64;
     }
 
     /**
@@ -742,7 +747,7 @@ public abstract class ProtoSink {
      * {@code fixed32} field.
      */
     public static int computeFixed32SizeNoTag(final int value) {
-        return LITTLE_ENDIAN_32_SIZE;
+        return SIZEOF_FIXED_32;
     }
 
     /**
@@ -751,6 +756,15 @@ public abstract class ProtoSink {
      */
     public static int computeBoolSizeNoTag(final boolean value) {
         return 1;
+    }
+
+    /**
+     * Compute the number of bytes that would be needed to encode a
+     * {@code string} field.
+     */
+    public static int computeStringSizeNoTag(final Utf8String value) {
+        final int length = value.size();
+        return computeRawVarint32Size(length) + length;
     }
 
     /**
@@ -808,7 +822,7 @@ public abstract class ProtoSink {
      * {@code sfixed32} field.
      */
     public static int computeSFixed32SizeNoTag(final int value) {
-        return LITTLE_ENDIAN_32_SIZE;
+        return SIZEOF_FIXED_32;
     }
 
     /**
@@ -816,7 +830,7 @@ public abstract class ProtoSink {
      * {@code sfixed64} field.
      */
     public static int computeSFixed64SizeNoTag(final long value) {
-        return LITTLE_ENDIAN_64_SIZE;
+        return SIZEOF_FIXED_64;
     }
 
     /**
@@ -898,7 +912,12 @@ public abstract class ProtoSink {
     }
 
     /** Write part of an array of bytes. */
-    public abstract void writeRawBytes(final byte[] value, int offset, int length) throws IOException;
+    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
+        final int limit = offset + length;
+        for (int i = offset; i < limit; i++) {
+            writeRawByte(value[i]);
+        }
+    }
 
     /** Encode and write a tag. */
     public void writeTag(final int fieldNumber, final int wireType) throws IOException {
@@ -917,10 +936,10 @@ public abstract class ProtoSink {
     public void writeRawVarint32(int value) throws IOException {
         while (true) {
             if ((value & ~0x7F) == 0) {
-                writeRawByte(value);
+                writeRawByte((byte) value);
                 return;
             } else {
-                writeRawByte((value & 0x7F) | 0x80);
+                writeRawByte((byte) (value | 0x80));
                 value >>>= 7;
             }
         }
@@ -943,53 +962,64 @@ public abstract class ProtoSink {
     public void writeRawVarint64(long value) throws IOException {
         while (true) {
             if ((value & ~0x7FL) == 0) {
-                writeRawByte((int) value);
+                writeRawByte((byte) value);
                 return;
             } else {
-                writeRawByte(((int) value & 0x7F) | 0x80);
+                writeRawByte((((int) value) | 0x80));
                 value >>>= 7;
             }
         }
     }
 
     /** Compute the number of bytes that would be needed to encode a varint. */
-    public static int computeRawVarint64Size(final long value) {
-        if ((value & (0xffffffffffffffffL << 7)) == 0) return 1;
-        if ((value & (0xffffffffffffffffL << 14)) == 0) return 2;
-        if ((value & (0xffffffffffffffffL << 21)) == 0) return 3;
-        if ((value & (0xffffffffffffffffL << 28)) == 0) return 4;
-        if ((value & (0xffffffffffffffffL << 35)) == 0) return 5;
-        if ((value & (0xffffffffffffffffL << 42)) == 0) return 6;
-        if ((value & (0xffffffffffffffffL << 49)) == 0) return 7;
-        if ((value & (0xffffffffffffffffL << 56)) == 0) return 8;
-        if ((value & (0xffffffffffffffffL << 63)) == 0) return 9;
-        return 10;
+    public static int computeRawVarint64Size(long value) {
+        // handle two popular special cases up front ...
+        if ((value & (~0L << 7)) == 0L) {
+            return 1;
+        }
+        if (value < 0L) {
+            return 10;
+        }
+        // ... leaving us with 8 remaining, which we can divide and conquer
+        int n = 2;
+        if ((value & (~0L << 35)) != 0L) {
+            n += 4;
+            value >>>= 28;
+        }
+        if ((value & (~0L << 21)) != 0L) {
+            n += 2;
+            value >>>= 14;
+        }
+        if ((value & (~0L << 14)) != 0L) {
+            n += 1;
+        }
+        return n;
     }
 
     /** Write a little-endian 16-bit integer. */
     public void writeRawLittleEndian16(final short value) throws IOException {
-        writeRawByte((byte) ((value) & 0xFF));
-        writeRawByte((byte) ((value >> 8) & 0xFF));
+        writeRawByte((byte) (value & 0xFF));
+        writeRawByte((byte) (value >>> 8));
     }
 
     /** Write a little-endian 32-bit integer. */
     public void writeRawLittleEndian32(final int value) throws IOException {
-        writeRawByte((byte) ((value) & 0xFF));
-        writeRawByte((byte) ((value >> 8) & 0xFF));
-        writeRawByte((byte) ((value >> 16) & 0xFF));
-        writeRawByte((byte) ((value >> 24) & 0xFF));
+        writeRawByte((byte) (value & 0xFF));
+        writeRawByte((byte) (value >>> 8));
+        writeRawByte((byte) (value >>> 16));
+        writeRawByte((byte) (value >>> 24));
     }
 
     /** Write a little-endian 64-bit integer. */
     public void writeRawLittleEndian64(final long value) throws IOException {
-        writeRawByte((byte) ((value) & 0xFF));
-        writeRawByte((byte) ((value >> 8) & 0xFF));
-        writeRawByte((byte) ((value >> 16) & 0xFF));
-        writeRawByte((byte) ((value >> 24) & 0xFF));
-        writeRawByte((byte) ((value >> 32) & 0xFF));
-        writeRawByte((byte) ((value >> 40) & 0xFF));
-        writeRawByte((byte) ((value >> 48) & 0xFF));
-        writeRawByte((byte) ((value >> 56) & 0xFF));
+        writeRawByte((byte) (value & 0xFF));
+        writeRawByte((byte) (value >>> 8));
+        writeRawByte((byte) (value >>> 16));
+        writeRawByte((byte) (value >>> 24));
+        writeRawByte((byte) (value >>> 32));
+        writeRawByte((byte) (value >>> 40));
+        writeRawByte((byte) (value >>> 48));
+        writeRawByte((byte) (value >>> 56));
     }
 
     /**

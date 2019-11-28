@@ -102,6 +102,7 @@ public class RepeatedWriteBenchmark {
 
     @Setup(Level.Trial)
     public void setupData() {
+        rnd.setSeed(0);
         msg.clear();
         for (int i = 0; i < doubleArray.length; i++) {
             doubleArray[i] = rnd.nextDouble();

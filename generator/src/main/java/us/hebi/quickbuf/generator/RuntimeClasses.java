@@ -40,15 +40,17 @@ class RuntimeClasses {
     static final ClassName ProtoUtil = ClassName.get(API_PACKAGE, "ProtoUtil");
     static final ClassName AbstractMessage = ClassName.get(API_PACKAGE, "ProtoMessage");
     static final ClassName MessageFactory = ClassName.get(API_PACKAGE, "MessageFactory");
-    static final ClassName StringType = ClassName.get(StringBuilder.class);
+    static final ClassName StringType = ClassName.get(API_PACKAGE,"Utf8String");
+    static final ClassName Utf8Decoder = ClassName.get(API_PACKAGE,"Utf8Decoder");
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");
-    public static ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
-    public static ClassName JsonSink = ClassName.get(API_PACKAGE, "JsonSink");
-    public static ClassName ProtoEnum = ClassName.get(API_PACKAGE, "ProtoEnum");
-    public static ClassName EnumConverter = ProtoEnum.nestedClass("EnumConverter");
+    static final ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
+    static final ClassName JsonSink = ClassName.get(API_PACKAGE, "AbstractJsonSink");
+    static final ClassName FieldName = ClassName.get(API_PACKAGE, "FieldName");
+    static final ClassName ProtoEnum = ClassName.get(API_PACKAGE, "ProtoEnum");
+    static final ClassName EnumConverter = ProtoEnum.nestedClass("EnumConverter");
 
     static final String unknownBytesField = "unknownBytes";
-    static final String unknownBytesKey = "unknownBytesJsonKey";
+    static final String unknownBytesFieldName = "unknownBytesFieldName";
 
     private static final ClassName RepeatedDouble = ClassName.get(API_PACKAGE, "RepeatedDouble");
     private static final ClassName RepeatedFloat = ClassName.get(API_PACKAGE, "RepeatedFloat");

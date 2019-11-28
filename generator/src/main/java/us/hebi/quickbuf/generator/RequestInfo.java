@@ -213,7 +213,7 @@ public class RequestInfo {
         protected TypeInfo(FileInfo parentFile, String parentTypeId, ClassName parentType, boolean isNested, String name) {
             this.parentFile = parentFile;
             this.typeName = isNested ? parentType.nestedClass(name) : parentType.peerClass(name);
-            this.jsonKeysClass = this.typeName.nestedClass("JsonKeys");
+            this.fieldNamesClass = this.typeName.nestedClass("FieldNames");
             this.typeId = parentTypeId + "." + name;
             this.isNested = isNested;
         }
@@ -222,7 +222,7 @@ public class RequestInfo {
         protected final boolean isNested;
         protected final String typeId;
         protected final ClassName typeName;
-        protected final ClassName jsonKeysClass;
+        protected final ClassName fieldNamesClass;
 
     }
 
@@ -251,7 +251,7 @@ public class RequestInfo {
             int bitIndex = 0;
             Map<FieldDescriptorProto, Integer> bitIndices = new HashMap<>();
             for (FieldDescriptorProto desc : sortedFields.stream()
-                    .sorted(FieldUtil.GroupOneOfFields)
+                    .sorted(FieldUtil.GroupOneOfAndRequiredBits)
                     .collect(Collectors.toList())) {
                 bitIndices.put(desc, bitIndex++);
             }
@@ -425,7 +425,7 @@ public class RequestInfo {
         }
 
         public boolean hasDefaultValue() {
-            return !defaultValue.isEmpty();
+            return descriptor.hasDefaultValue();
         }
 
         public boolean isDeprecated() {

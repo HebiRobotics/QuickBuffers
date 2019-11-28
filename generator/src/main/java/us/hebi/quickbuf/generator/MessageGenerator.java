@@ -83,8 +83,6 @@ class MessageGenerator {
         type.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
                 .addStatement("super($L)", info.isStoreUnknownFields())
-                .addStatement("$L", BitField.setBit(0)) // dummy for triggering clear
-                .addStatement("clear()")
                 .build());
 
         // Member state (the first bitfield is in the parent class)
@@ -113,7 +111,7 @@ class MessageGenerator {
         // Static utilities
         generateParseFrom(type);
         generateMessageFactory(type);
-        generateJsonKeys(type);
+        generateJsonFieldNames(type);
         type.addField(FieldSpec.builder(TypeName.LONG, "serialVersionUID")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
                 .initializer("0L")
@@ -469,7 +467,8 @@ class MessageGenerator {
                 .addAnnotation(Override.class)
                 .addParameter(RuntimeClasses.JsonSink, "output", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
-                .addStatement("output.writeObjectStart()");
+                .addException(IOException.class)
+                .addStatement("output.beginObject()");
 
         // add every set field
         for (FieldGenerator field : fields) {
@@ -482,11 +481,11 @@ class MessageGenerator {
         if (info.isStoreUnknownFields()) {
             writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
-                    .addStatement(named("output.writeField($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
+                    .addStatement(named("output.writeBytes($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
                     .endControlFlow();
         }
 
-        writeTo.addStatement("output.writeObjectEnd()");
+        writeTo.addStatement("output.endObject()");
         type.addMethod(writeTo.build());
     }
 
@@ -518,26 +517,18 @@ class MessageGenerator {
 
     }
 
-    private void generateJsonKeys(TypeSpec.Builder type) {
-        TypeSpec.Builder keysClass = TypeSpec.classBuilder(info.getJsonKeysClass().simpleName())
+    private void generateJsonFieldNames(TypeSpec.Builder type) {
+        TypeSpec.Builder fieldNamesClass = TypeSpec.classBuilder(info.getFieldNamesClass().simpleName())
+                .addJavadoc("Contains name constants used for serializing JSON\n")
                 .addModifiers(Modifier.STATIC);
 
         fields.forEach(f -> {
-            String jsonName = f.getInfo().getPrimaryJsonName();
-            CodeBlock.Builder initializer = CodeBlock.builder();
-            initializer.add("{'$L'", "\\\"");
-            for (int i = 0; i < jsonName.length(); i++) {
-                initializer.add(", '$L'", jsonName.charAt(i));
-            }
-            initializer.add(", '$L', ':'}", "\\\"");
-
-            FieldSpec fieldSpec = FieldSpec.builder(byte[].class, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL)
-                    .initializer(initializer.build())
-                    .build();
-            keysClass.addField(fieldSpec);
+            fieldNamesClass.addField(FieldSpec.builder(RuntimeClasses.FieldName, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL)
+                    .initializer("$T.forField($S)", RuntimeClasses.FieldName, f.getInfo().getPrimaryJsonName())
+                    .build());
         });
 
-        type.addType(keysClass.build());
+        type.addType(fieldNamesClass.build());
     }
 
     MessageGenerator(MessageInfo info) {
@@ -547,7 +538,7 @@ class MessageGenerator {
 
         m.put("abstractMessage", RuntimeClasses.AbstractMessage);
         m.put("unknownBytes", RuntimeClasses.unknownBytesField);
-        m.put("unknownBytesKey", RuntimeClasses.unknownBytesKey);
+        m.put("unknownBytesKey", RuntimeClasses.unknownBytesFieldName);
     }
 
     final MessageInfo info;

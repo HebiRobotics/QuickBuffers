@@ -51,14 +51,14 @@ import java.util.concurrent.TimeUnit;
  * BenchRunner.flatHeapEncode               avgt   10  0.821 ± 0.011  us/op
  *
  * === Unsafe Sink
- * BenchRunner.quickbufDecode                   avgt   10  0.292 ± 0.021  us/op
- * BenchRunner.quickbufDecodeAndTraverse        avgt   10  0.309 ± 0.011  us/op
- * BenchRunner.quickbufEncode                   avgt   10  0.312 ± 0.011  us/op
+ * BenchRunner.quickbufDecode             avgt   10  0.177 ± 0.008  us/op
+ * BenchRunner.quickbufDecodeAndTraverse  avgt   10  0.302 ± 0.006  us/op
+ * BenchRunner.quickbufEncode             avgt   10  0.221 ± 0.004  us/op
  *
  * === Heap Sink
- * BenchRunner.quickbufDecode                   avgt   10  0.379 ± 0.031  us/op
- * BenchRunner.quickbufDecodeAndTraverse        avgt   10  0.408 ± 0.034  us/op
- * BenchRunner.quickbufEncode                   avgt   10  0.334 ± 0.018  us/op
+ * BenchRunner.quickbufDecode             avgt   10  0.213 ± 0.007  us/op
+ * BenchRunner.quickbufDecodeAndTraverse  avgt   10  0.346 ± 0.008  us/op
+ * BenchRunner.quickbufEncode             avgt   10  0.268 ± 0.002  us/op
  *
  * @author Florian Enner
  * @since 23 Jan 2015
@@ -82,7 +82,7 @@ public class BenchRunner {
     public BenchRunner() {
         flatbuffers.encode(heapDecodeBuffer);
         flatbuffers.encode(directDecodeBuffer);
-        this.position = heapDecodeBuffer.position();
+        position = heapDecodeBuffer.position();
     }
 
     FlatBuffersBench flatbuffers = new FlatBuffersBench();
@@ -122,11 +122,6 @@ public class BenchRunner {
     @Benchmark
     public Object quickbufDecode() {
         return quickbuffers.decode();
-    }
-
-    @Benchmark
-    public long quickbufTraverse() {
-        return quickbuffers.traverse(quickbufMsg);
     }
 
     @Benchmark

@@ -42,12 +42,12 @@ import java.util.concurrent.TimeUnit;
  *
  * === QuickBuffers (Unsafe) ===
  * Benchmark                              Mode  Cnt    Score    Error  Units
- * PackedDoublesBenchmark.readRobo        avgt   10    9.791 ±  0.331  ms/op -- 6.5 GB/s
- * PackedDoublesBenchmark.readWriteRobo   avgt   10   16.167 ±  0.726  ms/op --
+ * PackedDoublesBenchmark.readQuick       avgt   10   7.061 ± 0.167  ms/op
+ * PackedDoublesBenchmark.readWriteQuick  avgt   10  13.618 ± 0.337  ms/op
  *
  * === QuickBuffers (Safe) ===
- * PackedDoublesBenchmark.readRobo       avgt   10  44.434 ± 0.928  ms/op -- 1.5 GB/s
- * PackedDoublesBenchmark.readWriteRobo  avgt   10  89.855 ± 3.870  ms/op --
+ * PackedDoublesBenchmark.readQuick       avgt   10  29.202 ± 0.397  ms/op
+ * PackedDoublesBenchmark.readWriteQuick  avgt   10  74.527 ± 1.353  ms/op
  *
  * === Java (Some Unsafe) ===
  * PackedDoublesBenchmark.readProto       avgt   10  103.989 ± 37.389  ms/op
@@ -85,13 +85,13 @@ public class PackedDoublesBenchmark {
     final Packed message = Packed.newInstance();
 
     @Benchmark
-    public Object readRobo() throws IOException {
+    public Object readQuick() throws IOException {
         source.wrap(input);
         return message.clear().mergeFrom(source);
     }
 
     @Benchmark
-    public int readWriteRobo() throws IOException {
+    public int readWriteQuick() throws IOException {
         message.clear().mergeFrom(source.wrap(input)).writeTo(sink.wrap(output));
         return sink.position();
     }

@@ -30,10 +30,14 @@ import java.util.Arrays;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
+public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
 
     public static RepeatedFloat newEmptyInstance() {
         return new RepeatedFloat();
+    }
+
+    public static RepeatedFloat newInstance(float[] initialValue) {
+        return newEmptyInstance().copyFrom(initialValue);
     }
 
     RepeatedFloat() {
@@ -44,6 +48,11 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat> {
         final float[] newValues = new float[desiredSize];
         System.arraycopy(array, 0, newValues, 0, length);
         this.array = newValues;
+    }
+
+    @Override
+    protected Float getValueAt(int index) {
+        return get(index);
     }
 
     public float get(int index) {

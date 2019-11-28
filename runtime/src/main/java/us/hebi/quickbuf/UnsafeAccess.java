@@ -35,11 +35,11 @@ import java.security.PrivilegedExceptionAction;
  */
 class UnsafeAccess {
 
-    public static boolean isAvailable() {
+    static boolean isAvailable() {
         return UNSAFE != null;
     }
 
-    public static boolean isCopyMemoryAvailable(){
+    static boolean isCopyMemoryAvailable() {
         // copy memory (obj, long, obj, long, long) is @since 1.7
         return isAvailable() && javaVersion >= 7;
     }
@@ -85,14 +85,14 @@ class UnsafeAccess {
         LONG_ARRAY_OFFSET = longArrayOffset;
     }
 
-    final static ByteOrder NATIVE_ORDER = ByteOrder.nativeOrder();
-    final static Unsafe UNSAFE;
-    final static long BYTE_ARRAY_OFFSET;
-    final static long BOOLEAN_ARRAY_OFFSET;
-    final static long FLOAT_ARRAY_OFFSET;
-    final static long INT_ARRAY_OFFSET;
-    final static long DOUBLE_ARRAY_OFFSET;
-    final static long LONG_ARRAY_OFFSET;
+    static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+    static final Unsafe UNSAFE;
+    static final long BYTE_ARRAY_OFFSET;
+    static final long BOOLEAN_ARRAY_OFFSET;
+    static final long FLOAT_ARRAY_OFFSET;
+    static final long INT_ARRAY_OFFSET;
+    static final long DOUBLE_ARRAY_OFFSET;
+    static final long LONG_ARRAY_OFFSET;
 
 
     // Move this into a separate utility class if anything else should ever

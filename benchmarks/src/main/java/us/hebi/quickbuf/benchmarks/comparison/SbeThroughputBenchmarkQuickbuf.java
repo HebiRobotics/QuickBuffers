@@ -31,6 +31,7 @@ import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.quickbuf.Examples;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix;
+import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
 import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
@@ -41,28 +42,28 @@ import java.util.concurrent.TimeUnit;
 /**
  * === Quickbuf (JDK8 unsafe)
  * Benchmark                                     Mode  Cnt     Score     Error   Units
- * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2059.416 ±  76.329  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2858.469 ±  40.052  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  6196.707 ± 132.391  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8440.097 ± 132.906  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2175.096 ±  39.897  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3940.677 ±  81.755  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   7647.549 ± 260.050  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  12695.215 ± 185.013  ops/ms
  *
  * === Quickbuf (JDK8 no unsafe)
- * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  1857.434 ±  69.348  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2688.618 ± 119.564  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  6611.062 ± 185.162  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8132.255 ±  79.923  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   1902.791 ± 101.543  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3608.368 ±  83.677  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   8368.567 ± 205.855  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  11791.775 ± 420.490  ops/ms
  *
  * == Quickbuf (JDK13 unsafe)
- * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2065.952 ±  72.137  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2808.291 ±  47.251  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  7235.390 ± 234.589  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8163.815 ± 122.698  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2160.508 ±  95.135  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3648.551 ±  57.977  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   9361.098 ±  38.584  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  13176.648 ± 343.073  ops/ms
  *
  * == Quickbuf (JDK13 no unsafe)
- * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   10  2202.553 ± 116.821  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   10  2538.979 ±  56.068  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   10  7522.434 ± 119.982  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   10  8088.595 ±  94.757  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2329.465 ±  90.888  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3410.025 ±  59.886  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   9805.340 ± 138.477  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  12319.570 ± 222.686  ops/ms
  *
  * === JSON (JDK8)
  * Benchmark                                         Mode  Cnt     Score    Error   Units
@@ -70,8 +71,8 @@ import java.util.concurrent.TimeUnit;
  * SbeThroughputBenchmarkRobo.testMarketEncodeJson  thrpt   10  3284.856 ± 72.124  ops/ms
  *
  * === JSON (JDK13)
- * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10  1514.938 ± 29.468  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10  3337.626 ± 56.037  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10   1599.151 ±   18.887  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10   3690.897 ±   46.368  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019
@@ -92,7 +93,7 @@ public class SbeThroughputBenchmarkQuickbuf {
         new Runner(options).run();
     }
 
-    final Fix.MarketDataIncrementalRefreshTrades marketData = Fix.MarketDataIncrementalRefreshTrades.newInstance();
+    final MarketDataIncrementalRefreshTrades marketData = MarketDataIncrementalRefreshTrades.newInstance();
     final byte[] marketDecodeBuffer = buildMarketData(marketData).toByteArray();
     final Car car = Car.newInstance();
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
@@ -101,22 +102,73 @@ public class SbeThroughputBenchmarkQuickbuf {
     final ProtoSource source = ProtoSource.newInstance();
     final ProtoSink sink = ProtoSink.newInstance();
 
-    final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
+    final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());
+    final Car carFast = buildCarData(Car.newInstance());
 
+    {
+        // pre-compute size so we can copy the cached size in copyFrom
+        marketDataFast.getSerializedSize();
+        carFast.getSerializedSize();
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
     @Benchmark
-    public int testMarketEncodeJson() throws IOException {
-        return jsonSink.clear()
-                .writeMessage(buildMarketData(marketData))
-                .getBuffer()
-                .length();
+    public int testMarketComputeSizeOnly() throws IOException {
+        return marketDataFast.getSerializedSize();
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public int testCarComputeSizeOnly() throws IOException {
+        return carFast.getSerializedSize();
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public int testMarketWriteOnly() throws IOException {
+        sink.wrap(encodeBuffer);
+        marketDataFast.writeTo(sink);
+        return sink.position();
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public Object testMarketBuildOnly() throws IOException {
+        return buildMarketData(marketDataFast);
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public Object testCarBuildOnly() throws IOException {
+        return buildCarData(carFast);
+    }
+
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark
+    public int testCarWriteOnly() throws IOException {
+        sink.wrap(encodeBuffer);
+        carFast.writeTo(sink);
+        return sink.position();
     }
 
     @Benchmark
-    public int testCarEncodeJson() throws IOException {
-        return jsonSink.clear()
-                .writeMessage(buildCarData(car))
-                .getBuffer()
-                .length();
+    public int testMarketEncodeFast() throws IOException { // no size computation
+        sink.wrap(encodeBuffer);
+        marketData.copyFrom(marketDataFast).writeTo(sink);
+        return sink.position();
+    }
+
+    @Benchmark
+    public int testCarEncodeFast() throws IOException { // no size computation
+        sink.wrap(encodeBuffer);
+        car.copyFrom(carFast).writeTo(sink);
+        return sink.position();
     }
 
     @Benchmark
@@ -145,11 +197,11 @@ public class SbeThroughputBenchmarkQuickbuf {
         return car.clearQuick().mergeFrom(source);
     }
 
-    static Fix.MarketDataIncrementalRefreshTrades buildMarketData(Fix.MarketDataIncrementalRefreshTrades marketData) {
+    public static MarketDataIncrementalRefreshTrades buildMarketData(MarketDataIncrementalRefreshTrades marketData) {
         marketData.clearQuick()
                 .setTransactTime(1234L)
                 .setEventTimeDelta(987)
-                .setMatchEventIndicatorNumber(Fix.MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
+                .setMatchEventIndicatorValue(MarketDataIncrementalRefreshTrades.MatchEventIndicator.END_EVENT_VALUE);
 
         for (int i = 0; i < 2; i++) {
 
@@ -158,9 +210,9 @@ public class SbeThroughputBenchmarkQuickbuf {
                     .setSecurityId(56789L)
                     .setNumberOfOrders(1)
                     .setRepSeq(1)
-                    .setMdUpdateActionNumber(Fix.MdIncGrp.MdUpdateAction.NEW_VALUE)
-                    .setAggressorSideNumber(Fix.MdIncGrp.Side.BUY_VALUE)
-                    .setMdEntryTypeNumber(Fix.MdIncGrp.MdEntryType.BID_VALUE);
+                    .setMdUpdateActionValue(Fix.MdIncGrp.MdUpdateAction.NEW_VALUE)
+                    .setAggressorSideValue(Fix.MdIncGrp.Side.BUY_VALUE)
+                    .setMdEntryTypeValue(Fix.MdIncGrp.MdEntryType.BID_VALUE);
             group.getMutableMdEntryPx().setMantissa(50);
             group.getMutableMdEntrySize().setMantissa(10);
 
@@ -169,11 +221,11 @@ public class SbeThroughputBenchmarkQuickbuf {
         return marketData;
     }
 
-    static Car buildCarData(Car car) {
+    public static Car buildCarData(Car car) {
         car.clearQuick()
                 .setSerialNumber(12345)
                 .setModelYear(2005)
-                .setCodeNumber(Car.Model.A_VALUE)
+                .setCodeValue(Car.Model.A_VALUE)
                 .setAvailable(true);
 
         car.getMutableEngine()
@@ -191,8 +243,8 @@ public class SbeThroughputBenchmarkQuickbuf {
         }
 
         car.getMutableOptionalExtras()
-                .add(Car.Extras.SPORTS_PACK_VALUE)
-                .add(Car.Extras.SUN_ROOF_VALUE);
+                .addValue(Car.Extras.SPORTS_PACK_VALUE)
+                .addValue(Car.Extras.SUN_ROOF_VALUE);
 
         car.getMutableFuelFigures().next().setSpeed(30).setMpg(35.9F);
         car.getMutableFuelFigures().next().setSpeed(30).setMpg(49.0F);

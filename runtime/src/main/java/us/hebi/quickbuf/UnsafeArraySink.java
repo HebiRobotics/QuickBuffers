@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -23,7 +23,6 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
@@ -68,58 +67,75 @@ class UnsafeArraySink extends ArraySink {
     private final boolean enableDirect;
     long baseOffset;
 
-    void requireSpace(final int numBytes) throws OutOfSpaceException {
-        if (spaceLeft() < numBytes)
-            throw new OutOfSpaceException(position, limit);
-    }
-
     @Override
-    protected void writeRawBooleans(final boolean[] values, final int numBytes) throws IOException {
-        requireSpace(numBytes);
-        UNSAFE.copyMemory(values, BOOLEAN_ARRAY_OFFSET, buffer, baseOffset + position, numBytes);
-        position += numBytes;
+    protected void writeRawBooleans(final boolean[] values, final int length) throws IOException {
+        requireSpace(length);
+        UNSAFE.copyMemory(values, BOOLEAN_ARRAY_OFFSET, buffer, baseOffset + position, length);
+        position += length;
     }
 
     @Override
     public void writeRawByte(final byte value) throws IOException {
-        if (position >= limit) {
-            throw new OutOfSpaceException(position, limit);
+        if (position == limit) {
+            throw outOfSpace();
         }
         UNSAFE.putByte(buffer, baseOffset + position++, value);
     }
 
     @Override
     public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
-        if (spaceLeft() >= length) {
-            UNSAFE.copyMemory(value, BYTE_ARRAY_OFFSET + offset, buffer, baseOffset + position, length);
-            position += length;
-        } else {
-            throw new OutOfSpaceException(position, limit);
-        }
+        requireSpace(length);
+        UNSAFE.copyMemory(value, BYTE_ARRAY_OFFSET + offset, buffer, baseOffset + position, length);
+        position += length;
     }
 
     @Override
-    public void writeStringNoTag(final CharSequence value) throws IOException {
-        // UTF-8 byte length of the string is at least its UTF-16 code unit length (value.length()),
-        // and at most 3 times of it. Optimize for the case where we know this length results in a
-        // constant varint length - saves measuring length of the string.
-        try {
-            final int minLengthVarIntSize = computeRawVarint32Size(value.length());
-            final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * MAX_UTF8_EXPANSION);
-            if (minLengthVarIntSize == maxLengthVarIntSize) {
-                int startPosition = position + minLengthVarIntSize;
-                int endPosition = Utf8.encodeUnsafe(value, buffer, baseOffset, startPosition, spaceLeft() - minLengthVarIntSize);
-                writeRawVarint32(endPosition - startPosition);
-                position = endPosition;
-            } else {
-                writeRawVarint32(Utf8.encodedLength(value));
-                position = Utf8.encodeUnsafe(value, buffer, baseOffset, position, spaceLeft());
-            }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            final OutOfSpaceException outOfSpaceException = new OutOfSpaceException(position, limit);
-            outOfSpaceException.initCause(e);
-            throw outOfSpaceException;
-        }
+    public void writeRawLittleEndian16(final short value) throws IOException {
+        requireSpace(SIZEOF_FIXED_16);
+        position += writeRawLittleEndian16(buffer, baseOffset + position, value);
+    }
+
+    @Override
+    public void writeRawLittleEndian32(final int value) throws IOException {
+        requireSpace(SIZEOF_FIXED_32);
+        position += writeRawLittleEndian32(buffer, baseOffset + position, value);
+    }
+
+    @Override
+    public void writeRawLittleEndian64(final long value) throws IOException {
+        requireSpace(SIZEOF_FIXED_64);
+        position += writeRawLittleEndian64(buffer, baseOffset + position, value);
+    }
+
+    @Override
+    protected int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize) {
+        return Utf8.encodeUnsafe(value, buffer, baseOffset, position, maxSize);
+    }
+
+    private static int writeRawLittleEndian64(final byte[] buffer, final long offset, final long value) {
+        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
+        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
+        UNSAFE.putByte(buffer, offset + 2, (byte) (value >>> 16));
+        UNSAFE.putByte(buffer, offset + 3, (byte) (value >>> 24));
+        UNSAFE.putByte(buffer, offset + 4, (byte) (value >>> 32));
+        UNSAFE.putByte(buffer, offset + 5, (byte) (value >>> 40));
+        UNSAFE.putByte(buffer, offset + 6, (byte) (value >>> 48));
+        UNSAFE.putByte(buffer, offset + 7, (byte) (value >>> 56));
+        return SIZEOF_FIXED_64;
+    }
+
+    private static int writeRawLittleEndian32(final byte[] buffer, final long offset, final int value) {
+        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
+        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
+        UNSAFE.putByte(buffer, offset + 2, (byte) (value >>> 16));
+        UNSAFE.putByte(buffer, offset + 3, (byte) (value >>> 24));
+        return SIZEOF_FIXED_32;
+    }
+
+    private static int writeRawLittleEndian16(final byte[] buffer, final long offset, final short value) {
+        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
+        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
+        return SIZEOF_FIXED_16;
     }
 
     /**
@@ -140,14 +156,14 @@ class UnsafeArraySink extends ArraySink {
             requireSpace(numBytes);
             if (IS_LITTLE_ENDIAN) {
                 UNSAFE.copyMemory(values, FLOAT_ARRAY_OFFSET, buffer, baseOffset + position, numBytes);
-                position += numBytes;
             } else {
-                for (int i = 0; i < length; i++) {
-                    final int value = Integer.reverseBytes(Float.floatToIntBits(values[i]));
-                    UNSAFE.putLong(buffer, baseOffset + position, value);
-                    position += SIZEOF_FIXED_32;
+                long offset = baseOffset + position;
+                for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_32) {
+                    final int bits = Integer.reverse(Float.floatToIntBits(values[i]));
+                    UNSAFE.putInt(buffer, offset, bits);
                 }
             }
+            position += numBytes;
         }
 
         @Override
@@ -156,14 +172,14 @@ class UnsafeArraySink extends ArraySink {
             requireSpace(numBytes);
             if (IS_LITTLE_ENDIAN) {
                 UNSAFE.copyMemory(values, INT_ARRAY_OFFSET, buffer, baseOffset + position, numBytes);
-                position += numBytes;
             } else {
-                for (int i = 0; i < length; i++) {
-                    final int value = Integer.reverseBytes(values[i]);
-                    UNSAFE.putLong(buffer, baseOffset + position, value);
-                    position += SIZEOF_FIXED_32;
+                long offset = baseOffset + position;
+                for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_32) {
+                    final int bits = Integer.reverse(values[i]);
+                    UNSAFE.putInt(buffer, offset, bits);
                 }
             }
+            position += numBytes;
         }
 
         @Override
@@ -172,14 +188,14 @@ class UnsafeArraySink extends ArraySink {
             requireSpace(numBytes);
             if (IS_LITTLE_ENDIAN) {
                 UNSAFE.copyMemory(values, DOUBLE_ARRAY_OFFSET, buffer, baseOffset + position, numBytes);
-                position += numBytes;
             } else {
-                for (int i = 0; i < length; i++) {
-                    final long value = Long.reverseBytes(Double.doubleToLongBits(values[i]));
-                    UNSAFE.putLong(buffer, baseOffset + position, value);
-                    position += SIZEOF_FIXED_64;
+                long offset = baseOffset + position;
+                for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_64) {
+                    final long bits = Long.reverse(Double.doubleToLongBits(values[i]));
+                    UNSAFE.putLong(buffer, offset, bits);
                 }
             }
+            position += numBytes;
         }
 
         @Override
@@ -188,14 +204,14 @@ class UnsafeArraySink extends ArraySink {
             requireSpace(numBytes);
             if (IS_LITTLE_ENDIAN) {
                 UNSAFE.copyMemory(values, LONG_ARRAY_OFFSET, buffer, baseOffset + position, numBytes);
-                position += numBytes;
             } else {
-                for (int i = 0; i < length; i++) {
-                    final long value = Long.reverseBytes(values[i]);
-                    UNSAFE.putLong(buffer, baseOffset + position, value);
-                    position += SIZEOF_FIXED_64;
+                long offset = baseOffset + position;
+                for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_64) {
+                    final long bits = Long.reverse(values[i]);
+                    UNSAFE.putLong(buffer, offset, bits);
                 }
             }
+            position += numBytes;
         }
 
         @Override
@@ -229,19 +245,17 @@ class UnsafeArraySink extends ArraySink {
 
         @Override
         public final void writeRawLittleEndian32(final int value) throws IOException {
-            requireSpace(LITTLE_ENDIAN_32_SIZE);
+            requireSpace(SIZEOF_FIXED_32);
             UNSAFE.putInt(buffer, baseOffset + position, IS_LITTLE_ENDIAN ? value : Integer.reverseBytes(value));
-            position += LITTLE_ENDIAN_32_SIZE;
+            position += SIZEOF_FIXED_32;
         }
 
         @Override
         public final void writeRawLittleEndian64(final long value) throws IOException {
-            requireSpace(LITTLE_ENDIAN_64_SIZE);
+            requireSpace(SIZEOF_FIXED_64);
             UNSAFE.putLong(buffer, baseOffset + position, IS_LITTLE_ENDIAN ? value : Long.reverseBytes(value));
-            position += LITTLE_ENDIAN_64_SIZE;
+            position += SIZEOF_FIXED_64;
         }
-
-        private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
     }
 

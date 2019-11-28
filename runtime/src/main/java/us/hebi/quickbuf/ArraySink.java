@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -23,6 +23,8 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+
+import static us.hebi.quickbuf.WireFormat.*;
 
 /**
  * Sink that writes to a flat array
@@ -69,47 +71,102 @@ class ArraySink extends ProtoSink {
         position = offset;
     }
 
+    protected OutOfSpaceException outOfSpace() {
+        return new OutOfSpaceException(position, limit);
+    }
+
+    protected void requireSpace(final int numBytes) throws OutOfSpaceException {
+        if (spaceLeft() < numBytes)
+            throw outOfSpace();
+    }
+
     /** Write a single byte. */
+    @Override
     public void writeRawByte(final byte value) throws IOException {
-        if (position >= limit) {
-            throw new OutOfSpaceException(position, limit);
+        if (position == limit) {
+            throw outOfSpace();
         }
         buffer[position++] = value;
     }
 
-    /** Write part of an array of bytes. */
-    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
-        if (spaceLeft() >= length) {
-            // We have room in the current buffer.
-            System.arraycopy(value, offset, buffer, position, length);
-            position += length;
-        } else {
-            throw new OutOfSpaceException(position, limit);
-        }
+    @Override
+    public void writeRawLittleEndian16(final short value) throws IOException {
+        requireSpace(SIZEOF_FIXED_16);
+        position += writeRawLittleEndian16(buffer, position, value);
     }
 
     @Override
-    public void writeStringNoTag(final CharSequence value) throws IOException {
+    public void writeRawLittleEndian32(final int value) throws IOException {
+        requireSpace(SIZEOF_FIXED_32);
+        position += writeRawLittleEndian32(buffer, position, value);
+    }
+
+    @Override
+    public void writeRawLittleEndian64(final long value) throws IOException {
+        requireSpace(SIZEOF_FIXED_64);
+        position += writeRawLittleEndian64(buffer, position, value);
+    }
+
+    private static int writeRawLittleEndian64(final byte[] buffer, final int offset, final long value) {
+        buffer[offset/**/] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) (value >>> 8);
+        buffer[offset + 2] = (byte) (value >>> 16);
+        buffer[offset + 3] = (byte) (value >>> 24);
+        buffer[offset + 4] = (byte) (value >>> 32);
+        buffer[offset + 5] = (byte) (value >>> 40);
+        buffer[offset + 6] = (byte) (value >>> 48);
+        buffer[offset + 7] = (byte) (value >>> 56);
+        return SIZEOF_FIXED_64;
+    }
+
+    private static int writeRawLittleEndian32(final byte[] buffer, final int offset, final int value) {
+        buffer[offset/**/] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) (value >>> 8);
+        buffer[offset + 2] = (byte) (value >>> 16);
+        buffer[offset + 3] = (byte) (value >>> 24);
+        return SIZEOF_FIXED_32;
+    }
+
+    private static int writeRawLittleEndian16(final byte[] buffer, final int offset, final short value) {
+        buffer[offset/**/] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) (value >>> 8);
+        return SIZEOF_FIXED_16;
+    }
+
+    /** Write part of an array of bytes. */
+    @Override
+    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
+        requireSpace(length);
+        System.arraycopy(value, offset, buffer, position, length);
+        position += length;
+    }
+
+    @Override
+    public final void writeStringNoTag(final CharSequence value) throws IOException {
         // UTF-8 byte length of the string is at least its UTF-16 code unit length (value.length()),
         // and at most 3 times of it. Optimize for the case where we know this length results in a
         // constant varint length - saves measuring length of the string.
         try {
             final int minLengthVarIntSize = computeRawVarint32Size(value.length());
-            final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * MAX_UTF8_EXPANSION);
+            final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * Utf8.MAX_UTF8_EXPANSION);
             if (minLengthVarIntSize == maxLengthVarIntSize) {
                 int startPosition = position + minLengthVarIntSize;
-                int endPosition = Utf8.encodeArray(value, buffer, startPosition, spaceLeft() - minLengthVarIntSize);
+                int endPosition = writeUtf8Encoded(value, buffer, startPosition, spaceLeft() - minLengthVarIntSize);
                 writeRawVarint32(endPosition - startPosition);
                 position = endPosition;
             } else {
                 writeRawVarint32(Utf8.encodedLength(value));
-                position = Utf8.encodeArray(value, buffer, position, spaceLeft());
+                position = writeUtf8Encoded(value, buffer, position, spaceLeft());
             }
         } catch (ArrayIndexOutOfBoundsException e) {
-            final OutOfSpaceException outOfSpaceException = new OutOfSpaceException(position, limit);
+            final OutOfSpaceException outOfSpaceException = outOfSpace();
             outOfSpaceException.initCause(e);
             throw outOfSpaceException;
         }
+    }
+
+    protected int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize) {
+        return Utf8.encodeArray(value, buffer, position, maxSize);
     }
 
 }

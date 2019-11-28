@@ -34,7 +34,7 @@ import java.io.IOException;
 public abstract class ProtoMessage<MessageType extends ProtoMessage> {
 
     private static final long serialVersionUID = 0L;
-    protected volatile int cachedSize = -1;
+    protected int cachedSize = -1;
 
     // Keep the first bitfield in the parent class so that it
     // is likely in the same cache line as the object header
@@ -43,7 +43,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     // Allow storing unknown bytes so that messages can be routed
     // without having full knowledge of the definition
     protected final RepeatedByte unknownBytes;
-    protected static final byte[] unknownBytesJsonKey = {'\"', 'u', 'n', 'k', 'n', 'o', 'w', 'n', 'B', 'y', 't', 'e', 's', '\"', ':'};
+    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes");
 
     protected ProtoMessage() {
         this(false);
@@ -157,7 +157,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      *
      * @param output json sink
      */
-    public void writeTo(final JsonSink output) {
+    public void writeTo(final AbstractJsonSink output) throws IOException {
         throw new IllegalStateException("Generated message does not implement JSON output");
     }
 

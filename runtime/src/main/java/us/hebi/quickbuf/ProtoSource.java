@@ -403,6 +403,15 @@ public class ProtoSource {
     }
 
     /** Read a {@code string} field value from the source. */
+    public void readString(final Utf8String store) throws IOException {
+        final int numBytes = readRawVarint32();
+        requireRemaining(numBytes);
+        store.setSize(numBytes);
+        System.arraycopy(buffer, bufferPos, store.bytes(), 0, numBytes);
+        bufferPos += numBytes;
+    }
+
+    /** Read a {@code string} field value from the source. */
     public void readString(StringBuilder output) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
@@ -550,7 +559,7 @@ public class ProtoSource {
     static final int signs14 = signs7 ^ (~0 << 14);
     static final int signs21 = signs14 ^ (~0 << 21);
     static final int signs28i = signs21 ^ (~0 << 28);
-    private static final long signs28 = signs21 ^ (~0 << 28);
+    private static final long signs28 = signs21 ^ (~0L << 28);
     private static final long signs35 = signs28 ^ (~0L << 35);
     private static final long signs42 = signs35 ^ (~0L << 42);
     private static final long signs49 = signs42 ^ (~0L << 49);
@@ -565,10 +574,10 @@ public class ProtoSource {
 
     /** Read a 32-bit little-endian integer from the source. */
     public int readRawLittleEndian32() throws IOException {
-        requireRemaining(LITTLE_ENDIAN_32_SIZE);
+        requireRemaining(SIZEOF_FIXED_32);
         final byte[] buffer = this.buffer;
         final int offset = bufferPos;
-        bufferPos += LITTLE_ENDIAN_32_SIZE;
+        bufferPos += SIZEOF_FIXED_32;
         return (buffer[offset] & 0xFF) |
                 (buffer[offset + 1] & 0xFF) << 8 |
                 (buffer[offset + 2] & 0xFF) << 16 |
@@ -577,10 +586,10 @@ public class ProtoSource {
 
     /** Read a 64-bit little-endian integer from the source. */
     public long readRawLittleEndian64() throws IOException {
-        requireRemaining(LITTLE_ENDIAN_64_SIZE);
+        requireRemaining(SIZEOF_FIXED_64);
         final byte[] buffer = this.buffer;
         final int offset = bufferPos;
-        bufferPos += LITTLE_ENDIAN_64_SIZE;
+        bufferPos += SIZEOF_FIXED_64;
         return (buffer[offset] & 0xFFL) |
                 (buffer[offset + 1] & 0xFFL) << 8 |
                 (buffer[offset + 2] & 0xFFL) << 16 |

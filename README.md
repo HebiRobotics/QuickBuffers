@@ -231,7 +231,7 @@ msg.getMutableNestedMessage().setPrimitiveValue(0);
 <details>
 <summary>String Fields</summary><p>
 
-Java `String` objects are immutable, so the API differs from Protobuf-Java in that accessors accept `CharSequence` arguments and return `StringBuilder` objects instead. `StringBuilder` can be converted via `toString()`, but you may want to use a `StringInterner` to share references if you receive many identical strings.
+`String` types are internally stored as `Utf8String` that are lazily parsed and can be set with `CharSequence`. Since Java `String` objects are immutable, there are additional access methods to allow for decoding characters into a reusable `StringBuilder` instance, as well as for using a custom `Utf8Decoder` that can implement interning.
 
 ```proto
 // .proto
@@ -243,22 +243,24 @@ message SimpleMessage {
 ```Java
 // simplified generated code
 public final class SimpleMessage {
-    public SimpleMessage setOptionalString(CharSequence value); // copies data
+    public SimpleMessage setOptionalString(CharSequence value);
     public SimpleMessage clearOptionalString(); // sets length = 0
     public boolean hasOptionalString();
-    public StringBuilder getOptionalString(); // internal store -> treat as read-only
-    public StringBuilder getMutableOptionalString(); // internal store -> may be modified 
+    public String getOptionalString(); // lazily converted string
+    public Utf8String getOptionalStringBytes(); // internal representation -> treat as read-only
+    public Utf8String getMutableOptionalStringBytes(); // internal representation -> may be modified until has state is cleared
 
     private final StringBuilder optionalString = new StringBuilder(0);
 }
 ```
 
 ```Java
-// Set and append to a string field
-SimpleMessage msg = SimpleMessage.newInstance();
-msg.setOptionalString("my-");
-msg.getMutableOptionalString()
-    .append("text"); // field is now 'my-text'
+// Get characters
+SimpleMessage msg = SimpleMessage.newInstance()
+    .setOptionalString("my-text");
+
+StringBuilder chars = new StringBuilder();
+msg.getOptionalStringBytes().getChars(chars); // chars now contains "my-text"
 ```
 
 </p></details> 
