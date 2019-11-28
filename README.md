@@ -26,7 +26,7 @@ You can find the latest release on Maven Central at the coordinates below. The r
 <dependency>
   <groupId>us.hebi.quickbuf</groupId>
   <artifactId>quickbuf-runtime</artifactId>
-  <version>1.0-alpha3</version>
+  <version>1.0-alpha4</version>
 </dependency>
 ```
 
@@ -77,7 +77,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                     <phase>generate-sources</phase>
                     <configuration>
                         <tasks>
-                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha3/protoc-gen-quickbuf-1.0-alpha3.zip"
+                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha4/protoc-gen-quickbuf-1.0-alpha4.zip"
                                  dest="../protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
                             <unzip src="../protoc-gen-quickbuf.zip" dest=".." overwrite="false"/>
                         </tasks>
