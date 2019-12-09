@@ -67,7 +67,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
 <build>
     <plugins>
 
-        <!-- Downloads QuickBuffers generator plugin -->
+       <!-- Downloads QuickBuffers generator plugin -->
         <plugin>
             <artifactId>maven-antrun-plugin</artifactId>
             <version>1.8</version>
@@ -77,9 +77,39 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                     <phase>generate-sources</phase>
                     <configuration>
                         <tasks>
-                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha4/protoc-gen-quickbuf-1.0-alpha4.zip"
-                                 dest="../protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
-                            <unzip src="../protoc-gen-quickbuf.zip" dest=".." overwrite="false"/>
+                            <taskdef resource="net/sf/antcontrib/antcontrib.properties"
+                                     classpathref="maven.plugin.classpath"/>
+
+                            <!-- Download plugin files -->
+                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/${quickbuf.version}/protoc-gen-quickbuf-${quickbuf.version}.zip"
+                                 dest="${project.basedir}/protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
+                            <unzip src="${project.basedir}/protoc-gen-quickbuf.zip" dest="${project.basedir}" overwrite="false"/>
+
+                            <!--
+                            The executing directory does not end up on the $PATH on Linux, so we need to use the
+                            pluginPath protoc option. Unfortunately, this requires us to specify the (full) absolute
+                            path to the OS-dependent executable. Typically this would be done via OS-specific Maven
+                            Profiles, but that would ruin the copy & paste experience and require changes in multiple
+                            sections of the pom file. As a workaround, we can select the correct file and give it a
+                            common name that we can use in the plugin path. Unfortunately, after some tests we found
+                            that Windows only accepts .exe and .bat files, and .exe does not work with scripts.
+                            Thus, the file needs to have a .bat extension.
+                             -->
+                            <if>
+                                <os family="windows"/>
+                                <then>
+                                    <copy file="${project.basedir}\protoc-gen-quickbuf.bat"
+                                          tofile="${project.basedir}\protoc-gen-quickbuf-plugin.bat"/>
+                                </then>
+                                <else>
+                                    <copy file="${project.basedir}/protoc-gen-quickbuf"
+                                          tofile="${project.basedir}/protoc-gen-quickbuf-plugin.bat"/>
+
+                                    <!-- Unzip does not preserve permissions, so we need to fix the executable bits -->
+                                    <chmod perm="775" file="${project.basedir}/protoc-gen-quickbuf"/>
+                                    <chmod perm="775" file="${project.basedir}/protoc-gen-quickbuf-plugin.bat"/>
+                                </else>
+                            </if>
                         </tasks>
                     </configuration>
                     <goals>
@@ -87,6 +117,19 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                     </goals>
                 </execution>
             </executions>
+            <dependencies>
+                <dependency>
+                    <groupId>ant-contrib</groupId>
+                    <artifactId>ant-contrib</artifactId>
+                    <version>1.0b3</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ant</groupId>
+                            <artifactId>ant</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
         </plugin>
 
         <!-- Calls protoc.exe and generate messages -->
@@ -106,6 +149,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                         <!-- plugin configuration, options, etc. -->
                         <outputTargets>
                             <outputTarget>
+                                <pluginPath>${project.basedir}/protoc-gen-quickbuf-plugin.bat</pluginPath>
                                 <type>quickbuf</type>
                                 <outputOptions>store_unknown_fields=false</outputOptions>
                             </outputTarget>
