@@ -392,7 +392,7 @@ class JsonEncoding {
         public static void writeDouble(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE + 1); // sign before subsequent reserve
             final double pval = writeSpecialValues(val, max3, output);
-            if (pval > 0) {
+            if (pval >= 0) {
                 if (pval < max12) {
                     writeDouble12(pval, output);
                 } else if (pval < max9) {
@@ -421,7 +421,7 @@ class JsonEncoding {
         static void writeDouble12(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max12, output);
-            if (pval > 0) {
+            if (pval >= 0) {
 
                 final byte[] buffer = output.array;
                 final long q19 = (long) (pval * pow12 + 0.5);
@@ -465,7 +465,7 @@ class JsonEncoding {
         static void writeDouble9(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max9, output);
-            if (pval > 0) {
+            if (pval >= 0) {
 
                 final byte[] buffer = output.array;
                 final long q19 = (long) (pval * pow9 + 0.5);
@@ -501,7 +501,7 @@ class JsonEncoding {
         static void writeDouble6(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max6, output);
-            if (pval > 0) {
+            if (pval >= 0) {
 
                 final byte[] buffer = output.array;
                 final long q19 = (long) (pval * pow6 + 0.5);
@@ -532,7 +532,7 @@ class JsonEncoding {
         static void writeDouble3(final double val, final RepeatedByte output) {
             output.reserve(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max3, output);
-            if (pval > 0) {
+            if (pval >= 0) {
 
                 final byte[] buffer = output.array;
                 final long q19 = (long) (pval * pow3 + 0.5);

@@ -30,6 +30,7 @@ import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
+import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -78,6 +79,22 @@ public class JsonEncodingTest {
     }
 
     @Test
+    public void testFloatArray() throws IOException {
+        RepeatedFloat floats = RepeatedFloat.newEmptyInstance();
+        for (int i = -4; i < 4; i++) {
+            floats.add(i / 2f);
+        }
+        FieldName field = FieldName.forField("data");
+        String result = JsonSink.newInstance()
+                .beginObject()
+                .writeRepeatedFloat(field, floats)
+                .endObject()
+                .toString();
+        assertEquals("{\"data\":[-2,-1.5,-1,-0.5,0,0.5,1,1.5]}", result);
+
+    }
+
+    @Test
     public void testIntEncoding() throws Exception {
         for (int i = 0; i < n; i++) {
             testInt(1 << (i / 1000));
@@ -86,6 +103,7 @@ public class JsonEncodingTest {
         }
         testInt(Integer.MIN_VALUE);
         testInt(Integer.MAX_VALUE);
+        testInt(0);
     }
 
     @Test
@@ -98,6 +116,7 @@ public class JsonEncodingTest {
         }
         testLong(Long.MIN_VALUE);
         testLong(Long.MAX_VALUE);
+        testLong(0);
     }
 
     @Test
@@ -127,6 +146,7 @@ public class JsonEncodingTest {
         testDouble(100 - 1E-15);
         testDouble(Double.MIN_VALUE);
         testDouble(Double.MAX_VALUE);
+        testDouble(0);
         assertEquals("\"Infinity\"", encodeDouble(Double.POSITIVE_INFINITY));
         assertEquals("\"-Infinity\"", encodeDouble(Double.NEGATIVE_INFINITY));
         assertEquals("\"NaN\"", encodeDouble(Double.NaN));
@@ -156,6 +176,7 @@ public class JsonEncodingTest {
         testFloat(100 - 1E-12f);
         testFloat(Float.MIN_VALUE);
         testFloat(Float.MAX_VALUE);
+        testFloat(0);
         assertEquals("\"Infinity\"", encodeFloat(Float.POSITIVE_INFINITY));
         assertEquals("\"-Infinity\"", encodeFloat(Float.NEGATIVE_INFINITY));
         assertEquals("\"NaN\"", encodeFloat(Float.NaN));
