@@ -22,6 +22,7 @@
 
 package us.hebi.quickbuf;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,9 +41,9 @@ public class ProtoUtil {
     /**
      * Encode and write a varint to an OutputStream.  {@code value} is
      * treated as unsigned, so it won't be sign-extended if negative.
-     *
+     * <p>
      * The following is equal to Protobuf-Java's "msg.writeDelimitedTo(output)"
-     *
+     * <p>
      * byte[] data = msg.toByteArray();
      * writeRawVarint32(data.length, output);
      * output.write(data);
@@ -68,9 +69,9 @@ public class ProtoUtil {
     /**
      * Reads and decodes a varint from the given input stream. If larger than 32
      * bits, discard the upper bits.
-     *
+     * <p>
      * The following is equal to Protobuf-Java's "msg.readDelimitedFrom(input)"
-     *
+     * <p>
      * int length = readRawVarint32(input);
      * byte[] data = new byte[length];
      * if(input.readData(data) != length) {
@@ -80,6 +81,9 @@ public class ProtoUtil {
      *
      * @param input source stream
      * @return value of the decoded varint
+     * @throws EOFException                   if the input has no more data
+     * @throws InvalidProtocolBufferException if the varint is malformed
+     * @throws IOException                    if the stream can't be read
      */
     public static int readRawVarint32(InputStream input) throws IOException {
         int x = readRawByte(input);
@@ -111,7 +115,7 @@ public class ProtoUtil {
     private static byte readRawByte(InputStream input) throws IOException {
         int value = input.read();
         if (value < 0) {
-            throw InvalidProtocolBufferException.truncatedMessage();
+            throw new EOFException();
         }
         return (byte) (value);
     }
