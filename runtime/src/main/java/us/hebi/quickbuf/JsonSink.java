@@ -44,7 +44,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
      * Create a new {@code JsonSink} that writes directly to the
      * given output. If more bytes are written than fit in the
      * array, the size will grow as needed.
-     *
+     * <p>
      * Note that growing is quite inefficient, so the buffers
      * should have an appropriate initial size and be reused.
      */
@@ -56,7 +56,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
      * Create a new {@code JsonSink} with a new internal buffer. The
      * size of the buffer will grow as needed. The resulting buffer
      * can be accessed with {@link JsonSink#getBuffer()}
-     *
+     * <p>
      * The output is minimized JSON without extra whitespace for
      * sending data over the wire.
      */
@@ -68,12 +68,12 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
      * Create a new {@code JsonSink} with a new internal buffer. The
      * size of the buffer will grow as needed. The resulting buffer
      * can be accessed with {@link JsonSink#getBuffer()}
-     *
+     * <p>
      * The output contains extra whitespace to improve human readability
      */
     public static JsonSink newPrettyInstance() {
         return newInstance(RepeatedByte.newEmptyInstance())
-                .setIndentCount(2)
+                .setPretty(true)
                 .setWriteEnumStrings(true);
     }
 
@@ -109,15 +109,15 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     }
 
     /**
-     * Sets the indentation count for newlines. If the indent
-     * count is zero or negative, prettifying is disabled and
-     * the output will be minimized (default).
+     * Sets the output to be pretty printed (newlines and spaces) to be
+     * more human readable, or minified (default without extra characters)
+     * to be more efficient.
      *
-     * @param indentCount number of spaces for each indent
+     * @param pretty true to format the result more human readable
      * @return this
      */
-    public JsonSink setIndentCount(int indentCount) {
-        this.indentCount = indentCount;
+    public JsonSink setPretty(boolean pretty) {
+        this.pretty = pretty;
         return this;
     }
 
@@ -158,6 +158,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
         final byte[] key = name.asJsonKey();
         final int pos = output.addLength(key.length);
         System.arraycopy(key, 0, output.array, pos, key.length);
+        writeSpaceAfterFieldName();
     }
 
     @Override
@@ -216,6 +217,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
 
     @Override
     public JsonSink beginObject() {
+        isEmptyObjectOrArray = true;
         writeChar('{');
         indentLevel++;
         writeNewline();
@@ -226,13 +228,16 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     public JsonSink endObject() {
         indentLevel--;
         removeTrailingComma();
-        writeNewline();
+        if (!isEmptyObjectOrArray) {
+            writeNewline();
+        }
         writeChar('}');
         return this;
     }
 
     @Override
     protected void beginArray() {
+        isEmptyObjectOrArray = true;
         writeChar('[');
         indentLevel++;
         writeNewline();
@@ -242,7 +247,9 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     protected void endArray() {
         removeTrailingComma();
         indentLevel--;
-        writeNewline();
+        if (!isEmptyObjectOrArray) {
+            writeNewline();
+        }
         writeChar(']');
         writeMore();
     }
@@ -255,25 +262,35 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     // ==================== Utilities ====================
 
     private final void writeMore() {
+        isEmptyObjectOrArray = false;
         final int pos = output.length;
         writeChar(',');
         writeNewline();
         trailingSpace = output.length - pos;
     }
 
-    private void removeTrailingComma() {
+    private final void removeTrailingComma() {
         // Called after at least one character, so no need to check bounds
         output.length -= trailingSpace;
         trailingSpace = 0;
     }
 
+    protected final void writeSpaceAfterFieldName() {
+        if (pretty) {
+            writeChar(' ');
+        }
+    }
+
     private final void writeNewline() {
-        if (indentCount <= 0)
-            return;
-        final int numSpaces = indentLevel * indentCount;
-        int pos = output.addLength(numSpaces + 1);
-        output.array[pos++] = '\n';
-        Arrays.fill(output.array, pos, output.length, (byte) ' ');
+        if (pretty) {
+            final int numSpaces = indentLevel * SPACES_PER_LEVEL;
+            int pos = output.addLength(numSpaces + 1);
+            output.array[pos++] = '\n';
+            Arrays.fill(output.array, pos, output.length, (byte) ' ');
+            trailingSpace = numSpaces + 1;
+        } else {
+            trailingSpace = 0;
+        }
     }
 
     private final void writeChar(char c) {
@@ -290,8 +307,11 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     }
 
     protected RepeatedByte output;
+    protected boolean pretty = false;
     protected int indentLevel = 0;
-    protected int indentCount = 0;
     protected int trailingSpace = 0;
+    private boolean isEmptyObjectOrArray = false;
+
+    private static final int SPACES_PER_LEVEL = 2;
 
 }
