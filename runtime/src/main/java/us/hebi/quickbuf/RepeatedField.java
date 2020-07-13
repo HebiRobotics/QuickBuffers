@@ -67,8 +67,8 @@ abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> im
     }
 
     /**
-     * Makes sure that the internal storage capacity has at least
-     * space for the requested number of entries. This method will
+     * Makes sure that the internal storage capacity has space for
+     * at least the requested number of entries. This method will
      * increase the internal capacity if needed.
      *
      * @param count number of entries to be added
@@ -76,7 +76,7 @@ abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> im
     @SuppressWarnings("unchecked")
     public final RepeatedType reserve(int count) {
         final int desiredSize = length + count;
-        if (desiredSize > capacity()) {
+        if (desiredSize - capacity() > 0) { // overflow-conscious
             extendCapacityTo(desiredSize);
         }
         return (RepeatedType) this;

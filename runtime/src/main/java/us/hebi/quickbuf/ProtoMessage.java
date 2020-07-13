@@ -263,7 +263,6 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     @Override
     public String toString() {
         return JsonSink.newPrettyInstance()
-                .reserve(getSerializedSize() * 8)
                 .writeMessage(this)
                 .toString();
     }

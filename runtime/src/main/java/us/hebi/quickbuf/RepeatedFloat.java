@@ -45,9 +45,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
 
     @Override
     protected void extendCapacityTo(int desiredSize) {
-        final float[] newValues = new float[desiredSize];
-        System.arraycopy(array, 0, newValues, 0, length);
-        this.array = newValues;
+        array = Arrays.copyOf(array, desiredSize);
     }
 
     @Override
@@ -67,8 +65,8 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
     }
 
     public RepeatedFloat add(final float value) {
-        reserve(1);
-        array[length++] = value;
+        final int pos = addLength(1);
+        array[pos] = value;
         return this;
     }
 
@@ -77,8 +75,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
     }
 
     public RepeatedFloat addAll(final float[] buffer, final int offset, final int length) {
-        final int pos = this.length;
-        setLength(pos + length);
+        final int pos = addLength(length);
         System.arraycopy(buffer, offset, array, pos, length);
         return this;
     }
@@ -147,7 +144,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
      * @return this
      */
     public final RepeatedFloat setLength(final int length) {
-        if (array.length < length) {
+        if (length - array.length > 0 ) {
             extendCapacityTo(length);
         }
         this.length = length;
@@ -157,8 +154,12 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
     /**
      * Sets the length to length + offset and returns
      * the previous length. The internal storage array
-     * may get extended to accomodate at least the
+     * may get extended to accommodate at least the
      * desired length.
+     *
+     * It is expected that users don't know the exact
+     * desired size, so the growth rate is the same
+     * as a generic ArrayList.
      *
      * See {@link RepeatedFloat#setLength(int)}
      *
@@ -168,11 +169,37 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
     public final int addLength(final int length) {
         final int oldLength = this.length;
         final int newLength = oldLength + length;
-        if (array.length < newLength) {
-            extendCapacityTo(newLength);
+        final int oldCapacity = array.length;
+        if (newLength - oldCapacity > 0) {
+            // overflow-conscious code (copied from ArrayList::grow)
+            int minCapacity = (array == EMPTY_ARRAY) ? Math.max(newLength, DEFAULT_CAPACITY) : newLength;
+            int newCapacity = oldCapacity + (oldCapacity >> 1);
+            if (newCapacity - minCapacity < 0)
+                newCapacity = minCapacity;
+            if (newCapacity - MAX_ARRAY_SIZE > 0)
+                newCapacity = hugeCapacity(minCapacity);
+            // minCapacity is usually close to size, so this is a win:
+            extendCapacityTo(newCapacity);
         }
         this.length = newLength;
         return oldLength;
+    }
+
+    /**
+     * The maximum size of array to allocate.
+     * Some VMs reserve some header words in an array.
+     * Attempts to allocate larger arrays may result in
+     * OutOfMemoryError: Requested array size exceeds VM limit
+     */
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+    private static final int DEFAULT_CAPACITY = 10;
+
+    private static int hugeCapacity(int minCapacity) {
+        if (minCapacity < 0) // overflow
+            throw new OutOfMemoryError();
+        return (minCapacity > MAX_ARRAY_SIZE) ?
+                Integer.MAX_VALUE :
+                MAX_ARRAY_SIZE;
     }
 
     @Override
