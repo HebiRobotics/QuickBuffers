@@ -26,7 +26,7 @@ You can find the latest release on Maven Central at the coordinates below. The r
 <dependency>
   <groupId>us.hebi.quickbuf</groupId>
   <artifactId>quickbuf-runtime</artifactId>
-  <version>1.0-alpha6</version>
+  <version>1.0-alpha7</version>
 </dependency>
 ```
 
@@ -51,7 +51,7 @@ The code generator is setup as a `protoc` plugin that gets called by the officia
 <summary>Manual Generation</summary><p>
 
 * Download an appropriate [protoc.exe](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.1`)
-* Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha6/protoc-gen-quickbuf-1.0-alpha6.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
+* Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha7/protoc-gen-quickbuf-1.0-alpha7.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
   * Running the plugin requires Java8 or higher to be installed
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
 * Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
@@ -81,7 +81,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                                      classpathref="maven.plugin.classpath"/>
 
                             <!-- Download plugin files -->
-                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha6/protoc-gen-quickbuf-1.0-alpha6.zip"
+                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha7/protoc-gen-quickbuf-1.0-alpha7.zip"
                                  dest="${project.basedir}/protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
                             <unzip src="${project.basedir}/protoc-gen-quickbuf.zip" dest="${project.basedir}" overwrite="false"/>
 
