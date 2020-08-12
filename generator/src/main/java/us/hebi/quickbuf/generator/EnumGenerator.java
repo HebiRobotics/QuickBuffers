@@ -135,10 +135,10 @@ class EnumGenerator {
         if (info.isUsingArrayLookup()) {
 
             // (fast) lookup using array index
-            forNumber.beginControlFlow("if (value < 0 || value > lookup.length)", info.getHighestNumber())
-                    .addStatement("return null")
-                    .endControlFlow();
-            forNumber.addStatement("return lookup[value]");
+            forNumber.beginControlFlow("if (value >= 0 && value < lookup.length)")
+                    .addStatement("return lookup[value]")
+                    .endControlFlow()
+                    .addStatement("return null");
 
             TypeName arrayType = ArrayTypeName.of(info.getTypeName());
             decoder.addField(FieldSpec.builder(arrayType, "lookup", Modifier.PRIVATE, STATIC, FINAL)

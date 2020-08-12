@@ -268,6 +268,16 @@ public class ProtoTests {
     }
 
     @Test
+    public void testUnknownEnumValue() throws IOException {
+        int value = NestedEnum.BAZ_VALUE + 1;
+        TestAllTypes msg = TestAllTypes.parseFrom(TestAllTypes.newInstance()
+                .setOptionalNestedEnumValue(value)
+                .toByteArray());
+        assertEquals(0, msg.getOptionalNestedEnumValue());
+        assertNull(msg.getOptionalNestedEnum());
+    }
+
+    @Test
     public void testRepeatedEnums() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedEnums());
         assertEquals(4, msg.getRepeatedNestedEnum().length());
