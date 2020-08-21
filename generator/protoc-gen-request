@@ -1,2 +1,0 @@
-#!/bin/bash
-../parser/target/protoc-gen-request
