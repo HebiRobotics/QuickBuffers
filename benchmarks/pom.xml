@@ -86,7 +86,7 @@
 
                                 <!-- Generate sources (override package so we don't have name collisions with gen-java) -->
                                 <outputTarget>
-                                    <pluginPath>${project.parent.basedir}</pluginPath>
+                                    <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
                                     <outputOptions>replace_package=(protobuf)=quickbuf,indent=4,input_order=quickbuf
                                     </outputOptions>

@@ -1,0 +1,25 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        jdk: [1.8]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.jdk }}
+
+    - name: Build with Maven
+      run: mvn package
