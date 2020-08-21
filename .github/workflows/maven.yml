@@ -8,13 +8,12 @@ on:
 
 jobs:
   package:
-
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
         jdk: [1.8]
 
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK
