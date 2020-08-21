@@ -12,4 +12,5 @@ buildNumber.properties
 !/.mvn/wrapper/maven-wrapper.jar
 protoc-3.9.0-win64/
 .idea/
+.protoc/
 *.iml

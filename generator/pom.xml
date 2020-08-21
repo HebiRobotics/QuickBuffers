@@ -17,7 +17,8 @@
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
         <protoc.fileName>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
-        <protoc.executable>../${protoc.executable}</protoc.executable>
+        <protoc.path>${project.basedir}/../.protoc</protoc.path>
+        <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
@@ -69,6 +70,7 @@
                             <tasks>
 
                                 <!-- download proto compiler if needed -->
+                                <mkdir dir="${protoc.path}"/>
                                 <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protoc.version}/${protoc.fileName}"
                                      dest="${protoc.executable}" skipexisting="true" verbose="on"/>
                                 <chmod file="${protoc.executable}" perm="775" type="file"/>
