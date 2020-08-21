@@ -80,6 +80,7 @@
                                 <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
                                 <replace file="target/${protocPluginName}" token="{jarfile}" value="${finalName}"/>
                                 <fixcrlf file="target/${protocPluginName}" eol="unix"/>
+                                <chmod file="target/${protocPluginName}" perm="775" type="file"/>
                             </tasks>
                         </configuration>
                     </execution>

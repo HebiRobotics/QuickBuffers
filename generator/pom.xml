@@ -19,6 +19,8 @@
         <protoc.fileName>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
         <protoc.path>${project.basedir}/../.protoc</protoc.path>
         <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
+        <protoc.pluginDir>${project.basedir}/../parser/target</protoc.pluginDir>
+        <protoc.outputDir>${project.build.directory}/test-classes/us/hebi/quickbuf/generator</protoc.outputDir>
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
@@ -75,26 +77,26 @@
                                      dest="${protoc.executable}" skipexisting="true" verbose="on"/>
                                 <chmod file="${protoc.executable}" perm="775" type="file"/>
 
-                                <mkdir dir="target/test-classes/us/hebi/quickbuf/generator"/>
-                                <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=request_file=required.request,indent=tab,input_order=quickbuf,enforce_has_checks=true:target/test-classes/us/hebi/quickbuf/generator"/>
+                                <mkdir dir="${protoc.outputDir}"/>
+                                <exec executable="${protoc.executable}" dir="${protoc.pluginDir}">
+                                    <arg value="--request_out=request_file=required.request,indent=tab,input_order=quickbuf,enforce_has_checks=true:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_required.proto"/>
                                 </exec>
-                                <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=request_file=import.request,indent=2,input_order=number,json_use_proto_name=true:target/test-classes/us/hebi/quickbuf/generator"/>
+                                <exec executable="${protoc.executable}" dir="${protoc.pluginDir}">
+                                    <arg value="--request_out=request_file=import.request,indent=2,input_order=number,json_use_proto_name=true:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
                                 </exec>
-                                <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=request_file=allTypes.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:target/test-classes/us/hebi/quickbuf/generator"/>
+                                <exec executable="${protoc.executable}" dir="${protoc.pluginDir}">
+                                    <arg value="--request_out=request_file=allTypes.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>
                                 </exec>
-                                <exec executable="${protoc.executable}">
-                                    <arg value="--request_out=request_file=repeatedPackables.request,replace_package=(protobuf)=quickbuf:target/test-classes/us/hebi/quickbuf/generator"/>
+                                <exec executable="${protoc.executable}" dir="${protoc.pluginDir}">
+                                    <arg value="--request_out=request_file=repeatedPackables.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
                                 </exec>
