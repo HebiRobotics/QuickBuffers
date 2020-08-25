@@ -91,6 +91,11 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
     }
 
     @Override
+    public void addAll(RepeatedFloat values) {
+        addAll(values.array, 0, values.length);
+    }
+
+    @Override
     public void copyFrom(RepeatedFloat other) {
         if (other.length > length) {
             extendCapacityTo(other.length);
@@ -144,7 +149,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
      * @return this
      */
     public final RepeatedFloat setLength(final int length) {
-        if (length - array.length > 0 ) {
+        if (length - array.length > 0) {
             extendCapacityTo(length);
         }
         this.length = length;
@@ -156,11 +161,11 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
      * the previous length. The internal storage array
      * may get extended to accommodate at least the
      * desired length.
-     *
+     * <p>
      * It is expected that users don't know the exact
      * desired size, so the growth rate is the same
      * as a generic ArrayList.
-     *
+     * <p>
      * See {@link RepeatedFloat#setLength(int)}
      *
      * @param length added to the current length

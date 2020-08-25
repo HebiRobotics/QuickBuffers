@@ -99,6 +99,7 @@ class MessageGenerator {
         // Fields accessors
         fields.forEach(f -> f.generateMemberMethods(type));
         generateCopyFrom(type);
+        generateMergeFromMessage(type);
         generateClear(type);
         generateEquals(type);
         generateWriteTo(type);
@@ -107,6 +108,9 @@ class MessageGenerator {
         generateIsInitialized(type);
         generateWriteToJson(type);
         generateClone(type);
+
+        // Utility methods
+        generateIsEmpty(type);
 
         // Static utilities
         generateParseFrom(type);
@@ -125,6 +129,14 @@ class MessageGenerator {
         type.addMethod(generateClearCode("clearQuick", false));
     }
 
+    private void generateIsEmpty(TypeSpec.Builder type) {
+        MethodSpec.Builder isEmpty = MethodSpec.methodBuilder("isEmpty")
+                .addModifiers(Modifier.PRIVATE)
+                .returns(boolean.class)
+                .addStatement("return $N", BitField.hasNoBits(numBitFields));
+        type.addMethod(isEmpty.build());
+    }
+
     private MethodSpec generateClearCode(String name, boolean isFullClear) {
         MethodSpec.Builder clear = MethodSpec.methodBuilder(name)
                 .addAnnotation(Override.class)
@@ -133,7 +145,7 @@ class MessageGenerator {
 
         // no fields set -> no need to clear (e.g. unused nested messages)
         // NOTE: always make sure that the constructor creates conditions that clears everything
-        clear.beginControlFlow("if ($N)", BitField.hasNoBits(numBitFields))
+        clear.beginControlFlow("if (isEmpty())")
                 .addStatement("return this")
                 .endControlFlow();
 
@@ -389,6 +401,33 @@ class MessageGenerator {
         }
         copyFrom.addStatement("return this");
         type.addMethod(copyFrom.build());
+    }
+
+    private void generateMergeFromMessage(TypeSpec.Builder type) {
+        MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addAnnotation(Override.class)
+                .addParameter(info.getTypeName(), "other", Modifier.FINAL)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(info.getTypeName());
+
+        mergeFrom.beginControlFlow("if (other.isEmpty())")
+                .addStatement("return this")
+                .endControlFlow();
+        mergeFrom.addStatement("cachedSize = -1");
+
+        fields.forEach(field -> {
+            mergeFrom.beginControlFlow("if (other.$L())", field.getInfo().getHazzerName());
+            field.generateMergeFromMessageCode(mergeFrom);
+            mergeFrom.endControlFlow();
+        });
+
+        if (info.isStoreUnknownFields()) {
+            mergeFrom.beginControlFlow("$L", named("if (other.$unknownBytes:N.length() > 0)"))
+                    .addStatement(named("$unknownBytes:N.addAll(other.$unknownBytes:N)"))
+                    .endControlFlow();
+        }
+        mergeFrom.addStatement("return this");
+        type.addMethod(mergeFrom.build());
     }
 
     private void generateClone(TypeSpec.Builder type) {

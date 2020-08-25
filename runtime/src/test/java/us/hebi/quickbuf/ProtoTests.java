@@ -478,6 +478,31 @@ public class ProtoTests {
     }
 
     @Test
+    public void testMergeFromMessage() throws IOException {
+        TestAllTypes binaryMerged = TestAllTypes.newInstance();
+        TestAllTypes messageMerged = TestAllTypes.newInstance();
+
+        RepeatedByte combined = RepeatedByte.newEmptyInstance();
+        for (byte[] input : CompatibilityTest.getAllMessages()) {
+            combined.addAll(input);
+            binaryMerged.mergeFrom(ProtoSource.newInstance(input));
+            messageMerged.mergeFrom(TestAllTypes.parseFrom(input));
+            assertEquals(binaryMerged, messageMerged);
+        }
+
+        // Compare to parsing a single large message
+        byte[] array = combined.toArray();
+        assertEquals(TestAllTypes.parseFrom(array), messageMerged);
+
+        // Compare with Protobuf-Java merged-bytes (must be same as CompatibilityTest::getCombinedMessage)
+        assertEquals(TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage()), messageMerged
+                .addAllRepeatedPackedInt32(-1, 0, 1, 2, 3, 4, 5)
+                .addAllRepeatedInt32(-2, -1, 0, 1, 2, 3, 4, 5)
+        );
+
+    }
+
+    @Test
     public void testSkipUnknownFields() throws IOException {
         ProtoSource source = ProtoSource.newInstance().wrap(CompatibilityTest.getCombinedMessage());
         TestAllTypes.NestedMessage.newInstance().mergeFrom(source);

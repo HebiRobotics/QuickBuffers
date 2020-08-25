@@ -91,6 +91,12 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
         length = other.length;
     }
 
+    @Override
+    public void addAll(RepeatedEnum<E> values) {
+        int pos = addLength(values.length);
+        System.arraycopy(values.array, 0, array, pos, values.length);
+    }
+
     public int getValue(int index) {
         checkIndex(index);
         return array[index];
@@ -183,7 +189,7 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
      * the previous length. The internal storage array
      * may get extended to accomodate at least the
      * desired length.
-     *
+     * <p>
      * See {@link RepeatedEnum#setLength(int)}
      *
      * @param length added to the current length

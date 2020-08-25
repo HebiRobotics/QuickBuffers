@@ -135,6 +135,24 @@ public class FieldGenerator {
         }
     }
 
+    protected void generateMergeFromMessageCode(MethodSpec.Builder method) {
+        if (info.isRepeated()) {
+            method.addStatement(named("$getMutableMethod:N().addAll(other.$field:N)"));
+        } else if (info.isMessageOrGroup()) {
+            method.addStatement(named("$getMutableMethod:N().mergeFrom(other.$field:N)"));
+        } else if (info.isBytes()) {
+            method.addStatement(named("$getMutableMethod:N().copyFrom(other.$field:N)"));
+        } else if (info.isString()) {
+            method.addStatement(named("$getMutableMethod:NBytes().copyFrom(other.$field:N)"));
+        } else if (info.isEnum()) {
+            method.addStatement(named("$setMethod:NValue(other.$field:N)"));
+        } else if (info.isPrimitive()) {
+            method.addStatement(named("$setMethod:N(other.$field:N)"));
+        } else {
+            throw new IllegalStateException("unhandled field: " + info.getDescriptor());
+        }
+    }
+
     protected void generateEqualsStatement(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
             method.addNamedCode("$field:N.equals(other.$field:N)", m);
