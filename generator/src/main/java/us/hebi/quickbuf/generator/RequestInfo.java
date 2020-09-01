@@ -150,6 +150,10 @@ public class RequestInfo {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("enforce_has_checks", "false"));
     }
 
+    public boolean generateTryGetAccessors() {
+        return Boolean.parseBoolean(generatorParameters.getOrDefault("java8_optional", "false"));
+    }
+
     private final CodeGeneratorRequest descriptor;
     private final Map<String, String> generatorParameters;
     private final List<FileInfo> files;
@@ -316,6 +320,7 @@ public class RequestInfo {
             hazzerName = "has" + upperName;
             setterName = "set" + upperName;
             getterName = "get" + upperName;
+            tryGetName = "tryGet" + upperName;
             mutableGetterName = "getMutable" + upperName;
             adderName = "add" + upperName;
             clearName = "clear" + upperName;
@@ -447,6 +452,31 @@ public class RequestInfo {
             return getTypeName();
         }
 
+        // Used for the return type in the method, e.g., Optional<String>
+        public TypeName getOptionalReturnType() {
+            if (isRepeated()) {
+                return ParameterizedTypeName.get(ClassName.get(Optional.class), getRepeatedStoreType());
+            }
+            final TypeName typeName = getTypeName();
+            if (!isPrimitive() || typeName == TypeName.BOOLEAN) {
+                return ParameterizedTypeName.get(ClassName.get(Optional.class), typeName.box());
+            }
+            if (typeName == TypeName.INT) return TypeName.get(OptionalInt.class);
+            if (typeName == TypeName.LONG) return TypeName.get(OptionalLong.class);
+            if (typeName == TypeName.FLOAT) return TypeName.get(OptionalDouble.class);
+            if (typeName == TypeName.DOUBLE) return TypeName.get(OptionalDouble.class);
+            throw new IllegalArgumentException("Unhandled type: " + typeName);
+        }
+
+        // Used for creating the optional, e.g., Optional.of(string)
+        public TypeName getOptionalClass() {
+            final TypeName type = getOptionalReturnType();
+            if (type instanceof ParameterizedTypeName) {
+                return ((ParameterizedTypeName) type).rawType;
+            }
+            return type;
+        }
+
         // Used for serialization
         public String getPrimaryJsonName() {
             return parentFile.getParentRequest().getJsonUseProtoName() ?
@@ -503,6 +533,7 @@ public class RequestInfo {
         String hazzerName;
         String setterName;
         String getterName;
+        String tryGetName;
         String mutableGetterName;
         String adderName;
         String clearName;

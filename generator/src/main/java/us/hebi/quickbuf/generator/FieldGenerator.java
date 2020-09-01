@@ -407,6 +407,9 @@ public class FieldGenerator {
         if (info.isEnum()) {
             generateExtraEnumAccessors(type);
         }
+        if (info.getParentFile().getParentRequest().generateTryGetAccessors()) {
+            generateTryGetMethod(type);
+        }
         generateSetMethods(type);
     }
 
@@ -519,6 +522,21 @@ public class FieldGenerator {
                         "return this;\n", m)
                 .build());
 
+    }
+
+    protected void generateTryGetMethod(TypeSpec.Builder type) {
+        MethodSpec.Builder tryGet = MethodSpec.methodBuilder(info.getTryGetName())
+                .addAnnotations(info.getMethodAnnotations())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(info.getOptionalReturnType());
+
+        tryGet.beginControlFlow(named("if ($hasMethod:N())"))
+                .addStatement(named("return $optional:T.of($getMethod:N())"))
+                .nextControlFlow("else")
+                .addStatement(named("return $optional:T.empty()"))
+                .endControlFlow();
+
+        type.addMethod(tryGet.build());
     }
 
     protected void generateGetMethods(TypeSpec.Builder type) {
@@ -656,6 +674,7 @@ public class FieldGenerator {
         m.put("defaultField", info.getDefaultFieldName());
         m.put("bytesPerTag", info.getBytesPerTag());
         m.put("valueOrNumber", info.isEnum() ? "value.getNumber()" : "value");
+        m.put("optional", info.getOptionalClass());
         if (info.isPackable()) m.put("packedTag", info.getPackedTag());
         if (info.isFixedWidth()) m.put("fixedWidth", info.getFixedWidth());
         if (info.isRepeated())

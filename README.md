@@ -180,7 +180,8 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
   * unknown fields are ignored when comparing with `equals`
 * **enforce_has_checks** throws an exception when accessing fields that were not set
 * **json_use_proto_name** changes the serialized json field names to match the original proto definition (`my_field`) instead of the default lowerCamelCase (`myField`) or `json_name` override option. [Compatible parsers](https://developers.google.com/protocol-buffers/docs/proto3#json) should be able to parse both cases.
-
+* **java8_optional** creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher.
+ 
 </p></details> 
 
 | Option | Value | 
@@ -191,6 +192,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
 | **store_unknown_fields** | **false**, true  |
 | **enforce_has_checks** | **false**, true  |                                     
 | **json_use_proto_name** | **false**, true  |                                     
+| **java8_optional** | **false**, true  |                                     
 
 For example, 
 ```bash
