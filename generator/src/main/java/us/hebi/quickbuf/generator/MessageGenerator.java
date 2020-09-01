@@ -131,7 +131,7 @@ class MessageGenerator {
 
     private void generateIsEmpty(TypeSpec.Builder type) {
         MethodSpec.Builder isEmpty = MethodSpec.methodBuilder("isEmpty")
-                .addModifiers(Modifier.PRIVATE)
+                .addModifiers(Modifier.PUBLIC)
                 .returns(boolean.class)
                 .addStatement("return $N", BitField.hasNoBits(numBitFields));
         type.addMethod(isEmpty.build());
