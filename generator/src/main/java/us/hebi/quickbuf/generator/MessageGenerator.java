@@ -29,9 +29,7 @@ import us.hebi.quickbuf.generator.RequestInfo.MessageInfo;
 
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -107,6 +105,7 @@ class MessageGenerator {
         generateMergeFrom(type);
         generateIsInitialized(type);
         generateWriteToJson(type);
+        generateMergeFromJson(type);
         generateClone(type);
 
         // Utility methods
@@ -526,6 +525,50 @@ class MessageGenerator {
 
         writeTo.addStatement("output.endObject()");
         type.addMethod(writeTo.build());
+    }
+
+    private void generateMergeFromJson(TypeSpec.Builder type) {
+        MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addAnnotation(Override.class)
+                .returns(info.getTypeName())
+                .addParameter(RuntimeClasses.JsonSource, "input", Modifier.FINAL)
+                .addModifiers(Modifier.PUBLIC)
+                .addException(IOException.class);
+
+        mergeFrom.beginControlFlow("if (!input.beginObject())")
+                .addStatement("return this")
+                .endControlFlow();
+
+        mergeFrom.beginControlFlow("while (!input.isAtEndOfObject())")
+                .beginControlFlow("switch (input.nextFieldHash())");
+
+        // add case statements for every field
+        for (FieldGenerator field : fields) {
+            int hash1 = field.getInfo().getPrimaryJsonName().hashCode();
+            mergeFrom.addCode("case $L: // $L\n", hash1, field.getInfo().getPrimaryJsonName());
+
+            int hash2 = field.getInfo().getSecondaryJsonName().hashCode();
+            if (hash2 != hash1) {
+                mergeFrom.addCode("case $L: // $L\n", hash2, field.getInfo().getSecondaryJsonName());
+            }
+            mergeFrom.beginControlFlow("");
+            field.generateJsonDeserializationCode(mergeFrom); // generate deserialization code
+            mergeFrom.addStatement("break")
+                    .endControlFlow();
+        }
+
+        // add default case
+        mergeFrom.beginControlFlow("default:")
+                .addStatement("input.skipField()")
+                .addStatement("break")
+                .endControlFlow();
+
+        mergeFrom.endControlFlow()
+                .endControlFlow()
+                .addStatement("input.endObject()")
+                .addStatement("return this");
+
+        type.addMethod(mergeFrom.build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {

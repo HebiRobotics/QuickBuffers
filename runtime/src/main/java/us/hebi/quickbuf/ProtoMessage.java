@@ -182,6 +182,10 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
         throw new IllegalStateException("Generated message does not implement JSON output");
     }
 
+    public MessageType mergeFrom(final AbstractJsonSource input) throws IOException {
+        throw new IllegalStateException("Generated message does not implement JSON input");
+    }
+
     /**
      * Serialize to a byte array.
      *

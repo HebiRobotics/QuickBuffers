@@ -390,7 +390,6 @@ public class FieldGenerator {
     }
 
     protected void generateJsonSerializationCode(MethodSpec.Builder method) {
-
         if (info.isRepeated()) {
             method.addStatement(named("output.writeRepeated$capitalizedType:L($fieldNames:T.$field:N, $field:N)"));
         } else if (info.isEnum()) {
@@ -398,6 +397,34 @@ public class FieldGenerator {
         } else {
             method.addStatement(named("output.write$capitalizedType:L($fieldNames:T.$field:N, $field:N)"));
         }
+    }
+
+    protected void generateJsonDeserializationCode(MethodSpec.Builder method) {
+        method.addCode(clearOtherOneOfs);
+        if (info.isRepeated()) {
+            if (info.isEnum()) {
+                method.addStatement(named("input.readRepeated$capitalizedType:L($field:N, $type:T.converter())"));
+            } else {
+                method.addStatement(named("input.readRepeated$capitalizedType:L($field:N)"));
+            }
+            method.addStatement(named("$setHas:L"));
+        } else if (info.isString() || info.isBytes() || info.isMessageOrGroup()) {
+            method.addStatement(named("input.read$capitalizedType:L($field:N)"));
+            method.addStatement(named("$setHas:L"));
+        } else if (info.isPrimitive()) {
+            method.addStatement(named("$field:N = input.read$capitalizedType:L()"));
+            method.addStatement(named("$setHas:L"));
+        } else if (info.isEnum()) {
+            // TODO: filter out unknown values
+            method.addStatement(named("final $type:T value = input.read$capitalizedType:L($type:T.converter())"))
+                    .beginControlFlow("if (value != null)")
+                    .addStatement(named("$field:N = value.getNumber()"))
+                    .addStatement(named("$setHas:L"))
+                    .endControlFlow();
+        } else {
+            throw new IllegalStateException("unhandled field: " + info.getDescriptor());
+        }
+
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
