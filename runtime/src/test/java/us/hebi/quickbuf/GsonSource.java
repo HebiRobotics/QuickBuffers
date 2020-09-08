@@ -20,14 +20,10 @@
  * #L%
  */
 
-package us.hebi.quickbuf.benchmarks.json;
+package us.hebi.quickbuf;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
-import us.hebi.quickbuf.AbstractJsonSource;
-import us.hebi.quickbuf.ProtoEnum;
-import us.hebi.quickbuf.RepeatedByte;
-import us.hebi.quickbuf.Utf8String;
 
 import java.io.IOException;
 import java.io.Reader;

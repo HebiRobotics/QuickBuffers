@@ -20,13 +20,10 @@
  * #L%
  */
 
-package us.hebi.quickbuf.benchmarks.json;
+package us.hebi.quickbuf;
 
-import com.google.gson.stream.JsonReader;
-import org.junit.Ignore;
 import org.junit.Test;
 import protos.test.quickbuf.TestAllTypes;
-import us.hebi.quickbuf.AbstractJsonSource;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -39,48 +36,47 @@ import static org.junit.Assert.*;
  */
 public class GsonSourceTest {
 
-    @Ignore
-    @Test
-    public void testGsonAPI() throws IOException {
-        JsonReader reader = new JsonReader(new StringReader(json));
-
-        reader.beginObject();
-        while (reader.hasNext()) {
-            String key = reader.nextName();
-            System.out.println(key);
-            Object value = null;
-            switch (key) {
-                case "optionalDouble":
-                    value = reader.nextDouble();
-                    break;
-                case "optionalBool":
-                    value = reader.nextBoolean();
-                    break;
-                case "optionalNestedMessage":
-                case "optionalForeignMessage":
-                case "optionalImportMessage":
-                    reader.skipValue();
-                    break;
-                default:
-                    reader.skipValue();
-                    value = null;
-            }
-
-            System.out.println(value);
-            System.out.println();
-        }
-        reader.endObject();
-
-
-    }
+    private final JsonSink minimized = JsonSink.newInstance();
+    private final JsonSink pretty = JsonSink.newPrettyInstance();
 
     @Test
-    public void testGsonWrapper() throws IOException {
+    public void testGsonWrapper() throws Exception {
         AbstractJsonSource source = new GsonSource(new StringReader(json));
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.mergeFrom(source);
-        System.out.println(msg);
         assertEquals(json, msg.toString());
+    }
+
+    @Test
+    public void testCombinedMessage() throws Exception {
+        testJsonRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage()), minimized);
+        testJsonRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage()), pretty);
+    }
+
+    @Test
+    public void testAllIndividualMessages() throws Exception {
+        for (byte[] bytes : CompatibilityTest.getAllMessages()) {
+            TestAllTypes msg = TestAllTypes.parseFrom(bytes);
+            testJsonRoundTrip(msg, minimized);
+            testJsonRoundTrip(msg, pretty);
+        }
+    }
+
+    @Test
+    public void testEnumNumbers() throws Exception {
+        testJsonRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.optionalEnums()), minimized);
+        testJsonRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.optionalEnums()), pretty);
+        testJsonRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.repeatedEnums()), minimized);
+        testJsonRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.repeatedEnums()), pretty);
+    }
+
+    private void testJsonRoundTrip(ProtoMessage<?> msg, JsonSink sink) throws IOException, CloneNotSupportedException {
+        msg.writeTo(sink.clear());
+        ProtoMessage<?> msg2 = msg
+                .clone()
+                .clear()
+                .mergeFrom(new GsonSource(new StringReader(sink.toString())));
+        assertEquals(msg, msg2);
     }
 
     private final String json = "{\n" +
