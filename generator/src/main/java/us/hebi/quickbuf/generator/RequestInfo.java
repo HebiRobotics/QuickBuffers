@@ -154,6 +154,10 @@ public class RequestInfo {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("java8_optional", "false"));
     }
 
+    public boolean generateMergeFromJson() {
+        return Boolean.parseBoolean(generatorParameters.getOrDefault("json_gen_merge", "false"));
+    }
+
     private final CodeGeneratorRequest descriptor;
     private final Map<String, String> generatorParameters;
     private final List<FileInfo> files;

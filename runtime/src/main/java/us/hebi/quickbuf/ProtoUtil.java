@@ -154,14 +154,20 @@ public class ProtoUtil {
      * synchronized between FieldUtil::hash32 and ProtoUtil::hash32.
      */
     static int hash32(CharSequence value) {
-        // To start off with we use a simple hash copied from String::hashCode
-        // Note that we can't use String::hashCode directly because the implementation
-        // may change between JDK releases and could break the generated messages.
-        int hash = 0;
-        for (int i = 0; i < value.length(); i++) {
-            hash =  31 * hash + value.charAt(i);
+        // To start off with we use a simple hash identical to String::hashCode. The
+        // algorithm has been documented since JDK 1.2, so it can't change without
+        // breaking backwards compatibility.
+        if (value instanceof String) {
+            return ((String) value).hashCode();
+        } else {
+            // Same algorithm, but generalized for CharSequences
+            int hash = 0;
+            final int length = value.length();
+            for (int i = 0; i < length; i++) {
+                hash = 31 * hash + value.charAt(i);
+            }
+            return hash;
         }
-        return hash;
     }
 
     static final Utf8Decoder DEFAULT_UTF8_DECODER = new Utf8Decoder() {

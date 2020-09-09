@@ -91,7 +91,7 @@ class FieldUtil {
 
     /**
      * Sort the fields according to their layout in memory.
-     *
+     * <p>
      * Summary:
      * - Objects are 8 bytes aligned in memory (address A is K aligned if A % K == 0)
      * - All fields are type aligned (long/double is 8 aligned, integer/float 4, short/char 2)
@@ -99,7 +99,7 @@ class FieldUtil {
      * - Classes fields are never mixed, so if B extends A, A's fields will be laid out first
      * - Sub class fields start at a 4 byte alignment
      * - If the first field of a class is long/double and the class starting point (after header, or after super) is not 8 aligned then a smaller field may be swapped to fill in the 4 bytes gap.
-     *
+     * <p>
      * For more info, see
      * http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html
      */
@@ -437,15 +437,8 @@ class FieldUtil {
      * Hash code for JSON field name lookup. Any changes need to be
      * synchronized between FieldUtil::hash32 and ProtoUtil::hash32.
      */
-    static int hash32(CharSequence value) {
-        // To start off with we use a simple hash copied from String::hashCode
-        // Note that we can't use String::hashCode directly because the implementation
-        // may change between JDK releases and could break the generated messages.
-        int hash = 0;
-        for (int i = 0; i < value.length(); i++) {
-            hash =  31 * hash + value.charAt(i);
-        }
-        return hash;
+    static int hash32(String value) {
+        return value.hashCode();
     }
 
 }
