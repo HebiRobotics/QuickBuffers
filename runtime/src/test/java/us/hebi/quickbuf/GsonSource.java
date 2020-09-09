@@ -27,7 +27,6 @@ import com.google.gson.stream.JsonToken;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Base64;
 
 /**
  * @author Florian Enner
@@ -87,7 +86,7 @@ public class GsonSource extends AbstractJsonSource {
         if (tryReadNull()) {
             store.clear();
         } else {
-            store.copyFrom(Base64.getDecoder().decode(reader.nextString()));
+            store.copyFrom(Base64.decodeFast(reader.nextString()));
         }
     }
 
@@ -135,17 +134,20 @@ public class GsonSource extends AbstractJsonSource {
 
     @Override
     public int nextFieldHash() throws IOException {
-        return reader.nextName().hashCode();
+        currentName = reader.nextName();
+        return currentName.hashCode();
     }
 
     @Override
-    public boolean isAtField(CharSequence fieldName) {
-        return true;
+    public boolean isAtField(String fieldName) {
+        return fieldName.equals(currentName);
     }
 
     @Override
     public void close() throws IOException {
         reader.close();
     }
+
+    private String currentName = null;
 
 }

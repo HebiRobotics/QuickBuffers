@@ -279,18 +279,35 @@ public abstract class AbstractJsonSource implements Closeable {
 
     // ==================== Implementation Interface ====================
 
+    /**
+     * JSON value will be a number or one of the special string values "NaN",
+     * "Infinity", and "-Infinity". Either numbers or strings are accepted.
+     * Exponent notation is also accepted. -0 is considered equivalent to 0.
+     */
     public abstract double nextDouble() throws IOException;
 
+    /**
+     * Either numbers or strings are accepted.
+     */
     public abstract int nextInt() throws IOException;
 
+    /**
+     * Either numbers or strings are accepted.
+     */
     public abstract long nextLong() throws IOException;
 
     public abstract boolean nextBoolean() throws IOException;
 
+    /**
+     * The name of the enum value as specified in proto is used. Parsers accept both enum names and integer values.
+     */
     public abstract <T extends ProtoEnum<?>> T nextEnum(final ProtoEnum.EnumConverter<T> converter) throws IOException;
 
     public abstract void nextString(final Utf8String store) throws IOException;
 
+    /**
+     * Either standard or URL-safe base64 encoding with/without paddings are accepted.
+     */
     public abstract void nextBase64(RepeatedByte store) throws IOException;
 
     public abstract void skipValue() throws IOException;
@@ -320,6 +337,6 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public abstract int nextFieldHash() throws IOException;
 
-    public abstract boolean isAtField(CharSequence fieldName);
+    public abstract boolean isAtField(String fieldName);
 
 }
