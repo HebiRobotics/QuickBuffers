@@ -26,7 +26,9 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * Reads proto messages from a JSON format
+ * Reads proto messages from a JSON format compatible with
+ * <p>
+ * https://developers.google.com/protocol-buffers/docs/proto3#json
  *
  * @author Florian Enner
  * @since 08 Sep 2020
@@ -36,31 +38,89 @@ public abstract class AbstractJsonSource implements Closeable {
     // ==================== Common Type Forwarders ====================
 
     /**
+     * Read a {@code double} field value from the source.
+     */
+    public double readDouble() throws IOException {
+        return nextDouble();
+    }
+
+    /**
+     * Read an {@code int32} field value from the source.
+     */
+    public int readInt32() throws IOException {
+        return nextInt();
+    }
+
+    /**
+     * Read an {@code int64} field value from the source.
+     */
+    public long readInt64() throws IOException {
+        return nextLong();
+    }
+
+    /**
+     * Read a {@code bool} field value from the source.
+     */
+    public boolean readBool() throws IOException {
+        return nextBoolean();
+    }
+
+    /**
+     * Read a {@code enum} field value from the source.
+     *
+     * @return enum object, or null if unknown
+     */
+    public <T extends ProtoEnum<?>> T readEnum(final ProtoEnum.EnumConverter<T> converter) throws IOException {
+        return nextEnum(converter);
+    }
+
+    /**
+     * Read a {@code string} field value from the source.
+     */
+    public void readString(final Utf8String store) throws IOException {
+        nextString(store);
+    }
+
+    /**
+     * Read a nested message value from the source
+     */
+    public void readMessage(final ProtoMessage msg) throws IOException {
+        msg.mergeFrom(this);
+    }
+
+    /**
+     * Read a {@code bytes} field value from the source.
+     */
+    public void readBytes(RepeatedByte store) throws IOException {
+        nextBase64(store);
+    }
+
+    /**
      * Read a {@code float} field value from the source.
      */
     public float readFloat() throws IOException {
-        return (float) readDouble();
+        return (float) nextDouble();
     }
 
     /**
      * Read a {@code uint64} field value from the source.
      */
     public long readUInt64() throws IOException {
-        return readInt64();
+        return nextLong();
     }
 
     /**
      * Read a {@code fixed64} field value from the source.
      */
     public long readFixed64() throws IOException {
-        return readInt64();
+        return nextLong();
     }
 
     /**
      * Read a {@code fixed32} field value from the source.
      */
     public int readFixed32() throws IOException {
-        return readInt32();
+        return nextInt();
     }
 
     /**
@@ -75,35 +135,35 @@ public abstract class AbstractJsonSource implements Closeable {
      * Read a {@code uint32} field value from the source.
      */
     public int readUInt32() throws IOException {
-        return readInt32();
+        return nextInt();
     }
 
     /**
      * Read an {@code sfixed32} field value from the source.
      */
     public int readSFixed32() throws IOException {
-        return readInt32();
+        return nextInt();
     }
 
     /**
      * Read an {@code sfixed64} field value from the source.
      */
     public long readSFixed64() throws IOException {
-        return readInt64();
+        return nextLong();
     }
 
     /**
      * Read an {@code sint32} field value from the source.
      */
     public int readSInt32() throws IOException {
-        return readInt32();
+        return nextInt();
     }
 
     /**
      * Read an {@code sint64} field value from the source.
      */
     public long readSInt64() throws IOException {
-        return readInt64();
+        return nextLong();
     }
 
     public void readRepeatedFixed64(final RepeatedLong value) throws IOException {
@@ -146,7 +206,7 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public void readRepeatedDouble(final RepeatedDouble value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             value.add(readDouble());
         }
         endArray();
@@ -154,7 +214,7 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public void readRepeatedInt64(final RepeatedLong value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             value.add(readInt64());
         }
         endArray();
@@ -162,7 +222,7 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public void readRepeatedFloat(final RepeatedFloat value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             value.add(readFloat());
         }
         endArray();
@@ -170,7 +230,7 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public void readRepeatedInt32(final RepeatedInt value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             value.add(readInt32());
         }
         endArray();
@@ -178,7 +238,7 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public void readRepeatedMessage(final RepeatedMessage<?> value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             readMessage(value.next());
         }
         endArray();
@@ -186,7 +246,7 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public void readRepeatedString(final RepeatedString value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             readString(value.next());
         }
         endArray();
@@ -194,20 +254,16 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public <E extends ProtoEnum<?>> void readRepeatedEnum(final RepeatedEnum<E> value, final ProtoEnum.EnumConverter<E> converter) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
-            if (isNumber()) {
-                value.addValue(readInt32());
-            } else {
-                E val = readEnum(converter);
-                value.addValue(val == null ? 0 : val.getNumber());
-            }
+        while (hasNext()) {
+            E val = nextEnum(converter);
+            value.addValue(val == null ? 0 : val.getNumber());
         }
         endArray();
     }
 
     public void readRepeatedBool(final RepeatedBoolean value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             value.add(readBool());
         }
         endArray();
@@ -215,67 +271,34 @@ public abstract class AbstractJsonSource implements Closeable {
 
     public void readRepeatedBytes(final RepeatedBytes value) throws IOException {
         if (!beginArray()) return;
-        while (!isAtEndOfArray()) {
+        while (hasNext()) {
             readBytes(value.next());
         }
         endArray();
     }
 
-    // ==================== Child Interface ====================
+    // ==================== Implementation Interface ====================
 
-    /**
-     * Read a {@code double} field value from the source.
-     */
-    public abstract double readDouble() throws IOException;
+    public abstract double nextDouble() throws IOException;
 
-    /**
-     * Read an {@code int32} field value from the source.
-     */
-    public abstract int readInt32() throws IOException;
+    public abstract int nextInt() throws IOException;
 
-    /**
-     * Read an {@code int64} field value from the source.
-     */
-    public abstract long readInt64() throws IOException;
+    public abstract long nextLong() throws IOException;
 
-    /**
-     * Read a {@code bool} field value from the source.
-     */
-    public abstract boolean readBool() throws IOException;
+    public abstract boolean nextBoolean() throws IOException;
 
-    /**
-     * Read a {@code bool} field value from the source.
-     */
-    public abstract <T extends ProtoEnum<?>> T readEnum(final ProtoEnum.EnumConverter<T> converter) throws IOException;
+    public abstract <T extends ProtoEnum<?>> T nextEnum(final ProtoEnum.EnumConverter<T> converter) throws IOException;
 
-    /**
-     * Read a {@code string} field value from the source.
-     */
-    public abstract void readString(final Utf8String store) throws IOException;
+    public abstract void nextString(final Utf8String store) throws IOException;
 
-    /**
-     * Read a nested message value from the source
-     */
-    public void readMessage(final ProtoMessage msg) throws IOException {
-        msg.mergeFrom(this);
-    }
+    public abstract void nextBase64(RepeatedByte store) throws IOException;
 
-    /**
-     * Read a {@code bytes} field value from the source.
-     */
-    public abstract void readBytes(RepeatedByte store) throws IOException;
-
-    /**
-     * Reads and discards the value of a single field.
-     */
-    public abstract void skipField() throws IOException;
-
-    public abstract boolean isNull() throws IOException;
+    public abstract void skipValue() throws IOException;
 
     /**
      * Consumes the begin element token or null element.
      *
-     * @return false on null, true otherwise
+     * @return true if the begin object element was consumed, i.e., not null
      */
     public abstract boolean beginObject() throws IOException;
 
@@ -284,18 +307,19 @@ public abstract class AbstractJsonSource implements Closeable {
     /**
      * Consumes the begin array token or null element.
      *
-     * @return false on null, true otherwise
+     * @return true if the begin array element was consumed, i.e., not null
      */
-    public abstract boolean beginArray() throws IOException;
+    protected abstract boolean beginArray() throws IOException;
 
     public abstract void endArray() throws IOException;
 
-    public abstract boolean isAtEndOfObject() throws IOException;
-
-    public abstract boolean isAtEndOfArray() throws IOException;
-
-    public abstract boolean isNumber() throws IOException;
+    /**
+     * @return true if the current object or array has more elements
+     */
+    public abstract boolean hasNext() throws IOException;
 
     public abstract int nextFieldHash() throws IOException;
+
+    public abstract boolean isAtField(CharSequence fieldName);
 
 }

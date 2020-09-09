@@ -29,7 +29,10 @@ import us.hebi.quickbuf.generator.RequestInfo.MessageInfo;
 
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -539,27 +542,34 @@ class MessageGenerator {
                 .addStatement("return this")
                 .endControlFlow();
 
-        mergeFrom.beginControlFlow("while (!input.isAtEndOfObject())")
+        mergeFrom.beginControlFlow("while (input.hasNext())")
                 .beginControlFlow("switch (input.nextFieldHash())");
 
         // add case statements for every field
         for (FieldGenerator field : fields) {
-            int hash1 = field.getInfo().getPrimaryJsonName().hashCode();
-            mergeFrom.addCode("case $L: // $L\n", hash1, field.getInfo().getPrimaryJsonName());
+            BiConsumer<Integer, String> generateCase = (hash, name) -> {
+                mergeFrom.beginControlFlow("case $L:", hash)
+                        .beginControlFlow("if (input.isAtField($S))", name);
+                field.generateJsonDeserializationCode(mergeFrom);
+                mergeFrom.nextControlFlow("else")
+                        .addStatement("input.skipValue()")
+                        .endControlFlow()
+                        .addStatement("break")
+                        .endControlFlow();
+            };
 
-            int hash2 = field.getInfo().getSecondaryJsonName().hashCode();
-            if (hash2 != hash1) {
-                mergeFrom.addCode("case $L: // $L\n", hash2, field.getInfo().getSecondaryJsonName());
+            String name1 = field.getInfo().getPrimaryJsonName();
+            String name2 = field.getInfo().getSecondaryJsonName();
+            generateCase.accept(name1.hashCode(), name1);
+
+            if (!name1.equals(name2)) {
+                generateCase.accept(name2.hashCode(), name2);
             }
-            mergeFrom.beginControlFlow("");
-            field.generateJsonDeserializationCode(mergeFrom); // generate deserialization code
-            mergeFrom.addStatement("break")
-                    .endControlFlow();
         }
 
         // add default case
         mergeFrom.beginControlFlow("default:")
-                .addStatement("input.skipField()")
+                .addStatement("input.skipValue()")
                 .addStatement("break")
                 .endControlFlow();
 

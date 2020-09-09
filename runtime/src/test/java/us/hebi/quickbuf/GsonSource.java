@@ -43,28 +43,30 @@ public class GsonSource extends AbstractJsonSource {
     final JsonReader reader;
 
     @Override
-    public double readDouble() throws IOException {
+    public double nextDouble() throws IOException {
         return reader.nextDouble();
     }
 
     @Override
-    public int readInt32() throws IOException {
+    public int nextInt() throws IOException {
         return reader.nextInt();
     }
 
     @Override
-    public long readInt64() throws IOException {
+    public long nextLong() throws IOException {
         return reader.nextLong();
     }
 
     @Override
-    public boolean readBool() throws IOException {
+    public boolean nextBoolean() throws IOException {
         return reader.nextBoolean();
     }
 
     @Override
-    public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
-        if (reader.peek() == JsonToken.NUMBER) {
+    public <T extends ProtoEnum<?>> T nextEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
+        if (tryReadNull()) {
+            return null;
+        } else if (reader.peek() == JsonToken.NUMBER) {
             return converter.forNumber(reader.nextInt());
         } else {
             return converter.forName(reader.nextString());
@@ -72,31 +74,31 @@ public class GsonSource extends AbstractJsonSource {
     }
 
     @Override
-    public void readString(Utf8String store) throws IOException {
-        store.copyFrom(reader.nextString());
+    public void nextString(Utf8String store) throws IOException {
+        if (tryReadNull()) {
+            store.clear();
+        } else {
+            store.copyFrom(reader.nextString());
+        }
     }
 
     @Override
-    public void readBytes(RepeatedByte store) throws IOException {
-        store.copyFrom(Base64.getDecoder().decode(reader.nextString()));
+    public void nextBase64(RepeatedByte store) throws IOException {
+        if (tryReadNull()) {
+            store.clear();
+        } else {
+            store.copyFrom(Base64.getDecoder().decode(reader.nextString()));
+        }
     }
 
     @Override
-    public void skipField() throws IOException {
+    public void skipValue() throws IOException {
         reader.skipValue();
     }
 
     @Override
-    public boolean isNull() throws IOException {
-        return reader.peek() == JsonToken.NULL;
-    }
-
-    @Override
     public boolean beginObject() throws IOException {
-        if (isNull()) {
-            reader.nextNull();
-            return false;
-        }
+        if (tryReadNull()) return false;
         reader.beginObject();
         return true;
     }
@@ -108,12 +110,17 @@ public class GsonSource extends AbstractJsonSource {
 
     @Override
     public boolean beginArray() throws IOException {
-        if (isNull()) {
-            reader.nextNull();
-            return false;
-        }
+        if (tryReadNull()) return false;
         reader.beginArray();
         return true;
+    }
+
+    private boolean tryReadNull() throws IOException {
+        if (reader.peek() == JsonToken.NULL) {
+            reader.nextNull();
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -122,23 +129,18 @@ public class GsonSource extends AbstractJsonSource {
     }
 
     @Override
-    public boolean isAtEndOfObject() throws IOException {
-        return reader.peek() == JsonToken.END_OBJECT;
-    }
-
-    @Override
-    public boolean isAtEndOfArray() throws IOException {
-        return reader.peek() == JsonToken.END_ARRAY;
-    }
-
-    @Override
-    public boolean isNumber() throws IOException {
-        return reader.peek() == JsonToken.NUMBER;
+    public boolean hasNext() throws IOException {
+        return reader.hasNext();
     }
 
     @Override
     public int nextFieldHash() throws IOException {
         return reader.nextName().hashCode();
+    }
+
+    @Override
+    public boolean isAtField(CharSequence fieldName) {
+        return true;
     }
 
     @Override
