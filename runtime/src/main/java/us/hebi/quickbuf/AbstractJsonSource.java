@@ -335,8 +335,20 @@ public abstract class AbstractJsonSource implements Closeable {
      */
     public abstract boolean hasNext() throws IOException;
 
-    public abstract int nextFieldHash() throws IOException;
+    public final int nextFieldHash() throws IOException {
+        currentField = nextName();
+        return ProtoUtil.hash32(currentField);
+    }
 
-    public abstract boolean isAtField(String fieldName);
+    /**
+     * @return a char sequence that does not get modified between subsequent calls to this method
+     */
+    protected abstract CharSequence nextName() throws IOException;
+
+    public boolean isAtField(String fieldName) {
+        return ProtoUtil.isEqual(fieldName, this.currentField);
+    }
+
+    CharSequence currentField = null;
 
 }

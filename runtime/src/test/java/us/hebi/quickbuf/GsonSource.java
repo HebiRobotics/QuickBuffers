@@ -133,21 +133,13 @@ public class GsonSource extends AbstractJsonSource {
     }
 
     @Override
-    public int nextFieldHash() throws IOException {
-        currentName = reader.nextName();
-        return currentName.hashCode();
-    }
-
-    @Override
-    public boolean isAtField(String fieldName) {
-        return fieldName.equals(currentName);
+    protected CharSequence nextName() throws IOException {
+        return reader.nextName();
     }
 
     @Override
     public void close() throws IOException {
         reader.close();
     }
-
-    private String currentName = null;
 
 }

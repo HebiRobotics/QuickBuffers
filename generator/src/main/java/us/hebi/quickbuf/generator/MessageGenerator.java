@@ -547,7 +547,8 @@ class MessageGenerator {
 
         // add case statements for every field
         for (FieldGenerator field : fields) {
-            BiConsumer<Integer, String> generateCase = (hash, name) -> {
+            Consumer<String> generateCase = (name) -> {
+                final int hash = FieldUtil.hash32(name);
                 mergeFrom.beginControlFlow("case $L:", hash)
                         .beginControlFlow("if (input.isAtField($S))", name);
                 field.generateJsonDeserializationCode(mergeFrom);
@@ -559,11 +560,11 @@ class MessageGenerator {
             };
 
             String name1 = field.getInfo().getPrimaryJsonName();
-            String name2 = field.getInfo().getSecondaryJsonName();
-            generateCase.accept(name1.hashCode(), name1);
+            generateCase.accept(name1);
 
+            String name2 = field.getInfo().getSecondaryJsonName();
             if (!name1.equals(name2)) {
-                generateCase.accept(name2.hashCode(), name2);
+                generateCase.accept(name2);
             }
         }
 

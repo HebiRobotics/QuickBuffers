@@ -122,7 +122,6 @@ public class GsonSourceTest {
         AbstractJsonSource source = new GsonSource(new StringReader(json));
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
         assertEquals(json, msg.toString());
-        System.out.println(msg);
     }
 
     @Test

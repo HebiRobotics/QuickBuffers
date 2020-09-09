@@ -433,4 +433,19 @@ class FieldUtil {
         }
     }
 
+    /**
+     * Hash code for JSON field name lookup. Any changes need to be
+     * synchronized between FieldUtil::hash32 and ProtoUtil::hash32.
+     */
+    static int hash32(CharSequence value) {
+        // To start off with we use a simple hash copied from String::hashCode
+        // Note that we can't use String::hashCode directly because the implementation
+        // may change between JDK releases and could break the generated messages.
+        int hash = 0;
+        for (int i = 0; i < value.length(); i++) {
+            hash =  31 * hash + value.charAt(i);
+        }
+        return hash;
+    }
+
 }
