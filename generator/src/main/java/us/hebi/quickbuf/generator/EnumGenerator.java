@@ -126,6 +126,7 @@ class EnumGenerator {
                 .addSuperinterface(ParameterizedTypeName.get(RuntimeClasses.EnumConverter, info.getTypeName()))
                 .addEnumConstant("INSTANCE");
 
+        // Number to Enum
         MethodSpec.Builder forNumber = MethodSpec.methodBuilder("forNumber")
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC, FINAL)
@@ -162,8 +163,18 @@ class EnumGenerator {
             forNumber.endControlFlow();
 
         }
+        decoder.addMethod(forNumber.build());
 
-        typeSpec.addType(decoder.addMethod(forNumber.build()).build());
+        // Name to Enum
+        MethodSpec.Builder forName = MethodSpec.methodBuilder("forName")
+                .addAnnotation(Override.class)
+                .addModifiers(PUBLIC, FINAL)
+                .returns(info.getTypeName())
+                .addParameter(CharSequence.class, "value", FINAL);
+        forName.addStatement("return $T.valueOf(value.toString())", info.getTypeName());
+        decoder.addMethod(forName.build());
+
+        typeSpec.addType(decoder.build());
     }
 
     final EnumInfo info;

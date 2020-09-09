@@ -45,6 +45,7 @@ class RuntimeClasses {
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");
     static final ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
     static final ClassName JsonSink = ClassName.get(API_PACKAGE, "AbstractJsonSink");
+    static final ClassName JsonSource = ClassName.get(API_PACKAGE, "AbstractJsonSource");
     static final ClassName FieldName = ClassName.get(API_PACKAGE, "FieldName");
     static final ClassName ProtoEnum = ClassName.get(API_PACKAGE, "ProtoEnum");
     static final ClassName EnumConverter = ProtoEnum.nestedClass("EnumConverter");

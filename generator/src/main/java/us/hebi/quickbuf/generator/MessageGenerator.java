@@ -107,6 +107,9 @@ class MessageGenerator {
         generateMergeFrom(type);
         generateIsInitialized(type);
         generateWriteToJson(type);
+        if (info.getParentFile().getParentRequest().generateMergeFromJson()) {
+            generateMergeFromJson(type);
+        }
         generateClone(type);
 
         // Utility methods
@@ -526,6 +529,58 @@ class MessageGenerator {
 
         writeTo.addStatement("output.endObject()");
         type.addMethod(writeTo.build());
+    }
+
+    private void generateMergeFromJson(TypeSpec.Builder type) {
+        MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addAnnotation(Override.class)
+                .returns(info.getTypeName())
+                .addParameter(RuntimeClasses.JsonSource, "input", Modifier.FINAL)
+                .addModifiers(Modifier.PUBLIC)
+                .addException(IOException.class);
+
+        mergeFrom.beginControlFlow("if (!input.beginObject())")
+                .addStatement("return this")
+                .endControlFlow();
+
+        mergeFrom.beginControlFlow("while (input.hasNext())")
+                .beginControlFlow("switch (input.nextFieldHash())");
+
+        // add case statements for every field
+        for (FieldGenerator field : fields) {
+            Consumer<String> generateCase = (name) -> {
+                final int hash = FieldUtil.hash32(name);
+                mergeFrom.beginControlFlow("case $L:", hash)
+                        .beginControlFlow("if (input.isAtField($S))", name);
+                field.generateJsonDeserializationCode(mergeFrom);
+                mergeFrom.nextControlFlow("else")
+                        .addStatement("input.skipValue()")
+                        .endControlFlow()
+                        .addStatement("break")
+                        .endControlFlow();
+            };
+
+            String name1 = field.getInfo().getPrimaryJsonName();
+            generateCase.accept(name1);
+
+            String name2 = field.getInfo().getSecondaryJsonName();
+            if (!name1.equals(name2)) {
+                generateCase.accept(name2);
+            }
+        }
+
+        // add default case
+        mergeFrom.beginControlFlow("default:")
+                .addStatement("input.skipValue()")
+                .addStatement("break")
+                .endControlFlow();
+
+        mergeFrom.endControlFlow()
+                .endControlFlow()
+                .addStatement("input.endObject()")
+                .addStatement("return this");
+
+        type.addMethod(mergeFrom.build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {

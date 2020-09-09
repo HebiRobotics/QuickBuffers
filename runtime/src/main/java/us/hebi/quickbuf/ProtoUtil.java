@@ -149,6 +149,27 @@ public class ProtoUtil {
 
     // =========== Internal utility methods used by the runtime API ===========
 
+    /**
+     * Hash code for JSON field name lookup. Any changes need to be
+     * synchronized between FieldUtil::hash32 and ProtoUtil::hash32.
+     */
+    static int hash32(CharSequence value) {
+        // To start off with we use a simple hash identical to String::hashCode. The
+        // algorithm has been documented since JDK 1.2, so it can't change without
+        // breaking backwards compatibility.
+        if (value instanceof String) {
+            return ((String) value).hashCode();
+        } else {
+            // Same algorithm, but generalized for CharSequences
+            int hash = 0;
+            final int length = value.length();
+            for (int i = 0; i < length; i++) {
+                hash = 31 * hash + value.charAt(i);
+            }
+            return hash;
+        }
+    }
+
     static final Utf8Decoder DEFAULT_UTF8_DECODER = new Utf8Decoder() {
         @Override
         public String decode(byte[] bytes, int offset, int length) {
