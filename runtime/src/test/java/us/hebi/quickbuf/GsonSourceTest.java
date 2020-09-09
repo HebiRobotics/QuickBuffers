@@ -125,6 +125,17 @@ public class GsonSourceTest {
     }
 
     @Test
+    public void testNullInput() throws Exception {
+        String json = "{optionalNestedMessage=null,repeatedString=null,optionalForeignMessage={},repeatedBytes=[null,null]}";
+        AbstractJsonSource source = new GsonSource(new StringReader(json));
+        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
+        assertTrue(msg.getOptionalNestedMessage().isEmpty());
+        assertTrue(msg.hasRepeatedString());
+        assertEquals(0, msg.getRepeatedString().length);
+        assertEquals(2, msg.getRepeatedBytes().length);
+    }
+
+    @Test
     public void testSpecialNumbers() throws Exception {
         String json = "{\n" +
                 "  \"repeated_double\": [\n" +
