@@ -51,6 +51,10 @@ public final class Utf8String {
         return bytes;
     }
 
+    boolean hasString() {
+        return string != null;
+    }
+
     /**
      * Gets the number of bytes.
      *

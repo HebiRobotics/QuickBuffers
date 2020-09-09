@@ -82,15 +82,6 @@ public class GsonSource extends AbstractJsonSource {
     }
 
     @Override
-    public void nextBase64(RepeatedByte store) throws IOException {
-        if (tryReadNull()) {
-            store.clear();
-        } else {
-            store.copyFrom(Base64.decodeFast(reader.nextString()));
-        }
-    }
-
-    @Override
     public void skipValue() throws IOException {
         reader.skipValue();
     }

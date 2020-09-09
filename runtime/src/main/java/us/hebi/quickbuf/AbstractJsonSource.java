@@ -308,7 +308,19 @@ public abstract class AbstractJsonSource implements Closeable {
     /**
      * Either standard or URL-safe base64 encoding with/without paddings are accepted.
      */
-    public abstract void nextBase64(RepeatedByte store) throws IOException;
+    public void nextBase64(RepeatedByte store) throws IOException {
+        try {
+            store.clear();
+            nextString(tmpString);
+            if (tmpString.hasString()) {
+                store.copyFrom(Base64.decodeFast(tmpString.getString()));
+            } else {
+                store.copyFrom(Base64.decode(tmpString.bytes(), 0, tmpString.size()));
+            }
+        } finally {
+            tmpString.clear();
+        }
+    }
 
     public abstract void skipValue() throws IOException;
 
@@ -350,5 +362,6 @@ public abstract class AbstractJsonSource implements Closeable {
     }
 
     CharSequence currentField = null;
+    Utf8String tmpString = Utf8String.newEmptyInstance();
 
 }
