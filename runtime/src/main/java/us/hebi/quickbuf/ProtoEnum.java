@@ -40,6 +40,8 @@ public interface ProtoEnum<E extends Enum> {
          */
         public E forNumber(int value);
 
+        public E forName(CharSequence value);
+
     }
 
 }

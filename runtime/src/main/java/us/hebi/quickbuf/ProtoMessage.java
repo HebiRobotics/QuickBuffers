@@ -26,7 +26,7 @@ import java.io.IOException;
 
 /**
  * Abstract interface implemented by Protocol Message objects.
- *
+ * <p>
  * API partially copied from Google's MessageNano
  *
  * @author Florian Enner
@@ -110,7 +110,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * Clears all has state so that the message would serialize empty,
      * but does not set field default values and does not get rid of
      * memory that was allocated for repeated types.
-     *
+     * <p>
      * Use this if you use this message for serialization purposes or
      * if you do not require default values for unset fields.
      *
@@ -149,9 +149,30 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     public abstract ProtoMessage mergeFrom(ProtoSource input) throws IOException;
 
     /**
+     * Merge {@code other} into the message being built. {@code other} must have the exact same type
+     * as {@code this}.
+     *
+     * <p>Merging occurs as follows. For each field:<br>
+     * * For singular primitive fields, if the field is set in {@code other}, then {@code other}'s
+     * value overwrites the value in this message.<br>
+     * * For singular message fields, if the field is set in {@code other}, it is merged into the
+     * corresponding sub-message of this message using the same merging rules.<br>
+     * * For repeated fields, the elements in {@code other} are concatenated with the elements in
+     * this message.<br>
+     * * For oneof groups, if the other message has one of the fields set, the group of this message
+     * is cleared and replaced by the field of the other message, so that the oneof constraint is
+     * preserved.
+     *
+     * <p>This is equivalent to the {@code Message::MergeFrom} method in C++.
+     */
+    public MessageType mergeFrom(MessageType other) {
+        throw new RuntimeException("MergeFrom method not generated");
+    }
+
+    /**
      * Serializes this message in a JSON format compatible with
      * https://developers.google.com/protocol-buffers/docs/proto3#json.
-     *
+     * <p>
      * The implementation may not fail on missing required fields, so
      * required fields would need to be checked using {@link ProtoMessage#isInitialized()}.
      *
@@ -159,6 +180,10 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      */
     public void writeTo(final AbstractJsonSink output) throws IOException {
         throw new IllegalStateException("Generated message does not implement JSON output");
+    }
+
+    public MessageType mergeFrom(final AbstractJsonSource input) throws IOException {
+        throw new IllegalStateException("Generated message does not implement JSON input");
     }
 
     /**
@@ -230,11 +255,11 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
 
     /**
      * Indicates whether another object is "equal to" this one.
-     *
+     * <p>
      * An object is considered equal when it is of the same message
      * type, contains the same fields (same has state), and all of
      * the field contents are equal.
-     *
+     * <p>
      * This comparison ignores unknown fields, so the serialized binary
      * form may not be equal.
      *
@@ -267,7 +292,9 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
                 .toString();
     }
 
-    /** Provides support for cloning if the method is generated for child classes */
+    /**
+     * Provides support for cloning if the method is generated for child classes
+     */
     @Override
     public ProtoMessage clone() throws CloneNotSupportedException {
         return (ProtoMessage) super.clone();

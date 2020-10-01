@@ -92,6 +92,8 @@ abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> im
         }
     }
 
+    public abstract void addAll(RepeatedType values);
+
     public abstract void copyFrom(RepeatedType other);
 
     public abstract int capacity();

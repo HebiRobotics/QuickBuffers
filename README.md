@@ -26,7 +26,7 @@ You can find the latest release on Maven Central at the coordinates below. The r
 <dependency>
   <groupId>us.hebi.quickbuf</groupId>
   <artifactId>quickbuf-runtime</artifactId>
-  <version>1.0-alpha8</version>
+  <version>1.0-alpha10</version>
 </dependency>
 ```
 
@@ -51,7 +51,7 @@ The code generator is setup as a `protoc` plugin that gets called by the officia
 <summary>Manual Generation</summary><p>
 
 * Download an appropriate [protoc.exe](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.1`)
-* Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha8/protoc-gen-quickbuf-1.0-alpha8.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
+* Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha10/protoc-gen-quickbuf-1.0-alpha10.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
   * Running the plugin requires Java8 or higher to be installed
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
 * Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
@@ -81,7 +81,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                                      classpathref="maven.plugin.classpath"/>
 
                             <!-- Download plugin files -->
-                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha8/protoc-gen-quickbuf-1.0-alpha8.zip"
+                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha10/protoc-gen-quickbuf-1.0-alpha10.zip"
                                  dest="${project.basedir}/protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
                             <unzip src="${project.basedir}/protoc-gen-quickbuf.zip" dest="${project.basedir}" overwrite="false"/>
 
@@ -180,7 +180,9 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
   * unknown fields are ignored when comparing with `equals`
 * **enforce_has_checks** throws an exception when accessing fields that were not set
 * **json_use_proto_name** changes the serialized json field names to match the original proto definition (`my_field`) instead of the default lowerCamelCase (`myField`) or `json_name` override option. [Compatible parsers](https://developers.google.com/protocol-buffers/docs/proto3#json) should be able to parse both cases.
-
+* **json_gen_merge** generates `mergeFrom(json)` methods (experimental)
+* **java8_optional** creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher.
+ 
 </p></details> 
 
 | Option | Value | 
@@ -191,6 +193,8 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
 | **store_unknown_fields** | **false**, true  |
 | **enforce_has_checks** | **false**, true  |                                     
 | **json_use_proto_name** | **false**, true  |                                     
+| **json_gen_merge** | **false**, true  |                                     
+| **java8_optional** | **false**, true  |                                     
 
 For example, 
 ```bash

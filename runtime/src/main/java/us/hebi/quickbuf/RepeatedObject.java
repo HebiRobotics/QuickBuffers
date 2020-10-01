@@ -90,6 +90,16 @@ abstract class RepeatedObject<SubType extends RepeatedObject<SubType, STORE, IN,
     }
 
     @Override
+    public void addAll(SubType values) {
+        final int newLength = length + values.length;
+        extendCapacityTo(newLength);
+        for (int i = 0; i < values.length; i++) {
+            copyFrom0(array[length + i], values.array[i]);
+        }
+        this.length = newLength;
+    }
+
+    @Override
     public final int capacity() {
         return array.length;
     }

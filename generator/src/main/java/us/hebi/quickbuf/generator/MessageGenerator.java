@@ -99,6 +99,7 @@ class MessageGenerator {
         // Fields accessors
         fields.forEach(f -> f.generateMemberMethods(type));
         generateCopyFrom(type);
+        generateMergeFromMessage(type);
         generateClear(type);
         generateEquals(type);
         generateWriteTo(type);
@@ -106,7 +107,13 @@ class MessageGenerator {
         generateMergeFrom(type);
         generateIsInitialized(type);
         generateWriteToJson(type);
+        if (info.getParentFile().getParentRequest().generateMergeFromJson()) {
+            generateMergeFromJson(type);
+        }
         generateClone(type);
+
+        // Utility methods
+        generateIsEmpty(type);
 
         // Static utilities
         generateParseFrom(type);
@@ -125,6 +132,14 @@ class MessageGenerator {
         type.addMethod(generateClearCode("clearQuick", false));
     }
 
+    private void generateIsEmpty(TypeSpec.Builder type) {
+        MethodSpec.Builder isEmpty = MethodSpec.methodBuilder("isEmpty")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(boolean.class)
+                .addStatement("return $N", BitField.hasNoBits(numBitFields));
+        type.addMethod(isEmpty.build());
+    }
+
     private MethodSpec generateClearCode(String name, boolean isFullClear) {
         MethodSpec.Builder clear = MethodSpec.methodBuilder(name)
                 .addAnnotation(Override.class)
@@ -133,7 +148,7 @@ class MessageGenerator {
 
         // no fields set -> no need to clear (e.g. unused nested messages)
         // NOTE: always make sure that the constructor creates conditions that clears everything
-        clear.beginControlFlow("if ($N)", BitField.hasNoBits(numBitFields))
+        clear.beginControlFlow("if (isEmpty())")
                 .addStatement("return this")
                 .endControlFlow();
 
@@ -391,6 +406,33 @@ class MessageGenerator {
         type.addMethod(copyFrom.build());
     }
 
+    private void generateMergeFromMessage(TypeSpec.Builder type) {
+        MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addAnnotation(Override.class)
+                .addParameter(info.getTypeName(), "other", Modifier.FINAL)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(info.getTypeName());
+
+        mergeFrom.beginControlFlow("if (other.isEmpty())")
+                .addStatement("return this")
+                .endControlFlow();
+        mergeFrom.addStatement("cachedSize = -1");
+
+        fields.forEach(field -> {
+            mergeFrom.beginControlFlow("if (other.$L())", field.getInfo().getHazzerName());
+            field.generateMergeFromMessageCode(mergeFrom);
+            mergeFrom.endControlFlow();
+        });
+
+        if (info.isStoreUnknownFields()) {
+            mergeFrom.beginControlFlow("$L", named("if (other.$unknownBytes:N.length() > 0)"))
+                    .addStatement(named("$unknownBytes:N.addAll(other.$unknownBytes:N)"))
+                    .endControlFlow();
+        }
+        mergeFrom.addStatement("return this");
+        type.addMethod(mergeFrom.build());
+    }
+
     private void generateClone(TypeSpec.Builder type) {
         type.addSuperinterface(Cloneable.class);
         type.addMethod(MethodSpec.methodBuilder("clone")
@@ -487,6 +529,58 @@ class MessageGenerator {
 
         writeTo.addStatement("output.endObject()");
         type.addMethod(writeTo.build());
+    }
+
+    private void generateMergeFromJson(TypeSpec.Builder type) {
+        MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addAnnotation(Override.class)
+                .returns(info.getTypeName())
+                .addParameter(RuntimeClasses.JsonSource, "input", Modifier.FINAL)
+                .addModifiers(Modifier.PUBLIC)
+                .addException(IOException.class);
+
+        mergeFrom.beginControlFlow("if (!input.beginObject())")
+                .addStatement("return this")
+                .endControlFlow();
+
+        mergeFrom.beginControlFlow("while (input.hasNext())")
+                .beginControlFlow("switch (input.nextFieldHash())");
+
+        // add case statements for every field
+        for (FieldGenerator field : fields) {
+            Consumer<String> generateCase = (name) -> {
+                final int hash = FieldUtil.hash32(name);
+                mergeFrom.beginControlFlow("case $L:", hash)
+                        .beginControlFlow("if (input.isAtField($S))", name);
+                field.generateJsonDeserializationCode(mergeFrom);
+                mergeFrom.nextControlFlow("else")
+                        .addStatement("input.skipValue()")
+                        .endControlFlow()
+                        .addStatement("break")
+                        .endControlFlow();
+            };
+
+            String name1 = field.getInfo().getPrimaryJsonName();
+            generateCase.accept(name1);
+
+            String name2 = field.getInfo().getSecondaryJsonName();
+            if (!name1.equals(name2)) {
+                generateCase.accept(name2);
+            }
+        }
+
+        // add default case
+        mergeFrom.beginControlFlow("default:")
+                .addStatement("input.skipValue()")
+                .addStatement("break")
+                .endControlFlow();
+
+        mergeFrom.endControlFlow()
+                .endControlFlow()
+                .addStatement("input.endObject()")
+                .addStatement("return this");
+
+        type.addMethod(mergeFrom.build());
     }
 
     private void generateMessageFactory(TypeSpec.Builder type) {
