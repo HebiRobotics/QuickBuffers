@@ -67,8 +67,9 @@ class ArraySink extends ProtoSink {
      * @see #position
      * @see #spaceLeft
      */
-    public void reset() {
+    public ArraySink reset() {
         position = offset;
+        return this;
     }
 
     protected OutOfSpaceException outOfSpace() {

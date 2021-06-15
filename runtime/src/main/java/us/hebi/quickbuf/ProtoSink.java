@@ -867,7 +867,7 @@ public abstract class ProtoSink {
      * @see #position
      * @see #spaceLeft
      */
-    public abstract void reset();
+    public abstract ProtoSink reset();
 
     /**
      * If you create a ProtoSink around a simple flat array, you must
