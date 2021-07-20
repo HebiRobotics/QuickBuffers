@@ -198,12 +198,10 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
 
 For example, 
 ```bash
-protoc --quickbuf_out= \
-    indent=4, \
-    input_order=quickbuf, \
-    replace_package=my.namespace.protobuf|my.namespace.quickbuf: \
-    ./path/to/generate`.
+protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
 ``` 
+
+You can download protoc from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/).
 
 ## Basic Usage
 
