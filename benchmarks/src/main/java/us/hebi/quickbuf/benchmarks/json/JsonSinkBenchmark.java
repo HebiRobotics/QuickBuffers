@@ -30,6 +30,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
+import us.hebi.quickbuf.GsonSink;
+import us.hebi.quickbuf.JacksonSink;
 import us.hebi.quickbuf.JsonSink;
 
 import java.io.ByteArrayOutputStream;
@@ -124,7 +126,7 @@ public class JsonSinkBenchmark {
     public Object testJacksonMarketEncode() throws IOException {
         encodeBuffer.reset();
         new JacksonSink(jsonFactory.createGenerator(encodeBuffer))
-                .writeMessageValue(buildMarketData(marketData));
+                .writeMessage(buildMarketData(marketData));
         return encodeBuffer.size();
     }
 

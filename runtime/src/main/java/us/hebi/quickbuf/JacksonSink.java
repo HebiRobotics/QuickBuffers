@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,19 +18,47 @@
  * #L%
  */
 
-package us.hebi.quickbuf.benchmarks.json;
+package us.hebi.quickbuf;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import us.hebi.quickbuf.*;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.io.StringWriter;
 
 /**
  * @author Florian Enner
  * @since 28 Nov 2019
  */
 public class JacksonSink extends AbstractJsonSink<JacksonSink> {
+
+    /**
+     * @return A reusable sink that writes to String and resets after calling toString()
+     */
+    public static JacksonSink newStringWriter() {
+        try {
+            final StringWriter output = new StringWriter();
+            return new JacksonSink(new JsonFactory().createGenerator(output)) {
+                @Override
+                public String toString() {
+                    try {
+                        flush();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    String string = output.getBuffer().toString();
+                    output.getBuffer().setLength(0);
+                    return string;
+                }
+            };
+        } catch (IOException e) {
+            throw new RuntimeException("IOException without I/O", e);
+        }
+    }
+
+    public JacksonSink(JsonGenerator writer) {
+        this.writer = writer;
+    }
 
     @Override
     protected void writeFieldName(final FieldName name) throws IOException {
@@ -39,12 +67,28 @@ public class JacksonSink extends AbstractJsonSink<JacksonSink> {
 
     @Override
     protected void writeNumber(double value) throws IOException {
-        writer.writeNumber(value);
+        if (Double.isNaN(value)) {
+            writer.writeString("NaN");
+        } else if (value == Double.POSITIVE_INFINITY) {
+            writer.writeString("Infinity");
+        } else if (value == Double.NEGATIVE_INFINITY) {
+            writer.writeString("-Infinity");
+        } else {
+            writer.writeNumber(value);
+        }
     }
 
     @Override
     protected void writeNumber(float value) throws IOException {
-        writer.writeNumber(value);
+        if (Float.isNaN(value)) {
+            writer.writeString("NaN");
+        } else if (value == Float.POSITIVE_INFINITY) {
+            writer.writeString("Infinity");
+        } else if (value == Float.NEGATIVE_INFINITY) {
+            writer.writeString("-Infinity");
+        } else {
+            writer.writeNumber(value);
+        }
     }
 
     @Override
@@ -78,7 +122,7 @@ public class JacksonSink extends AbstractJsonSink<JacksonSink> {
     }
 
     @Override
-    protected void writeMessageValue(ProtoMessage value) throws IOException {
+    protected void writeMessageValue(ProtoMessage<?> value) throws IOException {
         value.writeTo(this);
     }
 
@@ -109,8 +153,14 @@ public class JacksonSink extends AbstractJsonSink<JacksonSink> {
         return this;
     }
 
-    public JacksonSink(JsonGenerator writer) {
-        this.writer = writer;
+    @Override
+    public void flush() throws IOException {
+        writer.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+        writer.close();
     }
 
     final JsonGenerator writer;

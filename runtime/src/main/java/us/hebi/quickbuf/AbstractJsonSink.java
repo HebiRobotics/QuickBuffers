@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,10 @@
 
 package us.hebi.quickbuf;
 
+import us.hebi.quickbuf.ProtoUtil.Charsets;
+
+import java.io.Closeable;
+import java.io.Flushable;
 import java.io.IOException;
 
 /**
@@ -28,9 +32,9 @@ import java.io.IOException;
  * @author Florian Enner
  * @since 26 Oct 2019
  */
-public abstract class AbstractJsonSink<SubType extends AbstractJsonSink> {
+public abstract class AbstractJsonSink<SubType extends AbstractJsonSink<SubType>> implements Closeable, Flushable {
 
-    public SubType writeMessage(ProtoMessage value) throws IOException {
+    public SubType writeMessage(ProtoMessage<?> value) throws IOException {
         value.writeTo(this);
         return thisObj();
     }
@@ -135,7 +139,7 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink> {
         return thisObj();
     }
 
-    public SubType writeEnum(final FieldName name, final int value, ProtoEnum.EnumConverter converter) throws IOException {
+    public SubType writeEnum(final FieldName name, final int value, ProtoEnum.EnumConverter<?> converter) throws IOException {
         writeFieldName(name);
         writeEnumValue(value, converter);
         return thisObj();
@@ -153,7 +157,7 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink> {
         return thisObj();
     }
 
-    public SubType writeMessage(final FieldName name, final ProtoMessage value) throws IOException {
+    public SubType writeMessage(final FieldName name, final ProtoMessage<?> value) throws IOException {
         writeFieldName(name);
         writeMessageValue(value);
         return thisObj();
@@ -276,7 +280,7 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink> {
      * Allows to serialize enums as human readable strings or
      * as JSON numbers. Compatible parsers are able to parse
      * either case.
-     *
+     * <p>
      * Unknown values will still be serialized as numbers.
      *
      * @param value true if values should use strings
@@ -310,9 +314,19 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink> {
 
     protected abstract void writeString(CharSequence value) throws IOException;
 
-    protected abstract void writeBinary(RepeatedByte value) throws IOException;
+    protected void writeBinary(RepeatedByte value) throws IOException {
+        // Some libraries don't have built-in support for Base64, so we
+        // provide a base implementation that first converts to String.
+        if (tmpBytes == null) {
+            tmpBytes = RepeatedByte.newEmptyInstance();
+        }
+        tmpBytes.clear();
+        JsonEncoding.Base64Encoding.writeQuotedBase64(value.array, value.length, tmpBytes); // "<content>"
+        String str = new String(tmpBytes.array, 1, tmpBytes.length - 2, Charsets.ASCII); // <content>
+        writeString(str);
+    }
 
-    protected abstract void writeMessageValue(ProtoMessage value) throws IOException;
+    protected abstract void writeMessageValue(ProtoMessage<?> value) throws IOException;
 
     public abstract SubType beginObject() throws IOException;
 
@@ -323,5 +337,7 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink> {
     protected abstract void endArray() throws IOException;
 
     protected abstract SubType thisObj();
+
+    private RepeatedByte tmpBytes = null;
 
 }
