@@ -30,6 +30,7 @@ import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
 import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.compat.GsonSource;
+import us.hebi.quickbuf.compat.JacksonSource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,9 +40,11 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
 
 /**
  * === JDK 17
- * Benchmark                                         Mode  Cnt    Score   Error   Units
- * JsonSourceBenchmark.testGsonCarDecode_string     thrpt   10  269,341 ± 9,123  ops/ms
- * JsonSourceBenchmark.testGsonMarketDecode_string  thrpt   10  419,436 ± 4,950  ops/ms
+ * Benchmark                                     Mode  Cnt    Score   Error   Units
+ * JsonSourceBenchmark.testGsonCarDecode        thrpt   10  266,933 ± 1,648  ops/ms
+ * JsonSourceBenchmark.testGsonMarketDecode     thrpt   10  408,924 ± 8,140  ops/ms
+ * JsonSourceBenchmark.testJacksonCarDecode     thrpt   10  199,554 ± 2,211  ops/ms
+ * JsonSourceBenchmark.testJacksonMarketDecode  thrpt   10  296,007 ± 2,351  ops/ms
  *
  * @author Florian Enner
  * @since 01 Mär 2022
@@ -85,13 +88,23 @@ public class JsonSourceBenchmark {
     private final String carString;
 
     @Benchmark
-    public Object testGsonMarketDecode_string() throws IOException {
+    public Object testGsonMarketDecode() throws IOException {
         return marketData.clearQuick().mergeFrom(new GsonSource(marketString));
     }
 
     @Benchmark
-    public Object testGsonCarDecode_string() throws IOException {
+    public Object testGsonCarDecode() throws IOException {
         return carData.clearQuick().mergeFrom(new GsonSource(carString));
+    }
+
+    @Benchmark
+    public Object testJacksonMarketDecode() throws IOException {
+        return marketData.clearQuick().mergeFrom(new JacksonSource(marketString));
+    }
+
+    @Benchmark
+    public Object testJacksonCarDecode() throws IOException {
+        return carData.clearQuick().mergeFrom(new JacksonSource(carString));
     }
 
 }

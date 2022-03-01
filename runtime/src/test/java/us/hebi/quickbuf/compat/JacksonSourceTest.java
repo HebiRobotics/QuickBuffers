@@ -21,6 +21,7 @@
 package us.hebi.quickbuf.compat;
 
 import org.junit.Test;
+import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
 import us.hebi.quickbuf.AbstractJsonSource;
 import us.hebi.quickbuf.CompatibilityTest;
@@ -36,7 +37,7 @@ import static org.junit.Assert.*;
  * @author Florian Enner
  * @since 07 Sep 2020
  */
-public class GsonSourceTest {
+public class JacksonSourceTest {
 
     @Test
     public void testReadJsonSink() throws IOException {
@@ -44,12 +45,19 @@ public class GsonSourceTest {
         TestAllTypes actual = TestAllTypes.newInstance();
 
         String json = JsonSink.newInstance().setWriteEnumStrings(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        actual.clear().mergeFrom(new JacksonSource(json));
         assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setWriteEnumStrings(false).writeMessage(expected).toString();
-        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        actual.clear().mergeFrom(new JacksonSource(json));
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testSkipping() throws Exception {
+        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        String json = JsonSink.newInstance().setWriteEnumStrings(true).writeMessage(expected).toString();
+        ForeignMessage wrongMsg = ForeignMessage.newInstance().mergeFrom(new JacksonSource(json));
     }
 
     @Test
@@ -136,15 +144,14 @@ public class GsonSourceTest {
                 "  ]\n" +
                 "}";
 
-        AbstractJsonSource source = new GsonSource(new StringReader(json));
-        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
+        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(new JacksonSource(json));
         assertEquals(json, msg.toString());
     }
 
     @Test
     public void testNullInput() throws Exception {
         String json = "{\"optionalNestedMessage\":null,\"repeatedString\":null,\"optionalForeignMessage\":{},\"repeatedBytes\":[null,null]}";
-        AbstractJsonSource source = new GsonSource(new StringReader(json));
+        AbstractJsonSource source = new JacksonSource(json);
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
         assertTrue(msg.getOptionalNestedMessage().isEmpty());
         assertTrue(msg.hasRepeatedString());
@@ -174,7 +181,7 @@ public class GsonSourceTest {
                 "    2\n" +
                 "  ]\n" +
                 "}";
-        AbstractJsonSource source = new GsonSource(new StringReader(json));
+        AbstractJsonSource source = new JacksonSource(json);
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
 
         assertArrayEquals(new double[]{
@@ -225,7 +232,7 @@ public class GsonSourceTest {
         ProtoMessage<?> msg2 = msg
                 .clone()
                 .clear()
-                .mergeFrom(new GsonSource(new StringReader(sink.toString())));
+                .mergeFrom(new JacksonSource(new StringReader(sink.toString())));
         assertEquals(msg, msg2);
     }
 

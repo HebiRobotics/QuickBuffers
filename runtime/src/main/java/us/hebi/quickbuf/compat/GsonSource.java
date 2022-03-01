@@ -31,6 +31,10 @@ import java.io.Reader;
 import java.io.StringReader;
 
 /**
+ * Implementation of a JsonSource using GSON.
+ *
+ * Warning: this implementation has not been tested extensively against bad inputs.
+ *
  * @author Florian Enner
  * @since 07 Sep 2020
  */

@@ -21,6 +21,7 @@
 package us.hebi.quickbuf.compat;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import us.hebi.quickbuf.AbstractJsonSource;
@@ -32,10 +33,13 @@ import java.io.Reader;
 import java.io.StringReader;
 
 /**
+ * Basic implementation of a JsonSource using GSON.
+ *
+ * Warning: this implementation has not been tested extensively against bad inputs.
+ *
  * @author Florian Enner
  * @since 26 Feb 2022
  */
-@Deprecated // not working yet
 public class JacksonSource extends AbstractJsonSource {
 
     public JacksonSource(String string) throws IOException {
@@ -43,8 +47,12 @@ public class JacksonSource extends AbstractJsonSource {
     }
 
     public JacksonSource(Reader reader) throws IOException {
-        this(new JsonFactory().createParser(reader));
-        //this.reader.setLenient(true); // allow nan/infinity
+        this(Parsers.factory.createParser(reader));
+    }
+
+    private static class Parsers {
+        private static JsonFactory factory = new JsonFactory()
+                .configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true); // allow nan/inf
     }
 
     /**
@@ -59,25 +67,25 @@ public class JacksonSource extends AbstractJsonSource {
     @Override
     public double nextDouble() throws IOException {
         next();
-        return reader.getDoubleValue();
+        return reader.getValueAsDouble();
     }
 
     @Override
     public int nextInt() throws IOException {
         next();
-        return reader.getIntValue();
+        return reader.getValueAsInt();
     }
 
     @Override
     public long nextLong() throws IOException {
         next();
-        return reader.getLongValue();
+        return reader.getValueAsLong();
     }
 
     @Override
     public boolean nextBoolean() throws IOException {
         next();
-        return reader.getBooleanValue();
+        return reader.getValueAsBoolean();
     }
 
     @Override
@@ -95,59 +103,120 @@ public class JacksonSource extends AbstractJsonSource {
 
     @Override
     public void nextString(Utf8String store) throws IOException {
-        if (tryReadNull()) {
-            store.clear();
-        } else {
-            next();
-            store.copyFrom(reader.getValueAsString());
+        switch (next()) {
+            case VALUE_NULL:
+                store.clear();
+                return;
+            default:
+                store.copyFrom(reader.getValueAsString());
         }
     }
 
     @Override
     public void skipValue() throws IOException {
-        reader.getValueAsString(); // TODO: is there a better way to do this?
+        // next() gets us to the value
+        switch (next()) {
+            case START_OBJECT:
+                skipObject();
+                break;
+            case START_ARRAY:
+                skipArray();
+                break;
+            default:
+                // skips the value and loads the next token
+                peek();
+        }
+    }
+
+    private void skipObject() throws IOException {
+        int level = 1;
+        while (level != 0) {
+            switch (next()) {
+                case START_OBJECT:
+                    level++;
+                    break;
+                case END_OBJECT:
+                    level--;
+                    break;
+            }
+        }
+    }
+
+    private void skipArray() throws IOException {
+        int level = 1;
+        while (level != 0) {
+            switch (next()) {
+                case START_ARRAY:
+                    level++;
+                    break;
+                case END_ARRAY:
+                    level--;
+                    break;
+            }
+        }
     }
 
     @Override
     public boolean beginObject() throws IOException {
-        if (tryReadNull()) return false;
-//        reader.beginObject();
-        return true;
+        switch (peek()) {
+            case VALUE_NULL:
+                next();
+                return false;
+            case START_OBJECT:
+                next();
+                return true;
+            default:
+                throw unexpectedTokenError("START_OBJECT");
+        }
     }
 
     @Override
     public void endObject() throws IOException {
-//       reader.endObject();
+        if (peek() != JsonToken.END_OBJECT) {
+            throw unexpectedTokenError("END_OBJECT");
+        }
+        next();
     }
 
     @Override
     public boolean beginArray() throws IOException {
-        if (tryReadNull()) return false;
-//        reader.beginArray();
-        return true;
-    }
-
-    private boolean tryReadNull() throws IOException {
-        if (peek() == JsonToken.VALUE_NULL) {
-            skipValue();
-            return true;
+        switch (peek()) {
+            case VALUE_NULL:
+                next();
+                return false;
+            case START_ARRAY:
+                next();
+                return true;
+            default:
+                throw unexpectedTokenError("START_ARRAY");
         }
-        return false;
     }
 
     @Override
     public void endArray() throws IOException {
-//        reader.endArray();
+        if (peek() != JsonToken.END_ARRAY) {
+            throw unexpectedTokenError("END_ARRAY");
+        }
+        next();
     }
 
     @Override
     public boolean hasNext() throws IOException {
-        return !reader.isClosed();
+        switch (peek()) {
+            case END_OBJECT:
+            case END_ARRAY:
+                return false;
+            default:
+                return !reader.isClosed();
+        }
     }
 
     @Override
     protected CharSequence nextName() throws IOException {
-        return reader.nextFieldName();
+        if (next() != JsonToken.FIELD_NAME) {
+            throw unexpectedTokenError("FIELD_NAME");
+        }
+        return reader.getCurrentName();
     }
 
     @Override
@@ -165,6 +234,11 @@ public class JacksonSource extends AbstractJsonSource {
 
     private JsonToken peek() throws IOException {
         return peekToken != null ? peekToken : (peekToken = reader.nextToken());
+    }
+
+    private IOException unexpectedTokenError(String expectedToken) {
+        return new JsonParseException(reader, "Expected " + expectedToken + " but was "
+                + reader.getCurrentToken(), reader.currentTokenLocation());
     }
 
     JsonToken peekToken = null;
