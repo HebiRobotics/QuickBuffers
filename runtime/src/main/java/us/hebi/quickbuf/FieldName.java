@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,14 +40,14 @@ public final class FieldName {
         this.fieldName = fieldName;
     }
 
-    public String getValue() {
+    public String getString() {
         return fieldName;
     }
 
     /**
      * @return utf8 bytes with name quotes and colon
      */
-    public byte[] asJsonKey() {
+    public byte[] getJsonKeyBytes() {
         if (jsonKey == null) {
             jsonKey = ('"' + fieldName + '"' + ':').getBytes(Charsets.UTF_8);
         }

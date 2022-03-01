@@ -153,7 +153,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
 
     @Override
     protected void writeFieldName(final FieldName name) {
-        final byte[] key = name.asJsonKey();
+        final byte[] key = name.getJsonKeyBytes();
         final int pos = output.addLength(key.length);
         System.arraycopy(key, 0, output.array, pos, key.length);
         writeSpaceAfterFieldName();
