@@ -91,7 +91,7 @@
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
-                                    <outputOptions>replace_package=(protobuf)=quickbuf,indent=4,input_order=quickbuf,java8_optional=true
+                                    <outputOptions>replace_package=(protobuf)=quickbuf,indent=4,input_order=quickbuf,java8_optional=true,json_gen_merge=true
                                     </outputOptions>
                                     <addSources>main</addSources>
                                 </outputTarget>
