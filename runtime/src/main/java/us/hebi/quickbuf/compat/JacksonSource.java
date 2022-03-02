@@ -40,7 +40,7 @@ import java.io.StringReader;
  * @author Florian Enner
  * @since 26 Feb 2022
  */
-public class JacksonSource extends AbstractJsonSource {
+public class JacksonSource extends AbstractJsonSource<JacksonSource> {
 
     public JacksonSource(String string) throws IOException {
         this(new StringReader(string));
@@ -63,6 +63,11 @@ public class JacksonSource extends AbstractJsonSource {
     }
 
     final JsonParser reader;
+
+    @Override
+    protected JacksonSource thisObj() {
+        return this;
+    }
 
     @Override
     public double nextDouble() throws IOException {

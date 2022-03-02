@@ -31,7 +31,7 @@ import java.io.IOException;
  * @author Florian Enner
  * @since 08 Sep 2020
  */
-public abstract class AbstractJsonSource implements Closeable {
+public abstract class AbstractJsonSource<SubType extends AbstractJsonSource<SubType>> implements Closeable {
 
     // ==================== Common Type Forwarders ====================
 
@@ -82,7 +82,7 @@ public abstract class AbstractJsonSource implements Closeable {
     /**
      * Read a nested message value from the source
      */
-    public void readMessage(final ProtoMessage msg) throws IOException {
+    public void readMessage(final ProtoMessage<?> msg) throws IOException {
         msg.mergeFrom(this);
     }
 
@@ -124,7 +124,7 @@ public abstract class AbstractJsonSource implements Closeable {
     /**
      * Read a {@code group} field value from the source.
      */
-    public void readGroup(final ProtoMessage msg)
+    public void readGroup(final ProtoMessage<?> msg)
             throws IOException {
         readMessage(msg);
     }
@@ -275,7 +275,41 @@ public abstract class AbstractJsonSource implements Closeable {
         endArray();
     }
 
+    public final void skipUnknownField() throws IOException {
+        if (!ignoreUnknownFields) {
+            throw new IllegalArgumentException("Encountered unknown field: " + currentField);
+        }
+        skipValue();
+    }
+
+    public final void skipUnknownEnumValue() throws IOException {
+        if (!ignoreUnknownFields) {
+            throw new IllegalArgumentException("Encountered unknown enum value");
+        }
+    }
+
+    // ==================== Configuration ====================
+
+    /**
+     * Allows to serialize enums as human readable strings or
+     * as JSON numbers. Compatible parsers are able to parse
+     * either case.
+     * <p>
+     * Unknown values will still be serialized as numbers.
+     *
+     * @param ignoreUnknownFields true if values should use strings
+     * @return this
+     */
+    public SubType setIgnoreUnknownFields(final boolean ignoreUnknownFields) {
+        this.ignoreUnknownFields = ignoreUnknownFields;
+        return thisObj();
+    }
+
+    protected boolean ignoreUnknownFields = true;
+
     // ==================== Implementation Interface ====================
+
+    protected abstract SubType thisObj();
 
     /**
      * JSON value will be a number or one of the special string values "NaN",

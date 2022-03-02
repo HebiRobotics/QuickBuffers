@@ -38,7 +38,7 @@ import java.io.StringReader;
  * @author Florian Enner
  * @since 07 Sep 2020
  */
-public class GsonSource extends AbstractJsonSource {
+public class GsonSource extends AbstractJsonSource<GsonSource> {
 
     public GsonSource(String string) {
         this(new StringReader(string));
@@ -57,6 +57,11 @@ public class GsonSource extends AbstractJsonSource {
     }
 
     final JsonReader reader;
+
+    @Override
+    protected GsonSource thisObj() {
+        return this;
+    }
 
     @Override
     public double nextDouble() throws IOException {

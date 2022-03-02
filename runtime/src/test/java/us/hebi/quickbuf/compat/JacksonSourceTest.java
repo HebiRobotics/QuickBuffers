@@ -44,11 +44,11 @@ public class JacksonSourceTest {
         TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
         TestAllTypes actual = TestAllTypes.newInstance();
 
-        String json = JsonSink.newInstance().setWriteEnumStrings(true).writeMessage(expected).toString();
+        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
         actual.clear().mergeFrom(new JacksonSource(json));
         assertEquals(expected, actual);
 
-        json = JsonSink.newInstance().setWriteEnumStrings(false).writeMessage(expected).toString();
+        json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new JacksonSource(json));
         assertEquals(expected, actual);
 
@@ -60,7 +60,7 @@ public class JacksonSourceTest {
     @Test
     public void testSkipping() throws Exception {
         TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
-        String json = JsonSink.newInstance().setWriteEnumStrings(true).writeMessage(expected).toString();
+        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
         ForeignMessage wrongMsg = ForeignMessage.newInstance().mergeFrom(new JacksonSource(json));
     }
 

@@ -641,7 +641,7 @@ class MessageGenerator {
 
             // Unknown field -> skip
             mergeFrom.nextControlFlow("else")
-                    .addStatement("input.skipValue()")
+                    .addStatement("input.skipUnknownField()")
                     .endControlFlow();
 
             // See if we can fallthrough to the next case
@@ -685,7 +685,7 @@ class MessageGenerator {
 
         // add default case
         mergeFrom.beginControlFlow("default:")
-                .addStatement("input.skipValue()");
+                .addStatement("input.skipUnknownField()");
         if (enableFallthroughOptimization) {
             mergeFrom.addStatement("hash = input.nextFieldHashOrZero()");
         }

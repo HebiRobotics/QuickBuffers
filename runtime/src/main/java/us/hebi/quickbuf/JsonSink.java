@@ -72,16 +72,10 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     public static JsonSink newPrettyInstance() {
         return newInstance(RepeatedByte.newEmptyInstance())
                 .setPretty(true)
-                .setWriteEnumStrings(true);
+                .setWriteEnumsAsInts(false);
     }
 
     // ==================== Extra API ====================
-
-    @Override
-    public JsonSink setWriteEnumStrings(boolean value) {
-        super.setWriteEnumStrings(value);
-        return this;
-    }
 
     /**
      * Changes the output to the given buffer
@@ -138,13 +132,11 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
         return output;
     }
 
-    public JsonSink writeMessage(ProtoMessage value) {
+    public JsonSink writeMessage(ProtoMessage<?> value) {
         try {
             value.writeTo(this);
         } catch (IOException e) {
-            IllegalStateException unexpected = new IllegalStateException("IOException while writing to memory");
-            unexpected.initCause(e);
-            throw unexpected;
+            throw new IllegalStateException("IOException while writing to memory", e);
         }
         return this;
     }

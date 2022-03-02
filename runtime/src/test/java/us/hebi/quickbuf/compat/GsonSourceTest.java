@@ -43,11 +43,11 @@ public class GsonSourceTest {
         TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
         TestAllTypes actual = TestAllTypes.newInstance();
 
-        String json = JsonSink.newInstance().setWriteEnumStrings(true).writeMessage(expected).toString();
+        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
         assertEquals(expected, actual);
 
-        json = JsonSink.newInstance().setWriteEnumStrings(false).writeMessage(expected).toString();
+        json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
         assertEquals(expected, actual);
 

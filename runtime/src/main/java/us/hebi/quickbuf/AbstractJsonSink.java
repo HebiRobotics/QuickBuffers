@@ -265,9 +265,9 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink<SubType>
         return thisObj();
     }
 
-    protected void writeEnumValue(final int number, final ProtoEnum.EnumConverter converter) throws IOException {
-        final ProtoEnum value;
-        if (writeEnumStrings && (value = converter.forNumber(number)) != null) {
+    protected void writeEnumValue(final int number, final ProtoEnum.EnumConverter<?> converter) throws IOException {
+        final ProtoEnum<?> value;
+        if (!writeEnumsAsInts && (value = converter.forNumber(number)) != null) {
             writeString(value.getName());
         } else {
             writeNumber(number);
@@ -277,21 +277,21 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink<SubType>
     // ==================== Configuration ====================
 
     /**
-     * Allows to serialize enums as human readable strings or
-     * as JSON numbers. Compatible parsers are able to parse
+     * Serializes enum values as JSON integers rather than human-
+     * readable strings. Compatible parsers are able to parse
      * either case.
      * <p>
      * Unknown values will still be serialized as numbers.
      *
-     * @param value true if values should use strings
+     * @param writeEnumAsInts true if values should use strings
      * @return this
      */
-    public SubType setWriteEnumStrings(final boolean value) {
-        this.writeEnumStrings = value;
+    public SubType setWriteEnumsAsInts(final boolean writeEnumAsInts) {
+        this.writeEnumsAsInts = !writeEnumAsInts;
         return thisObj();
     }
 
-    protected boolean writeEnumStrings = false;
+    protected boolean writeEnumsAsInts = false;
 
     /**
      * The serialized JSON object keys map to the value defined by the 'json_name'
@@ -300,11 +300,11 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink<SubType>
      * This option lets users choose to preserve the original field names as defined
      * in the proto file. Conforming parsers accept both keys.
      *
-     * @param value true uses the original field names as JSON object keys
+     * @param preserveProtoFieldNames true uses the original field names as JSON object keys
      * @return this
      */
-    public SubType setPreserveProtoFieldNames(final boolean value) {
-        this.preserveProtoFieldNames = value;
+    public SubType setPreserveProtoFieldNames(final boolean preserveProtoFieldNames) {
+        this.preserveProtoFieldNames = preserveProtoFieldNames;
         return thisObj();
     }
 
