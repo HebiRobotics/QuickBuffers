@@ -51,6 +51,8 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -164,14 +166,38 @@ public abstract class ProtoSink {
     }
 
     /**
+     * Creates a lightweight wrapper to write protobuf messages
+     * to an {@link OutputStream#}). This is slower than writing
+     * to an array, but it does not require extra memory.
+     *
+     * @param outputStream target output
+     * @return wrapper
+     */
+    public static ProtoSink wrap(OutputStream outputStream) {
+        return new StreamSink(outputStream);
+    }
+
+    /**
+     * Creates a lightweight wrapper to write protobuf messages to
+     * a {@link ByteBuffer#}). This is slower than  writing to an
+     * array, but it does not require extra memory.
+     *
+     * @param buffer target output
+     * @return wrapper
+     */
+    public static ProtoSink wrap(ByteBuffer buffer) {
+        return new BufferSink(buffer);
+    }
+
+    /**
      * Changes the output to the given array. This resets any
      * existing internal state such as position and is
      * equivalent to creating a new instance.
      *
-     * @param buffer
-     * @param offset
-     * @param length
-     * @return
+     * @param buffer target buffer
+     * @param offset start index
+     * @param length buffer size
+     * @return this
      */
     public abstract ProtoSink wrap(byte[] buffer, long offset, int length);
 
@@ -461,15 +487,18 @@ public abstract class ProtoSink {
     }
 
     /** Write a {@code string} field to the sink. */
-    public abstract void writeStringNoTag(final CharSequence value) throws IOException;
+    public void writeStringNoTag(final CharSequence value) throws IOException {
+        writeRawVarint32(Utf8.encodedLength(value));
+        Utf8.encodeSink(value, this);
+    }
 
     /** Write a {@code group} field to the sink. */
-    public void writeGroupNoTag(final ProtoMessage value) throws IOException {
+    public void writeGroupNoTag(final ProtoMessage<?> value) throws IOException {
         value.writeTo(this);
     }
 
     /** Write an embedded message field to the sink. */
-    public void writeMessageNoTag(final ProtoMessage value) throws IOException {
+    public void writeMessageNoTag(final ProtoMessage<?> value) throws IOException {
         writeRawVarint32(value.getCachedSize());
         value.writeTo(this);
     }
@@ -597,7 +626,7 @@ public abstract class ProtoSink {
      * {@code group} field, including tag.
      */
     public static int computeGroupSize(final int fieldNumber,
-                                       final ProtoMessage value) {
+                                       final ProtoMessage<?> value) {
         return computeTagSize(fieldNumber) * 2 + computeGroupSizeNoTag(value);
     }
 
@@ -606,7 +635,7 @@ public abstract class ProtoSink {
      * embedded message field, including tag.
      */
     public static int computeMessageSize(final int fieldNumber,
-                                         final ProtoMessage value) {
+                                         final ProtoMessage<?> value) {
         return computeTagSize(fieldNumber) + computeMessageSizeNoTag(value);
     }
 
@@ -835,7 +864,7 @@ public abstract class ProtoSink {
     // =================================================================
 
     /**
-     * If writing to a flat array, return the space left in the array.
+     * Returns remaining space when there is a known limit.
      * Otherwise, throws {@code UnsupportedOperationException}.
      */
     public abstract int spaceLeft();
@@ -1033,6 +1062,74 @@ public abstract class ProtoSink {
     public static long encodeZigZag64(final long n) {
         // Note:  the right-shift must be arithmetic
         return (n << 1) ^ (n >> 63);
+    }
+
+    static class StreamSink extends ProtoSink {
+        StreamSink(OutputStream outputStream) {
+            this.outputStream = outputStream;
+        }
+
+        @Override
+        public ProtoSink wrap(byte[] buffer, long offset, int length) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int spaceLeft() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int position() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ProtoSink reset() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void writeRawByte(byte value) throws IOException {
+            outputStream.write(value);
+        }
+
+        final OutputStream outputStream;
+    }
+
+    static class BufferSink extends ProtoSink {
+
+        BufferSink(ByteBuffer buffer) {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public ProtoSink wrap(byte[] buffer, long offset, int length) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int spaceLeft() {
+            return buffer.remaining();
+        }
+
+        @Override
+        public int position() {
+            return buffer.position();
+        }
+
+        @Override
+        public ProtoSink reset() {
+            buffer.rewind();
+            return this;
+        }
+
+        @Override
+        public void writeRawByte(byte value) throws IOException {
+            buffer.put(value);
+        }
+
+        final ByteBuffer buffer;
     }
 
 }

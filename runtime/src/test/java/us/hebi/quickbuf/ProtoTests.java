@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@ import protos.test.quickbuf.external.ImportEnum;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -40,6 +41,29 @@ import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
  * @since 13 Aug 2019
  */
 public class ProtoTests {
+
+    @Test
+    public void testOutputStreamSink() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        msg.writeTo(ProtoSink.wrap(baos));
+        byte[] expected = msg.toByteArray();
+        byte[] actual = baos.toByteArray();
+        assertEquals(msg, TestAllTypes.parseFrom(actual));
+        assertArrayEquals(expected, actual);
+        assertArrayEquals(msg.toByteArray(), baos.toByteArray());
+    }
+
+    @Test
+    public void testByteBufferSink() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        ByteBuffer buffer = ByteBuffer.allocate(msg.getSerializedSize());
+        msg.writeTo(ProtoSink.wrap(buffer));
+        byte[] expected = msg.toByteArray();
+        byte[] actual = buffer.array();
+        assertEquals(msg, TestAllTypes.parseFrom(actual));
+        assertArrayEquals(expected, actual);
+    }
 
     @Test
     public void testDefaults() throws IOException {
