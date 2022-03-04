@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -245,7 +245,7 @@ class MessageGenerator {
             mergeFrom.beginControlFlow("while (true)");
         } else {
             mergeFrom.beginControlFlow("while (true)");
-            mergeFrom.addStatement(named("int tag = input.$readTag:N()"));
+            mergeFrom.addStatement(named("int tag = input.$readTag:N()")); // TODO: read after each field to avoid backjumps
         }
         mergeFrom.beginControlFlow("switch (tag)");
 
@@ -254,19 +254,23 @@ class MessageGenerator {
             FieldGenerator field = sortedFields.get(i);
 
             // Assume all packable fields are written packed. Add non-packed cases to the end.
+            boolean readTag = true;
             if (field.getInfo().isPackable()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
                 field.generateMergingCodeFromPacked(mergeFrom);
             } else {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
-                field.generateMergingCode(mergeFrom);
+                readTag = field.generateMergingCode(mergeFrom);
+            }
+
+            if (readTag) {
+                mergeFrom.addCode(named("tag = input.$readTag:N();\n"));
             }
 
             if (enableFallthroughOptimization) {
                 // try falling to 0 (exit) at last field
                 final int nextCase = (i == sortedFields.size() - 1) ? 0 : getPackedTagOrTag(sortedFields.get(i + 1));
-                mergeFrom.addCode(named("if ((tag = input.$readTag:N())"));
-                mergeFrom.beginControlFlow(" != $L)", nextCase);
+                mergeFrom.beginControlFlow("if (tag != $L)", nextCase);
                 mergeFrom.addStatement("break");
                 mergeFrom.endControlFlow();
             } else {
@@ -300,9 +304,9 @@ class MessageGenerator {
         for (FieldGenerator field : sortedFields) {
             if (field.getInfo().isPackable()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
-                field.generateMergingCode(mergeFrom);
-                if (enableFallthroughOptimization) {
-                    mergeFrom.addStatement(named("tag = input.$readTag:N()"));
+                boolean readTag = field.generateMergingCode(mergeFrom);
+                if (readTag) {
+                    mergeFrom.addCode(named("tag = input.$readTag:N();\n"));
                 }
                 mergeFrom.addStatement("break").endControlFlow();
             }

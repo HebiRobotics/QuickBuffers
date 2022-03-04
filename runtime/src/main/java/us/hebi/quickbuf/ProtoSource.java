@@ -815,4 +815,19 @@ public class ProtoSource {
         return arrayLength;
     }
 
+    public int getRepeatedFieldArrayLength(int tag) throws IOException {
+        return ProtoSource.getRepeatedFieldArrayLength(this, tag);
+    }
+
+    public int getPackedVarintArrayLength() throws IOException {
+        final int position = getPosition();
+        int count = 0;
+        while (getBytesUntilLimit() > 0) {
+            readRawVarint32();
+            count++;
+        }
+        rewindToPosition(position);
+        return count;
+    }
+
 }

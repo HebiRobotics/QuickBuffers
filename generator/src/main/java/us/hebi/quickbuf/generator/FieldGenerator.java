@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -169,16 +169,18 @@ public class FieldGenerator {
         }
     }
 
-    protected void generateMergingCode(MethodSpec.Builder method) {
+    /**
+     * @return true if the tag needs to be read
+     */
+    protected boolean generateMergingCode(MethodSpec.Builder method) {
         if (info.isRepeated()) {
             method
                     .addCode(clearOtherOneOfs)
-                    .addStatement("int nextTagPosition")
                     .addNamedCode("do {$>\n" +
                             "// look ahead for more items so we resize only once\n" +
                             "if ($field:N.remainingCapacity() == 0) {$>\n" +
-                            "int count = $protoSource:T.getRepeatedFieldArrayLength(input, $tag:L);\n" +
-                            "$field:N.reserve(count);\n" +
+                            "int remaining = input.getRepeatedFieldArrayLength($tag:L);\n" +
+                            "$field:N.reserve(remaining);\n" +
                             "$<}\n", m)
                     .addCode(code(block -> {
                         if (info.isPrimitive()) {
@@ -189,11 +191,9 @@ public class FieldGenerator {
                             block.addNamed("input.read$capitalizedType:L($field:N.next()$secondArgs:L);\n", m);
                         }
                     }))
-                    .addNamedCode("" +
-                            "nextTagPosition = input.getPosition();\n" +
-                            "$<} while (input.readTag() == $tag:L);\n" +
-                            "input.rewindToPosition(nextTagPosition);\n", m)
+                    .addNamedCode("$<} while ((tag = input.$readTag:N()) == $tag:L);\n", m)
                     .addStatement(named("$setHas:L"));
+            return false; // tag is already read, so don't read again
 
         } else if (info.isString() || info.isMessageOrGroup() || info.isBytes()) {
             method
@@ -225,6 +225,7 @@ public class FieldGenerator {
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
+        return true;
     }
 
     protected void generateMergingCodeFromPacked(MethodSpec.Builder method) {
@@ -248,14 +249,8 @@ public class FieldGenerator {
                     // Defer count-checks until we run out of capacity
                     .addComment("look ahead for more items so we resize only once")
                     .beginControlFlow("if ($N.remainingCapacity() == 0)", info.getFieldName())
-                    .addStatement("final int position = input.getPosition()")
-                    .addStatement("int count = 0")
-                    .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
-                    .addStatement(named("input.read$capitalizedType:L()"))
-                    .addStatement("count++")
-                    .endControlFlow()
-                    .addStatement("input.rewindToPosition(position)")
-                    .addStatement(named("$field:N.reserve(count)"))
+                    .addStatement("int remaining = input.getPackedVarintArrayLength()")
+                    .addStatement("$N.reserve(remaining)", info.getFieldName())
                     .endControlFlow()
 
                     // Add data
@@ -711,6 +706,7 @@ public class FieldGenerator {
         m.put("protoSource", RuntimeClasses.ProtoSource);
         m.put("protoSink", RuntimeClasses.ProtoSink);
         m.put("protoUtil", RuntimeClasses.ProtoUtil);
+        m.put("readTag", getInfo().getParentTypeInfo().isStoreUnknownFields() ? "readTagMarked" : "readTag");
     }
 
     protected final RequestInfo.FieldInfo info;
