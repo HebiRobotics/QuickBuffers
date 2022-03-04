@@ -167,7 +167,7 @@ public abstract class ProtoSink {
 
     /**
      * Creates a lightweight wrapper to write protobuf messages
-     * to an {@link OutputStream#}). This is slower than writing
+     * to an {@link OutputStream}). This is slower than writing
      * to an array, but it does not require extra memory.
      *
      * @param outputStream target output
@@ -179,7 +179,7 @@ public abstract class ProtoSink {
 
     /**
      * Creates a lightweight wrapper to write protobuf messages to
-     * a {@link ByteBuffer#}). This is slower than  writing to an
+     * a {@link ByteBuffer}). This is slower than  writing to an
      * array, but it does not require extra memory.
      *
      * @param buffer target output
