@@ -236,18 +236,15 @@ class MessageGenerator {
             case None: // no optimization
                 break;
         }
+        if (enableFallthroughOptimization) {
+            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
+        }
 
         m.put("readTag", info.isStoreUnknownFields() ? "readTagMarked" : "readTag");
 
-        if (enableFallthroughOptimization) {
-            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
-            mergeFrom.addStatement(named("int tag = input.$readTag:N()"));
-            mergeFrom.beginControlFlow("while (true)");
-        } else {
-            mergeFrom.beginControlFlow("while (true)");
-            mergeFrom.addStatement(named("int tag = input.$readTag:N()")); // TODO: read after each field to avoid backjumps
-        }
-        mergeFrom.beginControlFlow("switch (tag)");
+        mergeFrom.addStatement(named("int tag = input.$readTag:N()"))
+                .beginControlFlow("while (true)")
+                .beginControlFlow("switch (tag)");
 
         // Add fields by the expected order and type
         for (int i = 0; i < sortedFields.size(); i++) {
@@ -257,7 +254,7 @@ class MessageGenerator {
             boolean readTag = true;
             if (field.getInfo().isPackable()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
-                field.generateMergingCodeFromPacked(mergeFrom);
+                readTag = field.generateMergingCodeFromPacked(mergeFrom);
             } else {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
                 readTag = field.generateMergingCode(mergeFrom);
@@ -293,12 +290,10 @@ class MessageGenerator {
             mergeFrom.nextControlFlow("else")
                     .addStatement(named("input.copyBytesSinceMark($unknownBytes:N)"));
         }
-        mergeFrom.endControlFlow();
-
-        if (enableFallthroughOptimization) {
-            mergeFrom.addStatement(named("tag = input.$readTag:N()"));
-        }
-        mergeFrom.addStatement("break").endControlFlow();
+        mergeFrom.endControlFlow()
+                .addStatement(named("tag = input.$readTag:N()"))
+                .addStatement("break")
+                .endControlFlow();
 
         // Generate missing non-packed cases for packable fields for compatibility reasons
         for (FieldGenerator field : sortedFields) {

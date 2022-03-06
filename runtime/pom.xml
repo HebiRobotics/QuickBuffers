@@ -128,7 +128,7 @@
                                     <!-- Linux finds absolute file, Windows finds it via executing PATH -->
                                     <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
-                                    <outputOptions>replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,json_use_proto_name=false,enforce_has_checks=false,json_gen_merge=true
+                                    <outputOptions>replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,json_use_proto_name=false,enforce_has_checks=false,json_gen_merge=true,input_order=quickbuf
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>

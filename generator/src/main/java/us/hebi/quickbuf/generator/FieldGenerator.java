@@ -228,7 +228,10 @@ public class FieldGenerator {
         return true;
     }
 
-    protected void generateMergingCodeFromPacked(MethodSpec.Builder method) {
+    /**
+     * @return true if the tag needs to be read
+     */
+    protected boolean generateMergingCodeFromPacked(MethodSpec.Builder method) {
         if (info.isFixedWidth()) {
 
             // For fixed width types we can copy the raw memory
@@ -266,6 +269,7 @@ public class FieldGenerator {
             // Only primitives and enums can be packed
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
+        return true;
     }
 
     protected void generateSerializationCode(MethodSpec.Builder method) {

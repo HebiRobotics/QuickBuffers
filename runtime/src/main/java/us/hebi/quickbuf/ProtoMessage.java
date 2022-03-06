@@ -29,7 +29,7 @@ import java.io.IOException;
  *
  * @author Florian Enner
  */
-public abstract class ProtoMessage<MessageType extends ProtoMessage> {
+public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
 
     private static final long serialVersionUID = 0L;
     protected int cachedSize = -1;
