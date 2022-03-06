@@ -34,7 +34,7 @@ import static us.hebi.quickbuf.WireFormat.*;
  * @author Florian Enner
  * @since 20 Aug 2019
  */
-class UnsafeArraySource extends ProtoSource {
+class UnsafeArraySource extends ArraySource {
 
     static boolean isAvailable() {
         return UnsafeAccess.isAvailable() && UnsafeAccess.isCopyMemoryAvailable();
@@ -105,6 +105,15 @@ class UnsafeArraySource extends ProtoSource {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
         return UNSAFE.getByte(buffer, baseOffset + bufferPos++);
+    }
+
+    /** Read a 16-bit little-endian integer from the source. */
+    public short readRawLittleEndian16() throws IOException {
+        requireRemaining(SIZEOF_FIXED_16);
+        final byte[] buffer = this.buffer;
+        final long offset = baseOffset + bufferPos;
+        bufferPos += SIZEOF_FIXED_16;
+        return (short) ((UNSAFE.getByte(buffer, offset) & 0xFF) | (UNSAFE.getByte(buffer, offset + 1) & 0xFF) << 8);
     }
 
     /** Read a 32-bit little-endian integer from the source. */
