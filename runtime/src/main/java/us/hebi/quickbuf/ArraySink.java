@@ -91,45 +91,31 @@ class ArraySink extends ProtoSink {
     @Override
     public void writeRawLittleEndian16(final short value) throws IOException {
         requireSpace(SIZEOF_FIXED_16);
-        position += writeRawLittleEndian16(buffer, position, value);
+        position += ByteUtil.writeLittleEndian16(buffer, position, value);
     }
 
     @Override
     public void writeRawLittleEndian32(final int value) throws IOException {
         requireSpace(SIZEOF_FIXED_32);
-        position += writeRawLittleEndian32(buffer, position, value);
+        position += ByteUtil.writeLittleEndian32(buffer, position, value);
     }
 
     @Override
     public void writeRawLittleEndian64(final long value) throws IOException {
         requireSpace(SIZEOF_FIXED_64);
-        position += writeRawLittleEndian64(buffer, position, value);
+        position += ByteUtil.writeLittleEndian64(buffer, position, value);
     }
 
-    private static int writeRawLittleEndian64(final byte[] buffer, final int offset, final long value) {
-        buffer[offset/**/] = (byte) (value & 0xFF);
-        buffer[offset + 1] = (byte) (value >>> 8);
-        buffer[offset + 2] = (byte) (value >>> 16);
-        buffer[offset + 3] = (byte) (value >>> 24);
-        buffer[offset + 4] = (byte) (value >>> 32);
-        buffer[offset + 5] = (byte) (value >>> 40);
-        buffer[offset + 6] = (byte) (value >>> 48);
-        buffer[offset + 7] = (byte) (value >>> 56);
-        return SIZEOF_FIXED_64;
+    @Override
+    public void writeFloatNoTag(final float value) throws IOException {
+        requireSpace(SIZEOF_FIXED_32);
+        position += ByteUtil.writeFloat(buffer, position, value);
     }
 
-    private static int writeRawLittleEndian32(final byte[] buffer, final int offset, final int value) {
-        buffer[offset/**/] = (byte) (value & 0xFF);
-        buffer[offset + 1] = (byte) (value >>> 8);
-        buffer[offset + 2] = (byte) (value >>> 16);
-        buffer[offset + 3] = (byte) (value >>> 24);
-        return SIZEOF_FIXED_32;
-    }
-
-    private static int writeRawLittleEndian16(final byte[] buffer, final int offset, final short value) {
-        buffer[offset/**/] = (byte) (value & 0xFF);
-        buffer[offset + 1] = (byte) (value >>> 8);
-        return SIZEOF_FIXED_16;
+    @Override
+    public void writeDoubleNoTag(final double value) throws IOException {
+        requireSpace(SIZEOF_FIXED_64);
+        position += ByteUtil.writeDouble(buffer, position, value);
     }
 
     /** Write part of an array of bytes. */

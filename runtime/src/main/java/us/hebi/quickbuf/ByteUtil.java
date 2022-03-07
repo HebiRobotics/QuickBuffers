@@ -37,6 +37,40 @@ import static us.hebi.quickbuf.WireFormat.*;
  */
 class ByteUtil {
 
+    static int writeLittleEndian16(final byte[] buffer, final int offset, final short value) {
+        buffer[offset/**/] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) (value >>> 8);
+        return SIZEOF_FIXED_16;
+    }
+
+    static int writeLittleEndian32(final byte[] buffer, final int offset, final int value) {
+        buffer[offset/**/] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) (value >>> 8);
+        buffer[offset + 2] = (byte) (value >>> 16);
+        buffer[offset + 3] = (byte) (value >>> 24);
+        return SIZEOF_FIXED_32;
+    }
+
+    static int writeLittleEndian64(final byte[] buffer, final int offset, final long value) {
+        buffer[offset/**/] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) (value >>> 8);
+        buffer[offset + 2] = (byte) (value >>> 16);
+        buffer[offset + 3] = (byte) (value >>> 24);
+        buffer[offset + 4] = (byte) (value >>> 32);
+        buffer[offset + 5] = (byte) (value >>> 40);
+        buffer[offset + 6] = (byte) (value >>> 48);
+        buffer[offset + 7] = (byte) (value >>> 56);
+        return SIZEOF_FIXED_64;
+    }
+
+    static int writeFloat(final byte[] buffer, final int offset, final float value) {
+        return writeLittleEndian32(buffer, offset, Float.floatToIntBits(value));
+    }
+
+    static int writeDouble(final byte[] buffer, final int offset, final double value) {
+        return writeLittleEndian64(buffer, offset, Double.doubleToLongBits(value));
+    }
+
     public static short readLittleEndian16(byte[] buffer, int offset) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             final short value = UNSAFE.getShort(buffer, BYTE_ARRAY_OFFSET + offset);
@@ -51,7 +85,7 @@ class ByteUtil {
             final int value = UNSAFE.getInt(buffer, BYTE_ARRAY_OFFSET + offset);
             return IS_LITTLE_ENDIAN ? value : Integer.reverseBytes(value);
         } else {
-            return (buffer[offset] & 0xFF) |
+            return (buffer[offset/* */] & 0xFF) |
                     (buffer[offset + 1] & 0xFF) << 8 |
                     (buffer[offset + 2] & 0xFF) << 16 |
                     (buffer[offset + 3] & 0xFF) << 24;
@@ -63,7 +97,7 @@ class ByteUtil {
             final long value = UNSAFE.getLong(buffer, BYTE_ARRAY_OFFSET + offset);
             return IS_LITTLE_ENDIAN ? value : Long.reverseBytes(value);
         } else {
-            return (buffer[offset] & 0xFFL) |
+            return (buffer[offset/* */] & 0xFFL) |
                     (buffer[offset + 1] & 0xFFL) << 8 |
                     (buffer[offset + 2] & 0xFFL) << 16 |
                     (buffer[offset + 3] & 0xFFL) << 24 |
@@ -144,6 +178,40 @@ class ByteUtil {
                 offset += SIZEOF_FIXED_64;
             }
         }
+    }
+
+    static int writeUnsafeLittleEndian16(final byte[] buffer, final long offset, final short value) {
+        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
+        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
+        return SIZEOF_FIXED_16;
+    }
+
+    static int writeUnsafeLittleEndian32(final byte[] buffer, final long offset, final int value) {
+        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
+        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
+        UNSAFE.putByte(buffer, offset + 2, (byte) (value >>> 16));
+        UNSAFE.putByte(buffer, offset + 3, (byte) (value >>> 24));
+        return SIZEOF_FIXED_32;
+    }
+
+    static int writeUnsafeLittleEndian64(final byte[] buffer, final long offset, final long value) {
+        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
+        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
+        UNSAFE.putByte(buffer, offset + 2, (byte) (value >>> 16));
+        UNSAFE.putByte(buffer, offset + 3, (byte) (value >>> 24));
+        UNSAFE.putByte(buffer, offset + 4, (byte) (value >>> 32));
+        UNSAFE.putByte(buffer, offset + 5, (byte) (value >>> 40));
+        UNSAFE.putByte(buffer, offset + 6, (byte) (value >>> 48));
+        UNSAFE.putByte(buffer, offset + 7, (byte) (value >>> 56));
+        return SIZEOF_FIXED_64;
+    }
+
+    static int writeUnsafeFloat(final byte[] buffer, final long offset, final float value) {
+        return writeUnsafeLittleEndian32(buffer, offset, Float.floatToIntBits(value));
+    }
+
+    static int writeUnsafeDouble(final byte[] buffer, final long offset, final double value) {
+        return writeUnsafeLittleEndian64(buffer, offset, Double.doubleToLongBits(value));
     }
 
     public static short readUnsafeLittleEndian16(byte[] buffer, long offset) {

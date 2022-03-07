@@ -90,50 +90,24 @@ class UnsafeArraySink extends ArraySink {
     @Override
     public void writeRawLittleEndian16(final short value) throws IOException {
         requireSpace(SIZEOF_FIXED_16);
-        position += writeRawLittleEndian16(buffer, baseOffset + position, value);
+        position += ByteUtil.writeUnsafeLittleEndian16(buffer, baseOffset + position, value);
     }
 
     @Override
     public void writeRawLittleEndian32(final int value) throws IOException {
         requireSpace(SIZEOF_FIXED_32);
-        position += writeRawLittleEndian32(buffer, baseOffset + position, value);
+        position += ByteUtil.writeUnsafeLittleEndian32(buffer, baseOffset + position, value);
     }
 
     @Override
     public void writeRawLittleEndian64(final long value) throws IOException {
         requireSpace(SIZEOF_FIXED_64);
-        position += writeRawLittleEndian64(buffer, baseOffset + position, value);
+        position += ByteUtil.writeUnsafeLittleEndian64(buffer, baseOffset + position, value);
     }
 
     @Override
     protected int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize) {
         return Utf8.encodeUnsafe(value, buffer, baseOffset, position, maxSize);
-    }
-
-    private static int writeRawLittleEndian64(final byte[] buffer, final long offset, final long value) {
-        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
-        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
-        UNSAFE.putByte(buffer, offset + 2, (byte) (value >>> 16));
-        UNSAFE.putByte(buffer, offset + 3, (byte) (value >>> 24));
-        UNSAFE.putByte(buffer, offset + 4, (byte) (value >>> 32));
-        UNSAFE.putByte(buffer, offset + 5, (byte) (value >>> 40));
-        UNSAFE.putByte(buffer, offset + 6, (byte) (value >>> 48));
-        UNSAFE.putByte(buffer, offset + 7, (byte) (value >>> 56));
-        return SIZEOF_FIXED_64;
-    }
-
-    private static int writeRawLittleEndian32(final byte[] buffer, final long offset, final int value) {
-        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
-        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
-        UNSAFE.putByte(buffer, offset + 2, (byte) (value >>> 16));
-        UNSAFE.putByte(buffer, offset + 3, (byte) (value >>> 24));
-        return SIZEOF_FIXED_32;
-    }
-
-    private static int writeRawLittleEndian16(final byte[] buffer, final long offset, final short value) {
-        UNSAFE.putByte(buffer, offset, (byte) (value & 0xFF));
-        UNSAFE.putByte(buffer, offset + 1, (byte) (value >>> 8));
-        return SIZEOF_FIXED_16;
     }
 
     /**
