@@ -176,22 +176,7 @@ public class FieldGenerator {
         if (info.isRepeated()) {
             method
                     .addCode(clearOtherOneOfs)
-                    .addNamedCode("do {$>\n" +
-                            "// look ahead for more items so we resize only once\n" +
-                            "if ($field:N.remainingCapacity() == 0) {$>\n" +
-                            "int remaining = input.getRepeatedFieldArrayLength($tag:L);\n" +
-                            "$field:N.reserve(remaining);\n" +
-                            "$<}\n", m)
-                    .addCode(code(block -> {
-                        if (info.isPrimitive()) {
-                            block.addNamed("$field:N.add(input.read$capitalizedType:L());\n", m);
-                        } else if (info.isEnum()) {
-                            block.addNamed("$field:N.addValue(input.read$capitalizedType:L());\n", m);
-                        } else {
-                            block.addNamed("input.read$capitalizedType:L($field:N.next()$secondArgs:L);\n", m);
-                        }
-                    }))
-                    .addNamedCode("$<} while ((tag = input.$readTag:N()) == $tag:L);\n", m)
+                    .addNamedCode("tag = input.readRepeated$capitalizedType:L($field:N, tag);\n", m)
                     .addStatement(named("$setHas:L"));
             return false; // tag is already read, so don't read again
 
@@ -232,43 +217,16 @@ public class FieldGenerator {
      * @return true if the tag needs to be read
      */
     protected boolean generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        if (info.isFixedWidth()) {
-
-            // For fixed width types we can copy the raw memory
-            method.addCode(clearOtherOneOfs);
-            method.addStatement(named("input.readPacked$capitalizedType:L($field:N)"));
-            method.addStatement(named("$setHas:L"));
-
-        } else if (info.isPrimitive() || info.isEnum()) {
-
-            // We don't know how many items there actually are, so we need to
-            // look-ahead once we run out of space in the backing store.
-            method
-                    .addCode(clearOtherOneOfs)
-                    .addStatement("final int length = input.readRawVarint32()")
-                    .addStatement("final int limit = input.pushLimit(length)")
-                    .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
-
-                    // Defer count-checks until we run out of capacity
-                    .addComment("look ahead for more items so we resize only once")
-                    .beginControlFlow("if ($N.remainingCapacity() == 0)", info.getFieldName())
-                    .addStatement("int remaining = input.getPackedVarintArrayLength()")
-                    .addStatement("$N.reserve(remaining)", info.getFieldName())
-                    .endControlFlow()
-
-                    // Add data
-                    .addStatement(named(info.isPrimitive() ?
-                            "$field:N.add(input.read$capitalizedType:L())" :
-                            "$field:N.addValue(input.read$capitalizedType:L())"))
-                    .endControlFlow()
-
-                    .addStatement("input.popLimit(limit)")
-                    .addStatement(named("$setHas:L"));
-
-        } else {
-            // Only primitives and enums can be packed
-            throw new IllegalStateException("unhandled field: " + info.getDescriptor());
+        if (!info.isPackable()) {
+            throw new IllegalStateException("not a packable type: " + info.getDescriptor());
         }
+        method.addCode(clearOtherOneOfs);
+        if (info.isFixedWidth()) {
+            method.addStatement(named("input.readPacked$capitalizedType:L($field:N)"));
+        } else {
+            method.addStatement(named("input.readPacked$capitalizedType:L($field:N, tag)"));
+        }
+        method.addStatement(named("$setHas:L"));
         return true;
     }
 

@@ -238,7 +238,7 @@ public abstract class ProtoSource {
         }
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------ FIXED WIDTH TYPES ------------------------------
 
     /** Read a repeated (packed) {@code double} field value from the source. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
@@ -248,20 +248,29 @@ public abstract class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code fixed64} field value from the source. */
-    public void readPackedFixed64(RepeatedLong store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.reserve(numEntries);
-        readRawFixed64s(store.array, store.length, numEntries);
-        store.length += numEntries;
+    protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
+        final int limit = offset + length;
+        for (int i = offset; i < limit; i++) {
+            values[i] = readDouble();
+        }
     }
 
-    /** Read a repeated (packed) {@code sfixed64} field value from the source. */
-    public void readPackedSFixed64(RepeatedLong store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.reserve(numEntries);
-        readRawFixed64s(store.array, store.length, numEntries);
-        store.length += numEntries;
+    /** Read a repeated (non-packed) {@code double} field value from the source. */
+    public int readRepeatedDouble(final RepeatedDouble store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readDouble());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code double} field value from the source. */
+    public double readDouble() throws IOException {
+        return Double.longBitsToDouble(readRawLittleEndian64());
     }
 
     /** Read a repeated (packed) {@code float} field value from the source. */
@@ -272,43 +281,42 @@ public abstract class ProtoSource {
         store.length += numEntries;
     }
 
-    /** Read a repeated (packed) {@code fixed32} field value from the source. */
-    public void readPackedFixed32(RepeatedInt store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.reserve(numEntries);
-        readRawFixed32s(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code sfixed32} field value from the source. */
-    public void readPackedSFixed32(RepeatedInt store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.reserve(numEntries);
-        readRawFixed32s(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code bool} field value from the source. */
-    public void readPackedBool(RepeatedBoolean store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_BOOL;
-        store.reserve(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readBool());
-        }
-    }
-
-    protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
-        final int limit = offset + length;
-        for (int i = offset; i < limit; i++) {
-            values[i] = readDouble();
-        }
-    }
-
     protected void readRawFloats(float[] values, int offset, int length) throws IOException {
         final int limit = offset + length;
         for (int i = offset; i < limit; i++) {
             values[i] = readFloat();
         }
+    }
+
+    /** Read a repeated (non-packed) {@code float} field value from the source. */
+    public int readRepeatedFloat(final RepeatedFloat store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readFloat());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code float} field value from the source. */
+    public float readFloat() throws IOException {
+        return Float.intBitsToFloat(readRawLittleEndian32());
+    }
+
+    /** Read a repeated (packed) {@code sfixed64} field value from the source. */
+    public void readPackedSFixed64(RepeatedLong store) throws IOException {
+        readPackedFixed64(store);
+    }
+
+    /** Read a repeated (packed) {@code fixed64} field value from the source. */
+    public void readPackedFixed64(RepeatedLong store) throws IOException {
+        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
+        store.reserve(numEntries);
+        readRawFixed64s(store.array, store.length, numEntries);
+        store.length += numEntries;
     }
 
     protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
@@ -318,6 +326,47 @@ public abstract class ProtoSource {
         }
     }
 
+    /** Read a repeated (non-packed) {@code sfixed64} field value from the source. */
+    public int readRepeatedSFixed64(final RepeatedLong store, final int tag) throws IOException {
+        return readRepeatedFixed64(store, tag);
+    }
+
+    /** Read a repeated (non-packed) {@code fixed64} field value from the source. */
+    public int readRepeatedFixed64(RepeatedLong store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readFixed64());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read an {@code sfixed64} field value from the source. */
+    public long readSFixed64() throws IOException {
+        return readRawLittleEndian64();
+    }
+
+    /** Read a {@code fixed64} field value from the source. */
+    public long readFixed64() throws IOException {
+        return readRawLittleEndian64();
+    }
+
+    /** Read a repeated (packed) {@code sfixed32} field value from the source. */
+    public void readPackedSFixed32(RepeatedInt store) throws IOException {
+        readPackedFixed32(store);
+    }
+
+    /** Read a repeated (packed) {@code fixed32} field value from the source. */
+    public void readPackedFixed32(RepeatedInt store) throws IOException {
+        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
+        store.reserve(numEntries);
+        readRawFixed32s(store.array, store.length, numEntries);
+        store.length += numEntries;
+    }
+
     protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
         final int limit = offset + length;
         for (int i = offset; i < limit; i++) {
@@ -325,16 +374,98 @@ public abstract class ProtoSource {
         }
     }
 
-    // -----------------------------------------------------------------
-
-    /** Read a {@code double} field value from the source. */
-    public double readDouble() throws IOException {
-        return Double.longBitsToDouble(readRawLittleEndian64());
+    /** Read a repeated (non-packed) {@code sfixed32} field value from the source. */
+    public int readRepeatedSFixed32(final RepeatedInt store, final int tag) throws IOException {
+        return readRepeatedFixed32(store, tag);
     }
 
-    /** Read a {@code float} field value from the source. */
-    public float readFloat() throws IOException {
-        return Float.intBitsToFloat(readRawLittleEndian32());
+    /** Read a repeated (non-packed) {@code fixed32} field value from the source. */
+    public int readRepeatedFixed32(RepeatedInt store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readFixed32());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read an {@code sfixed32} field value from the source. */
+    public int readSFixed32() throws IOException {
+        return readRawLittleEndian32();
+    }
+
+    /** Read a {@code fixed32} field value from the source. */
+    public int readFixed32() throws IOException {
+        return readRawLittleEndian32();
+    }
+
+    // ------------------------------ VARINT TYPES ------------------------------
+
+    /** Read a repeated (packed) {@code uint64} field value from the source. */
+    public void readPackedUInt64(final RepeatedLong store, final int tag) throws IOException {
+        readPackedInt64(store, tag);
+    }
+
+    /** Read a repeated (packed) {@code int64} field value from the source. */
+    public void readPackedInt64(final RepeatedLong store, final int tag) throws IOException {
+        final int length = readRawVarint32();
+        final int limit = pushLimit(length);
+        while (getBytesUntilLimit() > 0) {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getPackedVarintArrayLength());
+            }
+            store.add(readInt64());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated (packed) {@code sint64} field value from the source. */
+    public void readPackedSInt64(final RepeatedLong store, final int tag) throws IOException {
+        final int length = readRawVarint32();
+        final int limit = pushLimit(length);
+        while (getBytesUntilLimit() > 0) {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getPackedVarintArrayLength());
+            }
+            store.add(readSInt64());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated {@code uint64} field value from the source. */
+    public int readRepeatedUInt64(final RepeatedLong store, final int tag) throws IOException {
+        return readRepeatedInt64(store, tag);
+    }
+
+    /** Read a repeated {@code int64} field value from the source. */
+    public int readRepeatedInt64(final RepeatedLong store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readInt64());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a repeated {@code sint64} field value from the source. */
+    public int readRepeatedSInt64(final RepeatedLong store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readSInt64());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
     }
 
     /** Read a {@code uint64} field value from the source. */
@@ -347,19 +478,112 @@ public abstract class ProtoSource {
         return readRawVarint64();
     }
 
+    /** Read an {@code sint64} field value from the source. */
+    public long readSInt64() throws IOException {
+        return decodeZigZag64(readRawVarint64());
+    }
+
+    /** Read a repeated (packed) {@code uint32} field value from the source. */
+    public void readPackedUInt32(final RepeatedInt store, final int tag) throws IOException {
+        readPackedInt32(store, tag);
+    }
+
+    /** Read a repeated (packed) {@code int32} field value from the source. */
+    public void readPackedInt32(final RepeatedInt store, final int tag) throws IOException {
+        final int length = readRawVarint32();
+        final int limit = pushLimit(length);
+        while (getBytesUntilLimit() > 0) {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getPackedVarintArrayLength());
+            }
+            store.add(readInt32());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated (packed) {@code sint32} field value from the source. */
+    public void readPackedSInt32(final RepeatedInt store, final int tag) throws IOException {
+        final int length = readRawVarint32();
+        final int limit = pushLimit(length);
+        while (getBytesUntilLimit() > 0) {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getPackedVarintArrayLength());
+            }
+            store.add(readSInt32());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated {@code uint32} field value from the source. */
+    public int readRepeatedUInt32(final RepeatedInt store, final int tag) throws IOException {
+        return readRepeatedInt32(store, tag);
+    }
+
+    /** Read a repeated {@code int32} field value from the source. */
+    public int readRepeatedInt32(final RepeatedInt store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readInt32());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a repeated {@code sint32} field value from the source. */
+    public int readRepeatedSInt32(final RepeatedInt store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readSInt32());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code uint32} field value from the source. */
+    public int readUInt32() throws IOException {
+        return readRawVarint32();
+    }
+
     /** Read an {@code int32} field value from the source. */
     public int readInt32() throws IOException {
         return readRawVarint32();
     }
 
-    /** Read a {@code fixed64} field value from the source. */
-    public long readFixed64() throws IOException {
-        return readRawLittleEndian64();
+    /** Read an {@code sint32} field value from the source. */
+    public int readSInt32() throws IOException {
+        return decodeZigZag32(readRawVarint32());
     }
 
-    /** Read a {@code fixed32} field value from the source. */
-    public int readFixed32() throws IOException {
-        return readRawLittleEndian32();
+    /** Read a repeated (packed) {@code bool} field value from the source. */
+    public void readPackedBool(RepeatedBoolean store) throws IOException {
+        final int length = readRawVarint32();
+        final int limit = pushLimit(length);
+        store.reserve(length / SIZEOF_FIXED_BOOL);
+        while (getBytesUntilLimit() > 0) {
+            store.add(readBool());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated (non-packed) {@code bool} field value from the source. */
+    public int readRepeatedBool(final RepeatedBoolean store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.add(readBool());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
     }
 
     /** Read a {@code bool} field value from the source. */
@@ -367,11 +591,75 @@ public abstract class ProtoSource {
         return readRawVarint32() != 0;
     }
 
+    /** Read a repeated (packed) {@code enum} field value from the source. */
+    public void readPackedEnum(final RepeatedEnum<?> store, final int tag) throws IOException {
+        final int length = readRawVarint32();
+        final int limit = pushLimit(length);
+        while (getBytesUntilLimit() > 0) {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getPackedVarintArrayLength());
+            }
+            store.addValue(readEnum());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated {@code enum} field value from the source. */
+    public int readRepeatedEnum(final RepeatedEnum<?> store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            store.addValue(readEnum());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /**
+     * Read an enum field value from the source.  Caller is responsible
+     * for converting the numeric value to an actual enum.
+     */
+    public int readEnum() throws IOException {
+        return readRawVarint32();
+    }
+
+    // ------------------------------ DELIMITED TYPES ------------------------------
+
+    /** Read a repeated {@code string} field value from the source. */
+    public int readRepeatedString(final RepeatedString store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            readString(store.next());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
     /** Read a {@code string} field value from the source. */
     public abstract void readString(final Utf8String store) throws IOException;
 
     /** Read a {@code string} field value from the source. */
     public abstract void readString(StringBuilder output) throws IOException;
+
+    /** Read a repeated {@code group} field value from the source. */
+    public int readRepeatedGroup(final RepeatedMessage<?> store, final int tag) throws IOException {
+        int fieldNumber = WireFormat.getTagFieldNumber(tag);
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            readGroup(store.next(), fieldNumber);
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
 
     /** Read a {@code group} field value from the source. */
     public void readGroup(final ProtoMessage<?> msg, final int fieldNumber)
@@ -385,8 +673,20 @@ public abstract class ProtoSource {
         --recursionDepth;
     }
 
-    public void readMessage(final ProtoMessage<?> msg)
-            throws IOException {
+    /** Read a repeated {@code message} field value from the source. */
+    public int readRepeatedMessage(final RepeatedMessage<?> store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            readMessage(store.next());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    public void readMessage(final ProtoMessage<?> msg) throws IOException {
         final int length = readRawVarint32();
         if (recursionDepth >= recursionLimit) {
             throw InvalidProtocolBufferException.recursionLimitExceeded();
@@ -399,6 +699,19 @@ public abstract class ProtoSource {
         popLimit(oldLimit);
     }
 
+    /** Read a repeated {@code bytes} field value from the source. */
+    public int readRepeatedBytes(final RepeatedBytes store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            // look ahead for more items so we resize only once
+            if (store.remainingCapacity() == 0) {
+                store.reserve(getRepeatedFieldArrayLength(tag));
+            }
+            readBytes(store.next());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
     /** Read a {@code bytes} field value from the source. */
     public void readBytes(RepeatedByte store) throws IOException {
         final int numBytes = readRawVarint32();
@@ -406,39 +719,6 @@ public abstract class ProtoSource {
         for (int i = 0; i < numBytes; i++) {
             store.array[offset + i] = readRawByte();
         }
-    }
-
-    /** Read a {@code uint32} field value from the source. */
-    public int readUInt32() throws IOException {
-        return readRawVarint32();
-    }
-
-    /**
-     * Read an enum field value from the source.  Caller is responsible
-     * for converting the numeric value to an actual enum.
-     */
-    public int readEnum() throws IOException {
-        return readRawVarint32();
-    }
-
-    /** Read an {@code sfixed32} field value from the source. */
-    public int readSFixed32() throws IOException {
-        return readRawLittleEndian32();
-    }
-
-    /** Read an {@code sfixed64} field value from the source. */
-    public long readSFixed64() throws IOException {
-        return readRawLittleEndian64();
-    }
-
-    /** Read an {@code sint32} field value from the source. */
-    public int readSInt32() throws IOException {
-        return decodeZigZag32(readRawVarint32());
-    }
-
-    /** Read an {@code sint64} field value from the source. */
-    public long readSInt64() throws IOException {
-        return decodeZigZag64(readRawVarint64());
     }
 
     // =================================================================
