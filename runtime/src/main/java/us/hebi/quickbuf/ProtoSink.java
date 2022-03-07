@@ -109,11 +109,7 @@ public abstract class ProtoSink {
      */
     public static ProtoSink newInstance() {
         if (UnsafeArraySink.isAvailable()) {
-            if (UnsafeAccess.allowUnalignedAccess()) {
-                return new UnsafeArraySink.Unaligned(false);
-            } else {
-                return new UnsafeArraySink(false);
-            }
+            return new UnsafeArraySink(false);
         }
         return newSafeInstance();
     }
@@ -159,9 +155,6 @@ public abstract class ProtoSink {
      * @param allowUnalignedAccess true if the platform supports non-aligned writes
      */
     public static ProtoSink newUnsafeInstance(boolean allowUnalignedAccess) {
-        if (allowUnalignedAccess) {
-            return new UnsafeArraySink.Unaligned(true);
-        }
         return new UnsafeArraySink(true);
     }
 

@@ -74,9 +74,14 @@ class ArraySink extends ProtoSink {
         return new OutOfSpaceException(position, limit);
     }
 
-    protected void requireSpace(final int numBytes) throws OutOfSpaceException {
+    protected int require(final int numBytes) throws OutOfSpaceException {
         if (spaceLeft() < numBytes)
             throw outOfSpace();
+        try {
+            return position;
+        } finally {
+            position += numBytes;
+        }
     }
 
     /** Write a single byte. */
@@ -90,40 +95,57 @@ class ArraySink extends ProtoSink {
 
     @Override
     public void writeRawLittleEndian16(final short value) throws IOException {
-        requireSpace(SIZEOF_FIXED_16);
-        position += ByteUtil.writeLittleEndian16(buffer, position, value);
+        ByteUtil.writeLittleEndian16(buffer, require(SIZEOF_FIXED_16), value);
     }
 
     @Override
     public void writeRawLittleEndian32(final int value) throws IOException {
-        requireSpace(SIZEOF_FIXED_32);
-        position += ByteUtil.writeLittleEndian32(buffer, position, value);
+        ByteUtil.writeLittleEndian32(buffer, require(SIZEOF_FIXED_32), value);
     }
 
     @Override
     public void writeRawLittleEndian64(final long value) throws IOException {
-        requireSpace(SIZEOF_FIXED_64);
-        position += ByteUtil.writeLittleEndian64(buffer, position, value);
+        ByteUtil.writeLittleEndian64(buffer, require(SIZEOF_FIXED_64), value);
     }
 
     @Override
     public void writeFloatNoTag(final float value) throws IOException {
-        requireSpace(SIZEOF_FIXED_32);
-        position += ByteUtil.writeFloat(buffer, position, value);
+        ByteUtil.writeFloat(buffer, require(SIZEOF_FIXED_32), value);
     }
 
     @Override
     public void writeDoubleNoTag(final double value) throws IOException {
-        requireSpace(SIZEOF_FIXED_64);
-        position += ByteUtil.writeDouble(buffer, position, value);
+        ByteUtil.writeDouble(buffer, require(SIZEOF_FIXED_64), value);
     }
 
-    /** Write part of an array of bytes. */
     @Override
     public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
-        requireSpace(length);
-        System.arraycopy(value, offset, buffer, position, length);
-        position += length;
+        ByteUtil.writeBytes(buffer, require(length), value, offset, length);
+    }
+
+    @Override
+    protected void writeRawBooleans(final boolean[] values, final int length) throws IOException {
+        ByteUtil.writeBooleans(buffer, require(length), values, length);
+    }
+
+    @Override
+    protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
+        ByteUtil.writeLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, length);
+    }
+
+    @Override
+    protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
+        ByteUtil.writeLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, length);
+    }
+
+    @Override
+    protected void writeRawFloats(final float[] values, final int length) throws IOException {
+        ByteUtil.writeFloats(buffer, require(length * SIZEOF_FIXED_32), values, length);
+    }
+
+    @Override
+    protected void writeRawDoubles(final double[] values, final int length) throws IOException {
+        ByteUtil.writeDoubles(buffer, require(length * SIZEOF_FIXED_64), values, length);
     }
 
     @Override
