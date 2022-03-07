@@ -108,21 +108,6 @@ public abstract class ProtoSink {
      * available.
      */
     public static ProtoSink newInstance() {
-        if (UnsafeArraySink.isAvailable()) {
-            return new UnsafeArraySink(false);
-        }
-        return newSafeInstance();
-    }
-
-    /**
-     * Create a new {@code ProtoSink} that writes directly to a byte array.
-     * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
-     * be thrown.
-     *
-     * The returned sink does not leverage features from sun.misc.Unsafe
-     * even if they are available on the current platform.
-     */
-    public static ProtoSink newSafeInstance() {
         return new ArraySink();
     }
 
@@ -131,30 +116,13 @@ public abstract class ProtoSink {
      * direct memory. If more bytes are written than fit in the array, an
      * {@link OutOfSpaceException} will be thrown.
      *
-     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     * This sink requires availability of sun.misc.Unsafe.
      *
      * Additionally, this sink removes null-argument checks and allows users to
      * write to off-heap memory. Working with off-heap memory may cause segfaults
      * of the runtime, so only use if you know what you are doing.
      */
     public static ProtoSink newUnsafeInstance() {
-        return newUnsafeInstance(true);
-    }
-
-    /**
-     * Create a new {@code ProtoSink} that writes directly to a byte array or
-     * direct memory. If more bytes are written than fit in the array, an
-     * {@link OutOfSpaceException} will be thrown.
-     *
-     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
-     *
-     * Additionally, this sink removes null-argument checks and allows users to
-     * write to off-heap memory. Working with off-heap memory may cause segfaults
-     * of the runtime, so only use if you know what you are doing.
-     *
-     * @param allowUnalignedAccess true if the platform supports non-aligned writes
-     */
-    public static ProtoSink newUnsafeInstance(boolean allowUnalignedAccess) {
         return new UnsafeArraySink(true);
     }
 

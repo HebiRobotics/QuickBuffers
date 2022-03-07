@@ -74,7 +74,7 @@ class ArraySink extends ProtoSink {
         return new OutOfSpaceException(position, limit);
     }
 
-    protected int require(final int numBytes) throws OutOfSpaceException {
+    private int require(final int numBytes) throws OutOfSpaceException {
         if (spaceLeft() < numBytes)
             throw outOfSpace();
         try {

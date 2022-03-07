@@ -101,7 +101,7 @@ public class TagEncodeBenchmark {
 
     static final int n = 1000;
     final byte[] buffer = new byte[n * 5];
-    final ProtoSink sink = ProtoSink.newSafeInstance();
+    final ProtoSink sink = ProtoSink.newInstance();
 
     private static final byte[] TAG_1 = new byte[1];
     private static final byte[] TAG_2 = new byte[2];

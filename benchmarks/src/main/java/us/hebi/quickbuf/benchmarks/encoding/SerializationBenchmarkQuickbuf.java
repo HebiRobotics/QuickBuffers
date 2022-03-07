@@ -144,7 +144,7 @@ public class SerializationBenchmarkQuickbuf {
     byte[] stringMsgBytes = stringMessage.toByteArray();
     byte[] stringMsgOutBuffer = new byte[stringMessage.getSerializedSize()];
 
-    final ProtoSink sink = ProtoSink.newSafeInstance();
+    final ProtoSink sink = ProtoSink.newInstance();
     final ProtoSource source = ProtoSource.newInstance();
 
     final ProtoSink unsafeSink = ProtoSink.newUnsafeInstance();

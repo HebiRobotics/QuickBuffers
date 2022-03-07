@@ -173,17 +173,9 @@ class ArraySource extends ProtoSource{
         return limit - pos;
     }
 
-    /**
-     * Advances the current position by the specified bytes
-     *
-     * @param numBytes length to be added
-     * @return current position before incrementing
-     */
-    protected int require(int numBytes) throws IOException {
-        int current = pos;
+    protected void requireRemaining(int numBytes) throws IOException {
         if (numBytes < 0) {
             throw InvalidProtocolBufferException.negativeSize();
-
         } else if (numBytes > remaining()) {
             // Read to the end of the current sub-message before failing
             if (currentLimit != Integer.MAX_VALUE) {
@@ -191,8 +183,21 @@ class ArraySource extends ProtoSource{
             }
             throw InvalidProtocolBufferException.truncatedMessage();
         }
-        pos += numBytes;
-        return current;
+    }
+
+    /**
+     * Advances the current position by the specified bytes
+     *
+     * @param numBytes length to be added
+     * @return current position before incrementing
+     */
+    private int require(int numBytes) throws IOException {
+        requireRemaining(numBytes);
+        try {
+            return pos;
+        } finally {
+            pos += numBytes;
+        }
     }
 
     private void recomputeBufferSizeAfterLimit() {

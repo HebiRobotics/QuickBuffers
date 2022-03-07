@@ -75,68 +75,72 @@ class UnsafeArraySink extends ArraySink {
 
     @Override
     public void writeRawLittleEndian16(final short value) throws IOException {
-        ByteUtil.writeUnsafeLittleEndian16(buffer, baseOffset + require(SIZEOF_FIXED_16), value);
+        ByteUtil.writeUnsafeLittleEndian16(buffer, require(SIZEOF_FIXED_16), value);
     }
 
     @Override
     public void writeRawLittleEndian32(final int value) throws IOException {
-        ByteUtil.writeUnsafeLittleEndian32(buffer, baseOffset + require(SIZEOF_FIXED_32), value);
+        ByteUtil.writeUnsafeLittleEndian32(buffer, require(SIZEOF_FIXED_32), value);
     }
 
     @Override
     public void writeRawLittleEndian64(final long value) throws IOException {
-        ByteUtil.writeUnsafeLittleEndian64(buffer, baseOffset + require(SIZEOF_FIXED_64), value);
+        ByteUtil.writeUnsafeLittleEndian64(buffer, require(SIZEOF_FIXED_64), value);
     }
 
     @Override
     public void writeFloatNoTag(final float value) throws IOException {
-        ByteUtil.writeUnsafeFloat(buffer, baseOffset + require(SIZEOF_FIXED_32), value);
+        ByteUtil.writeUnsafeFloat(buffer, require(SIZEOF_FIXED_32), value);
     }
 
     @Override
     public void writeDoubleNoTag(final double value) throws IOException {
-        ByteUtil.writeUnsafeDouble(buffer, baseOffset + require(SIZEOF_FIXED_64), value);
+        ByteUtil.writeUnsafeDouble(buffer, require(SIZEOF_FIXED_64), value);
     }
 
     @Override
     public void writeRawBytes(final byte[] values, int offset, int length) throws IOException {
-        long address = baseOffset + require(length);
-        ByteUtil.writeUnsafeBytes(buffer, address, values, offset, length);
+        ByteUtil.writeUnsafeBytes(buffer, require(length), values, offset, length);
     }
 
     @Override
     protected void writeRawBooleans(final boolean[] values, final int length) throws IOException {
-        long address = baseOffset + require(length);
-        ByteUtil.writeUnsafeBooleans(buffer, address, values, length);
+        ByteUtil.writeUnsafeBooleans(buffer, require(length), values, length);
     }
 
     @Override
     protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
-        long offset = baseOffset + require(length * SIZEOF_FIXED_32);
-        ByteUtil.writeUnsafeLittleEndian32s(buffer, offset, values, length);
+        ByteUtil.writeUnsafeLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, length);
     }
 
     @Override
     protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
-        long offset = baseOffset + require(length * SIZEOF_FIXED_64);
-        ByteUtil.writeUnsafeLittleEndian64s(buffer, offset, values, length);
+        ByteUtil.writeUnsafeLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, length);
     }
 
     @Override
     protected void writeRawFloats(final float[] values, final int length) throws IOException {
-        long offset = baseOffset + require(length * SIZEOF_FIXED_32);
-        ByteUtil.writeUnsafeFloats(buffer, offset, values, length);
+        ByteUtil.writeUnsafeFloats(buffer, require(length * SIZEOF_FIXED_32), values, length);
     }
 
     @Override
     protected void writeRawDoubles(final double[] values, final int length) throws IOException {
-        long offset = baseOffset + require(length * SIZEOF_FIXED_64);
-        ByteUtil.writeUnsafeDoubles(buffer, offset, values, length);
+        ByteUtil.writeUnsafeDoubles(buffer, require(length * SIZEOF_FIXED_64), values, length);
     }
 
     @Override
     protected int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize) {
         return Utf8.encodeUnsafe(value, buffer, baseOffset, position, maxSize);
+    }
+
+    private long require(final int numBytes) throws OutOfSpaceException {
+        if (spaceLeft() < numBytes)
+            throw outOfSpace();
+        try {
+            return baseOffset + position;
+        } finally {
+            position += numBytes;
+        }
     }
 
 }

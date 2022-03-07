@@ -115,7 +115,7 @@ public class SbeBenchmark {
     final MarketDataIncrementalRefreshTrades marketMsg = MarketDataIncrementalRefreshTrades.newInstance();
     final Car carMsg = Car.newInstance();
     final ProtoSource source = ProtoSource.newInstance();
-    final ProtoSink sink = ProtoSink.newSafeInstance();
+    final ProtoSink sink = ProtoSink.newInstance();
     final ProtoSource unsafeSource = ProtoSource.newUnsafeInstance();
     final ProtoSink unsafeSink = ProtoSink.newInstance();
 
