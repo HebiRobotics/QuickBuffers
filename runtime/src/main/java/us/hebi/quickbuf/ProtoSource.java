@@ -201,7 +201,7 @@ public abstract class ProtoSource {
     public boolean skipField(final int tag) throws IOException {
         switch (WireFormat.getTagWireType(tag)) {
             case WireFormat.WIRETYPE_VARINT:
-                readRawVarint32();
+                readRawVarint32(); // Note: not worth adding a skipVarint method
                 return true;
             case WireFormat.WIRETYPE_FIXED64:
                 skipRawBytes(SIZEOF_FIXED_64);
@@ -259,10 +259,7 @@ public abstract class ProtoSource {
     public int readRepeatedDouble(final RepeatedDouble store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readDouble());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -292,10 +289,7 @@ public abstract class ProtoSource {
     public int readRepeatedFloat(final RepeatedFloat store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readFloat());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -335,10 +329,7 @@ public abstract class ProtoSource {
     public int readRepeatedFixed64(RepeatedLong store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readFixed64());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -383,10 +374,7 @@ public abstract class ProtoSource {
     public int readRepeatedFixed32(RepeatedInt store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readFixed32());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -414,10 +402,7 @@ public abstract class ProtoSource {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getPackedVarintArrayLength());
-            }
+            reservePackedVarintCapacity(store);
             store.add(readInt64());
         }
         popLimit(limit);
@@ -428,10 +413,7 @@ public abstract class ProtoSource {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getPackedVarintArrayLength());
-            }
+            reservePackedVarintCapacity(store);
             store.add(readSInt64());
         }
         popLimit(limit);
@@ -446,10 +428,7 @@ public abstract class ProtoSource {
     public int readRepeatedInt64(final RepeatedLong store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readInt64());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -459,10 +438,7 @@ public abstract class ProtoSource {
     public int readRepeatedSInt64(final RepeatedLong store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readSInt64());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -493,10 +469,7 @@ public abstract class ProtoSource {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getPackedVarintArrayLength());
-            }
+            reservePackedVarintCapacity(store);
             store.add(readInt32());
         }
         popLimit(limit);
@@ -507,10 +480,7 @@ public abstract class ProtoSource {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getPackedVarintArrayLength());
-            }
+            reservePackedVarintCapacity(store);
             store.add(readSInt32());
         }
         popLimit(limit);
@@ -525,10 +495,7 @@ public abstract class ProtoSource {
     public int readRepeatedInt32(final RepeatedInt store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readInt32());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -538,10 +505,7 @@ public abstract class ProtoSource {
     public int readRepeatedSInt32(final RepeatedInt store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readSInt32());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -577,10 +541,7 @@ public abstract class ProtoSource {
     public int readRepeatedBool(final RepeatedBoolean store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.add(readBool());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -596,10 +557,7 @@ public abstract class ProtoSource {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getPackedVarintArrayLength());
-            }
+            reservePackedVarintCapacity(store);
             store.addValue(readEnum());
         }
         popLimit(limit);
@@ -609,10 +567,7 @@ public abstract class ProtoSource {
     public int readRepeatedEnum(final RepeatedEnum<?> store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             store.addValue(readEnum());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -632,10 +587,7 @@ public abstract class ProtoSource {
     public int readRepeatedString(final RepeatedString store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             readString(store.next());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -652,10 +604,7 @@ public abstract class ProtoSource {
         int fieldNumber = WireFormat.getTagFieldNumber(tag);
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             readGroup(store.next(), fieldNumber);
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -677,10 +626,7 @@ public abstract class ProtoSource {
     public int readRepeatedMessage(final RepeatedMessage<?> store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             readMessage(store.next());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -703,10 +649,7 @@ public abstract class ProtoSource {
     public int readRepeatedBytes(final RepeatedBytes store, final int tag) throws IOException {
         int nextTag;
         do {
-            // look ahead for more items so we resize only once
-            if (store.remainingCapacity() == 0) {
-                store.reserve(getRepeatedFieldArrayLength(tag));
-            }
+            reserveRepeatedFieldCapacity(store, tag);
             readBytes(store.next());
         } while ((nextTag = readTag()) == tag);
         return nextTag;
@@ -953,31 +896,29 @@ public abstract class ProtoSource {
     public abstract void skipRawBytes(final int size) throws IOException;
 
     /**
-     * Computes the array length of a repeated field. We assume that in the common case repeated
-     * fields are contiguously serialized but we still correctly handle interspersed values of a
-     * repeated field (but with extra allocations).
-     * <p>
-     * Rewinds the current input position before returning. Sources that do not support
-     * lookahead may return zero.
+     * Reserves space in the repeated field store to hold additional values. We assume that in
+     * the common case repeated fields are contiguously serialized, so we can look ahead to
+     * see how many values are remaining to avoid unnecessary allocations. Note that this is
+     * an optimization that may do nothing if looking ahead is not supported.
      *
-     * @param tag   repeated field tag just read
-     * @return length of array or zero if not available
+     * @param store target store
+     * @param tag tag of the contained repeated field
      * @throws IOException
      */
-    public abstract int getRepeatedFieldArrayLength(int tag) throws IOException;
+    protected void reserveRepeatedFieldCapacity(RepeatedField<?,?> store, int tag) throws IOException {
+        // implement in child classes that support looking ahead
+    }
 
     /**
-     * Computes the array length of a packed repeated field of varint values. Packed fields
-     * know the total delimited byte size, but the number of elements is unknown for variable
-     * width fields. This method looks ahead to see how many varints are left until the limit
-     * is reached.
-     * <p>
-     * Rewinds the current input position before returning. Sources that do not support
-     * lookahead may return zero.
+     * Reserves space in the repeated field store to hold the number of remaining varints until
+     * the limit or end of stream is reached. Note that this is an optimization that may do
+     * nothing if looking ahead is not supported.
      *
-     * @return length of array or zero if not available
+     * @param store target store
      * @throws IOException
      */
-    public abstract int getPackedVarintArrayLength() throws IOException;
+    protected void reservePackedVarintCapacity(RepeatedField<?,?> store) throws IOException {
+        // implement in child classes that support looking ahead
+    }
 
 }

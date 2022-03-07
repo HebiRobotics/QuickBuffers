@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -97,31 +97,6 @@ class ArraySource extends ProtoSource{
         requireRemaining(size);
         Utf8.decodeArray(buffer, bufferPos, size, output);
         bufferPos += size;
-    }
-
-    @Override
-    public int getRepeatedFieldArrayLength(int tag) throws IOException {
-        int arrayLength = 1;
-        int startPos = getPosition();
-        skipField(tag);
-        while (readTag() == tag) {
-            skipField(tag);
-            arrayLength++;
-        }
-        rewindToPosition(startPos);
-        return arrayLength;
-    }
-
-    @Override
-    public int getPackedVarintArrayLength() throws IOException {
-        final int position = getPosition();
-        int count = 0;
-        while (!isAtEnd()) {
-            readRawVarint32();
-            count++;
-        }
-        rewindToPosition(position);
-        return count;
     }
 
     @Override
@@ -256,5 +231,68 @@ class ArraySource extends ProtoSource{
     protected int bufferPos;
 
     protected int lastTagMark;
+
+    /**
+     * Computes the remaining array length of a repeated field. We assume that in the common case
+     * repeated fields are contiguously serialized, but we still correctly handle interspersed values
+     * of a repeated field (although with extra allocations).
+     * <p>
+     * Rewinds the current input position before returning. Sources that do not support
+     * lookahead may return zero.
+     *
+     * @param tag   repeated field tag just read
+     * @return length of array or zero if not available
+     * @throws IOException
+     */
+    protected int getRemainingRepeatedFieldCount(int tag) throws IOException {
+        int arrayLength = 1;
+        int startPos = getPosition();
+        skipField(tag);
+        while (readTag() == tag) {
+            skipField(tag);
+            arrayLength++;
+        }
+        rewindToPosition(startPos);
+        return arrayLength;
+    }
+
+    /**
+     * Computes the array length of a packed repeated field of varint values. Packed fields
+     * know the total delimited byte size, but the number of elements is unknown for variable
+     * width fields. This method looks ahead to see how many varints are left until the limit
+     * is reached.
+     * <p>
+     * Rewinds the current input position before returning. Sources that do not support
+     * lookahead may return zero.
+     *
+     * @return length of array or zero if not available
+     * @throws IOException
+     */
+    protected int getRemainingVarintCount() throws IOException {
+        final int position = getPosition();
+        int count = 0;
+        while (!isAtEnd()) {
+            readRawVarint32();
+            count++;
+        }
+        rewindToPosition(position);
+        return count;
+    }
+
+    @Override
+    protected void reserveRepeatedFieldCapacity(RepeatedField<?, ?> store, int tag) throws IOException {
+        // resize on demand and look ahead until end
+        if (store.remainingCapacity() == 0) {
+            store.reserve(getRemainingRepeatedFieldCount(tag));
+        }
+    }
+
+    @Override
+    protected void reservePackedVarintCapacity(RepeatedField<?, ?> store) throws IOException {
+        // resize on demand and look ahead until end
+        if (store.remainingCapacity() == 0) {
+            store.reserve(getRemainingVarintCount());
+        }
+    }
 
 }
