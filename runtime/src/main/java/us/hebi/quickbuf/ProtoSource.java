@@ -413,7 +413,7 @@ public abstract class ProtoSource {
     public void readPackedInt64(final RepeatedLong store, final int tag) throws IOException {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
-        while (getBytesUntilLimit() > 0) {
+        while (!isAtEnd()) {
             // look ahead for more items so we resize only once
             if (store.remainingCapacity() == 0) {
                 store.reserve(getPackedVarintArrayLength());
@@ -427,7 +427,7 @@ public abstract class ProtoSource {
     public void readPackedSInt64(final RepeatedLong store, final int tag) throws IOException {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
-        while (getBytesUntilLimit() > 0) {
+        while (!isAtEnd()) {
             // look ahead for more items so we resize only once
             if (store.remainingCapacity() == 0) {
                 store.reserve(getPackedVarintArrayLength());
@@ -492,7 +492,7 @@ public abstract class ProtoSource {
     public void readPackedInt32(final RepeatedInt store, final int tag) throws IOException {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
-        while (getBytesUntilLimit() > 0) {
+        while (!isAtEnd()) {
             // look ahead for more items so we resize only once
             if (store.remainingCapacity() == 0) {
                 store.reserve(getPackedVarintArrayLength());
@@ -506,7 +506,7 @@ public abstract class ProtoSource {
     public void readPackedSInt32(final RepeatedInt store, final int tag) throws IOException {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
-        while (getBytesUntilLimit() > 0) {
+        while (!isAtEnd()) {
             // look ahead for more items so we resize only once
             if (store.remainingCapacity() == 0) {
                 store.reserve(getPackedVarintArrayLength());
@@ -567,7 +567,7 @@ public abstract class ProtoSource {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
         store.reserve(length / SIZEOF_FIXED_BOOL);
-        while (getBytesUntilLimit() > 0) {
+        while (!isAtEnd()) {
             store.add(readBool());
         }
         popLimit(limit);
@@ -595,7 +595,7 @@ public abstract class ProtoSource {
     public void readPackedEnum(final RepeatedEnum<?> store, final int tag) throws IOException {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
-        while (getBytesUntilLimit() > 0) {
+        while (!isAtEnd()) {
             // look ahead for more items so we resize only once
             if (store.remainingCapacity() == 0) {
                 store.reserve(getPackedVarintArrayLength());

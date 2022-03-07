@@ -116,7 +116,7 @@ class ArraySource extends ProtoSource{
     public int getPackedVarintArrayLength() throws IOException {
         final int position = getPosition();
         int count = 0;
-        while (getBytesUntilLimit() > 0) {
+        while (!isAtEnd()) {
             readRawVarint32();
             count++;
         }
