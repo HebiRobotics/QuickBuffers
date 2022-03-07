@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
@@ -42,7 +41,7 @@ class UnsafeArraySource extends ArraySource {
 
     UnsafeArraySource(boolean enableDirect) {
         if (!isAvailable())
-            throw new AssertionError("UnsafeArraySource requires Java >= 7 and access to sun.misc.Unsafe");
+            throw new AssertionError("UnsafeArraySource requires access to sun.misc.Unsafe");
         this.enableDirect = enableDirect;
     }
 
@@ -73,32 +72,7 @@ class UnsafeArraySource extends ArraySource {
         UNSAFE.copyMemory(buffer, baseOffset + lastTagMark, store.array, BYTE_ARRAY_OFFSET + bufferPos, length);
     }
 
-    @Override
-    public void readString(StringBuilder output) throws IOException {
-        final int size = readRawVarint32();
-        requireRemaining(size);
-        Utf8.decodeUnsafe(buffer, limit, baseOffset, pos, size, output);
-        pos += size;
-    }
-
-    public void readString(final Utf8String store) throws IOException {
-        final int numBytes = readRawVarint32();
-        requireRemaining(numBytes);
-        store.setSize(numBytes);
-        UNSAFE.copyMemory(buffer, baseOffset + pos, store.bytes(), BYTE_ARRAY_OFFSET, numBytes);
-        pos += numBytes;
-    }
-
-    @Override
-    public void readBytes(RepeatedByte store) throws IOException {
-        final int numBytes = readRawVarint32();
-        requireRemaining(numBytes);
-        store.reserve(numBytes);
-        store.length = numBytes;
-        UNSAFE.copyMemory(buffer, baseOffset + pos, store.array, BYTE_ARRAY_OFFSET, numBytes);
-        pos += numBytes;
-    }
-
+    /** Reads one byte from the input. */
     @Override
     public byte readRawByte() throws IOException {
         if (pos == limit) {
@@ -108,172 +82,65 @@ class UnsafeArraySource extends ArraySource {
     }
 
     /** Read a 16-bit little-endian integer from the source. */
+    @Override
     public short readRawLittleEndian16() throws IOException {
-        requireRemaining(SIZEOF_FIXED_16);
-        final byte[] buffer = this.buffer;
-        final long offset = baseOffset + pos;
-        pos += SIZEOF_FIXED_16;
-        return (short) ((UNSAFE.getByte(buffer, offset) & 0xFF) | (UNSAFE.getByte(buffer, offset + 1) & 0xFF) << 8);
+        long pos = baseOffset + require(SIZEOF_FIXED_16);
+        return ByteUtil.readUnsafeLittleEndian16(buffer, pos);
     }
 
     /** Read a 32-bit little-endian integer from the source. */
+    @Override
     public int readRawLittleEndian32() throws IOException {
-        requireRemaining(SIZEOF_FIXED_32);
-        final byte[] buffer = this.buffer;
-        final long offset = baseOffset + pos;
-        pos += SIZEOF_FIXED_32;
-        return (UNSAFE.getByte(buffer, offset) & 0xFF) |
-                (UNSAFE.getByte(buffer, offset + 1) & 0xFF) << 8 |
-                (UNSAFE.getByte(buffer, offset + 2) & 0xFF) << 16 |
-                (UNSAFE.getByte(buffer, offset + 3) & 0xFF) << 24;
+        long pos = baseOffset + require(SIZEOF_FIXED_32);
+        return ByteUtil.readUnsafeLittleEndian32(buffer, pos);
     }
 
     /** Read a 64-bit little-endian integer from the source. */
+    @Override
     public long readRawLittleEndian64() throws IOException {
-        requireRemaining(SIZEOF_FIXED_64);
-        final byte[] buffer = this.buffer;
-        final long offset = baseOffset + pos;
-        pos += SIZEOF_FIXED_64;
-        return (UNSAFE.getByte(buffer, offset) & 0xFFL) |
-                (UNSAFE.getByte(buffer, offset + 1) & 0xFFL) << 8 |
-                (UNSAFE.getByte(buffer, offset + 2) & 0xFFL) << 16 |
-                (UNSAFE.getByte(buffer, offset + 3) & 0xFFL) << 24 |
-                (UNSAFE.getByte(buffer, offset + 4) & 0xFFL) << 32 |
-                (UNSAFE.getByte(buffer, offset + 5) & 0xFFL) << 40 |
-                (UNSAFE.getByte(buffer, offset + 6) & 0xFFL) << 48 |
-                (UNSAFE.getByte(buffer, offset + 7) & 0xFFL) << 56;
+        long pos = baseOffset + require(SIZEOF_FIXED_64);
+        return ByteUtil.readUnsafeLittleEndian64(buffer, pos);
     }
 
-    /**
-     * Subclass that adds additional performance improvements for platforms
-     * that support non-aligned access (e.g. reading an int from an address
-     * that is not a multiple of 4). Due to the various 1 byte field tags, the
-     * alignment is basically random and it's not worth checking for alignment.
-     */
-    static class Unaligned extends UnsafeArraySource {
+    /** Read a {@code float} field value from the source. */
+    public float readFloat() throws IOException {
+        long pos = baseOffset +  require(SIZEOF_FIXED_32);
+        return ByteUtil.readUnsafeFloat(buffer, pos);
+    }
 
-        Unaligned(boolean enableDirect) {
-            super(enableDirect);
-        }
+    /** Read a {@code double} field value from the source. */
+    public double readDouble() throws IOException {
+        long pos = baseOffset + require(SIZEOF_FIXED_64);
+        return ByteUtil.readUnsafeDouble(buffer, pos);
+    }
+    @Override
+    public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+        long pos = baseOffset + require(length);
+        ByteUtil.readUnsafeBytes(buffer, pos, values, offset, length);
+    }
 
-        @Override
-        protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
-            final int numBytes = length * SIZEOF_FIXED_64;
-            requireRemaining(numBytes);
-            if (IS_LITTLE_ENDIAN) {
-                final long targetOffset = DOUBLE_ARRAY_OFFSET + SIZEOF_FIXED_64 * offset;
-                UNSAFE.copyMemory(buffer, baseOffset + pos, values, targetOffset, numBytes);
-                pos += numBytes;
-            } else {
-                for (int i = 0; i < length; i++) {
-                    final long bits = UNSAFE.getLong(buffer, baseOffset + pos);
-                    values[offset + i] = Double.longBitsToDouble(Long.reverseBytes(bits));
-                    pos += SIZEOF_FIXED_64;
-                }
-            }
-        }
+    @Override
+    protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
+        long pos = baseOffset + require(length * SIZEOF_FIXED_32);
+        ByteUtil.readUnsafeLittleEndian32s(buffer, pos, values, offset, length);
+    }
 
-        @Override
-        protected void readRawFloats(float[] values, int offset, int length) throws IOException {
-            final int numBytes = length * SIZEOF_FIXED_32;
-            requireRemaining(numBytes);
-            if (IS_LITTLE_ENDIAN) {
-                final long targetOffset = FLOAT_ARRAY_OFFSET + SIZEOF_FIXED_32 * offset;
-                UNSAFE.copyMemory(buffer, baseOffset + pos, values, targetOffset, numBytes);
-                pos += numBytes;
-            } else {
-                for (int i = 0; i < length; i++) {
-                    final int bits = UNSAFE.getInt(buffer, baseOffset + pos);
-                    values[offset + i] = Float.intBitsToFloat(Integer.reverseBytes(bits));
-                    pos += SIZEOF_FIXED_32;
-                }
-            }
-        }
+    @Override
+    protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
+        long pos = baseOffset + require(length * SIZEOF_FIXED_64);
+        ByteUtil.readUnsafeLittleEndian64s(buffer, pos, values, offset, length);
+    }
 
-        @Override
-        protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
-            final int numBytes = length * SIZEOF_FIXED_64;
-            requireRemaining(numBytes);
-            if (IS_LITTLE_ENDIAN) {
-                final long targetOffset = INT_ARRAY_OFFSET + SIZEOF_FIXED_64 * offset;
-                UNSAFE.copyMemory(buffer, baseOffset + pos, values, targetOffset, numBytes);
-                pos += numBytes;
-            } else {
-                for (int i = 0; i < length; i++) {
-                    final long bits = UNSAFE.getLong(buffer, baseOffset + pos);
-                    values[offset + i] = Long.reverseBytes(bits);
-                    pos += SIZEOF_FIXED_64;
-                }
-            }
-        }
+    @Override
+    protected void readRawFloats(float[] values, int offset, int length) throws IOException {
+        long pos = baseOffset + require(length * SIZEOF_FIXED_32);
+        ByteUtil.readUnsafeFloats(buffer, pos, values, offset, length);
+    }
 
-        @Override
-        protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
-            final int numBytes = length * SIZEOF_FIXED_32;
-            requireRemaining(numBytes);
-            if (IS_LITTLE_ENDIAN) {
-                final long targetOffset = INT_ARRAY_OFFSET + SIZEOF_FIXED_32 * offset;
-                UNSAFE.copyMemory(buffer, baseOffset + pos, values, targetOffset, numBytes);
-                pos += numBytes;
-            } else {
-                for (int i = 0; i < length; i++) {
-                    final int bits = UNSAFE.getInt(buffer, baseOffset + pos);
-                    values[offset + i] = Integer.reverseBytes(bits);
-                    pos += SIZEOF_FIXED_32;
-                }
-            }
-        }
-
-        @Override
-        public double readDouble() throws IOException {
-            if (IS_LITTLE_ENDIAN) {
-                requireRemaining(SIZEOF_FIXED_64);
-                final double value = UNSAFE.getDouble(buffer, baseOffset + pos);
-                pos += SIZEOF_FIXED_64;
-                return value;
-            } else {
-                return Double.longBitsToDouble(readRawLittleEndian64());
-            }
-        }
-
-        @Override
-        public float readFloat() throws IOException {
-            if (IS_LITTLE_ENDIAN) {
-                requireRemaining(SIZEOF_FIXED_32);
-                final float value = UNSAFE.getFloat(buffer, baseOffset + pos);
-                pos += SIZEOF_FIXED_32;
-                return value;
-            } else {
-                return Float.intBitsToFloat(readRawLittleEndian32());
-            }
-        }
-
-        @Override
-        public short readRawLittleEndian16() throws IOException {
-            requireRemaining(SIZEOF_FIXED_16);
-            final short value = UNSAFE.getShort(buffer, baseOffset + pos);
-            pos += SIZEOF_FIXED_16;
-            return IS_LITTLE_ENDIAN ? value : Short.reverseBytes(value);
-        }
-
-        @Override
-        public int readRawLittleEndian32() throws IOException {
-            requireRemaining(SIZEOF_FIXED_32);
-            final int value = UNSAFE.getInt(buffer, baseOffset + pos);
-            pos += SIZEOF_FIXED_32;
-            return IS_LITTLE_ENDIAN ? value : Integer.reverseBytes(value);
-        }
-
-        @Override
-        public long readRawLittleEndian64() throws IOException {
-            requireRemaining(SIZEOF_FIXED_64);
-            final long value = UNSAFE.getLong(buffer, baseOffset + pos);
-            pos += SIZEOF_FIXED_64;
-            return IS_LITTLE_ENDIAN ? value : Long.reverseBytes(value);
-        }
-
-        private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-
+    @Override
+    protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
+        long pos = baseOffset + require(length * SIZEOF_FIXED_64);
+        ByteUtil.readUnsafeDoubles(buffer, pos, values, offset, length);
     }
 
 }

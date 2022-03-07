@@ -34,16 +34,15 @@ import java.security.PrivilegedExceptionAction;
 class UnsafeAccess {
 
     static boolean isAvailable() {
-        return UNSAFE != null && !DISABLE_UNSAFE_ACCESS;
+        return UNSAFE != null && ENABLE_UNSAFE;
     }
 
     static boolean isCopyMemoryAvailable() {
-        // copy memory (obj, long, obj, long, long) is @since 1.7
-        return isAvailable() && MAJOR_JAVA_VERSION >= 7;
+        return ENABLE_UNSAFE_COPY;
     }
 
     static boolean allowUnalignedAccess() {
-        return !DISABLE_UNALIGNED_ACCESS;
+        return ENABLE_UNSAFE_UNALIGNED;
     }
 
     static {
@@ -113,11 +112,14 @@ class UnsafeAccess {
         }
     }
 
-    private static final int MAJOR_JAVA_VERSION;
-    private static final boolean IS_ARM = Boolean.getBoolean("jvm.isarm")
+    static final int MAJOR_JAVA_VERSION;
+    static final boolean IS_ARM = Boolean.getBoolean("jvm.isarm")
             || System.getProperty("os.arch", "N/A").startsWith("arm")
             || System.getProperty("os.arch", "N/A").startsWith("aarch");
-    private static final boolean DISABLE_UNSAFE_ACCESS = Boolean.getBoolean("quickbuf.disable_unsafe_access");
-    private static final boolean DISABLE_UNALIGNED_ACCESS = IS_ARM || Boolean.getBoolean("quickbuf.disable_unaligned_access");
+    static final boolean ENABLE_UNSAFE = !Boolean.getBoolean("quickbuf.disable_unsafe_access");
+    static final boolean ENABLE_UNSAFE_UNALIGNED = ENABLE_UNSAFE && !IS_ARM && !Boolean.getBoolean("quickbuf.disable_unaligned_access");
+
+    // copy memory (obj, long, obj, long, long) is @since 1.7
+    static final boolean ENABLE_UNSAFE_COPY = ENABLE_UNSAFE && MAJOR_JAVA_VERSION >= 7;
 
 }

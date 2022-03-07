@@ -32,71 +32,71 @@ import static us.hebi.quickbuf.WireFormat.*;
  */
 class ArraySource extends ProtoSource{
 
+    /** Reads one byte from the input. */
+    @Override
+    public byte readRawByte() throws IOException {
+        if (pos == limit) {
+            throw InvalidProtocolBufferException.truncatedMessage();
+        }
+        return buffer[pos++];
+    }
+
     /** Read a 16-bit little-endian integer from the source. */
     @Override
     public short readRawLittleEndian16() throws IOException {
-        requireRemaining(SIZEOF_FIXED_16);
-        final byte[] buffer = this.buffer;
-        final int offset = pos;
-        pos += SIZEOF_FIXED_16;
-        return (short) ((buffer[offset] & 0xFF) | (buffer[offset + 1] & 0xFF) << 8);
+        return ByteUtil.readLittleEndian16(buffer, require(SIZEOF_FIXED_16));
     }
 
     /** Read a 32-bit little-endian integer from the source. */
     @Override
     public int readRawLittleEndian32() throws IOException {
-        requireRemaining(SIZEOF_FIXED_32);
-        final byte[] buffer = this.buffer;
-        final int offset = pos;
-        pos += SIZEOF_FIXED_32;
-        return (buffer[offset] & 0xFF) |
-                (buffer[offset + 1] & 0xFF) << 8 |
-                (buffer[offset + 2] & 0xFF) << 16 |
-                (buffer[offset + 3] & 0xFF) << 24;
+        return ByteUtil.readLittleEndian32(buffer, require(SIZEOF_FIXED_32));
     }
 
     /** Read a 64-bit little-endian integer from the source. */
     @Override
     public long readRawLittleEndian64() throws IOException {
-        requireRemaining(SIZEOF_FIXED_64);
-        final byte[] buffer = this.buffer;
-        final int offset = pos;
-        pos += SIZEOF_FIXED_64;
-        return (buffer[offset] & 0xFFL) |
-                (buffer[offset + 1] & 0xFFL) << 8 |
-                (buffer[offset + 2] & 0xFFL) << 16 |
-                (buffer[offset + 3] & 0xFFL) << 24 |
-                (buffer[offset + 4] & 0xFFL) << 32 |
-                (buffer[offset + 5] & 0xFFL) << 40 |
-                (buffer[offset + 6] & 0xFFL) << 48 |
-                (buffer[offset + 7] & 0xFFL) << 56;
+        return ByteUtil.readLittleEndian64(buffer, require(SIZEOF_FIXED_64));
     }
 
-    /** Read a {@code bytes} field value from the source. */
-    @Override
-    public void readBytes(RepeatedByte store) throws IOException {
-        final int numBytes = readRawVarint32();
-        requireRemaining(numBytes);
-        store.copyFrom(buffer, pos, numBytes);
-        pos += numBytes;
+    /** Read a {@code float} field value from the source. */
+    public float readFloat() throws IOException {
+        return ByteUtil.readFloat(buffer, require(SIZEOF_FIXED_32));
+    }
+
+    /** Read a {@code double} field value from the source. */
+    public double readDouble() throws IOException {
+        return ByteUtil.readDouble(buffer, require(SIZEOF_FIXED_64));
     }
 
     @Override
-    public void readString(final Utf8String store) throws IOException {
-        final int numBytes = readRawVarint32();
-        requireRemaining(numBytes);
-        store.setSize(numBytes);
-        System.arraycopy(buffer, pos, store.bytes(), 0, numBytes);
-        pos += numBytes;
+    public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+        ByteUtil.readBytes(buffer, require(length), values, offset, length);
     }
 
-    /** Read a {@code string} field value from the source. */
     @Override
-    public void readString(StringBuilder output) throws IOException {
-        final int size = readRawVarint32();
-        requireRemaining(size);
-        Utf8.decodeArray(buffer, pos, size, output);
-        pos += size;
+    protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
+        ByteUtil.readLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+    }
+
+    @Override
+    protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
+        ByteUtil.readLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+    }
+
+    @Override
+    protected void readRawFloats(float[] values, int offset, int length) throws IOException {
+        ByteUtil.readFloats(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+    }
+
+    @Override
+    protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
+        ByteUtil.readDoubles(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+    }
+
+    @Override
+    public void skipRawBytes(final int size) throws IOException {
+        require(size);
     }
 
     @Override
@@ -167,25 +167,20 @@ class ArraySource extends ProtoSource{
         pos = offset + position;
     }
 
-    public byte readRawByte() throws IOException {
-        if (pos == limit) {
-            throw InvalidProtocolBufferException.truncatedMessage();
-        }
-        return buffer[pos++];
-    }
-
-    public void skipRawBytes(final int size) throws IOException {
-        requireRemaining(size);
-        pos += size;
-    }
-
     protected int remaining() {
         // limit is always the same as currentLimit
         // in cases where currentLimit != Integer.MAX_VALUE
         return limit - pos;
     }
 
-    protected void requireRemaining(int numBytes) throws IOException {
+    /**
+     * Advances the current position by the specified bytes
+     *
+     * @param numBytes length to be added
+     * @return current position before incrementing
+     */
+    protected int require(int numBytes) throws IOException {
+        int current = pos;
         if (numBytes < 0) {
             throw InvalidProtocolBufferException.negativeSize();
 
@@ -196,6 +191,8 @@ class ArraySource extends ProtoSource{
             }
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+        pos += numBytes;
+        return current;
     }
 
     private void recomputeBufferSizeAfterLimit() {

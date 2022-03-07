@@ -80,7 +80,7 @@ public abstract class ProtoSource {
     public static ProtoSource newInstance(final byte[] buf,
                                           final int off,
                                           final int len) {
-        return newSafeInstance().wrap(buf, off, len);
+        return newInstance().wrap(buf, off, len);
     }
 
     /**
@@ -91,45 +91,21 @@ public abstract class ProtoSource {
      * available.
      */
     public static ProtoSource newInstance() {
-        if (UnsafeArraySource.isAvailable()) {
-            if (UnsafeAccess.allowUnalignedAccess()) {
-                return new UnsafeArraySource.Unaligned(false);
-            } else {
-                return new UnsafeArraySource(false);
-            }
-        }
-        return newSafeInstance();
-    }
-
-    /**
-     * Create a new {@code ProtoSource} that reads directly from a byte array.
-     *
-     * This method returns an implementation that does not leverage any
-     * features from sun.misc.Unsafe, even if they are available on the
-     * current platform.
-     *
-     * Unless you are doing comparisons you probably want to call
-     * {@link #newInstance()} instead.
-     */
-    public static ProtoSource newSafeInstance() {
         return new ArraySource();
     }
 
     /**
-     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     * Create a new {@code ProtoSource} that reads from a byte array or
+     * direct / off-heap memory.
      *
-     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
+     * This source requires availability of sun.misc.Unsafe.
      *
      * Additionally, this sink removes null-argument checks and allows users to
      * write to off-heap memory. Working with off-heap memory may cause segfaults
      * of the runtime, so only use if you know what you are doing.
      */
     public static ProtoSource newUnsafeInstance() {
-        if (UnsafeAccess.allowUnalignedAccess()) {
-            return new UnsafeArraySource.Unaligned(true);
-        } else {
-            return new UnsafeArraySource(true);
-        }
+        return new UnsafeArraySource(true);
     }
 
     public final ProtoSource wrap(byte[] buffer) {
@@ -159,7 +135,7 @@ public abstract class ProtoSource {
         }
 
         lastTag = readRawVarint32();
-        if (lastTag == 0) {
+        if (lastTag == 0) { // TODO: only check top bits?
             // If we actually read zero, that's not a valid tag.
             throw InvalidProtocolBufferException.invalidTag();
         }
@@ -243,9 +219,8 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code double} field value from the source. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.reserve(numEntries);
-        readRawDoubles(store.array, store.length, numEntries);
-        store.length += numEntries;
+        final int offset = store.addLength(numEntries);
+        readRawDoubles(store.array, offset, numEntries);
     }
 
     protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
@@ -273,9 +248,8 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code float} field value from the source. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.reserve(numEntries);
-        readRawFloats(store.array, store.length, numEntries);
-        store.length += numEntries;
+        final int offset = store.addLength(numEntries);
+        readRawFloats(store.array, offset, numEntries);
     }
 
     protected void readRawFloats(float[] values, int offset, int length) throws IOException {
@@ -308,9 +282,8 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code fixed64} field value from the source. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.reserve(numEntries);
-        readRawFixed64s(store.array, store.length, numEntries);
-        store.length += numEntries;
+        final int offset = store.addLength(numEntries);
+        readRawFixed64s(store.array, offset, numEntries);
     }
 
     protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
@@ -353,9 +326,8 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code fixed32} field value from the source. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.reserve(numEntries);
-        readRawFixed32s(store.array, store.length, numEntries);
-        store.length += numEntries;
+        final int offset = store.addLength(numEntries);
+        readRawFixed32s(store.array, offset, numEntries);
     }
 
     protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
@@ -594,10 +566,11 @@ public abstract class ProtoSource {
     }
 
     /** Read a {@code string} field value from the source. */
-    public abstract void readString(final Utf8String store) throws IOException;
-
-    /** Read a {@code string} field value from the source. */
-    public abstract void readString(StringBuilder output) throws IOException;
+    public void readString(final Utf8String store) throws IOException {
+        final int numBytes = readRawVarint32();
+        store.setSize(numBytes);
+        readRawBytes(store.bytes(), 0, numBytes);
+    }
 
     /** Read a repeated {@code group} field value from the source. */
     public int readRepeatedGroup(final RepeatedMessage<?> store, final int tag) throws IOException {
@@ -657,10 +630,16 @@ public abstract class ProtoSource {
 
     /** Read a {@code bytes} field value from the source. */
     public void readBytes(RepeatedByte store) throws IOException {
+        // note: bytes type gets replaced rather than merged
         final int numBytes = readRawVarint32();
-        int offset = store.addLength(numBytes);
-        for (int i = 0; i < numBytes; i++) {
-            store.array[offset + i] = readRawByte();
+        store.setLength(numBytes);
+        readRawBytes(store.array, 0, numBytes);
+    }
+
+    /** Read raw {@code bytes} from the source. */
+    public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+        for (int i = 0; i < length; i++) {
+            values[offset + i] = readRawByte();
         }
     }
 
@@ -804,7 +783,12 @@ public abstract class ProtoSource {
     /** See setRecursionLimit() */
     private int recursionDepth;
     private int recursionLimit = DEFAULT_RECURSION_LIMIT;
-    private static final int DEFAULT_RECURSION_LIMIT = 64;
+    private static final int DEFAULT_RECURSION_LIMIT = 64; // TODO: Google now defaults to 100? Our messages don't even support this. Do we need it?
+    // TODO: setSizeLimit() on InputStream?
+    // TODO: make skipping an option on the source instead of the message?
+    // TODO: add readRawBytes(byte[] target, int offset, int length)
+    // TODO: copy readRawVarint32(int firstByte, InputStream) for better InputStream reading?
+    // TODO: skip fields without requiring mark / copy
 
     /**
      * Changes the input to the given array. This resets any existing

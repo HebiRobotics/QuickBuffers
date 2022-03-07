@@ -75,7 +75,7 @@ public class DecodingBenchmark {
     int[] values = new int[512];
     byte[] output = new byte[values.length * 10];
     ProtoSink sink = ProtoSink.newInstance();
-    ProtoSource source = ProtoSource.newSafeInstance();
+    ProtoSource source = ProtoSource.newInstance();
 
     @Setup(Level.Iteration)
     public void setup() throws IOException {
