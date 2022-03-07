@@ -37,8 +37,8 @@ class ArraySource extends ProtoSource{
     public short readRawLittleEndian16() throws IOException {
         requireRemaining(SIZEOF_FIXED_16);
         final byte[] buffer = this.buffer;
-        final int offset = bufferPos;
-        bufferPos += SIZEOF_FIXED_16;
+        final int offset = pos;
+        pos += SIZEOF_FIXED_16;
         return (short) ((buffer[offset] & 0xFF) | (buffer[offset + 1] & 0xFF) << 8);
     }
 
@@ -47,8 +47,8 @@ class ArraySource extends ProtoSource{
     public int readRawLittleEndian32() throws IOException {
         requireRemaining(SIZEOF_FIXED_32);
         final byte[] buffer = this.buffer;
-        final int offset = bufferPos;
-        bufferPos += SIZEOF_FIXED_32;
+        final int offset = pos;
+        pos += SIZEOF_FIXED_32;
         return (buffer[offset] & 0xFF) |
                 (buffer[offset + 1] & 0xFF) << 8 |
                 (buffer[offset + 2] & 0xFF) << 16 |
@@ -60,8 +60,8 @@ class ArraySource extends ProtoSource{
     public long readRawLittleEndian64() throws IOException {
         requireRemaining(SIZEOF_FIXED_64);
         final byte[] buffer = this.buffer;
-        final int offset = bufferPos;
-        bufferPos += SIZEOF_FIXED_64;
+        final int offset = pos;
+        pos += SIZEOF_FIXED_64;
         return (buffer[offset] & 0xFFL) |
                 (buffer[offset + 1] & 0xFFL) << 8 |
                 (buffer[offset + 2] & 0xFFL) << 16 |
@@ -77,8 +77,8 @@ class ArraySource extends ProtoSource{
     public void readBytes(RepeatedByte store) throws IOException {
         final int numBytes = readRawVarint32();
         requireRemaining(numBytes);
-        store.copyFrom(buffer, bufferPos, numBytes);
-        bufferPos += numBytes;
+        store.copyFrom(buffer, pos, numBytes);
+        pos += numBytes;
     }
 
     @Override
@@ -86,8 +86,8 @@ class ArraySource extends ProtoSource{
         final int numBytes = readRawVarint32();
         requireRemaining(numBytes);
         store.setSize(numBytes);
-        System.arraycopy(buffer, bufferPos, store.bytes(), 0, numBytes);
-        bufferPos += numBytes;
+        System.arraycopy(buffer, pos, store.bytes(), 0, numBytes);
+        pos += numBytes;
     }
 
     /** Read a {@code string} field value from the source. */
@@ -95,19 +95,19 @@ class ArraySource extends ProtoSource{
     public void readString(StringBuilder output) throws IOException {
         final int size = readRawVarint32();
         requireRemaining(size);
-        Utf8.decodeArray(buffer, bufferPos, size, output);
-        bufferPos += size;
+        Utf8.decodeArray(buffer, pos, size, output);
+        pos += size;
     }
 
     @Override
     public int readTagMarked() throws IOException {
-        lastTagMark = bufferPos;
+        lastTagMark = pos;
         return readTag();
     }
 
     @Override
     public void copyBytesSinceMark(RepeatedByte store) {
-        store.addAll(buffer, lastTagMark, bufferPos - lastTagMark);
+        store.addAll(buffer, lastTagMark, pos - lastTagMark);
     }
 
     @Override
@@ -115,9 +115,9 @@ class ArraySource extends ProtoSource{
         if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
             throw new ArrayIndexOutOfBoundsException();
         this.buffer = buffer;
-        bufferStart = (int) off;
-        bufferSize = bufferStart + len;
-        bufferPos = bufferStart;
+        offset = (int) off;
+        limit = offset + len;
+        pos = offset;
         return resetInternalState();
     }
 
@@ -133,15 +133,13 @@ class ArraySource extends ProtoSource{
         if (byteLimit < 0) {
             throw InvalidProtocolBufferException.negativeSize();
         }
-        byteLimit += bufferPos;
-        final int oldLimit = currentLimit;
-        if (byteLimit > oldLimit) {
+        byteLimit += pos;
+        if (byteLimit > limit) {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+        final int oldLimit = currentLimit;
         currentLimit = byteLimit;
-
         recomputeBufferSizeAfterLimit();
-
         return oldLimit;
     }
 
@@ -150,50 +148,41 @@ class ArraySource extends ProtoSource{
         recomputeBufferSizeAfterLimit();
     }
 
-    public int getBytesUntilLimit() { // replace with isAtEnd in generated messages?
+    public int getBytesUntilLimit() {
         if (currentLimit == Integer.MAX_VALUE) {
             return -1;
         }
-
-        final int currentAbsolutePosition = bufferPos;
-        return currentLimit - currentAbsolutePosition;
+        return currentLimit - pos;
     }
 
     public boolean isAtEnd() {
-        return bufferPos == bufferSize;
+        return pos == limit;
     }
 
-    public int getPosition() {
-        return bufferPos - bufferStart;
+    public int getTotalBytesRead() {
+        return pos - offset;
     }
 
-    public void rewindToPosition(int position) {
-        if (position > bufferPos - bufferStart) {
-            throw new IllegalArgumentException(
-                    "Position " + position + " is beyond current " + (bufferPos - bufferStart));
-        }
-        if (position < 0) {
-            throw new IllegalArgumentException("Bad position " + position);
-        }
-        bufferPos = bufferStart + position;
+    protected void rewindToPosition(int position) throws InvalidProtocolBufferException {
+        pos = offset + position;
     }
 
     public byte readRawByte() throws IOException {
-        if (bufferPos == bufferSize) {
+        if (pos == limit) {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
-        return buffer[bufferPos++];
+        return buffer[pos++];
     }
 
     public void skipRawBytes(final int size) throws IOException {
         requireRemaining(size);
-        bufferPos += size;
+        pos += size;
     }
 
     protected int remaining() {
-        // bufferSize is always the same as currentLimit
+        // limit is always the same as currentLimit
         // in cases where currentLimit != Integer.MAX_VALUE
-        return bufferSize - bufferPos;
+        return limit - pos;
     }
 
     protected void requireRemaining(int numBytes) throws IOException {
@@ -202,21 +191,22 @@ class ArraySource extends ProtoSource{
 
         } else if (numBytes > remaining()) {
             // Read to the end of the current sub-message before failing
-            if (numBytes > currentLimit - bufferPos) {
-                bufferPos = currentLimit;
+            if (currentLimit != Integer.MAX_VALUE) {
+                pos = currentLimit;
             }
             throw InvalidProtocolBufferException.truncatedMessage();
         }
     }
 
     private void recomputeBufferSizeAfterLimit() {
-        bufferSize += bufferSizeAfterLimit;
-        final int bufferEnd = bufferSize;
+        limit += bufferSizeAfterLimit;
+        final int bufferEnd = limit;
         if (bufferEnd > currentLimit) {
             // Limit is in current buffer.
             bufferSizeAfterLimit = bufferEnd - currentLimit;
-            bufferSize -= bufferSizeAfterLimit;
+            limit -= bufferSizeAfterLimit;
         } else {
+            // Limit is beyond bounds or not set
             bufferSizeAfterLimit = 0;
         }
     }
@@ -225,10 +215,10 @@ class ArraySource extends ProtoSource{
     private int currentLimit = Integer.MAX_VALUE;
 
     protected byte[] buffer;
-    protected int bufferStart;
-    protected int bufferSize;
+    protected int offset;
+    protected int limit;
     private int bufferSizeAfterLimit;
-    protected int bufferPos;
+    protected int pos;
 
     protected int lastTagMark;
 
@@ -246,7 +236,7 @@ class ArraySource extends ProtoSource{
      */
     protected int getRemainingRepeatedFieldCount(int tag) throws IOException {
         int arrayLength = 1;
-        int startPos = getPosition();
+        int startPos = getTotalBytesRead();
         skipField(tag);
         while (readTag() == tag) {
             skipField(tag);
@@ -269,7 +259,7 @@ class ArraySource extends ProtoSource{
      * @throws IOException
      */
     protected int getRemainingVarintCount() throws IOException {
-        final int position = getPosition();
+        final int position = getTotalBytesRead();
         int count = 0;
         while (!isAtEnd()) {
             readRawVarint32();

@@ -861,7 +861,6 @@ public abstract class ProtoSource {
      * Returns the number of bytes to be read before the current limit.
      * If no limit is set, returns -1.
      */
-    @Deprecated // get rid of this and use isAtEnd() ?
     public abstract int getBytesUntilLimit();
 
     /**
@@ -871,13 +870,8 @@ public abstract class ProtoSource {
      */
     public abstract boolean isAtEnd() ;
 
-    /** Get current position in buffer relative to beginning offset. */
-    @Deprecated // move to ArraySource ?
-    public  abstract int getPosition();
-
-    /** Rewind to previous position. Cannot go forward. */
-    @Deprecated // move to ArraySource ?
-    public abstract void rewindToPosition(int position);
+    /** Get total bytes read up to the current position. */
+    public abstract int getTotalBytesRead();
 
     /**
      * Read one byte from the input.

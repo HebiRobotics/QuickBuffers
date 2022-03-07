@@ -66,6 +66,16 @@ public class ProtoTests {
     }
 
     @Test
+    public void testSourceWithOffset() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        int offset = 31;
+        int size = msg.getSerializedSize();
+        byte[] bytes = new byte[offset + size];
+        msg.writeTo(ProtoSink.newInstance(bytes, offset, size));
+        assertEquals(msg, TestAllTypes.newInstance().mergeFrom(ProtoSource.newInstance(bytes, offset, size)));
+    }
+
+    @Test
     public void testDefaults() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         for (int i = 0; i < 2; i++) {

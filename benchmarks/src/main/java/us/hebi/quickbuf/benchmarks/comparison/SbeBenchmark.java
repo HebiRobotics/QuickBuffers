@@ -196,7 +196,7 @@ public class SbeBenchmark {
             message.clearQuick().mergeFrom(source);
             source.popLimit(limit);
         }
-        return source.getPosition();
+        return source.getTotalBytesRead();
     }
 
     static int readWriteQuick(final ProtoSource source, final ProtoMessage message, final ProtoSink sink) throws IOException {
