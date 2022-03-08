@@ -21,7 +21,6 @@
 package us.hebi.quickbuf;
 
 import com.google.protobuf.ByteString;
-import org.junit.Ignore;
 import org.junit.Test;
 import protos.test.protobuf.ForeignEnum;
 import protos.test.protobuf.ForeignMessage;

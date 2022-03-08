@@ -59,6 +59,7 @@ class ArraySource extends ProtoSource{
         return this;
     }
 
+    @Override
     public int pushLimit(int byteLimit) throws InvalidProtocolBufferException {
         if (byteLimit < 0) {
             throw InvalidProtocolBufferException.negativeSize();
@@ -73,11 +74,13 @@ class ArraySource extends ProtoSource{
         return oldLimit;
     }
 
+    @Override
     public void popLimit(final int oldLimit) {
         currentLimit = oldLimit;
         recomputeBufferSizeAfterLimit();
     }
 
+    @Override
     public int getBytesUntilLimit() {
         if (currentLimit == Integer.MAX_VALUE) {
             return -1;
@@ -85,10 +88,12 @@ class ArraySource extends ProtoSource{
         return currentLimit - position;
     }
 
+    @Override
     public boolean isAtEnd() {
         return position == limit;
     }
 
+    @Override
     public int getTotalBytesRead() {
         return position - offset;
     }
@@ -97,16 +102,10 @@ class ArraySource extends ProtoSource{
         this.position = offset + position;
     }
 
-    protected int remaining() {
-        // limit is always the same as currentLimit
-        // in cases where currentLimit != Integer.MAX_VALUE
-        return limit - position;
-    }
-
-    protected void requireRemaining(int numBytes) throws IOException {
+    protected void requireRemaining(final int numBytes) throws IOException {
         if (numBytes < 0) {
             throw InvalidProtocolBufferException.negativeSize();
-        } else if (numBytes > remaining()) {
+        } else if (numBytes > limit - position) {
             // Read to the end of the current sub-message before failing
             if (currentLimit != Integer.MAX_VALUE) {
                 position = currentLimit;

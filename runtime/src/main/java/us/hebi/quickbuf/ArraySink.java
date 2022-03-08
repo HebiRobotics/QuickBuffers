@@ -38,6 +38,7 @@ class ArraySink extends ProtoSink {
     protected int limit;
     protected int position;
 
+    @Override
     public int position() {
         // This used to return ByteBuffer.position(), which is
         // the number of written bytes, and not the index within
@@ -45,6 +46,7 @@ class ArraySink extends ProtoSink {
         return position - offset;
     }
 
+    @Override
     public int spaceLeft() {
         return limit - position;
     }
@@ -55,6 +57,7 @@ class ArraySink extends ProtoSink {
      * @see #position
      * @see #spaceLeft
      */
+    @Override
     public ArraySink reset() {
         position = offset;
         return this;
