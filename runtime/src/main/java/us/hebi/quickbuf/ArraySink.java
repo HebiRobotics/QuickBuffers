@@ -253,6 +253,7 @@ class ArraySink extends ProtoSink {
 
         @Override
         public void writeRawBytes(final byte[] values, int offset, int length) throws IOException {
+            ByteUtil.verifyInput(values,offset, length);
             ByteUtil.writeUnsafeBytes(buffer, require(length), values, offset, length);
         }
 

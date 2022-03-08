@@ -200,6 +200,11 @@ public class FieldGenerator {
                     .addStatement(named("$field:N = value"))
                     .addStatement(named("$setHas:L"));
 
+            // TODO:
+            //  Google's Protobuf recently also selectively ignores repeated enum values. However,
+            //  that seems odd given that re-serialization with unknown fields can result in a
+            //  different order. I don't think this is behavior we want? This is technically also
+            //  true when serializing an optional enum field twice via a delta update.
             if (info.getParentTypeInfo().isStoreUnknownFields()) {
                 method.nextControlFlow("else")
                         .addStatement("input.skipEnum(tag, value, $N)", RuntimeClasses.unknownBytesField);
@@ -349,7 +354,7 @@ public class FieldGenerator {
             method.addStatement(named("$field:N = input.read$capitalizedType:L()"));
             method.addStatement(named("$setHas:L"));
         } else if (info.isEnum()) {
-            // TODO: filter out unknown values
+            // TODO: notify json source about unknown value
             method.addStatement(named("final $type:T value = input.read$capitalizedType:L($type:T.converter())"))
                     .beginControlFlow("if (value != null)")
                     .addStatement(named("$field:N = value.getNumber()"))

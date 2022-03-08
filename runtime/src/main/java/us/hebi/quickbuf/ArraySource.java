@@ -180,38 +180,6 @@ class ArraySource extends ProtoSource{
         }
     }
 
-    @Override
-    public boolean skipField(int tag, RepeatedByte store) throws IOException {
-        // Skip field
-        final int mark = position;
-        if (!skipField(tag)) {
-            return false;
-
-        } else if (!shouldDiscardUnknownFields) {
-            // Reserve sufficient size
-            final int length = position - mark;
-            int position = store.addLength(MAX_VARINT32_SIZE + length);
-
-            // Write field tag
-            position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
-
-            // Copy field content
-            rewindToPosition(mark);
-            readRawBytes(store.array(), position, length);
-            store.length = position + length;
-        }
-        return true;
-    }
-
-    public void skipEnum(final int tag, final int value, final RepeatedByte store) throws IOException {
-        if (!shouldDiscardUnknownFields) {
-            int position = store.addLength(2 * MAX_VARINT32_SIZE);
-            position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
-            position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), value);
-            store.length = position;
-        }
-    }
-
     // ----------------- OVERRIDE METHODS -----------------
 
     @Override
@@ -373,11 +341,7 @@ class ArraySource extends ProtoSource{
 
         @Override
         public void readRawBytes(byte[] values, int offset, int length) throws IOException {
-            if (values == null) {
-                throw new NullPointerException();
-            } else if (offset < 0 || offset + length > values.length) {
-                throw new ArrayIndexOutOfBoundsException();
-            }
+            ByteUtil.verifyInput(values, offset, length);
             ByteUtil.readUnsafeBytes(buffer, require(length), values, offset, length);
         }
 

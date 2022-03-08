@@ -135,8 +135,9 @@ public abstract class ProtoSource {
         }
 
         lastTag = readRawVarint32();
-        if (lastTag == 0) { // TODO: only check top bits?
-            // If we actually read zero, that's not a valid tag.
+        if (WireFormat.getTagFieldNumber(lastTag) == 0) {
+            // If we actually read zero (or any tag number corresponding
+            // to field number zero), that's not a valid tag.
             throw InvalidProtocolBufferException.invalidTag();
         }
         return lastTag;
@@ -150,8 +151,7 @@ public abstract class ProtoSource {
      * @throws InvalidProtocolBufferException {@code value} does not match the
      *                                        last tag.
      */
-    public void checkLastTagWas(final int value)
-            throws InvalidProtocolBufferException {
+    public void checkLastTagWas(final int value) throws InvalidProtocolBufferException {
         if (lastTag != value) {
             throw InvalidProtocolBufferException.invalidEndTag();
         }
@@ -176,9 +176,8 @@ public abstract class ProtoSource {
                 return true;
             case WireFormat.WIRETYPE_START_GROUP:
                 skipMessage();
-                checkLastTagWas(
-                        WireFormat.makeTag(WireFormat.getTagFieldNumber(tag),
-                                WireFormat.WIRETYPE_END_GROUP));
+                int endGroupTag = WireFormat.makeTag(WireFormat.getTagFieldNumber(tag), WireFormat.WIRETYPE_END_GROUP);
+                checkLastTagWas(endGroupTag);
                 return true;
             case WireFormat.WIRETYPE_END_GROUP:
                 return false;
@@ -197,22 +196,78 @@ public abstract class ProtoSource {
      * @return {@code false} if the tag is an endgroup tag, in which case
      * nothing is skipped.  Otherwise, returns {@code true}.
      */
-    public abstract boolean skipField(final int tag, final RepeatedByte unknownBytes) throws IOException;
+    public boolean skipField(final int tag, final RepeatedByte unknownBytes) throws IOException {
+        if (shouldDiscardUnknownFields) {
+            return skipField(tag);
+        }
+        switch (WireFormat.getTagWireType(tag)) {
+            case WireFormat.WIRETYPE_VARINT: {
+                long value = readRawVarint64();
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeVarint64(unknownBytes, value);
+                return true;
+            }
+            case WireFormat.WIRETYPE_FIXED64: {
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeBytes(unknownBytes, FIXED_64_SIZE, this);
+                return true;
+            }
+            case WireFormat.WIRETYPE_LENGTH_DELIMITED:{
+                int length = readRawVarint32();
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeUInt32(unknownBytes, length);
+                ByteUtil.writeBytes(unknownBytes, length, this);
+                return true;
+            }
+            case WireFormat.WIRETYPE_START_GROUP:{
+                int endTag = WireFormat.makeTag(WireFormat.getTagFieldNumber(tag), WireFormat.WIRETYPE_END_GROUP);
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                skipMessage(unknownBytes);
+                checkLastTagWas(endTag);
+                ByteUtil.writeUInt32(unknownBytes, endTag);
+                return true;
+            }
+            case WireFormat.WIRETYPE_END_GROUP: {
+                return false;
+            }
+            case WireFormat.WIRETYPE_FIXED32:{
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeBytes(unknownBytes, FIXED_32_SIZE, this);
+                return true;
+            }
+            default:
+                throw InvalidProtocolBufferException.invalidWireType();
+        }
+    }
 
     /**
      * Skips an enum that has already been read, but had a value that is not known. Discarded
      * bytes are added to unknownBytes.
      */
-    public abstract void skipEnum(final int tag, final int value, final RepeatedByte unknownBytes) throws IOException;
+    public void skipEnum(final int tag, final int value, final RepeatedByte unknownBytes) throws IOException {
+        if (!shouldDiscardUnknownFields) {
+            ByteUtil.writeUInt32(unknownBytes, tag);
+            ByteUtil.writeUInt32(unknownBytes, value);
+        }
+    }
 
     /**
      * Reads and discards an entire message.  This will read either until EOF
      * or until an endgroup tag, whichever comes first.
      */
-    public void skipMessage() throws IOException {
+    protected void skipMessage() throws IOException {
         while (true) {
             final int tag = readTag();
             if (tag == 0 || !skipField(tag)) {
+                return;
+            }
+        }
+    }
+
+    protected void skipMessage(RepeatedByte unknownBytes) throws IOException {
+        while (true) {
+            final int tag = readTag();
+            if (tag == 0 || !skipField(tag, unknownBytes)) {
                 return;
             }
         }
@@ -588,15 +643,10 @@ public abstract class ProtoSource {
     }
 
     /** Read a {@code group} field value from the source. */
-    public void readGroup(final ProtoMessage<?> msg, final int fieldNumber)
-            throws IOException {
-        if (recursionDepth >= recursionLimit) {
-            throw InvalidProtocolBufferException.recursionLimitExceeded();
-        }
-        ++recursionDepth;
+    public void readGroup(final ProtoMessage<?> msg, final int fieldNumber) throws IOException {
+        // Note: recursive messages are impossible, so we don't need to check for limits
         msg.mergeFrom(this);
         checkLastTagWas(WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
-        --recursionDepth;
     }
 
     /** Read a repeated {@code message} field value from the source. */
@@ -610,15 +660,11 @@ public abstract class ProtoSource {
     }
 
     public void readMessage(final ProtoMessage<?> msg) throws IOException {
+        // Note: recursive messages are impossible, so we don't need to check for limits
         final int length = readRawVarint32();
-        if (recursionDepth >= recursionLimit) {
-            throw InvalidProtocolBufferException.recursionLimitExceeded();
-        }
         final int oldLimit = pushLimit(length);
-        ++recursionDepth;
         msg.mergeFrom(this);
         checkLastTagWas(0);
-        --recursionDepth;
         popLimit(oldLimit);
     }
 
@@ -781,20 +827,10 @@ public abstract class ProtoSource {
 
     // -----------------------------------------------------------------
 
-
     private int lastTag;
 
-    /** See setRecursionLimit() */
-    private int recursionDepth;
-    private int recursionLimit = DEFAULT_RECURSION_LIMIT;
-    private static final int DEFAULT_RECURSION_LIMIT = 64;
-
     /** see setDiscardUnknownFields */
-    protected boolean shouldDiscardUnknownFields = false;
-
-    // TODO: Google defaults to recursion of 100? Our messages don't even support this. Do we need it?
-    // TODO: setSizeLimit() on InputStream?
-    // TODO: copy readRawVarint32(int firstByte, InputStream) for better InputStream reading?
+    private boolean shouldDiscardUnknownFields = false;
 
     /**
      * Changes the input to the given array. This resets any existing
@@ -810,7 +846,6 @@ public abstract class ProtoSource {
 
     protected ProtoSource resetInternalState() {
         lastTag = 0;
-        recursionDepth = 0;
         return this;
     }
 
@@ -818,19 +853,17 @@ public abstract class ProtoSource {
     }
 
     /**
-     * Set the maximum message recursion depth.  In order to prevent malicious
-     * messages from causing stack overflows, {@code ProtoSource} limits
-     * how deeply messages may be nested.  The default limit is 64.
+     * Set the maximum message recursion depth. Due to pre-allocating
+     * all memory, it is impossible for recursive messages to appear.
+     * This method exists for compatibility with Protobuf code, and
+     * as a reminder to re-implement it if we ever support recursive
+     * messages.
      *
-     * @return the old limit.
+     * @return old limit
      */
+    @Deprecated
     public int setRecursionLimit(final int limit) {
-        if (limit < 0) {
-            throw new IllegalArgumentException("Recursion limit cannot be negative: " + limit);
-        }
-        final int oldLimit = recursionLimit;
-        recursionLimit = limit;
-        return oldLimit;
+        return 64;
     }
 
     /**

@@ -20,6 +20,8 @@
 
 package us.hebi.quickbuf;
 
+import java.io.IOException;
+
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -37,7 +39,51 @@ import static us.hebi.quickbuf.WireFormat.*;
  */
 class ByteUtil {
 
+    static void writeUInt32(RepeatedByte output, int value) {
+        while (true) {
+            if ((value & ~0x7F) == 0) {
+                output.add((byte) value);
+                return;
+            } else {
+                output.add((byte) (value | 0x80));
+                value >>>= 7;
+            }
+        }
+    }
+
+    static void writeVarint64(RepeatedByte output, long value) {
+        while (true) {
+            if ((value & ~0x7F) == 0) {
+                output.add((byte) value);
+                return;
+            } else {
+                output.add((byte) (value | 0x80));
+                value >>>= 7;
+            }
+        }
+    }
+
+    static void writeBytes(RepeatedByte store, int length, ProtoSource source) throws IOException {
+        final int position = store.addLength(length);
+        source.readRawBytes(store.array, position, length);
+    }
+
     static int writeUInt32(final byte[] buffer, final int offset, final int limit, int value) throws ProtoSink.OutOfSpaceException {
+        int position = offset;
+        while (true) {
+            if (position == limit) {
+                throw new ProtoSink.OutOfSpaceException(position, limit);
+            } else if ((value & ~0x7F) == 0) {
+                buffer[position++] = (byte) value;
+                return position - offset;
+            } else {
+                buffer[position++] = (byte) (value | 0x80);
+                value >>>= 7;
+            }
+        }
+    }
+
+    static int writeVarint64(final byte[] buffer, final int offset, final int limit, long value) throws ProtoSink.OutOfSpaceException {
         int position = offset;
         while (true) {
             if (position == limit) {
@@ -274,6 +320,14 @@ class ByteUtil {
             for (int i = 0; i < dstLength; i++, offset += FIXED_64_SIZE) {
                 dst[i] = readDouble(buffer, offset);
             }
+        }
+    }
+
+    static void verifyInput(byte[] buffer, int offset, int length) {
+        if (buffer == null) {
+            throw new NullPointerException("buffer");
+        } else if (offset < 0 || length < 0 || offset + length > buffer.length) {
+            throw new ArrayIndexOutOfBoundsException();
         }
     }
 
