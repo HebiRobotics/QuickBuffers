@@ -361,15 +361,23 @@ class ArraySource extends ProtoSource{
             return ByteUtil.readUnsafeLittleEndian64(buffer, require(FIXED_64_SIZE));
         }
 
+        @Override
         public float readFloat() throws IOException {
             return ByteUtil.readUnsafeFloat(buffer, require(FIXED_32_SIZE));
         }
 
+        @Override
         public double readDouble() throws IOException {
             return ByteUtil.readUnsafeDouble(buffer, require(FIXED_64_SIZE));
         }
+
         @Override
         public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+            if (values == null) {
+                throw new NullPointerException();
+            } else if (offset < 0 || offset + length > values.length) {
+                throw new ArrayIndexOutOfBoundsException();
+            }
             ByteUtil.readUnsafeBytes(buffer, require(length), values, offset, length);
         }
 

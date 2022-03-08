@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -284,5 +284,33 @@ public class ProtoFailTests {
     }
 
     // --------------------------------------------------------------------------------------
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestination() throws IOException {
+        int numBytes = 10;
+        ProtoSource.newInstance().wrap(new byte[numBytes])
+                .readRawBytes(new byte[0], 0, 10);
+    }
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationDirect() throws IOException {
+        int numBytes = 10;
+        ProtoSource.newUnsafeInstance().wrap(new byte[numBytes])
+                .readRawBytes(new byte[0], 0, 10);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestination() throws IOException {
+        int numBytes = 10;
+        ProtoSource.newInstance().wrap(new byte[numBytes])
+                .readRawBytes(null, 0, 10);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestinationDirect() throws IOException {
+        int numBytes = 10;
+        ProtoSource.newUnsafeInstance().wrap(new byte[numBytes])
+                .readRawBytes(null, 0, 10);
+    }
 
 }
