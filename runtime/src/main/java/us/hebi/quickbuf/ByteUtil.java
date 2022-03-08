@@ -37,6 +37,21 @@ import static us.hebi.quickbuf.WireFormat.*;
  */
 class ByteUtil {
 
+    static int writeUInt32(final byte[] buffer, final int offset, final int limit, int value) throws ProtoSink.OutOfSpaceException {
+        int position = offset;
+        while (true) {
+            if (position == limit) {
+                throw new ProtoSink.OutOfSpaceException(position, limit);
+            } else if ((value & ~0x7F) == 0) {
+                buffer[position++] = (byte) value;
+                return position - offset;
+            } else {
+                buffer[position++] = (byte) (value | 0x80);
+                value >>>= 7;
+            }
+        }
+    }
+
     static void writeLittleEndian16(final byte[] buffer, final int offset, final short value) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             if (IS_LITTLE_ENDIAN) {
@@ -220,9 +235,8 @@ class ByteUtil {
             final long targetOffset = INT_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_32;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++) {
+            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_32) {
                 dst[i] = readLittleEndian32(buffer, offset);
-                offset += SIZEOF_FIXED_32;
             }
         }
     }
@@ -233,9 +247,8 @@ class ByteUtil {
             final long targetOffset = LONG_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_64;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++) {
+            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_64) {
                 dst[i] = readLittleEndian64(buffer, offset);
-                offset += SIZEOF_FIXED_64;
             }
         }
     }
@@ -246,9 +259,8 @@ class ByteUtil {
             final long targetOffset = FLOAT_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_32;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++) {
+            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_32) {
                 dst[i] = readFloat(buffer, offset);
-                offset += SIZEOF_FIXED_32;
             }
         }
     }
@@ -259,9 +271,23 @@ class ByteUtil {
             final long targetOffset = DOUBLE_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_64;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++) {
+            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_64) {
                 dst[i] = readDouble(buffer, offset);
-                offset += SIZEOF_FIXED_64;
+            }
+        }
+    }
+
+    static int writeUnsafeUInt32(final byte[] buffer, final long addressOffset, final int offset, final int limit, int value) throws ProtoSink.OutOfSpaceException {
+        int position = offset;
+        while (true) {
+            if (position == limit) {
+                throw new ProtoSink.OutOfSpaceException(position, limit);
+            } else if ((value & ~0x7F) == 0) {
+                UNSAFE.putByte(buffer, addressOffset + position++, (byte) value);
+                return position - offset;
+            } else {
+                UNSAFE.putByte(buffer, addressOffset + position++, (byte) (value | 0x80));
+                value >>>= 7;
             }
         }
     }

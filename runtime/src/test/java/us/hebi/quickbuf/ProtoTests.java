@@ -542,6 +542,19 @@ public class ProtoTests {
     }
 
     @Test
+    public void testStoreUnknownFields() throws IOException {
+        byte[] bytes = CompatibilityTest.getCombinedMessage();
+        TestAllTypes expected = TestAllTypes.parseFrom(bytes);
+
+        TestAllTypes.NestedMessage wrongMessage = TestAllTypes.NestedMessage.newInstance();
+        wrongMessage.mergeFrom(ProtoSource.newInstance(bytes));
+        byte[] unknowns = wrongMessage.toByteArray();
+
+        assertEquals(bytes.length, unknowns.length);
+        assertEquals(TestAllTypes.parseFrom(bytes), TestAllTypes.parseFrom(unknowns));
+    }
+
+    @Test
     public void clearFirstBit() throws IOException {
         TestAllTypes.NestedMessage msg = TestAllTypes.NestedMessage.newInstance();
         msg.setBb(1);

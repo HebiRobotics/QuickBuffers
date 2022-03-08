@@ -143,17 +143,6 @@ public abstract class ProtoSource {
     }
 
     /**
-     * Marks the current position and reads the tag. See {@link ProtoSource#readTag()}
-     */
-    public abstract int readTagMarked() throws IOException;
-
-    /**
-     * Copies the bytes from the last position marked by {@link ProtoSource#readTagMarked()}.
-     * This allows to efficiently store unknown (skipped) bytes.
-     */
-    public abstract void copyBytesSinceMark(RepeatedByte store);
-
-    /**
      * Verifies that the last call to readTag() returned the given tag value.
      * This is used to verify that a nested group ended with the correct
      * end tag.
@@ -200,6 +189,21 @@ public abstract class ProtoSource {
                 throw InvalidProtocolBufferException.invalidWireType();
         }
     }
+
+    /**
+     * Reads and discards a single field, given its tag value. Discarded bytes
+     * are added to unknownBytes.
+     *
+     * @return {@code false} if the tag is an endgroup tag, in which case
+     * nothing is skipped.  Otherwise, returns {@code true}.
+     */
+    public abstract boolean skipField(final int tag, final RepeatedByte unknownBytes) throws IOException;
+
+    /**
+     * Skips an enum that has already been read, but had a value that is not known. Discarded
+     * bytes are added to unknownBytes.
+     */
+    public abstract void skipEnum(final int tag, final int value, final RepeatedByte unknownBytes) throws IOException;
 
     /**
      * Reads and discards an entire message.  This will read either until EOF

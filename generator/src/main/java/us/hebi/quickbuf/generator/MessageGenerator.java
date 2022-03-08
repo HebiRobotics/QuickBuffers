@@ -240,9 +240,7 @@ class MessageGenerator {
             mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
         }
 
-        m.put("readTag", info.isStoreUnknownFields() ? "readTagMarked" : "readTag");
-
-        mergeFrom.addStatement(named("int tag = input.$readTag:N()"))
+        mergeFrom.addStatement(named("int tag = input.readTag()"))
                 .beginControlFlow("while (true)")
                 .beginControlFlow("switch (tag)");
 
@@ -261,7 +259,7 @@ class MessageGenerator {
             }
 
             if (readTag) {
-                mergeFrom.addCode(named("tag = input.$readTag:N();\n"));
+                mergeFrom.addCode(named("tag = input.readTag();\n"));
             }
 
             if (enableFallthroughOptimization) {
@@ -283,15 +281,15 @@ class MessageGenerator {
                 .endControlFlow();
 
         // default case -> skip field
+        CodeBlock ifSkipField = info.isStoreUnknownFields() ?
+                named("if (!input.skipField(tag, $unknownBytes:N))") :
+                named("if (!input.skipField(tag))");
+
         mergeFrom.beginControlFlow("default:")
-                .beginControlFlow("if (!input.skipField(tag))")
+                .beginControlFlow(ifSkipField)
                 .addStatement("return this");
-        if (info.isStoreUnknownFields()) {
-            mergeFrom.nextControlFlow("else")
-                    .addStatement(named("input.copyBytesSinceMark($unknownBytes:N)"));
-        }
         mergeFrom.endControlFlow()
-                .addStatement(named("tag = input.$readTag:N()"))
+                .addStatement(named("tag = input.readTag()"))
                 .addStatement("break")
                 .endControlFlow();
 
@@ -301,7 +299,7 @@ class MessageGenerator {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
                 boolean readTag = field.generateMergingCode(mergeFrom);
                 if (readTag) {
-                    mergeFrom.addCode(named("tag = input.$readTag:N();\n"));
+                    mergeFrom.addCode(named("tag = input.readTag();\n"));
                 }
                 mergeFrom.addStatement("break").endControlFlow();
             }

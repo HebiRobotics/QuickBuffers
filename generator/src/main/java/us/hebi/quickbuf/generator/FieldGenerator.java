@@ -202,7 +202,7 @@ public class FieldGenerator {
 
             if (info.getParentTypeInfo().isStoreUnknownFields()) {
                 method.nextControlFlow("else")
-                        .addStatement("input.copyBytesSinceMark($N)", RuntimeClasses.unknownBytesField);
+                        .addStatement("input.skipEnum(tag, value, $N)", RuntimeClasses.unknownBytesField);
             }
 
             method.endControlFlow();

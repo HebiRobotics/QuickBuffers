@@ -77,10 +77,13 @@ final class WireFormat {
     static final int TAG_TYPE_BITS = 3;
     static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
 
-    static final int SIZEOF_FIXED_64 = 8;
-    static final int SIZEOF_FIXED_32 = 4;
-    static final int SIZEOF_FIXED_16 = 2;
     static final int SIZEOF_FIXED_BOOL = 1;
+    static final int SIZEOF_FIXED_16 = 2;
+    static final int SIZEOF_FIXED_32 = 4;
+    static final int SIZEOF_FIXED_64 = 8;
+    static final int SIZEOF_VARINT32_MAX = 5;
+    static final int SIZEOF_VARINT64_MAX = 10;
+    static final int SIZEOF_VARINT_MAX = 10;
 
     /** Given a tag value, determines the wire type (the lower 3 bits). */
     static int getTagWireType(final int tag) {

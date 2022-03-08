@@ -42,20 +42,10 @@ class ArraySource extends ProtoSource{
     /** The absolute position of the end of the current message. */
     private int currentLimit = Integer.MAX_VALUE;
 
-    /** The absolute position of the last marked tag. */
-    protected int lastTagMark;
-
-    @Override
-    public int readTagMarked() throws IOException {
-        lastTagMark = position;
-        return readTag();
-    }
-
     protected ProtoSource resetInternalState() {
         super.resetInternalState();
         currentLimit = Integer.MAX_VALUE;
         bufferSizeAfterLimit = 0;
-        lastTagMark = 0;
         return this;
     }
 
@@ -190,6 +180,31 @@ class ArraySource extends ProtoSource{
         }
     }
 
+    @Override
+    public boolean skipField(int tag, RepeatedByte store) throws IOException {
+        // Skip field
+        final int mark = position;
+        if (!skipField(tag)) {
+            return false;
+        }
+        final int length = position - mark;
+        rewindToPosition(mark);
+
+        // Write field tag and payload
+        int offset = store.addLength(SIZEOF_VARINT32_MAX + length);
+        offset += ByteUtil.writeUInt32(store.array(), offset, store.capacity(), tag);
+        readRawBytes(store.array(), offset, length);
+        store.length = offset + length;
+        return true;
+    }
+
+    public void skipEnum(final int tag, final int value, final RepeatedByte store) throws IOException {
+        int position = store.addLength(2 * SIZEOF_VARINT32_MAX);
+        position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
+        position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), value);
+        store.length = position;
+    }
+
     // ----------------- OVERRIDE METHODS -----------------
 
     @Override
@@ -200,11 +215,6 @@ class ArraySource extends ProtoSource{
         this.position = this.offset = (int) off;
         this.limit = offset + len;
         return resetInternalState();
-    }
-
-    @Override
-    public void copyBytesSinceMark(RepeatedByte store) {
-        store.addAll(buffer, lastTagMark, position - lastTagMark);
     }
 
     @Override
@@ -314,13 +324,6 @@ class ArraySource extends ProtoSource{
                 this.limit = length;
                 return resetInternalState();
             }
-        }
-
-        @Override
-        public void copyBytesSinceMark(RepeatedByte store) {
-            final int length = position - lastTagMark;
-            final int bufferPos = store.addLength(length);
-            UNSAFE.copyMemory(buffer, baseOffset + lastTagMark, store.array, BYTE_ARRAY_OFFSET + bufferPos, length);
         }
 
         @Override
