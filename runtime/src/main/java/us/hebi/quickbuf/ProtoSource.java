@@ -91,7 +91,7 @@ public abstract class ProtoSource {
      * available.
      */
     public static ProtoSource newInstance() {
-        return new ArraySource.HeapArraySource();
+        return new ArraySource();
     }
 
     /**

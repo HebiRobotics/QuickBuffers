@@ -108,7 +108,7 @@ public abstract class ProtoSink {
      * available.
      */
     public static ProtoSink newInstance() {
-        return new ArraySink.HeapArraySink();
+        return new ArraySink();
     }
 
     /**

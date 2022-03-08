@@ -31,11 +31,23 @@ import static us.hebi.quickbuf.WireFormat.*;
  * @author Florian Enner
  * @since 06 Mär 2022
  */
-abstract class ArraySource extends ProtoSource{
+class ArraySource extends ProtoSource{
+
+    protected byte[] buffer;
+    protected int offset;
+    protected int limit;
+    protected int position;
+    private int bufferSizeAfterLimit;
+
+    /** The absolute position of the end of the current message. */
+    private int currentLimit = Integer.MAX_VALUE;
+
+    /** The absolute position of the last marked tag. */
+    protected int lastTagMark;
 
     @Override
     public int readTagMarked() throws IOException {
-        lastTagMark = pos;
+        lastTagMark = position;
         return readTag();
     }
 
@@ -51,7 +63,7 @@ abstract class ArraySource extends ProtoSource{
         if (byteLimit < 0) {
             throw InvalidProtocolBufferException.negativeSize();
         }
-        byteLimit += pos;
+        byteLimit += position;
         if (byteLimit > limit) {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
@@ -70,25 +82,25 @@ abstract class ArraySource extends ProtoSource{
         if (currentLimit == Integer.MAX_VALUE) {
             return -1;
         }
-        return currentLimit - pos;
+        return currentLimit - position;
     }
 
     public boolean isAtEnd() {
-        return pos == limit;
+        return position == limit;
     }
 
     public int getTotalBytesRead() {
-        return pos - offset;
+        return position - offset;
     }
 
     protected void rewindToPosition(int position) throws InvalidProtocolBufferException {
-        pos = offset + position;
+        this.position = offset + position;
     }
 
     protected int remaining() {
         // limit is always the same as currentLimit
         // in cases where currentLimit != Integer.MAX_VALUE
-        return limit - pos;
+        return limit - position;
     }
 
     protected void requireRemaining(int numBytes) throws IOException {
@@ -97,7 +109,7 @@ abstract class ArraySource extends ProtoSource{
         } else if (numBytes > remaining()) {
             // Read to the end of the current sub-message before failing
             if (currentLimit != Integer.MAX_VALUE) {
-                pos = currentLimit;
+                position = currentLimit;
             }
             throw InvalidProtocolBufferException.truncatedMessage();
         }
@@ -115,17 +127,6 @@ abstract class ArraySource extends ProtoSource{
             bufferSizeAfterLimit = 0;
         }
     }
-
-    /** The absolute position of the end of the current message. */
-    private int currentLimit = Integer.MAX_VALUE;
-
-    protected byte[] buffer;
-    protected int offset;
-    protected int limit;
-    private int bufferSizeAfterLimit;
-    protected int pos;
-
-    protected int lastTagMark;
 
     /**
      * Computes the remaining array length of a repeated field. We assume that in the common case
@@ -190,97 +191,94 @@ abstract class ArraySource extends ProtoSource{
         }
     }
 
-    static class HeapArraySource extends ArraySource {
+    // ----------------- OVERRIDE METHODS -----------------
 
-        @Override
-        public ProtoSource wrap(byte[] buffer, long off, int len) {
-            if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
-                throw new ArrayIndexOutOfBoundsException();
-            this.buffer = buffer;
-            offset = (int) off;
-            limit = offset + len;
-            pos = offset;
-            return resetInternalState();
+    @Override
+    public ProtoSource wrap(byte[] buffer, long off, int len) {
+        if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
+            throw new ArrayIndexOutOfBoundsException();
+        this.buffer = buffer;
+        this.position = this.offset = (int) off;
+        this.limit = offset + len;
+        return resetInternalState();
+    }
+
+    @Override
+    public void copyBytesSinceMark(RepeatedByte store) {
+        store.addAll(buffer, lastTagMark, position - lastTagMark);
+    }
+
+    @Override
+    public void skipRawBytes(final int size) throws IOException {
+        require(size);
+    }
+
+    @Override
+    public byte readRawByte() throws IOException {
+        if (position == limit) {
+            throw InvalidProtocolBufferException.truncatedMessage();
         }
+        return buffer[position++];
+    }
 
-        @Override
-        public void copyBytesSinceMark(RepeatedByte store) {
-            store.addAll(buffer, lastTagMark, pos - lastTagMark);
+    @Override
+    public short readRawLittleEndian16() throws IOException {
+        return ByteUtil.readLittleEndian16(buffer, require(SIZEOF_FIXED_16));
+    }
+
+    @Override
+    public int readRawLittleEndian32() throws IOException {
+        return ByteUtil.readLittleEndian32(buffer, require(SIZEOF_FIXED_32));
+    }
+
+    @Override
+    public long readRawLittleEndian64() throws IOException {
+        return ByteUtil.readLittleEndian64(buffer, require(SIZEOF_FIXED_64));
+    }
+
+    @Override
+    public float readFloat() throws IOException {
+        return ByteUtil.readFloat(buffer, require(SIZEOF_FIXED_32));
+    }
+
+    @Override
+    public double readDouble() throws IOException {
+        return ByteUtil.readDouble(buffer, require(SIZEOF_FIXED_64));
+    }
+
+    @Override
+    public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+        ByteUtil.readBytes(buffer, require(length), values, offset, length);
+    }
+
+    @Override
+    protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
+        ByteUtil.readLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+    }
+
+    @Override
+    protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
+        ByteUtil.readLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+    }
+
+    @Override
+    protected void readRawFloats(float[] values, int offset, int length) throws IOException {
+        ByteUtil.readFloats(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+    }
+
+    @Override
+    protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
+        ByteUtil.readDoubles(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+    }
+
+    /** moves forward by numBytes and returns the current position */
+    private int require(int numBytes) throws IOException {
+        requireRemaining(numBytes);
+        try {
+            return position;
+        } finally {
+            position += numBytes;
         }
-
-        @Override
-        public void skipRawBytes(final int size) throws IOException {
-            require(size);
-        }
-
-        @Override
-        public byte readRawByte() throws IOException {
-            if (pos == limit) {
-                throw InvalidProtocolBufferException.truncatedMessage();
-            }
-            return buffer[pos++];
-        }
-
-        @Override
-        public short readRawLittleEndian16() throws IOException {
-            return ByteUtil.readLittleEndian16(buffer, require(SIZEOF_FIXED_16));
-        }
-
-        @Override
-        public int readRawLittleEndian32() throws IOException {
-            return ByteUtil.readLittleEndian32(buffer, require(SIZEOF_FIXED_32));
-        }
-
-        @Override
-        public long readRawLittleEndian64() throws IOException {
-            return ByteUtil.readLittleEndian64(buffer, require(SIZEOF_FIXED_64));
-        }
-
-        @Override
-        public float readFloat() throws IOException {
-            return ByteUtil.readFloat(buffer, require(SIZEOF_FIXED_32));
-        }
-
-        @Override
-        public double readDouble() throws IOException {
-            return ByteUtil.readDouble(buffer, require(SIZEOF_FIXED_64));
-        }
-
-        @Override
-        public void readRawBytes(byte[] values, int offset, int length) throws IOException {
-            ByteUtil.readBytes(buffer, require(length), values, offset, length);
-        }
-
-        @Override
-        protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
-            ByteUtil.readLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
-        }
-
-        @Override
-        protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
-            ByteUtil.readLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
-        }
-
-        @Override
-        protected void readRawFloats(float[] values, int offset, int length) throws IOException {
-            ByteUtil.readFloats(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
-        }
-
-        @Override
-        protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
-            ByteUtil.readDoubles(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
-        }
-
-        /** moves forward by numBytes and returns the current position */
-        private int require(int numBytes) throws IOException {
-            requireRemaining(numBytes);
-            try {
-                return pos;
-            } finally {
-                pos += numBytes;
-            }
-        }
-
     }
 
     /**
@@ -293,43 +291,35 @@ abstract class ArraySource extends ProtoSource{
      */
     static class DirectArraySource extends ArraySource {
 
+        private long baseOffset;
+
         DirectArraySource() {
             if (!UnsafeAccess.isAvailable())
-                throw new AssertionError("UnsafeArraySource requires access to sun.misc.Unsafe");
+                throw new AssertionError("DirectArraySource requires access to sun.misc.Unsafe");
         }
 
         @Override
-        public ProtoSource wrap(byte[] buffer, long off, int len) {
+        public ProtoSource wrap(byte[] buffer, long offset, int length) {
             if (buffer != null) {
-
-                // Wrapping a normal array
-                if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
-                    throw new ArrayIndexOutOfBoundsException();
+                // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;
-                offset = (int) off;
-                limit = offset + len;
-
+                return super.wrap(buffer, offset, length);
             } else {
-
                 // Wrapping direct memory
-                if (off <= 0) {
+                if (offset <= 0) {
                     throw new NullPointerException("null reference with invalid address offset");
                 }
-                baseOffset = off;
-                offset = 0;
-                limit = len;
-
+                this.buffer = null;
+                this.baseOffset = offset;
+                this.position = this.offset = 0;
+                this.limit = length;
+                return resetInternalState();
             }
-            this.pos = offset;
-            this.buffer = buffer;
-            return resetInternalState();
         }
-
-        private long baseOffset;
 
         @Override
         public void copyBytesSinceMark(RepeatedByte store) {
-            final int length = pos - lastTagMark;
+            final int length = position - lastTagMark;
             final int bufferPos = store.addLength(length);
             UNSAFE.copyMemory(buffer, baseOffset + lastTagMark, store.array, BYTE_ARRAY_OFFSET + bufferPos, length);
         }
@@ -341,10 +331,10 @@ abstract class ArraySource extends ProtoSource{
 
         @Override
         public byte readRawByte() throws IOException {
-            if (pos == limit) {
+            if (position == limit) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
-            return UNSAFE.getByte(buffer, baseOffset + pos++);
+            return UNSAFE.getByte(buffer, baseOffset + position++);
         }
 
         @Override
@@ -398,9 +388,9 @@ abstract class ArraySource extends ProtoSource{
         private long require(int numBytes) throws IOException {
             requireRemaining(numBytes);
             try {
-                return baseOffset + pos;
+                return baseOffset + position;
             } finally {
-                pos += numBytes;
+                position += numBytes;
             }
         }
 

@@ -31,12 +31,12 @@ import static us.hebi.quickbuf.WireFormat.*;
  * @author Florian Enner
  * @since 16 Aug 2019
  */
-abstract class ArraySink extends ProtoSink {
+class ArraySink extends ProtoSink {
 
-    protected int position;
     protected byte[] buffer;
     protected int offset;
     protected int limit;
+    protected int position;
 
     public int position() {
         // This used to return ByteBuffer.position(), which is
@@ -88,99 +88,94 @@ abstract class ArraySink extends ProtoSink {
         }
     }
 
-    protected abstract int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize);
-
-    static class HeapArraySink extends ArraySink {
-
-        @Override
-        public ProtoSink wrap(byte[] buffer, long offset, int length) {
-            if (offset < 0 || length < 0 || offset > buffer.length || offset + length > buffer.length)
-                throw new ArrayIndexOutOfBoundsException();
-            this.buffer = buffer;
-            this.offset = (int) offset;
-            this.limit = this.offset + length;
-            this.position = this.offset;
-            return this;
+    @Override
+    public void writeRawByte(final byte value) throws IOException {
+        if (position == limit) {
+            throw outOfSpace();
         }
+        buffer[position++] = value;
+    }
 
-        /** Write a single byte. */
-        @Override
-        public void writeRawByte(final byte value) throws IOException {
-            if (position == limit) {
-                throw outOfSpace();
-            }
-            buffer[position++] = value;
+    // ----------------- OVERRIDE METHODS -----------------
+
+    @Override
+    public ProtoSink wrap(byte[] buffer, long offset, int length) {
+        if (offset < 0 || length < 0 || offset > buffer.length || offset + length > buffer.length)
+            throw new ArrayIndexOutOfBoundsException();
+        this.buffer = buffer;
+        this.offset = (int) offset;
+        this.limit = this.offset + length;
+        this.position = this.offset;
+        return this;
+    }
+
+    @Override
+    public void writeRawLittleEndian16(final short value) throws IOException {
+        ByteUtil.writeLittleEndian16(buffer, require(SIZEOF_FIXED_16), value);
+    }
+
+    @Override
+    public void writeRawLittleEndian32(final int value) throws IOException {
+        ByteUtil.writeLittleEndian32(buffer, require(SIZEOF_FIXED_32), value);
+    }
+
+    @Override
+    public void writeRawLittleEndian64(final long value) throws IOException {
+        ByteUtil.writeLittleEndian64(buffer, require(SIZEOF_FIXED_64), value);
+    }
+
+    @Override
+    public void writeFloatNoTag(final float value) throws IOException {
+        ByteUtil.writeFloat(buffer, require(SIZEOF_FIXED_32), value);
+    }
+
+    @Override
+    public void writeDoubleNoTag(final double value) throws IOException {
+        ByteUtil.writeDouble(buffer, require(SIZEOF_FIXED_64), value);
+    }
+
+    @Override
+    public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
+        ByteUtil.writeBytes(buffer, require(length), value, offset, length);
+    }
+
+    @Override
+    protected void writeRawBooleans(final boolean[] values, final int length) throws IOException {
+        ByteUtil.writeBooleans(buffer, require(length), values, length);
+    }
+
+    @Override
+    protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
+        ByteUtil.writeLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, length);
+    }
+
+    @Override
+    protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
+        ByteUtil.writeLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, length);
+    }
+
+    @Override
+    protected void writeRawFloats(final float[] values, final int length) throws IOException {
+        ByteUtil.writeFloats(buffer, require(length * SIZEOF_FIXED_32), values, length);
+    }
+
+    @Override
+    protected void writeRawDoubles(final double[] values, final int length) throws IOException {
+        ByteUtil.writeDoubles(buffer, require(length * SIZEOF_FIXED_64), values, length);
+    }
+
+    protected int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize) {
+        return Utf8.encodeArray(value, buffer, position, maxSize);
+    }
+
+    private int require(final int numBytes) throws OutOfSpaceException {
+        if (spaceLeft() < numBytes)
+            throw outOfSpace();
+        try {
+            return position;
+        } finally {
+            position += numBytes;
         }
-
-        @Override
-        public void writeRawLittleEndian16(final short value) throws IOException {
-            ByteUtil.writeLittleEndian16(buffer, require(SIZEOF_FIXED_16), value);
-        }
-
-        @Override
-        public void writeRawLittleEndian32(final int value) throws IOException {
-            ByteUtil.writeLittleEndian32(buffer, require(SIZEOF_FIXED_32), value);
-        }
-
-        @Override
-        public void writeRawLittleEndian64(final long value) throws IOException {
-            ByteUtil.writeLittleEndian64(buffer, require(SIZEOF_FIXED_64), value);
-        }
-
-        @Override
-        public void writeFloatNoTag(final float value) throws IOException {
-            ByteUtil.writeFloat(buffer, require(SIZEOF_FIXED_32), value);
-        }
-
-        @Override
-        public void writeDoubleNoTag(final double value) throws IOException {
-            ByteUtil.writeDouble(buffer, require(SIZEOF_FIXED_64), value);
-        }
-
-        @Override
-        public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
-            ByteUtil.writeBytes(buffer, require(length), value, offset, length);
-        }
-
-        @Override
-        protected void writeRawBooleans(final boolean[] values, final int length) throws IOException {
-            ByteUtil.writeBooleans(buffer, require(length), values, length);
-        }
-
-        @Override
-        protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
-            ByteUtil.writeLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, length);
-        }
-
-        @Override
-        protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
-            ByteUtil.writeLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, length);
-        }
-
-        @Override
-        protected void writeRawFloats(final float[] values, final int length) throws IOException {
-            ByteUtil.writeFloats(buffer, require(length * SIZEOF_FIXED_32), values, length);
-        }
-
-        @Override
-        protected void writeRawDoubles(final double[] values, final int length) throws IOException {
-            ByteUtil.writeDoubles(buffer, require(length * SIZEOF_FIXED_64), values, length);
-        }
-
-        protected int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize) {
-            return Utf8.encodeArray(value, buffer, position, maxSize);
-        }
-
-        private int require(final int numBytes) throws OutOfSpaceException {
-            if (spaceLeft() < numBytes)
-                throw outOfSpace();
-            try {
-                return position;
-            } finally {
-                position += numBytes;
-            }
-        }
-
     }
 
     /**
@@ -193,39 +188,32 @@ abstract class ArraySink extends ProtoSink {
      */
     static class DirectArraySink extends ArraySink {
 
+        private long baseOffset;
+
         DirectArraySink() {
             if (!UnsafeAccess.isAvailable())
-                throw new AssertionError("UnsafeArraySource requires access to sun.misc.Unsafe");
+                throw new AssertionError("DirectArraySink requires access to sun.misc.Unsafe");
         }
 
         @Override
-        public ProtoSink wrap(byte[] buffer, long off, int len) {
+        public ProtoSink wrap(byte[] buffer, long offset, int length) {
             if (buffer != null) {
-
-                // Wrapping a normal array
-                if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
-                    throw new ArrayIndexOutOfBoundsException();
+                // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;
-                offset = (int) off;
-                limit = offset + len;
-
+                return super.wrap(buffer, offset, length);
             } else {
-
                 // Wrapping direct memory
-                if (off <= 0) {
+                if (offset <= 0) {
                     throw new NullPointerException("null reference with invalid address offset");
                 }
-                baseOffset = off;
-                offset = 0;
-                limit = len;
-
+                this.buffer = null;
+                this.baseOffset = offset;
+                this.offset = 0;
+                this.position = 0;
+                this.limit = length;
+                return this;
             }
-            this.position = offset;
-            this.buffer = buffer;
-            return this;
         }
-
-        private long baseOffset;
 
         @Override
         public void writeRawByte(final byte value) throws IOException {
