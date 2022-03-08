@@ -114,27 +114,27 @@ class ArraySink extends ProtoSink {
 
     @Override
     public void writeRawLittleEndian16(final short value) throws IOException {
-        ByteUtil.writeLittleEndian16(buffer, require(SIZEOF_FIXED_16), value);
+        ByteUtil.writeLittleEndian16(buffer, require(FIXED_16_SIZE), value);
     }
 
     @Override
     public void writeRawLittleEndian32(final int value) throws IOException {
-        ByteUtil.writeLittleEndian32(buffer, require(SIZEOF_FIXED_32), value);
+        ByteUtil.writeLittleEndian32(buffer, require(FIXED_32_SIZE), value);
     }
 
     @Override
     public void writeRawLittleEndian64(final long value) throws IOException {
-        ByteUtil.writeLittleEndian64(buffer, require(SIZEOF_FIXED_64), value);
+        ByteUtil.writeLittleEndian64(buffer, require(FIXED_64_SIZE), value);
     }
 
     @Override
     public void writeFloatNoTag(final float value) throws IOException {
-        ByteUtil.writeFloat(buffer, require(SIZEOF_FIXED_32), value);
+        ByteUtil.writeFloat(buffer, require(FIXED_32_SIZE), value);
     }
 
     @Override
     public void writeDoubleNoTag(final double value) throws IOException {
-        ByteUtil.writeDouble(buffer, require(SIZEOF_FIXED_64), value);
+        ByteUtil.writeDouble(buffer, require(FIXED_64_SIZE), value);
     }
 
     @Override
@@ -149,22 +149,22 @@ class ArraySink extends ProtoSink {
 
     @Override
     protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
-        ByteUtil.writeLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, length);
+        ByteUtil.writeLittleEndian32s(buffer, require(length * FIXED_32_SIZE), values, length);
     }
 
     @Override
     protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
-        ByteUtil.writeLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, length);
+        ByteUtil.writeLittleEndian64s(buffer, require(length * FIXED_64_SIZE), values, length);
     }
 
     @Override
     protected void writeRawFloats(final float[] values, final int length) throws IOException {
-        ByteUtil.writeFloats(buffer, require(length * SIZEOF_FIXED_32), values, length);
+        ByteUtil.writeFloats(buffer, require(length * FIXED_32_SIZE), values, length);
     }
 
     @Override
     protected void writeRawDoubles(final double[] values, final int length) throws IOException {
-        ByteUtil.writeDoubles(buffer, require(length * SIZEOF_FIXED_64), values, length);
+        ByteUtil.writeDoubles(buffer, require(length * FIXED_64_SIZE), values, length);
     }
 
     protected int writeUtf8Encoded(final CharSequence value, final byte[] buffer, final int position, final int maxSize) {
@@ -228,27 +228,27 @@ class ArraySink extends ProtoSink {
 
         @Override
         public void writeRawLittleEndian16(final short value) throws IOException {
-            ByteUtil.writeUnsafeLittleEndian16(buffer, require(SIZEOF_FIXED_16), value);
+            ByteUtil.writeUnsafeLittleEndian16(buffer, require(FIXED_16_SIZE), value);
         }
 
         @Override
         public void writeRawLittleEndian32(final int value) throws IOException {
-            ByteUtil.writeUnsafeLittleEndian32(buffer, require(SIZEOF_FIXED_32), value);
+            ByteUtil.writeUnsafeLittleEndian32(buffer, require(FIXED_32_SIZE), value);
         }
 
         @Override
         public void writeRawLittleEndian64(final long value) throws IOException {
-            ByteUtil.writeUnsafeLittleEndian64(buffer, require(SIZEOF_FIXED_64), value);
+            ByteUtil.writeUnsafeLittleEndian64(buffer, require(FIXED_64_SIZE), value);
         }
 
         @Override
         public void writeFloatNoTag(final float value) throws IOException {
-            ByteUtil.writeUnsafeFloat(buffer, require(SIZEOF_FIXED_32), value);
+            ByteUtil.writeUnsafeFloat(buffer, require(FIXED_32_SIZE), value);
         }
 
         @Override
         public void writeDoubleNoTag(final double value) throws IOException {
-            ByteUtil.writeUnsafeDouble(buffer, require(SIZEOF_FIXED_64), value);
+            ByteUtil.writeUnsafeDouble(buffer, require(FIXED_64_SIZE), value);
         }
 
         @Override
@@ -263,22 +263,22 @@ class ArraySink extends ProtoSink {
 
         @Override
         protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
-            ByteUtil.writeUnsafeLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, length);
+            ByteUtil.writeUnsafeLittleEndian32s(buffer, require(length * FIXED_32_SIZE), values, length);
         }
 
         @Override
         protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
-            ByteUtil.writeUnsafeLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, length);
+            ByteUtil.writeUnsafeLittleEndian64s(buffer, require(length * FIXED_64_SIZE), values, length);
         }
 
         @Override
         protected void writeRawFloats(final float[] values, final int length) throws IOException {
-            ByteUtil.writeUnsafeFloats(buffer, require(length * SIZEOF_FIXED_32), values, length);
+            ByteUtil.writeUnsafeFloats(buffer, require(length * FIXED_32_SIZE), values, length);
         }
 
         @Override
         protected void writeRawDoubles(final double[] values, final int length) throws IOException {
-            ByteUtil.writeUnsafeDoubles(buffer, require(length * SIZEOF_FIXED_64), values, length);
+            ByteUtil.writeUnsafeDoubles(buffer, require(length * FIXED_64_SIZE), values, length);
         }
 
         @Override

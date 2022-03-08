@@ -169,7 +169,7 @@ public abstract class ProtoSource {
                 readRawVarint32(); // Note: not worth adding a skipVarint method
                 return true;
             case WireFormat.WIRETYPE_FIXED64:
-                skipRawBytes(SIZEOF_FIXED_64);
+                skipRawBytes(FIXED_64_SIZE);
                 return true;
             case WireFormat.WIRETYPE_LENGTH_DELIMITED:
                 skipRawBytes(readRawVarint32());
@@ -183,7 +183,7 @@ public abstract class ProtoSource {
             case WireFormat.WIRETYPE_END_GROUP:
                 return false;
             case WireFormat.WIRETYPE_FIXED32:
-                skipRawBytes(SIZEOF_FIXED_32);
+                skipRawBytes(FIXED_32_SIZE);
                 return true;
             default:
                 throw InvalidProtocolBufferException.invalidWireType();
@@ -222,7 +222,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code double} field value from the source. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
+        final int numEntries = readRawVarint32() / FIXED_64_SIZE;
         final int offset = store.addLength(numEntries);
         readRawDoubles(store.array, offset, numEntries);
     }
@@ -251,7 +251,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code float} field value from the source. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
+        final int numEntries = readRawVarint32() / FIXED_32_SIZE;
         final int offset = store.addLength(numEntries);
         readRawFloats(store.array, offset, numEntries);
     }
@@ -285,7 +285,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code fixed64} field value from the source. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
+        final int numEntries = readRawVarint32() / FIXED_64_SIZE;
         final int offset = store.addLength(numEntries);
         readRawFixed64s(store.array, offset, numEntries);
     }
@@ -329,7 +329,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code fixed32} field value from the source. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
+        final int numEntries = readRawVarint32() / FIXED_32_SIZE;
         final int offset = store.addLength(numEntries);
         readRawFixed32s(store.array, offset, numEntries);
     }
@@ -506,7 +506,7 @@ public abstract class ProtoSource {
     public void readPackedBool(RepeatedBoolean store) throws IOException {
         final int length = readRawVarint32();
         final int limit = pushLimit(length);
-        store.reserve(length / SIZEOF_FIXED_BOOL);
+        store.reserve(length / MIN_BOOL_SIZE);
         while (!isAtEnd()) {
             store.add(readBool());
         }

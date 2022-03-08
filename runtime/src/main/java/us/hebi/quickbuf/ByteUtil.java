@@ -134,9 +134,9 @@ class ByteUtil {
 
     static void writeLittleEndian32s(final byte[] buffer, int offset, final int[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, INT_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, SIZEOF_FIXED_32 * (long) length);
+            UNSAFE.copyMemory(values, INT_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, FIXED_32_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_32) {
+            for (int i = 0; i < length; i++, offset += FIXED_32_SIZE) {
                 writeLittleEndian32(buffer, offset, values[i]);
             }
         }
@@ -144,9 +144,9 @@ class ByteUtil {
 
     static void writeLittleEndian64s(final byte[] buffer, int offset, final long[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, LONG_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, SIZEOF_FIXED_64 * (long) length);
+            UNSAFE.copyMemory(values, LONG_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, FIXED_64_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_64) {
+            for (int i = 0; i < length; i++, offset += FIXED_64_SIZE) {
                 writeLittleEndian64(buffer, offset, values[i]);
             }
         }
@@ -154,9 +154,9 @@ class ByteUtil {
 
     static void writeFloats(final byte[] buffer, int offset, final float[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, FLOAT_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, SIZEOF_FIXED_32 * (long) length);
+            UNSAFE.copyMemory(values, FLOAT_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, FIXED_32_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_32) {
+            for (int i = 0; i < length; i++, offset += FIXED_32_SIZE) {
                 writeFloat(buffer, offset, values[i]);
             }
         }
@@ -164,9 +164,9 @@ class ByteUtil {
 
     static void writeDoubles(final byte[] buffer, int offset, final double[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, DOUBLE_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, SIZEOF_FIXED_64 * (long) length);
+            UNSAFE.copyMemory(values, DOUBLE_ARRAY_OFFSET, buffer, BYTE_ARRAY_OFFSET + offset, FIXED_64_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_64) {
+            for (int i = 0; i < length; i++, offset += FIXED_64_SIZE) {
                 writeDouble(buffer, offset, values[i]);
             }
         }
@@ -231,11 +231,11 @@ class ByteUtil {
 
     public static void readLittleEndian32s(byte[] buffer, int offset, int[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_32;
-            final long targetOffset = INT_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_32;
+            final int numBytes = dstLength * FIXED_32_SIZE;
+            final long targetOffset = INT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_32) {
+            for (int i = 0; i < dstLength; i++, offset += FIXED_32_SIZE) {
                 dst[i] = readLittleEndian32(buffer, offset);
             }
         }
@@ -243,11 +243,11 @@ class ByteUtil {
 
     public static void readLittleEndian64s(byte[] buffer, int offset, long[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_64;
-            final long targetOffset = LONG_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_64;
+            final int numBytes = dstLength * FIXED_64_SIZE;
+            final long targetOffset = LONG_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_64) {
+            for (int i = 0; i < dstLength; i++, offset += FIXED_64_SIZE) {
                 dst[i] = readLittleEndian64(buffer, offset);
             }
         }
@@ -255,11 +255,11 @@ class ByteUtil {
 
     public static void readFloats(byte[] buffer, int offset, float[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_32;
-            final long targetOffset = FLOAT_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_32;
+            final int numBytes = dstLength * FIXED_32_SIZE;
+            final long targetOffset = FLOAT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_32) {
+            for (int i = 0; i < dstLength; i++, offset += FIXED_32_SIZE) {
                 dst[i] = readFloat(buffer, offset);
             }
         }
@@ -267,11 +267,11 @@ class ByteUtil {
 
     public static void readDoubles(byte[] buffer, int offset, double[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_64;
-            final long targetOffset = DOUBLE_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_64;
+            final int numBytes = dstLength * FIXED_64_SIZE;
+            final long targetOffset = DOUBLE_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
             UNSAFE.copyMemory(buffer, BYTE_ARRAY_OFFSET + offset, dst, targetOffset, numBytes);
         } else {
-            for (int i = 0; i < dstLength; i++, offset += SIZEOF_FIXED_64) {
+            for (int i = 0; i < dstLength; i++, offset += FIXED_64_SIZE) {
                 dst[i] = readDouble(buffer, offset);
             }
         }
@@ -384,9 +384,9 @@ class ByteUtil {
 
     static void writeUnsafeLittleEndian32s(final byte[] buffer, long offset, final int[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, INT_ARRAY_OFFSET, buffer, offset, SIZEOF_FIXED_32 * (long) length);
+            UNSAFE.copyMemory(values, INT_ARRAY_OFFSET, buffer, offset, FIXED_32_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_32) {
+            for (int i = 0; i < length; i++, offset += FIXED_32_SIZE) {
                 writeUnsafeLittleEndian32(buffer, offset, values[i]);
             }
         }
@@ -394,9 +394,9 @@ class ByteUtil {
 
     static void writeUnsafeLittleEndian64s(final byte[] buffer, long offset, final long[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, LONG_ARRAY_OFFSET, buffer, offset, SIZEOF_FIXED_64 * (long) length);
+            UNSAFE.copyMemory(values, LONG_ARRAY_OFFSET, buffer, offset, FIXED_64_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_64) {
+            for (int i = 0; i < length; i++, offset += FIXED_64_SIZE) {
                 writeUnsafeLittleEndian64(buffer, offset, values[i]);
             }
         }
@@ -404,9 +404,9 @@ class ByteUtil {
 
     static void writeUnsafeFloats(final byte[] buffer, long offset, final float[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, FLOAT_ARRAY_OFFSET, buffer, offset, SIZEOF_FIXED_32 * (long) length);
+            UNSAFE.copyMemory(values, FLOAT_ARRAY_OFFSET, buffer, offset, FIXED_32_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_32) {
+            for (int i = 0; i < length; i++, offset += FIXED_32_SIZE) {
                 writeUnsafeFloat(buffer, offset, values[i]);
             }
         }
@@ -414,9 +414,9 @@ class ByteUtil {
 
     static void writeUnsafeDoubles(final byte[] buffer, long offset, final double[] values, final int length) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            UNSAFE.copyMemory(values, DOUBLE_ARRAY_OFFSET, buffer, offset, SIZEOF_FIXED_64 * (long) length);
+            UNSAFE.copyMemory(values, DOUBLE_ARRAY_OFFSET, buffer, offset, FIXED_64_SIZE * (long) length);
         } else {
-            for (int i = 0; i < length; i++, offset += SIZEOF_FIXED_64) {
+            for (int i = 0; i < length; i++, offset += FIXED_64_SIZE) {
                 writeUnsafeDouble(buffer, offset, values[i]);
             }
         }
@@ -488,52 +488,52 @@ class ByteUtil {
 
     public static void readUnsafeLittleEndian32s(byte[] buffer, long offset, int[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_32;
-            final long targetOffset = INT_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_32;
+            final int numBytes = dstLength * FIXED_32_SIZE;
+            final long targetOffset = INT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
             UNSAFE.copyMemory(buffer, offset, dst, targetOffset, numBytes);
         } else {
             for (int i = 0; i < dstLength; i++) {
                 dst[i] = readUnsafeLittleEndian32(buffer, offset);
-                offset += SIZEOF_FIXED_32;
+                offset += FIXED_32_SIZE;
             }
         }
     }
 
     public static void readUnsafeLittleEndian64s(byte[] buffer, long offset, long[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_64;
-            final long targetOffset = LONG_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_64;
+            final int numBytes = dstLength * FIXED_64_SIZE;
+            final long targetOffset = LONG_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
             UNSAFE.copyMemory(buffer, offset, dst, targetOffset, numBytes);
         } else {
             for (int i = 0; i < dstLength; i++) {
                 dst[i] = readUnsafeLittleEndian64(buffer, offset);
-                offset += SIZEOF_FIXED_64;
+                offset += FIXED_64_SIZE;
             }
         }
     }
 
     public static void readUnsafeFloats(byte[] buffer, long offset, float[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_32;
-            final long targetOffset = FLOAT_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_32;
+            final int numBytes = dstLength * FIXED_32_SIZE;
+            final long targetOffset = FLOAT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
             UNSAFE.copyMemory(buffer, offset, dst, targetOffset, numBytes);
         } else {
             for (int i = 0; i < dstLength; i++) {
                 dst[i] = readUnsafeFloat(buffer, offset);
-                offset += SIZEOF_FIXED_32;
+                offset += FIXED_32_SIZE;
             }
         }
     }
 
     public static void readUnsafeDoubles(byte[] buffer, long offset, double[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
-            final int numBytes = dstLength * SIZEOF_FIXED_64;
-            final long targetOffset = DOUBLE_ARRAY_OFFSET + (long) dstOffset * SIZEOF_FIXED_64;
+            final int numBytes = dstLength * FIXED_64_SIZE;
+            final long targetOffset = DOUBLE_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
             UNSAFE.copyMemory(buffer, offset, dst, targetOffset, numBytes);
         } else {
             for (int i = 0; i < dstLength; i++) {
                 dst[i] = readUnsafeDouble(buffer, offset);
-                offset += SIZEOF_FIXED_64;
+                offset += FIXED_64_SIZE;
             }
         }
     }

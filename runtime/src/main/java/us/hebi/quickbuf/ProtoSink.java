@@ -322,49 +322,49 @@ public abstract class ProtoSink {
     /** Write a repeated (packed) {@code double} field, excluding tag, to the sink. */
     public void writePackedDoubleNoTag(final RepeatedDouble values)
             throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_64);
+        writeRawVarint32(values.length * FIXED_64_SIZE);
         writeRawDoubles(values.array, values.length);
     }
 
     /** Write a repeated (packed) {@code float} field, excluding tag, to the sink. */
     public void writePackedFloatNoTag(final RepeatedFloat values)
             throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_32);
+        writeRawVarint32(values.length * FIXED_32_SIZE);
         writeRawFloats(values.array, values.length);
     }
 
     /** Write a repeated (packed){@code fixed64} field, excluding tag, to the sink. */
     public void writePackedFixed64NoTag(final RepeatedLong values)
             throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_64);
+        writeRawVarint32(values.length * FIXED_64_SIZE);
         writeRawFixed64s(values.array, values.length);
     }
 
     /** Write a repeated (packed){@code fixed32} field, excluding tag, to the sink. */
     public void writePackedFixed32NoTag(final RepeatedInt values)
             throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_32);
+        writeRawVarint32(values.length * FIXED_32_SIZE);
         writeRawFixed32s(values.array, values.length);
     }
 
     /** Write a repeated (packed) {@code sfixed32} field, excluding tag, to the sink. */
     public void writePackedSFixed32NoTag(final RepeatedInt values)
             throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_32);
+        writeRawVarint32(values.length * FIXED_32_SIZE);
         writeRawFixed32s(values.array, values.length);
     }
 
     /** Write a repeated (packed) {@code sfixed64} field, excluding tag, to the sink. */
     public void writePackedSFixed64NoTag(final RepeatedLong values)
             throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_64);
+        writeRawVarint32(values.length * FIXED_64_SIZE);
         writeRawFixed64s(values.array, values.length);
     }
 
     /** Write a repeated (non-packed){@code bool} field, excluding tag, to the sink. */
     public void writePackedBoolNoTag(final RepeatedBoolean values)
             throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_BOOL);
+        writeRawVarint32(values.length * MIN_BOOL_SIZE);
         writeRawBooleans(values.array, values.length);
     }
 
@@ -829,7 +829,7 @@ public abstract class ProtoSink {
      * {@code double} field, including tag.
      */
     public static int computeDoubleSizeNoTag(final double value) {
-        return SIZEOF_FIXED_64;
+        return FIXED_64_SIZE;
     }
 
     /**
@@ -837,7 +837,7 @@ public abstract class ProtoSink {
      * {@code float} field, including tag.
      */
     public static int computeFloatSizeNoTag(final float value) {
-        return SIZEOF_FIXED_32;
+        return FIXED_32_SIZE;
     }
 
     /**
@@ -874,7 +874,7 @@ public abstract class ProtoSink {
      * {@code fixed64} field.
      */
     public static int computeFixed64SizeNoTag(final long value) {
-        return SIZEOF_FIXED_64;
+        return FIXED_64_SIZE;
     }
 
     /**
@@ -882,7 +882,7 @@ public abstract class ProtoSink {
      * {@code fixed32} field.
      */
     public static int computeFixed32SizeNoTag(final int value) {
-        return SIZEOF_FIXED_32;
+        return FIXED_32_SIZE;
     }
 
     /**
@@ -957,7 +957,7 @@ public abstract class ProtoSink {
      * {@code sfixed32} field.
      */
     public static int computeSFixed32SizeNoTag(final int value) {
-        return SIZEOF_FIXED_32;
+        return FIXED_32_SIZE;
     }
 
     /**
@@ -965,7 +965,7 @@ public abstract class ProtoSink {
      * {@code sfixed64} field.
      */
     public static int computeSFixed64SizeNoTag(final long value) {
-        return SIZEOF_FIXED_64;
+        return FIXED_64_SIZE;
     }
 
     /**

@@ -191,7 +191,7 @@ class ArraySource extends ProtoSource{
         rewindToPosition(mark);
 
         // Write field tag and payload
-        int offset = store.addLength(SIZEOF_VARINT32_MAX + length);
+        int offset = store.addLength(MAX_VARINT32_SIZE + length);
         offset += ByteUtil.writeUInt32(store.array(), offset, store.capacity(), tag);
         readRawBytes(store.array(), offset, length);
         store.length = offset + length;
@@ -199,7 +199,7 @@ class ArraySource extends ProtoSource{
     }
 
     public void skipEnum(final int tag, final int value, final RepeatedByte store) throws IOException {
-        int position = store.addLength(2 * SIZEOF_VARINT32_MAX);
+        int position = store.addLength(2 * MAX_VARINT32_SIZE);
         position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
         position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), value);
         store.length = position;
@@ -232,27 +232,27 @@ class ArraySource extends ProtoSource{
 
     @Override
     public short readRawLittleEndian16() throws IOException {
-        return ByteUtil.readLittleEndian16(buffer, require(SIZEOF_FIXED_16));
+        return ByteUtil.readLittleEndian16(buffer, require(FIXED_16_SIZE));
     }
 
     @Override
     public int readRawLittleEndian32() throws IOException {
-        return ByteUtil.readLittleEndian32(buffer, require(SIZEOF_FIXED_32));
+        return ByteUtil.readLittleEndian32(buffer, require(FIXED_32_SIZE));
     }
 
     @Override
     public long readRawLittleEndian64() throws IOException {
-        return ByteUtil.readLittleEndian64(buffer, require(SIZEOF_FIXED_64));
+        return ByteUtil.readLittleEndian64(buffer, require(FIXED_64_SIZE));
     }
 
     @Override
     public float readFloat() throws IOException {
-        return ByteUtil.readFloat(buffer, require(SIZEOF_FIXED_32));
+        return ByteUtil.readFloat(buffer, require(FIXED_32_SIZE));
     }
 
     @Override
     public double readDouble() throws IOException {
-        return ByteUtil.readDouble(buffer, require(SIZEOF_FIXED_64));
+        return ByteUtil.readDouble(buffer, require(FIXED_64_SIZE));
     }
 
     @Override
@@ -262,22 +262,22 @@ class ArraySource extends ProtoSource{
 
     @Override
     protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
-        ByteUtil.readLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+        ByteUtil.readLittleEndian32s(buffer, require(length * FIXED_32_SIZE), values, offset, length);
     }
 
     @Override
     protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
-        ByteUtil.readLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+        ByteUtil.readLittleEndian64s(buffer, require(length * FIXED_64_SIZE), values, offset, length);
     }
 
     @Override
     protected void readRawFloats(float[] values, int offset, int length) throws IOException {
-        ByteUtil.readFloats(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+        ByteUtil.readFloats(buffer, require(length * FIXED_32_SIZE), values, offset, length);
     }
 
     @Override
     protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
-        ByteUtil.readDoubles(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+        ByteUtil.readDoubles(buffer, require(length * FIXED_64_SIZE), values, offset, length);
     }
 
     /** moves forward by numBytes and returns the current position */
@@ -341,25 +341,25 @@ class ArraySource extends ProtoSource{
 
         @Override
         public short readRawLittleEndian16() throws IOException {
-            return ByteUtil.readUnsafeLittleEndian16(buffer, require(SIZEOF_FIXED_16));
+            return ByteUtil.readUnsafeLittleEndian16(buffer, require(FIXED_16_SIZE));
         }
 
         @Override
         public int readRawLittleEndian32() throws IOException {
-            return ByteUtil.readUnsafeLittleEndian32(buffer, require(SIZEOF_FIXED_32));
+            return ByteUtil.readUnsafeLittleEndian32(buffer, require(FIXED_32_SIZE));
         }
 
         @Override
         public long readRawLittleEndian64() throws IOException {
-            return ByteUtil.readUnsafeLittleEndian64(buffer, require(SIZEOF_FIXED_64));
+            return ByteUtil.readUnsafeLittleEndian64(buffer, require(FIXED_64_SIZE));
         }
 
         public float readFloat() throws IOException {
-            return ByteUtil.readUnsafeFloat(buffer, require(SIZEOF_FIXED_32));
+            return ByteUtil.readUnsafeFloat(buffer, require(FIXED_32_SIZE));
         }
 
         public double readDouble() throws IOException {
-            return ByteUtil.readUnsafeDouble(buffer, require(SIZEOF_FIXED_64));
+            return ByteUtil.readUnsafeDouble(buffer, require(FIXED_64_SIZE));
         }
         @Override
         public void readRawBytes(byte[] values, int offset, int length) throws IOException {
@@ -368,22 +368,22 @@ class ArraySource extends ProtoSource{
 
         @Override
         protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
-            ByteUtil.readUnsafeLittleEndian32s(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+            ByteUtil.readUnsafeLittleEndian32s(buffer, require(length * FIXED_32_SIZE), values, offset, length);
         }
 
         @Override
         protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
-            ByteUtil.readUnsafeLittleEndian64s(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+            ByteUtil.readUnsafeLittleEndian64s(buffer, require(length * FIXED_64_SIZE), values, offset, length);
         }
 
         @Override
         protected void readRawFloats(float[] values, int offset, int length) throws IOException {
-            ByteUtil.readUnsafeFloats(buffer, require(length * SIZEOF_FIXED_32), values, offset, length);
+            ByteUtil.readUnsafeFloats(buffer, require(length * FIXED_32_SIZE), values, offset, length);
         }
 
         @Override
         protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
-            ByteUtil.readUnsafeDoubles(buffer, require(length * SIZEOF_FIXED_64), values, offset, length);
+            ByteUtil.readUnsafeDoubles(buffer, require(length * FIXED_64_SIZE), values, offset, length);
         }
 
         /** moves forward by numBytes and returns the current address */
