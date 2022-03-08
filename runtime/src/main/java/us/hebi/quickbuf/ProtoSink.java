@@ -108,7 +108,7 @@ public abstract class ProtoSink {
      * available.
      */
     public static ProtoSink newInstance() {
-        return new ArraySink();
+        return new ArraySink.HeapArraySink();
     }
 
     /**
@@ -123,7 +123,7 @@ public abstract class ProtoSink {
      * of the runtime, so only use if you know what you are doing.
      */
     public static ProtoSink newUnsafeInstance() {
-        return new UnsafeArraySink(true);
+        return new ArraySink.DirectArraySink();
     }
 
     /**

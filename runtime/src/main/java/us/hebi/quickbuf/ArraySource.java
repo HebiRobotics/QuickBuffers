@@ -298,8 +298,6 @@ abstract class ArraySource extends ProtoSource{
                 throw new AssertionError("UnsafeArraySource requires access to sun.misc.Unsafe");
         }
 
-        private long baseOffset;
-
         @Override
         public ProtoSource wrap(byte[] buffer, long off, int len) {
             if (buffer != null) {
@@ -326,6 +324,8 @@ abstract class ArraySource extends ProtoSource{
             this.buffer = buffer;
             return resetInternalState();
         }
+
+        private long baseOffset;
 
         @Override
         public void copyBytesSinceMark(RepeatedByte store) {
