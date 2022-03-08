@@ -552,6 +552,10 @@ public class ProtoTests {
 
         assertEquals(bytes.length, unknowns.length);
         assertEquals(TestAllTypes.parseFrom(bytes), TestAllTypes.parseFrom(unknowns));
+
+        assertEquals(2, TestAllTypes.NestedMessage.parseFrom(
+                        ProtoSource.newInstance(bytes).discardUnknownFields())
+                .getSerializedSize());
     }
 
     @Test

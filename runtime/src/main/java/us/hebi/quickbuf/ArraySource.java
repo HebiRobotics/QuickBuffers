@@ -187,7 +187,7 @@ class ArraySource extends ProtoSource{
         if (!skipField(tag)) {
             return false;
 
-        } else if (!discardUnknownFields) {
+        } else if (!shouldDiscardUnknownFields) {
             // Reserve sufficient size
             final int length = position - mark;
             int position = store.addLength(MAX_VARINT32_SIZE + length);
@@ -204,7 +204,7 @@ class ArraySource extends ProtoSource{
     }
 
     public void skipEnum(final int tag, final int value, final RepeatedByte store) throws IOException {
-        if (!discardUnknownFields) {
+        if (!shouldDiscardUnknownFields) {
             int position = store.addLength(2 * MAX_VARINT32_SIZE);
             position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
             position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), value);

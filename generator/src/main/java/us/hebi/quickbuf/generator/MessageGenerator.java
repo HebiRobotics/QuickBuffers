@@ -463,6 +463,14 @@ class MessageGenerator {
                 .returns(info.getTypeName())
                 .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.AbstractMessage, info.getTypeName())
                 .build());
+
+        type.addMethod(MethodSpec.methodBuilder("parseFrom")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addException(IOException.class)
+                .addParameter(RuntimeClasses.ProtoSource, "input", Modifier.FINAL)
+                .returns(info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), input)", RuntimeClasses.AbstractMessage, info.getTypeName())
+                .build());
     }
 
     private void generateIsInitialized(TypeSpec.Builder type) {

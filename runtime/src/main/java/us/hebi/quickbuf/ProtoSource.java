@@ -790,7 +790,7 @@ public abstract class ProtoSource {
     private static final int DEFAULT_RECURSION_LIMIT = 64;
 
     /** see setDiscardUnknownFields */
-    protected boolean discardUnknownFields = false;
+    protected boolean shouldDiscardUnknownFields = false;
 
     // TODO: Google defaults to recursion of 100? Our messages don't even support this. Do we need it?
     // TODO: setSizeLimit() on InputStream?
@@ -834,14 +834,23 @@ public abstract class ProtoSource {
     }
 
     /**
-     * Sets this {@code ProtoSource} to discard unknown fields. Only applies to messages that
-     * were generated with support for retaining unknown fields. The default is false.
+     * Sets this {@code ProtoSource} to discard unknown fields. This only impacts
+     * messages that were generated with support for retaining unknown fields.
      *
      * <p>Note calling this function alone will have NO immediate effect on the underlying input data.
      * The unknown fields will be discarded during parsing.
      */
-    final ProtoSource setDiscardUnknownFields(boolean value) {
-        discardUnknownFields = true;
+    public final ProtoSource discardUnknownFields() {
+        shouldDiscardUnknownFields = true;
+        return this;
+    }
+
+    /**
+     * Reverts the unknown fields preservation behavior to the default. This only applies
+     * to messages that were generated with support for retaining unknown fields.
+     */
+    public final ProtoSource unsetDiscardUnknownFields() {
+        shouldDiscardUnknownFields = false;
         return this;
     }
 
