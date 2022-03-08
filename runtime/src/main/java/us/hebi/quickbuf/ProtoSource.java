@@ -50,7 +50,9 @@
 
 package us.hebi.quickbuf;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -110,6 +112,18 @@ public abstract class ProtoSource {
 
     public final ProtoSource wrap(byte[] buffer) {
         return wrap(buffer, 0, buffer.length);
+    }
+
+    /**
+     * Creates a lightweight wrapper to read protobuf messages
+     * from an {@link InputStream}). This is slower than reading
+     * from an array, but it does not require extra memory.
+     *
+     * @param inputStream target output
+     * @return wrapper
+     */
+    public static ProtoSource wrap(InputStream inputStream) {
+        return new StreamSource(inputStream);
     }
 
     /**
@@ -913,7 +927,7 @@ public abstract class ProtoSource {
      * case if either the end of the underlying input source has been reached or
      * if the source has reached a limit created using {@link #pushLimit(int)}.
      */
-    public abstract boolean isAtEnd() ;
+    public abstract boolean isAtEnd() throws IOException;
 
     /** Get total bytes read up to the current position. */
     public abstract int getTotalBytesRead();
@@ -958,6 +972,120 @@ public abstract class ProtoSource {
      */
     protected void reservePackedVarintCapacity(RepeatedField<?,?> store) throws IOException {
         // implement in child classes that support looking ahead
+    }
+
+    static class StreamSource extends ProtoSource {
+
+        StreamSource(InputStream input) {
+            this.input = input;
+        }
+
+        @Override
+        public ProtoSource wrap(byte[] buffer, long off, int len) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int pushLimit(int byteLimit) throws InvalidProtocolBufferException {
+            if (byteLimit < 0) {
+                throw InvalidProtocolBufferException.negativeSize();
+            }
+            byteLimit += position;
+            if (byteLimit > limit) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            final int oldLimit = limit;
+            limit = byteLimit;
+            return oldLimit;
+        }
+
+        @Override
+        public void popLimit(int oldLimit) {
+            limit = oldLimit;
+        }
+
+        private boolean hasLimit() {
+            return limit != Integer.MAX_VALUE;
+        }
+
+        @Override
+        public int getBytesUntilLimit() {
+            if (!hasLimit()) {
+                return -1;
+            }
+            return limit - position;
+        }
+
+        @Override
+        public boolean isAtEnd() throws IOException {
+            return position == limit || peek() == EOF;
+        }
+
+        @Override
+        public int getTotalBytesRead() {
+            return position;
+        }
+
+        @Override
+        public byte readRawByte() throws IOException {
+            if (position == limit || peek() == EOF) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            try {
+                position++;
+                return (byte) peekByte;
+            } finally {
+                peekByte = EOF;
+            }
+        }
+
+        private int peek() throws IOException {
+            if (peekByte == EOF && (peekByte = input.read()) == EOF && hasLimit() && position != limit) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            return peekByte;
+        }
+
+        @Override
+        public void skipRawBytes(int length) throws IOException {
+            require(length);
+            if (peekByte != EOF) {
+                peekByte = EOF;
+                length--;
+            }
+            if (input.skip(length) < length) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        @Override
+        public void readRawBytes(byte[] buffer, int offset, int length) throws IOException {
+            require(length);
+            if (peekByte != EOF) {
+                buffer[offset++] = (byte) peekByte;
+                length--;
+                peekByte = EOF;
+            }
+            if (input.read(buffer, offset, length) < length) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        private void require(int numBytes) throws IOException {
+            if (numBytes < 0) {
+                throw InvalidProtocolBufferException.negativeSize();
+            } else if (numBytes > limit - position) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            position += numBytes;
+        }
+
+        private int peekByte = EOF;
+        private final InputStream input;
+        private int position = 0;
+        private int limit = Integer.MAX_VALUE;
+        private static final int EOF = -1;
+
     }
 
 }

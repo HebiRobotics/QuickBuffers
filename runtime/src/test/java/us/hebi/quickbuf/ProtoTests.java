@@ -55,6 +55,13 @@ public class ProtoTests {
     }
 
     @Test
+    public void testInputStreamSource() throws IOException {
+        byte[] bytes = CompatibilityTest.getCombinedMessage();
+        TestAllTypes actual = TestAllTypes.parseFrom(ProtoSource.wrap(new ByteArrayInputStream(bytes)));
+        assertEquals(TestAllTypes.parseFrom(bytes), actual);
+    }
+
+    @Test
     public void testByteBufferSink() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
         ByteBuffer buffer = ByteBuffer.allocate(msg.getSerializedSize());

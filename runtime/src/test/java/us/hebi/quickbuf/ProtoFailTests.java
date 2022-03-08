@@ -277,10 +277,11 @@ public class ProtoFailTests {
         readFromTruncated(msg);
     }
 
-    private void readFromTruncated(ProtoMessage msg) throws IOException {
+    private <T extends ProtoMessage> T readFromTruncated(T msg) throws IOException {
         byte[] data = msg.toByteArray();
         ProtoSource input = ProtoSource.newUnsafeInstance().wrap(data, 0, data.length - 1);
         msg.clear().mergeFrom(input);
+        return msg;
     }
 
     // --------------------------------------------------------------------------------------
