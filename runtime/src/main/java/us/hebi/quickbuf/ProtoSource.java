@@ -787,12 +787,14 @@ public abstract class ProtoSource {
     /** See setRecursionLimit() */
     private int recursionDepth;
     private int recursionLimit = DEFAULT_RECURSION_LIMIT;
-    private static final int DEFAULT_RECURSION_LIMIT = 64; // TODO: Google now defaults to 100? Our messages don't even support this. Do we need it?
+    private static final int DEFAULT_RECURSION_LIMIT = 64;
+
+    /** see setDiscardUnknownFields */
+    protected boolean discardUnknownFields = false;
+
+    // TODO: Google defaults to recursion of 100? Our messages don't even support this. Do we need it?
     // TODO: setSizeLimit() on InputStream?
-    // TODO: make skipping an option on the source instead of the message?
-    // TODO: add readRawBytes(byte[] target, int offset, int length)
     // TODO: copy readRawVarint32(int firstByte, InputStream) for better InputStream reading?
-    // TODO: skip fields without requiring mark / copy
 
     /**
      * Changes the input to the given array. This resets any existing
@@ -805,11 +807,13 @@ public abstract class ProtoSource {
      * @return this
      */
     public abstract ProtoSource wrap(byte[] buffer, long off, int len) ;
+
     protected ProtoSource resetInternalState() {
         lastTag = 0;
         recursionDepth = 0;
         return this;
     }
+
     protected ProtoSource() {
     }
 
@@ -822,12 +826,23 @@ public abstract class ProtoSource {
      */
     public int setRecursionLimit(final int limit) {
         if (limit < 0) {
-            throw new IllegalArgumentException(
-                    "Recursion limit cannot be negative: " + limit);
+            throw new IllegalArgumentException("Recursion limit cannot be negative: " + limit);
         }
         final int oldLimit = recursionLimit;
         recursionLimit = limit;
         return oldLimit;
+    }
+
+    /**
+     * Sets this {@code ProtoSource} to discard unknown fields. Only applies to messages that
+     * were generated with support for retaining unknown fields. The default is false.
+     *
+     * <p>Note calling this function alone will have NO immediate effect on the underlying input data.
+     * The unknown fields will be discarded during parsing.
+     */
+    final ProtoSource setDiscardUnknownFields(boolean value) {
+        discardUnknownFields = true;
+        return this;
     }
 
     /**

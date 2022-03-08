@@ -186,23 +186,30 @@ class ArraySource extends ProtoSource{
         final int mark = position;
         if (!skipField(tag)) {
             return false;
-        }
-        final int length = position - mark;
-        rewindToPosition(mark);
 
-        // Write field tag and payload
-        int offset = store.addLength(MAX_VARINT32_SIZE + length);
-        offset += ByteUtil.writeUInt32(store.array(), offset, store.capacity(), tag);
-        readRawBytes(store.array(), offset, length);
-        store.length = offset + length;
+        } else if (!discardUnknownFields) {
+            // Reserve sufficient size
+            final int length = position - mark;
+            int position = store.addLength(MAX_VARINT32_SIZE + length);
+
+            // Write field tag
+            position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
+
+            // Copy field content
+            rewindToPosition(mark);
+            readRawBytes(store.array(), position, length);
+            store.length = position + length;
+        }
         return true;
     }
 
     public void skipEnum(final int tag, final int value, final RepeatedByte store) throws IOException {
-        int position = store.addLength(2 * MAX_VARINT32_SIZE);
-        position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
-        position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), value);
-        store.length = position;
+        if (!discardUnknownFields) {
+            int position = store.addLength(2 * MAX_VARINT32_SIZE);
+            position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), tag);
+            position += ByteUtil.writeUInt32(store.array(), position, store.capacity(), value);
+            store.length = position;
+        }
     }
 
     // ----------------- OVERRIDE METHODS -----------------
