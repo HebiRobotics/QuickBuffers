@@ -38,27 +38,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     // is likely in the same cache line as the object header
     protected int bitField0_;
 
-    // Allow storing unknown bytes so that messages can be routed
-    // without having full knowledge of the definition
-    protected final RepeatedByte unknownBytes;
-    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes");
-
     protected ProtoMessage() {
-        this(false);
-    }
-
-    protected ProtoMessage(boolean storeUnknownBytes) {
-        this.unknownBytes = storeUnknownBytes ? RepeatedByte.newEmptyInstance() : null;
-    }
-
-    /**
-     * @return binary representation of all fields with tags that could not be parsed
-     */
-    public final RepeatedByte getUnknownBytes() {
-        if (unknownBytes == null) {
-            throw new IllegalStateException("Storing unknown bytes is not enabled");
-        }
-        return unknownBytes;
     }
 
     /**
@@ -305,5 +285,17 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     protected static byte[] bytesDefaultValue(String bytes) {
         return bytes.getBytes(ProtoUtil.Charsets.ISO_8859_1);
     }
+
+    /**
+     * @return binary representation of all fields with tags that could not be parsed
+     */
+    public RepeatedByte getUnknownBytes() {
+        throw new IllegalStateException("Support for unknown bytes has not been generated.");
+    }
+
+    /**
+     * JSON field name for serializing unknown bytes
+     */
+    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes");
 
 }

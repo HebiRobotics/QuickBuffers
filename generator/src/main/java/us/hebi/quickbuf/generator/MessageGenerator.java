@@ -80,7 +80,6 @@ class MessageGenerator {
         // Constructor
         type.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
-                .addStatement("super($L)", info.isStoreUnknownFields())
                 .build());
 
         // Member state (the first bitfield is in the parent class)
@@ -88,6 +87,7 @@ class MessageGenerator {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
         fields.forEach(f -> f.generateMemberFields(type));
+        generateUnknownByteMembers(type);
 
         // OneOf Accessors
         info.getOneOfs().stream()
@@ -123,6 +123,23 @@ class MessageGenerator {
                 .build());
 
         return type.build();
+    }
+
+    private void generateUnknownByteMembers(TypeSpec.Builder type) {
+        if (!info.isStoreUnknownFields()) {
+            return;
+        }
+        type.addField(FieldSpec.builder(RuntimeClasses.BytesType, "unknownBytes")
+                .addJavadoc(named("Stores unknown fields to enable message routing without a full definition."))
+                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .initializer("$T.newEmptyInstance()", RuntimeClasses.BytesType)
+                .build());
+        type.addMethod(MethodSpec.methodBuilder("getUnknownBytes")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .returns(RuntimeClasses.BytesType)
+                .addStatement("return unknownBytes")
+                .build());
     }
 
     private void generateClear(TypeSpec.Builder type) {
