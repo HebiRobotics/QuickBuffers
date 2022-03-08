@@ -91,7 +91,7 @@ public abstract class ProtoSource {
      * available.
      */
     public static ProtoSource newInstance() {
-        return new ArraySource();
+        return new ArraySource.HeapArraySource();
     }
 
     /**
@@ -105,7 +105,7 @@ public abstract class ProtoSource {
      * of the runtime, so only use if you know what you are doing.
      */
     public static ProtoSource newUnsafeInstance() {
-        return new UnsafeArraySource(true);
+        return new ArraySource.DirectArraySource();
     }
 
     public final ProtoSource wrap(byte[] buffer) {

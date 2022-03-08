@@ -35,13 +35,9 @@ import static us.hebi.quickbuf.WireFormat.*;
  */
 class UnsafeArraySink extends ArraySink {
 
-    static boolean isAvailable() {
-        return UnsafeAccess.isAvailable() && UnsafeAccess.isCopyMemoryAvailable();
-    }
-
     UnsafeArraySink(boolean enableDirect) {
-        if (!isAvailable())
-            throw new AssertionError("UnsafeArraySink requires Java >= 7 and access to sun.misc.Unsafe");
+        if (!UnsafeAccess.isAvailable())
+            throw new AssertionError("UnsafeArraySink requires access to sun.misc.Unsafe");
         this.enableDirect = enableDirect;
     }
 
