@@ -175,93 +175,17 @@ public abstract class ProtoSink {
         return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
-    // -----------------------------------------------------------------
+    // ---------------------- WRITES WITH TAG (NOT USED) ----------------------
+
+    /** Encode and write a tag. */
+    public void writeTag(final int fieldNumber, final int wireType) throws IOException {
+        writeRawVarint32(WireFormat.makeTag(fieldNumber, wireType));
+    }
 
     /** Encode and write a packed tag for the given field number. */
     public void writePackedTag(final int fieldNumber) throws IOException {
         writeRawVarint32(WireFormat.makeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED));
     }
-
-    /** Write a repeated (non-packed) {@code double} field, excluding tag, to the sink. */
-    public void writePackedDoubleNoTag(final RepeatedDouble values)
-            throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_64);
-        writeRawDoubles(values.array, values.length);
-    }
-
-    /** Write a repeated (non-packed) {@code float} field, excluding tag, to the sink. */
-    public void writePackedFloatNoTag(final RepeatedFloat values)
-            throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_32);
-        writeRawFloats(values.array, values.length);
-    }
-
-    /** Write a repeated (non-packed){@code fixed64} field, excluding tag, to the sink. */
-    public void writePackedFixed64NoTag(final RepeatedLong values)
-            throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_64);
-        writeRawFixed64s(values.array, values.length);
-    }
-
-    /** Write a repeated (non-packed){@code fixed32} field, excluding tag, to the sink. */
-    public void writePackedFixed32NoTag(final RepeatedInt values)
-            throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_32);
-        writeRawFixed32s(values.array, values.length);
-    }
-
-    /** Write a repeated (non-packed) {@code sfixed32} field, excluding tag, to the sink. */
-    public void writePackedSFixed32NoTag(final RepeatedInt values)
-            throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_32);
-        writeRawFixed32s(values.array, values.length);
-    }
-
-    /** Write a repeated (non-packed) {@code sfixed64} field, excluding tag, to the sink. */
-    public void writePackedSFixed64NoTag(final RepeatedLong values)
-            throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_64);
-        writeRawFixed64s(values.array, values.length);
-    }
-
-    /** Write a repeated (non-packed){@code bool} field, excluding tag, to the sink. */
-    public void writePackedBoolNoTag(final RepeatedBoolean values)
-            throws IOException {
-        writeRawVarint32(values.length * SIZEOF_FIXED_BOOL);
-        writeRawBooleans(values.array, values.length);
-    }
-
-    protected void writeRawDoubles(final double[] values, int length) throws IOException {
-        for (int i = 0; i < length; i++) {
-            writeRawLittleEndian64(Double.doubleToLongBits(values[i]));
-        }
-    }
-
-    protected void writeRawFloats(final float[] values, int length) throws IOException {
-        for (int i = 0; i < length; i++) {
-            writeRawLittleEndian32(Float.floatToIntBits(values[i]));
-        }
-    }
-
-    protected void writeRawFixed64s(final long[] values, int length) throws IOException {
-        for (int i = 0; i < length; i++) {
-            writeRawLittleEndian64(values[i]);
-        }
-    }
-
-    protected void writeRawFixed32s(final int[] values, int length) throws IOException {
-        for (int i = 0; i < length; i++) {
-            writeRawLittleEndian32(values[i]);
-        }
-    }
-
-    protected void writeRawBooleans(final boolean[] values, int length) throws IOException {
-        for (int i = 0; i < length; i++) {
-            writeRawByte(values[i] ? 1 : 0);
-        }
-    }
-
-    // -----------------------------------------------------------------
 
     /** Write a {@code double} field, including tag, to the sink. */
     public void writeDouble(final int fieldNumber, final double value)
@@ -391,6 +315,244 @@ public abstract class ProtoSink {
             throws IOException {
         writeTag(fieldNumber, WireFormat.WIRETYPE_VARINT);
         writeSInt64NoTag(value);
+    }
+
+    // -------------------------- PACKED FIXED WIDTH TYPES --------------------------
+
+    /** Write a repeated (packed) {@code double} field, excluding tag, to the sink. */
+    public void writePackedDoubleNoTag(final RepeatedDouble values)
+            throws IOException {
+        writeRawVarint32(values.length * SIZEOF_FIXED_64);
+        writeRawDoubles(values.array, values.length);
+    }
+
+    /** Write a repeated (packed) {@code float} field, excluding tag, to the sink. */
+    public void writePackedFloatNoTag(final RepeatedFloat values)
+            throws IOException {
+        writeRawVarint32(values.length * SIZEOF_FIXED_32);
+        writeRawFloats(values.array, values.length);
+    }
+
+    /** Write a repeated (packed){@code fixed64} field, excluding tag, to the sink. */
+    public void writePackedFixed64NoTag(final RepeatedLong values)
+            throws IOException {
+        writeRawVarint32(values.length * SIZEOF_FIXED_64);
+        writeRawFixed64s(values.array, values.length);
+    }
+
+    /** Write a repeated (packed){@code fixed32} field, excluding tag, to the sink. */
+    public void writePackedFixed32NoTag(final RepeatedInt values)
+            throws IOException {
+        writeRawVarint32(values.length * SIZEOF_FIXED_32);
+        writeRawFixed32s(values.array, values.length);
+    }
+
+    /** Write a repeated (packed) {@code sfixed32} field, excluding tag, to the sink. */
+    public void writePackedSFixed32NoTag(final RepeatedInt values)
+            throws IOException {
+        writeRawVarint32(values.length * SIZEOF_FIXED_32);
+        writeRawFixed32s(values.array, values.length);
+    }
+
+    /** Write a repeated (packed) {@code sfixed64} field, excluding tag, to the sink. */
+    public void writePackedSFixed64NoTag(final RepeatedLong values)
+            throws IOException {
+        writeRawVarint32(values.length * SIZEOF_FIXED_64);
+        writeRawFixed64s(values.array, values.length);
+    }
+
+    /** Write a repeated (non-packed){@code bool} field, excluding tag, to the sink. */
+    public void writePackedBoolNoTag(final RepeatedBoolean values)
+            throws IOException {
+        writeRawVarint32(values.length * SIZEOF_FIXED_BOOL);
+        writeRawBooleans(values.array, values.length);
+    }
+
+    protected void writeRawDoubles(final double[] values, int length) throws IOException {
+        for (int i = 0; i < length; i++) {
+            writeRawLittleEndian64(Double.doubleToLongBits(values[i]));
+        }
+    }
+
+    protected void writeRawFloats(final float[] values, int length) throws IOException {
+        for (int i = 0; i < length; i++) {
+            writeRawLittleEndian32(Float.floatToIntBits(values[i]));
+        }
+    }
+
+    protected void writeRawFixed64s(final long[] values, int length) throws IOException {
+        for (int i = 0; i < length; i++) {
+            writeRawLittleEndian64(values[i]);
+        }
+    }
+
+    protected void writeRawFixed32s(final int[] values, int length) throws IOException {
+        for (int i = 0; i < length; i++) {
+            writeRawLittleEndian32(values[i]);
+        }
+    }
+
+    protected void writeRawBooleans(final boolean[] values, int length) throws IOException {
+        for (int i = 0; i < length; i++) {
+            writeRawByte(values[i] ? 1 : 0);
+        }
+    }
+
+    // -------------------------- PACKED VARINT TYPES --------------------------
+
+    /** Compute the number of bytes needed to encode all contained {@code enum} values */
+    public static int computeRepeatedEnumSizeNoTag(final RepeatedEnum<?> values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeEnumSizeNoTag(values.array()[i]);
+        }
+        return dataSize;
+    }
+
+    /** Write a repeated (packed) {@code enum} field to the sink. */
+    public void writePackedEnumNoTag(final RepeatedEnum<?> values) throws IOException {
+        writeRawVarint32(computeRepeatedEnumSizeNoTag(values));
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            writeEnumNoTag(values.array()[i]);
+        }
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code int32} values */
+    public static int computeRepeatedInt32SizeNoTag(final RepeatedInt values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeInt32SizeNoTag(values.array()[i]);
+        }
+        return dataSize;
+    }
+
+    /** Write a repeated (packed) {@code int32} field to the sink. */
+    public void writePackedInt32NoTag(final RepeatedInt values) throws IOException {
+        writeRawVarint32(computeRepeatedInt32SizeNoTag(values));
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            writeInt32NoTag(values.array()[i]);
+        }
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code uint32} values */
+    public static int computeRepeatedUInt32SizeNoTag(final RepeatedInt values) {
+        return computeRepeatedInt32SizeNoTag(values);
+    }
+
+    /** Write a repeated (packed) {@code uint32} field to the sink. */
+    public void writePackedUInt32NoTag(final RepeatedInt values) throws IOException {
+        writePackedInt32NoTag(values);
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code sint32} values */
+    public static int computeRepeatedSInt32SizeNoTag(final RepeatedInt values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeSInt32SizeNoTag(values.array()[i]);
+        }
+        return dataSize;
+    }
+
+    /** Write a repeated (packed) {@code sint32} field to the sink. */
+    public void writePackedSInt32NoTag(final RepeatedInt values) throws IOException {
+        writeRawVarint32(computeRepeatedSInt32SizeNoTag(values));
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            writeSInt32NoTag(values.array()[i]);
+        }
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code int32} values */
+    public static int computeRepeatedInt64SizeNoTag(final RepeatedLong values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeInt64SizeNoTag(values.array()[i]);
+        }
+        return dataSize;
+    }
+
+    /** Write a repeated (packed) {@code int32} field to the sink. */
+    public void writePackedInt64NoTag(final RepeatedLong values) throws IOException {
+        writeRawVarint32(computeRepeatedInt64SizeNoTag(values));
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            writeInt64NoTag(values.array()[i]);
+        }
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code uint64} values */
+    public static int computeRepeatedUInt64SizeNoTag(final RepeatedLong values) {
+        return computeRepeatedInt64SizeNoTag(values);
+    }
+
+    /** Write a repeated (packed) {@code uint32} field to the sink. */
+    public void writePackedUInt64NoTag(final RepeatedLong values) throws IOException {
+        writePackedInt64NoTag(values);
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code sint64} values */
+    public static int computeRepeatedSInt64SizeNoTag(final RepeatedLong values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeSInt64SizeNoTag(values.array()[i]);
+        }
+        return dataSize;
+    }
+
+    /** Write a repeated (packed) {@code sint64} field to the sink. */
+    public void writePackedSInt64NoTag(final RepeatedLong values) throws IOException {
+        writeRawVarint32(computeRepeatedSInt64SizeNoTag(values));
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            writeSInt64NoTag(values.array()[i]);
+        }
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code message} values */
+    public static int computeRepeatedMessageSizeNoTag(final RepeatedMessage<?> values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeMessageSizeNoTag(values.array[i]);
+        }
+        return dataSize;
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code message} values */
+    public static int computeRepeatedGroupSizeNoTag(final RepeatedMessage<?> values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeGroupSizeNoTag(values.array[i]);
+        }
+        return dataSize;
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code string} values */
+    public static int computeRepeatedStringSizeNoTag(final RepeatedString values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeStringSizeNoTag(values.array[i]);
+        }
+        return dataSize;
+    }
+
+    /** Compute the number of bytes needed to encode all contained {@code bytes} values */
+    public static int computeRepeatedBytesSizeNoTag(final RepeatedBytes values) {
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeBytesSizeNoTag(values.array[i]);
+        }
+        return dataSize;
     }
 
     // -----------------------------------------------------------------
@@ -890,11 +1052,6 @@ public abstract class ProtoSink {
         for (int i = offset; i < limit; i++) {
             writeRawByte(value[i]);
         }
-    }
-
-    /** Encode and write a tag. */
-    public void writeTag(final int fieldNumber, final int wireType) throws IOException {
-        writeRawVarint32(WireFormat.makeTag(fieldNumber, wireType));
     }
 
     /** Compute the number of bytes that would be needed to encode a tag. */

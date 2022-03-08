@@ -236,22 +236,10 @@ public class FieldGenerator {
             m.put("writePackedTagToOutput", generateWriteVarint32(getInfo().getPackedTag()));
         }
 
-        if (info.isPacked() && info.isFixedWidth()) {
+        if (info.isPacked()) {
             method.addNamedCode("" +
                     "$writePackedTagToOutput:L" +
                     "output.writePacked$capitalizedType:LNoTag($field:N);\n", m);
-
-        } else if (info.isPacked()) {
-            method.addNamedCode("" +
-                    "int dataSize = 0;\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n" +
-                    "$writePackedTagToOutput:L" +
-                    "output.writeRawVarint32(dataSize);\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n", m);
 
         } else if (info.isRepeated()) {
             method.addNamedCode("" +
@@ -319,21 +307,12 @@ public class FieldGenerator {
 
         } else if (info.isPacked()) {
             method.addNamedCode("" +
-                    "int dataSize = 0;\n" +
-                    "final int length = $field:N.length();\n" +
-                    "for (int i = 0; i < length; i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n" +
+                    "final int dataSize = $protoSink:T.computeRepeated$capitalizedType:LSizeNoTag($field:N);\n" +
                     "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
 
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +
-                    "int dataSize = 0;\n" +
-                    "final int length = $field:N.length();\n" +
-                    "for (int i = 0; i < length; i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n" +
-                    "size += ($bytesPerTag:L * length) + dataSize;\n", m);
+                    "size += ($bytesPerTag:L * $field:N.length()) + $protoSink:T.computeRepeated$capitalizedType:LSizeNoTag($field:N);\n", m);
 
         } else if (info.isFixedWidth()) {
             method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated

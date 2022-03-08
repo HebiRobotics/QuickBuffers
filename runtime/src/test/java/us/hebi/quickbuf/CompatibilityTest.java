@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import com.google.protobuf.ByteString;
+import org.junit.Ignore;
 import org.junit.Test;
 import protos.test.protobuf.ForeignEnum;
 import protos.test.protobuf.ForeignMessage;
@@ -56,6 +57,23 @@ public class CompatibilityTest {
         for (int i = 0; i < 3; i++) {
             expected.mergeFrom(serializedMsg);
             msg.mergeFrom(ProtoSource.newInstance(serializedMsg));
+        }
+
+        assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
+        assertEquals(msg, protos.test.quickbuf.TestAllTypes.parseFrom(msg.toByteArray()));
+
+    }
+
+    @Test
+    public void testCompatibilityWithProtobufJava_Unsafe() throws IOException {
+        byte[] serializedMsg = getCombinedMessage();
+        TestAllTypes.Builder expected = TestAllTypes.newBuilder();
+        protos.test.quickbuf.TestAllTypes msg = protos.test.quickbuf.TestAllTypes.newInstance();
+
+        // multiple merges to check expanding repeated behavior
+        for (int i = 0; i < 3; i++) {
+            expected.mergeFrom(serializedMsg);
+            msg.mergeFrom(ProtoSource.newUnsafeInstance().wrap(serializedMsg));
         }
 
         assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
