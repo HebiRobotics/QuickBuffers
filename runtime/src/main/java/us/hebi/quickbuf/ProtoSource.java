@@ -910,11 +910,16 @@ public abstract class ProtoSource {
 
     private int lastTag;
 
+    /** The absolute position of the end of the current message. */
+    protected int currentLimit = NO_LIMIT;
+    protected static final int NO_LIMIT = Integer.MAX_VALUE;
+
     /** see setDiscardUnknownFields */
     private boolean shouldDiscardUnknownFields = false;
 
     protected ProtoSource resetInternalState() {
         lastTag = 0;
+        currentLimit = NO_LIMIT;
         return this;
     }
 
@@ -962,20 +967,38 @@ public abstract class ProtoSource {
      *
      * @return the old limit.
      */
-    public abstract int pushLimit(int byteLimit) throws InvalidProtocolBufferException;
+    public int pushLimit(int byteLimit) throws InvalidProtocolBufferException {
+        if (byteLimit < 0) {
+            throw InvalidProtocolBufferException.negativeSize();
+        }
+        byteLimit += getTotalBytesRead();
+        if (byteLimit > currentLimit) {
+            throw InvalidProtocolBufferException.truncatedMessage();
+        }
+        final int oldLimit = currentLimit;
+        currentLimit = byteLimit;
+        return oldLimit;
+    }
 
     /**
      * Discards the current limit, returning to the previous limit.
      *
      * @param oldLimit The old limit, as returned by {@code pushLimit}.
      */
-    public abstract  void popLimit(final int oldLimit) ;
+    public void popLimit(int oldLimit) {
+        currentLimit = oldLimit;
+    }
 
     /**
      * Returns the number of bytes to be read before the current limit.
      * If no limit is set, returns -1.
      */
-    public abstract int getBytesUntilLimit();
+    public int getBytesUntilLimit() {
+        if (currentLimit == Integer.MAX_VALUE) {
+            return -1;
+        }
+        return currentLimit - getTotalBytesRead();
+    }
 
     /**
      * Returns true if the source has reached the end of the input.  This is the
@@ -1040,7 +1063,6 @@ public abstract class ProtoSource {
         @Override
         protected ProtoSource resetInternalState() {
             super.resetInternalState();
-            limit = Integer.MAX_VALUE;
             peekByte = EOF;
             position = 0;
             return this;
@@ -1052,39 +1074,8 @@ public abstract class ProtoSource {
         }
 
         @Override
-        public int pushLimit(int byteLimit) throws InvalidProtocolBufferException {
-            if (byteLimit < 0) {
-                throw InvalidProtocolBufferException.negativeSize();
-            }
-            byteLimit += position;
-            if (byteLimit > limit) {
-                throw InvalidProtocolBufferException.truncatedMessage();
-            }
-            final int oldLimit = limit;
-            limit = byteLimit;
-            return oldLimit;
-        }
-
-        @Override
-        public void popLimit(int oldLimit) {
-            limit = oldLimit;
-        }
-
-        private boolean hasLimit() {
-            return limit != Integer.MAX_VALUE;
-        }
-
-        @Override
-        public int getBytesUntilLimit() {
-            if (!hasLimit()) {
-                return -1;
-            }
-            return limit - position;
-        }
-
-        @Override
         public boolean isAtEnd() throws IOException {
-            return position == limit || peek() == EOF;
+            return position == currentLimit || peek() == EOF;
         }
 
         @Override
@@ -1094,7 +1085,7 @@ public abstract class ProtoSource {
 
         @Override
         public byte readRawByte() throws IOException {
-            if (position == limit || peek() == EOF) {
+            if (position == currentLimit || peek() == EOF) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
             try {
@@ -1106,7 +1097,7 @@ public abstract class ProtoSource {
         }
 
         private int peek() throws IOException {
-            if (peekByte == EOF && (peekByte = input.read()) == EOF && hasLimit() && position != limit) {
+            if (peekByte == EOF && (peekByte = input.read()) == EOF && getBytesUntilLimit() > 0) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
             return peekByte;
@@ -1140,14 +1131,13 @@ public abstract class ProtoSource {
         private void require(int numBytes) throws IOException {
             if (numBytes < 0) {
                 throw InvalidProtocolBufferException.negativeSize();
-            } else if (numBytes > limit - position) {
+            } else if (numBytes > currentLimit - position) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
             position += numBytes;
         }
 
         private InputStream input = EMPTY_INPUT_STREAM;
-        private int limit = Integer.MAX_VALUE;
         private int peekByte = EOF;
         private int position = 0;
 
@@ -1170,32 +1160,8 @@ public abstract class ProtoSource {
         }
 
         @Override
-        public int pushLimit(int byteLimit) throws InvalidProtocolBufferException {
-            if (byteLimit < 0) {
-                throw InvalidProtocolBufferException.negativeSize();
-            }
-            byteLimit += buffer.position();
-            if (byteLimit > buffer.limit()) {
-                throw InvalidProtocolBufferException.truncatedMessage();
-            }
-            final int oldLimit = buffer.limit();
-            buffer.limit(byteLimit);
-            return oldLimit;
-        }
-
-        @Override
-        public void popLimit(int oldLimit) {
-            buffer.limit(oldLimit);
-        }
-
-        @Override
-        public int getBytesUntilLimit() {
-            return buffer.remaining();
-        }
-
-        @Override
         public boolean isAtEnd() throws IOException {
-            return buffer.remaining() == 0;
+            return buffer.position() == currentLimit || buffer.remaining() == 0;
         }
 
         @Override
@@ -1207,7 +1173,7 @@ public abstract class ProtoSource {
         public byte readRawByte() throws IOException {
             try {
                 return buffer.get();
-            } catch (BufferUnderflowException bufe) {
+            } catch (BufferUnderflowException truncated) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
         }
@@ -1224,7 +1190,7 @@ public abstract class ProtoSource {
         public void readRawBytes(byte[] values, int offset, int length) throws IOException {
             try {
                 buffer.get(values, offset, length);
-            } catch (BufferUnderflowException bufe) {
+            } catch (BufferUnderflowException truncated) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
         }

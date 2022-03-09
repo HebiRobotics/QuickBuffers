@@ -24,7 +24,9 @@ import org.junit.Test;
 import protos.test.quickbuf.RepeatedPackables;
 import protos.test.quickbuf.TestAllTypes;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -346,33 +348,46 @@ public class ProtoFailTests {
     }
 
     // --------------------------------------------------------------------------------------
+    static final int n = 10;
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
-    public void testReadIntoTruncatedDestination() throws IOException {
-        int numBytes = 10;
-        ProtoSource.newArraySource().wrap(new byte[numBytes])
-                .readRawBytes(new byte[0], 0, 10);
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationArray() throws IOException {
+        ProtoSource.newArraySource().wrap(new byte[n]).readRawBytes(new byte[0], 0, n);
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test(expected = IndexOutOfBoundsException.class)
     public void testReadIntoTruncatedDestinationDirect() throws IOException {
-        int numBytes = 10;
-        ProtoSource.newDirectSource().wrap(new byte[numBytes])
-                .readRawBytes(new byte[0], 0, 10);
+        ProtoSource.newDirectSource().wrap(new byte[n]).readRawBytes(new byte[0], 0, n);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationStream() throws IOException {
+        ProtoSource.newInstance(new ByteArrayInputStream(new byte[n])).readRawBytes(new byte[0], 0, n);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationBuffer() throws IOException {
+        ProtoSource.newInstance(ByteBuffer.wrap(new byte[n])).readRawBytes(new byte[0], 0, n);
     }
 
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestination() throws IOException {
-        int numBytes = 10;
-        ProtoSource.newArraySource().wrap(new byte[numBytes])
-                .readRawBytes(null, 0, 10);
+        ProtoSource.newArraySource().wrap(new byte[n]).readRawBytes(null, 0, n);
     }
 
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestinationDirect() throws IOException {
-        int numBytes = 10;
-        ProtoSource.newDirectSource().wrap(new byte[numBytes])
-                .readRawBytes(null, 0, 10);
+        ProtoSource.newDirectSource().wrap(new byte[n]).readRawBytes(null, 0, n);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestinationStream() throws IOException {
+        ProtoSource.newInstance(new ByteArrayInputStream(new byte[n])).readRawBytes(null, 0, n);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestinationBuffer() throws IOException {
+        ProtoSource.newInstance(ByteBuffer.wrap(new byte[n])).readRawBytes(null, 0, n);
     }
 
 }

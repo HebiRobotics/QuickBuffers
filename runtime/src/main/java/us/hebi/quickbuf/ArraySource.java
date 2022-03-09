@@ -33,19 +33,15 @@ import static us.hebi.quickbuf.WireFormat.*;
  */
 class ArraySource extends ProtoSource{
 
-    protected byte[] buffer;
+    private int bufferSizeAfterLimit;
     protected int offset;
     protected int limit;
     protected int position;
-    private int bufferSizeAfterLimit;
-
-    /** The absolute position of the end of the current message. */
-    private int currentLimit = Integer.MAX_VALUE;
+    protected byte[] buffer;
 
     @Override
     protected ProtoSource resetInternalState() {
         super.resetInternalState();
-        currentLimit = Integer.MAX_VALUE;
         bufferSizeAfterLimit = 0;
         return this;
     }
@@ -56,7 +52,7 @@ class ArraySource extends ProtoSource{
             throw InvalidProtocolBufferException.negativeSize();
         }
         byteLimit += position;
-        if (byteLimit > limit) {
+        if (byteLimit > limit) { // limit is always Math.min(limit, currentLimit)
             throw InvalidProtocolBufferException.truncatedMessage();
         }
         final int oldLimit = currentLimit;
@@ -73,7 +69,7 @@ class ArraySource extends ProtoSource{
 
     @Override
     public int getBytesUntilLimit() {
-        if (currentLimit == Integer.MAX_VALUE) {
+        if (currentLimit == NO_LIMIT) {
             return -1;
         }
         return currentLimit - position;

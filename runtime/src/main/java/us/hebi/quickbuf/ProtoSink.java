@@ -1227,6 +1227,13 @@ public abstract class ProtoSink {
         }
 
         final OutputStream outputStream;
+
+        private static final OutputStream EMPTY_OUTPUT_STREAM = new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                // do nothing
+            }
+        };
     }
 
     static class BufferSink extends ProtoSink {
