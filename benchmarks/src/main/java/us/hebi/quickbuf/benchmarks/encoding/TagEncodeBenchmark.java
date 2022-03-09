@@ -111,7 +111,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeBytes_1() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
         }
@@ -120,7 +120,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeBytes_2() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
@@ -130,7 +130,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeBytes_3() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
@@ -141,7 +141,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeBytes_4() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
@@ -153,7 +153,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeBytes_5() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
@@ -166,7 +166,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeFixed_1() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
         }
@@ -175,7 +175,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeFixed_2() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian16((short) 0);
         }
@@ -184,7 +184,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeFixed_3() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian16((short) 0);
             sink.writeRawByte((byte) 0);
@@ -194,7 +194,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeFixed_4() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian32((short) 0);
         }
@@ -203,7 +203,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeFixed_5() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian32((short) 0);
             sink.writeRawByte((byte) 0);
@@ -213,7 +213,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeArray_1() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_1);
         }
@@ -222,7 +222,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeArray_2() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_2);
         }
@@ -231,7 +231,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeArray_3() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_3);
         }
@@ -240,7 +240,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeArray_4() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_4);
         }
@@ -249,7 +249,7 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeArray_5() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_5);
         }

@@ -85,11 +85,11 @@ public class DecodingBenchmark {
 //            values[i] = random.nextDouble() < 0.50 ? Math.abs(random.nextInt()) : random.nextInt(); // 25% negative
         }
 
-        sink.wrap(output);
+        sink.setOutput(output);
         for (int i = 0; i < values.length; i++) {
             sink.writeUInt32NoTag(values[i]);
         }
-        source.wrap(output, 0, sink.getTotalBytesWritten());
+        source.setInput(output, 0, sink.getTotalBytesWritten());
     }
 
     @Benchmark

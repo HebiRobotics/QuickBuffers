@@ -189,7 +189,7 @@ public class ProtoFailTests {
     private void writeToTruncated(ProtoMessage msg) throws IOException {
         byte[] buffer = new byte[msg.getSerializedSize() - 1];
         // use unsafe to make sure that we aren't relying on normal array checks
-        ProtoSink output = ProtoSink.newDirectSink().wrap(buffer);
+        ProtoSink output = ProtoSink.newDirectSink().setOutput(buffer);
         msg.writeTo(output);
     }
 
@@ -342,7 +342,7 @@ public class ProtoFailTests {
 
     private <T extends ProtoMessage> T readFromTruncated(T msg) throws IOException {
         byte[] data = msg.toByteArray();
-        ProtoSource input = ProtoSource.newDirectSource().wrap(data, 0, data.length - 1);
+        ProtoSource input = ProtoSource.newDirectSource().setInput(data, 0, data.length - 1);
         msg.clear().mergeFrom(input);
         return msg;
     }
@@ -352,12 +352,12 @@ public class ProtoFailTests {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testReadIntoTruncatedDestinationArray() throws IOException {
-        ProtoSource.newArraySource().wrap(new byte[n]).readRawBytes(new byte[0], 0, n);
+        ProtoSource.newArraySource().setInput(new byte[n]).readRawBytes(new byte[0], 0, n);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testReadIntoTruncatedDestinationDirect() throws IOException {
-        ProtoSource.newDirectSource().wrap(new byte[n]).readRawBytes(new byte[0], 0, n);
+        ProtoSource.newDirectSource().setInput(new byte[n]).readRawBytes(new byte[0], 0, n);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
@@ -372,12 +372,12 @@ public class ProtoFailTests {
 
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestination() throws IOException {
-        ProtoSource.newArraySource().wrap(new byte[n]).readRawBytes(null, 0, n);
+        ProtoSource.newArraySource().setInput(new byte[n]).readRawBytes(null, 0, n);
     }
 
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestinationDirect() throws IOException {
-        ProtoSource.newDirectSource().wrap(new byte[n]).readRawBytes(null, 0, n);
+        ProtoSource.newDirectSource().setInput(new byte[n]).readRawBytes(null, 0, n);
     }
 
     @Test(expected = NullPointerException.class)

@@ -56,21 +56,21 @@ public class UnsafeTest {
         // Write
         int offset = 11;
         byte[] target = new byte[array.length + offset]; // make sure offsets are handled correctly
-        ProtoSink sink = ProtoSink.newDirectSink().wrap(target, offset, target.length - offset);
+        ProtoSink sink = ProtoSink.newDirectSink().setOutput(target, offset, target.length - offset);
         message.writeTo(sink);
         sink.checkNoSpaceLeft();
         byte[] actual = Arrays.copyOfRange(target, offset, target.length);
         assertArrayEquals(array, actual);
 
         // Read
-        ProtoSource source = ProtoSource.newDirectSource().wrap(target, offset, target.length - offset);
+        ProtoSource source = ProtoSource.newDirectSource().setInput(target, offset, target.length - offset);
         assertEquals(message, TestAllTypes.newInstance().mergeFrom(source));
     }
 
     @Test
     public void testUnsafeDirectMemory() throws IOException {
         // Write
-        ProtoSink sink = ProtoSink.newDirectSink().wrap(null, BufferAccess.address(directBuffer), array.length);
+        ProtoSink sink = ProtoSink.newDirectSink().setOutput(null, BufferAccess.address(directBuffer), array.length);
         message.writeTo(sink);
         byte[] actual = new byte[sink.getTotalBytesWritten()];
         sink.checkNoSpaceLeft();
@@ -78,7 +78,7 @@ public class UnsafeTest {
         assertArrayEquals(array, actual);
 
         // Read
-        ProtoSource source = ProtoSource.newDirectSource().wrap(null, BufferAccess.address(directBuffer), array.length);
+        ProtoSource source = ProtoSource.newDirectSource().setInput(null, BufferAccess.address(directBuffer), array.length);
         assertEquals(message, TestAllTypes.newInstance().mergeFrom(source));
     }
 
@@ -88,11 +88,11 @@ public class UnsafeTest {
         int size = msg.getSerializedSize();
         ByteBuffer buffer = ByteBuffer.allocateDirect(size);
 
-        ProtoSink sink = ProtoSink.newDirectSink().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSink sink = ProtoSink.newDirectSink().setOutput(null, BufferAccess.address(buffer), size);
         msg.writeTo(sink);
         sink.checkNoSpaceLeft();
 
-        ProtoSource source = ProtoSource.newDirectSource().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSource source = ProtoSource.newDirectSource().setInput(null, BufferAccess.address(buffer), size);
         assertEquals(msg, RepeatedPackables.Packed.newInstance().mergeFrom(source));
     }
 
@@ -102,11 +102,11 @@ public class UnsafeTest {
         int size = msg.getSerializedSize();
         ByteBuffer buffer = ByteBuffer.allocateDirect(size);
 
-        ProtoSink sink = ProtoSink.newDirectSink().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSink sink = ProtoSink.newDirectSink().setOutput(null, BufferAccess.address(buffer), size);
         msg.writeTo(sink);
         sink.checkNoSpaceLeft();
 
-        ProtoSource source = ProtoSource.newDirectSource().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSource source = ProtoSource.newDirectSource().setInput(null, BufferAccess.address(buffer), size);
         assertEquals(msg, RepeatedPackables.NonPacked.newInstance().mergeFrom(source));
     }
 

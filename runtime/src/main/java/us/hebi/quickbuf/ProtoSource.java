@@ -53,7 +53,6 @@ package us.hebi.quickbuf;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
@@ -85,22 +84,22 @@ public abstract class ProtoSource {
     public static ProtoSource newInstance(final byte[] buf,
                                           final int off,
                                           final int len) {
-        return newArraySource().wrap(buf, off, len);
+        return newArraySource().setInput(buf, off, len);
     }
 
     /** Create a new ProtoSource reading from the given {@link RepeatedByte}. */
     public static ProtoSource newInstance(RepeatedByte bytes) {
-        return newArraySource().wrap(bytes);
+        return newArraySource().setInput(bytes);
     }
 
     /** Create a new ProtoSource reading from the given {@link InputStream}. */
     public static ProtoSource newInstance(InputStream stream) {
-        return newStreamSource().wrap(stream);
+        return newStreamSource().setInput(stream);
     }
 
     /** Create a new ProtoSource reading from the given {@link ByteBuffer}. */
     public static ProtoSource newInstance(ByteBuffer buffer) {
-        return newBufferSource().wrap(buffer);
+        return newBufferSource().setInput(buffer);
     }
 
     /**
@@ -154,8 +153,8 @@ public abstract class ProtoSource {
      * internal state such as position and is equivalent to creating
      * a new instance.
      */
-    public final ProtoSource wrap(byte[] buffer) {
-        return wrap(buffer, 0, buffer.length);
+    public final ProtoSource setInput(byte[] buffer) {
+        return setInput(buffer, 0, buffer.length);
     }
 
     /**
@@ -163,15 +162,15 @@ public abstract class ProtoSource {
      * internal state such as position and is equivalent to creating
      * a new instance.
      */
-    public ProtoSource wrap(byte[] buffer, long off, int len) {
+    public ProtoSource setInput(byte[] buffer, long off, int len) {
         throw new UnsupportedOperationException("source does not support reading from a byte array");
     }
 
     /**
      * Changes the input to the current backing array of the bytes object.
      */
-    public final ProtoSource wrap(RepeatedByte bytes) {
-        return wrap(bytes.array(), 0, bytes.length());
+    public final ProtoSource setInput(RepeatedByte bytes) {
+        return setInput(bytes.array(), 0, bytes.length());
     }
 
     /**
@@ -179,7 +178,7 @@ public abstract class ProtoSource {
      * internal state such as position and is equivalent to creating
      * a new instance.
      */
-    public ProtoSource wrap(InputStream stream) {
+    public ProtoSource setInput(InputStream stream) {
         throw new UnsupportedOperationException("source does not support reading from an InputStream");
     }
 
@@ -188,7 +187,7 @@ public abstract class ProtoSource {
      * internal state such as position and is equivalent to creating
      * a new instance.
      */
-    public ProtoSource wrap(ByteBuffer buffer) {
+    public ProtoSource setInput(ByteBuffer buffer) {
         throw new UnsupportedOperationException("source does not support reading from a ByteBuffer");
     }
 
@@ -1067,7 +1066,7 @@ public abstract class ProtoSource {
     static class StreamSource extends ProtoSource {
 
         @Override
-        public ProtoSource wrap(InputStream stream){
+        public ProtoSource setInput(InputStream stream){
             this.input = stream;
             return resetInternalState();
         }
@@ -1082,7 +1081,7 @@ public abstract class ProtoSource {
 
         @Override
         public ProtoSource clear() {
-            return wrap(EMPTY_INPUT_STREAM);
+            return setInput(EMPTY_INPUT_STREAM);
         }
 
         @Override
@@ -1161,14 +1160,14 @@ public abstract class ProtoSource {
     static class BufferSource extends ProtoSource {
 
         @Override
-        public ProtoSource wrap(ByteBuffer buffer) {
+        public ProtoSource setInput(ByteBuffer buffer) {
             this.buffer = buffer;
             return resetInternalState();
         }
 
         @Override
         public ProtoSource clear() {
-            return wrap(ProtoUtil.EMPTY_BYTE_BUFFER);
+            return setInput(ProtoUtil.EMPTY_BYTE_BUFFER);
         }
 
         @Override

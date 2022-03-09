@@ -157,12 +157,12 @@ public class SerializationBenchmarkQuickbuf {
 
     @Benchmark
     public TestAllTypes readMessage() throws IOException {
-        return msgIn.clear().mergeFrom(source.wrap(msgBytes));
+        return msgIn.clear().mergeFrom(source.setInput(msgBytes));
     }
 
     @Benchmark
     public int readString() throws IOException {
-        stringMessage.clear().mergeFrom(source.wrap(stringMsgBytes));
+        stringMessage.clear().mergeFrom(source.setInput(stringMsgBytes));
         return stringMessage.getDefaultString().length() + stringMessage.getOptionalString().length();
     }
 
@@ -178,36 +178,36 @@ public class SerializationBenchmarkQuickbuf {
 
     @Benchmark
     public int writeMessage() throws IOException {
-        msg.writeTo(sink.wrap(msgOutBuffer));
+        msg.writeTo(sink.setOutput(msgOutBuffer));
         return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeString() throws IOException {
-        stringMessage.writeTo(sink.wrap(stringMsgOutBuffer));
+        stringMessage.writeTo(sink.setOutput(stringMsgOutBuffer));
         return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public TestAllTypes readMessageUnsafe() throws IOException {
-        return msgIn.clear().mergeFrom(unsafeSource.wrap(msgBytes));
+        return msgIn.clear().mergeFrom(unsafeSource.setInput(msgBytes));
     }
 
     @Benchmark
     public int readStringUnsafe() throws IOException {
-        stringMessage.clear().mergeFrom(unsafeSource.wrap(stringMsgBytes));
+        stringMessage.clear().mergeFrom(unsafeSource.setInput(stringMsgBytes));
         return stringMessage.getDefaultString().length() + stringMessage.getOptionalString().length();
     }
 
     @Benchmark
     public int writeMessageUnsafe() throws IOException {
-        msg.writeTo(unsafeSink.wrap(msgOutBuffer));
+        msg.writeTo(unsafeSink.setOutput(msgOutBuffer));
         return unsafeSink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeStringUnsafe() throws IOException {
-        stringMessage.writeTo(unsafeSink.wrap(stringMsgOutBuffer));
+        stringMessage.writeTo(unsafeSink.setOutput(stringMsgOutBuffer));
         return unsafeSink.getTotalBytesWritten();
     }
 

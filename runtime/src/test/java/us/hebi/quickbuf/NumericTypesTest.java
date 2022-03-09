@@ -164,8 +164,8 @@ public class NumericTypesTest {
     }
 
     private TestAllTypes encodeAndDecode(TestAllTypes msg) throws IOException {
-        msg.writeTo(sink.wrap(bytes));
-        msg.clear().mergeFrom(source.wrap(bytes, 0, sink.getTotalBytesWritten()));
+        msg.writeTo(sink.setOutput(bytes));
+        msg.clear().mergeFrom(source.setInput(bytes, 0, sink.getTotalBytesWritten()));
         return msg;
     }
 

@@ -85,7 +85,7 @@ public abstract class ProtoSink {
      * {@link OutOfSpaceException} will be thrown.
      */
     public static ProtoSink newInstance(final byte[] flatArray) {
-        return newArraySink().wrap(flatArray);
+        return newArraySink().setOutput(flatArray);
     }
 
     /**
@@ -96,22 +96,22 @@ public abstract class ProtoSink {
     public static ProtoSink newInstance(final byte[] flatArray,
                                         final int offset,
                                         final int length) {
-        return newArraySink().wrap(flatArray, offset, length);
+        return newArraySink().setOutput(flatArray, offset, length);
     }
 
     /** Create a new ProtoSink writing to the given {@link RepeatedByte}. */
     public static ProtoSink newInstance(RepeatedByte bytes) {
-        return newBytesSink().wrap(bytes);
+        return newBytesSink().setOutput(bytes);
     }
 
     /** Create a new ProtoSink writing to the given {@link OutputStream}. */
     public static ProtoSink newInstance(OutputStream stream) {
-        return newStreamSink().wrap(stream);
+        return newStreamSink().setOutput(stream);
     }
 
     /** Create a new ProtoSink writing to the given {@link ByteBuffer}. */
     public static ProtoSink newInstance(ByteBuffer buffer) {
-        return newBufferSink().wrap(buffer);
+        return newBufferSink().setOutput(buffer);
     }
 
     /**
@@ -175,15 +175,15 @@ public abstract class ProtoSink {
      * Changes the output to the given array. This resets any existing internal state
      * such as position and is equivalent to creating a new instance.
      */
-    public final ProtoSink wrap(byte[] buffer) {
-        return wrap(buffer, 0, buffer.length);
+    public final ProtoSink setOutput(byte[] buffer) {
+        return setOutput(buffer, 0, buffer.length);
     }
 
     /**
      * Changes the output to the given array. This resets any existing internal state
      * such as position and is equivalent to creating a new instance.
      */
-    public ProtoSink wrap(byte[] buffer, long offset, int length) {
+    public ProtoSink setOutput(byte[] buffer, long offset, int length) {
         throw new UnsupportedOperationException("sink does not support writing to a byte array");
     }
 
@@ -191,7 +191,7 @@ public abstract class ProtoSink {
      * Changes the output to the given bytes. This resets any existing internal state
      * such as position and is equivalent to creating a new instance.
      */
-    public ProtoSink wrap(RepeatedByte bytes) {
+    public ProtoSink setOutput(RepeatedByte bytes) {
         throw new UnsupportedOperationException("sink does not support writing to RepeatedByte");
     }
 
@@ -199,7 +199,7 @@ public abstract class ProtoSink {
      * Changes the output to the given stream. This resets any existing internal state
      * such as position and is equivalent to creating a new instance.
      */
-    public ProtoSink wrap(OutputStream stream) {
+    public ProtoSink setOutput(OutputStream stream) {
         throw new UnsupportedOperationException("sink does not support writing to an InputStream");
     }
 
@@ -207,7 +207,7 @@ public abstract class ProtoSink {
      * Changes the output to the given buffer. This resets any existing internal state
      * such as position and is equivalent to creating a new instance.
      */
-    public ProtoSink wrap(ByteBuffer buffer) {
+    public ProtoSink setOutput(ByteBuffer buffer) {
         throw new UnsupportedOperationException("sink does not support writing to a ByteBuffer");
     }
 
@@ -1247,7 +1247,7 @@ public abstract class ProtoSink {
     static class StreamSink extends ProtoSink {
 
         @Override
-        public ProtoSink wrap(OutputStream outputStream) {
+        public ProtoSink setOutput(OutputStream outputStream) {
             if(outputStream == null) {
                 throw new NullPointerException();
             }
@@ -1257,7 +1257,7 @@ public abstract class ProtoSink {
 
         @Override
         public ProtoSink clear() {
-            return wrap(EMPTY_OUTPUT_STREAM);
+            return setOutput(EMPTY_OUTPUT_STREAM);
         }
 
         @Override
@@ -1306,7 +1306,7 @@ public abstract class ProtoSink {
         }
 
         @Override
-        public ProtoSink wrap(ByteBuffer byteBuffer) {
+        public ProtoSink setOutput(ByteBuffer byteBuffer) {
             buffer = byteBuffer;
             initialPosition = buffer.position();
             return this;
@@ -1314,7 +1314,7 @@ public abstract class ProtoSink {
 
         @Override
         public ProtoSink clear() {
-            return wrap(ProtoUtil.EMPTY_BYTE_BUFFER);
+            return setOutput(ProtoUtil.EMPTY_BYTE_BUFFER);
         }
 
         @Override

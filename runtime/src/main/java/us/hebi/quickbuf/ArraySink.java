@@ -98,7 +98,7 @@ class ArraySink extends ProtoSink {
     // ----------------- OVERRIDE METHODS -----------------
 
     @Override
-    public ProtoSink wrap(byte[] buffer, long offset, int length) {
+    public ProtoSink setOutput(byte[] buffer, long offset, int length) {
         if (offset < 0 || length < 0 || offset > buffer.length || offset + length > buffer.length)
             throw new ArrayIndexOutOfBoundsException();
         this.buffer = buffer;
@@ -110,7 +110,7 @@ class ArraySink extends ProtoSink {
 
     @Override
     public ProtoSink clear() {
-        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
+        return setOutput(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     @Override
@@ -201,12 +201,12 @@ class ArraySink extends ProtoSink {
         }
 
         @Override
-        public ProtoSink wrap(byte[] buffer, long offset, int length) {
+        public ProtoSink setOutput(byte[] buffer, long offset, int length) {
             gcRef = null;
             if (buffer != null) {
                 // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;
-                return super.wrap(buffer, offset, length);
+                return super.setOutput(buffer, offset, length);
             } else {
                 // Wrapping direct memory
                 if (offset <= 0) {
@@ -304,7 +304,7 @@ class ArraySink extends ProtoSink {
 
     static class RepeatedByteSink extends  ProtoSink {
 
-        public ProtoSink wrap(RepeatedByte bytes) {
+        public ProtoSink setOutput(RepeatedByte bytes) {
             initialPosition = bytes.length;
             output = bytes;
             return this;

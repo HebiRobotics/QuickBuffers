@@ -180,7 +180,7 @@ class ArraySource extends ProtoSource{
     // ----------------- OVERRIDE METHODS -----------------
 
     @Override
-    public ProtoSource wrap(byte[] buffer, long off, int len) {
+    public ProtoSource setInput(byte[] buffer, long off, int len) {
         if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
             throw new ArrayIndexOutOfBoundsException();
         this.buffer = buffer;
@@ -191,7 +191,7 @@ class ArraySource extends ProtoSource{
 
     @Override
     public ProtoSource clear() {
-        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
+        return setInput(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     @Override
@@ -286,12 +286,12 @@ class ArraySource extends ProtoSource{
         }
 
         @Override
-        public ProtoSource wrap(byte[] buffer, long offset, int length) {
+        public ProtoSource setInput(byte[] buffer, long offset, int length) {
             gcRef = null;
             if (buffer != null) {
                 // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;
-                return super.wrap(buffer, offset, length);
+                return super.setInput(buffer, offset, length);
             } else if (offset <= 0) {
                 throw new NullPointerException("null reference with invalid base address");
             } else if (length < 0) {

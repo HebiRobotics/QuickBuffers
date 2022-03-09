@@ -616,7 +616,7 @@ class ByteUtil {
             byte[] array = buffer.array();
             long offset = buffer.arrayOffset() + buffer.position();
             int length = buffer.remaining();
-            wrapper.wrap(array, offset, length);
+            wrapper.setInput(array, offset, length);
 
         } else if (buffer.isReadOnly() && !buffer.isDirect()) {
 
@@ -628,7 +628,7 @@ class ByteUtil {
             byte[] array = BufferAccess.array(buffer);
             long offset = BufferAccess.arrayOffset(buffer) + buffer.position();
             int length = buffer.remaining();
-            wrapper.wrap(array, offset, length);
+            wrapper.setInput(array, offset, length);
 
         } else {
 
@@ -642,7 +642,7 @@ class ByteUtil {
             byte[] array = null;
             long offset = BufferAccess.address(buffer) + buffer.position();
             int length = buffer.remaining();
-            wrapper.wrap(array, offset, length);
+            wrapper.setInput(array, offset, length);
 
             // keep native memory from being garbage collected
             ((ArraySource.DirectArraySource) wrapper).gcRef = buffer;
@@ -678,7 +678,7 @@ class ByteUtil {
             byte[] array = buffer.array();
             long offset = buffer.arrayOffset() + buffer.position();
             int length = buffer.remaining();
-            wrapper.wrap(array, offset, length);
+            wrapper.setOutput(array, offset, length);
 
         } else {
 
@@ -692,7 +692,7 @@ class ByteUtil {
             byte[] array = null;
             long offset = BufferAccess.address(buffer) + buffer.position();
             int length = buffer.remaining();
-            wrapper.wrap(array, offset, length);
+            wrapper.setOutput(array, offset, length);
 
             // keep native memory from being garbage collected
             ((ArraySink.DirectArraySink) wrapper).gcRef = buffer;

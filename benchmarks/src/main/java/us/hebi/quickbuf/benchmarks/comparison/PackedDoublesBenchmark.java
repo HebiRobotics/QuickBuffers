@@ -84,13 +84,13 @@ public class PackedDoublesBenchmark {
 
     @Benchmark
     public Object readQuick() throws IOException {
-        source.wrap(input);
+        source.setInput(input);
         return message.clear().mergeFrom(source);
     }
 
     @Benchmark
     public int readWriteQuick() throws IOException {
-        message.clear().mergeFrom(source.wrap(input)).writeTo(sink.wrap(output));
+        message.clear().mergeFrom(source.setInput(input)).writeTo(sink.setOutput(output));
         return sink.getTotalBytesWritten();
     }
 
