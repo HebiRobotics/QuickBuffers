@@ -119,7 +119,7 @@ public class QuickBuffersBench {
 
     FooBarContainer decodeMsg = FooBarContainer.newInstance();
     byte[] decodeBuffer = encodeBuffer.clone();
-    ProtoSource source = ProtoSource.newInstance().wrap(decodeBuffer);
+    ProtoSource source = ProtoSource.newArraySource().wrap(decodeBuffer);
 
     private static int vecLen = 3;
     private static String location = "http://google.com/flatbuffers/";

@@ -57,7 +57,14 @@ public class ProtoTests {
     @Test
     public void testInputStreamSource() throws IOException {
         byte[] bytes = CompatibilityTest.getCombinedMessage();
-        TestAllTypes actual = TestAllTypes.parseFrom(ProtoSource.wrap(new ByteArrayInputStream(bytes)));
+        TestAllTypes actual = TestAllTypes.parseFrom(ProtoSource.newInstance(new ByteArrayInputStream(bytes)));
+        assertEquals(TestAllTypes.parseFrom(bytes), actual);
+    }
+
+    @Test
+    public void testByteBufferSource() throws IOException {
+        byte[] bytes = CompatibilityTest.getCombinedMessage();
+        TestAllTypes actual = TestAllTypes.parseFrom(ProtoSource.newInstance(ByteBuffer.wrap(bytes)));
         assertEquals(TestAllTypes.parseFrom(bytes), actual);
     }
 
@@ -543,7 +550,7 @@ public class ProtoTests {
 
     @Test
     public void testSkipUnknownFields() throws IOException {
-        ProtoSource source = ProtoSource.newInstance().wrap(CompatibilityTest.getCombinedMessage());
+        ProtoSource source = ProtoSource.newInstance(CompatibilityTest.getCombinedMessage());
         TestAllTypes.NestedMessage.newInstance().mergeFrom(source);
         assertTrue(source.isAtEnd());
     }

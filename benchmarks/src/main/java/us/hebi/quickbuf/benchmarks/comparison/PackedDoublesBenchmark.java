@@ -77,7 +77,7 @@ public class PackedDoublesBenchmark {
     final byte[] input = Packed.newInstance().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
     final byte[] output = new byte[input.length + 100];
 
-    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSource source = ProtoSource.newArraySource();
     final ProtoSink sink = ProtoSink.newInstance();
 
     final Packed message = Packed.newInstance();

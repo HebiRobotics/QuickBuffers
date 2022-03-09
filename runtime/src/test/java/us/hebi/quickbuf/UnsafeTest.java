@@ -63,7 +63,7 @@ public class UnsafeTest {
         assertArrayEquals(array, actual);
 
         // Read
-        ProtoSource source = ProtoSource.newUnsafeInstance().wrap(target, offset, target.length - offset);
+        ProtoSource source = ProtoSource.newDirectSource().wrap(target, offset, target.length - offset);
         assertEquals(message, TestAllTypes.newInstance().mergeFrom(source));
     }
 
@@ -78,7 +78,7 @@ public class UnsafeTest {
         assertArrayEquals(array, actual);
 
         // Read
-        ProtoSource source = ProtoSource.newUnsafeInstance().wrap(null, BufferAccess.address(directBuffer), array.length);
+        ProtoSource source = ProtoSource.newDirectSource().wrap(null, BufferAccess.address(directBuffer), array.length);
         assertEquals(message, TestAllTypes.newInstance().mergeFrom(source));
     }
 
@@ -92,7 +92,7 @@ public class UnsafeTest {
         msg.writeTo(sink);
         sink.checkNoSpaceLeft();
 
-        ProtoSource source = ProtoSource.newUnsafeInstance().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSource source = ProtoSource.newDirectSource().wrap(null, BufferAccess.address(buffer), size);
         assertEquals(msg, RepeatedPackables.Packed.newInstance().mergeFrom(source));
     }
 
@@ -106,7 +106,7 @@ public class UnsafeTest {
         msg.writeTo(sink);
         sink.checkNoSpaceLeft();
 
-        ProtoSource source = ProtoSource.newUnsafeInstance().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSource source = ProtoSource.newDirectSource().wrap(null, BufferAccess.address(buffer), size);
         assertEquals(msg, RepeatedPackables.NonPacked.newInstance().mergeFrom(source));
     }
 
@@ -114,19 +114,19 @@ public class UnsafeTest {
     public void testDirectBuffer() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocateDirect(bbSize);
         testWriteByteBuffer(ProtoSink.newUnsafeInstance(), buffer);
-        testReadByteBuffer(ProtoSource.newUnsafeInstance(), buffer);
-        testReadByteBuffer(ProtoSource.newUnsafeInstance(), buffer.asReadOnlyBuffer());
+        testReadByteBuffer(ProtoSource.newDirectSource(), buffer);
+        testReadByteBuffer(ProtoSource.newDirectSource(), buffer.asReadOnlyBuffer());
     }
 
     @Test
     public void testHeapBuffer() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(bbSize);
         testWriteByteBuffer(ProtoSink.newUnsafeInstance(), buffer);
-        testReadByteBuffer(ProtoSource.newUnsafeInstance(), buffer);
-        testReadByteBuffer(ProtoSource.newUnsafeInstance(), buffer.asReadOnlyBuffer());
+        testReadByteBuffer(ProtoSource.newDirectSource(), buffer);
+        testReadByteBuffer(ProtoSource.newDirectSource(), buffer.asReadOnlyBuffer());
         testWriteByteBuffer(ProtoSink.newInstance(), buffer);
-        testReadByteBuffer(ProtoSource.newInstance(), buffer);
-        testReadByteBuffer(ProtoSource.newInstance(), buffer.asReadOnlyBuffer());
+        testReadByteBuffer(ProtoSource.newArraySource(), buffer);
+        testReadByteBuffer(ProtoSource.newArraySource(), buffer.asReadOnlyBuffer());
     }
 
     @Test
@@ -145,7 +145,7 @@ public class UnsafeTest {
         }
 
         try {
-            testReadByteBuffer(ProtoSource.newInstance(), buffer);
+            testReadByteBuffer(ProtoSource.newArraySource(), buffer);
             fail("heap source with direct buffer");
         } catch (IllegalArgumentException args) {
         }

@@ -340,7 +340,7 @@ public class ProtoFailTests {
 
     private <T extends ProtoMessage> T readFromTruncated(T msg) throws IOException {
         byte[] data = msg.toByteArray();
-        ProtoSource input = ProtoSource.newUnsafeInstance().wrap(data, 0, data.length - 1);
+        ProtoSource input = ProtoSource.newDirectSource().wrap(data, 0, data.length - 1);
         msg.clear().mergeFrom(input);
         return msg;
     }
@@ -350,28 +350,28 @@ public class ProtoFailTests {
     @Test(expected = ArrayIndexOutOfBoundsException.class)
     public void testReadIntoTruncatedDestination() throws IOException {
         int numBytes = 10;
-        ProtoSource.newInstance().wrap(new byte[numBytes])
+        ProtoSource.newArraySource().wrap(new byte[numBytes])
                 .readRawBytes(new byte[0], 0, 10);
     }
 
     @Test(expected = ArrayIndexOutOfBoundsException.class)
     public void testReadIntoTruncatedDestinationDirect() throws IOException {
         int numBytes = 10;
-        ProtoSource.newUnsafeInstance().wrap(new byte[numBytes])
+        ProtoSource.newDirectSource().wrap(new byte[numBytes])
                 .readRawBytes(new byte[0], 0, 10);
     }
 
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestination() throws IOException {
         int numBytes = 10;
-        ProtoSource.newInstance().wrap(new byte[numBytes])
+        ProtoSource.newArraySource().wrap(new byte[numBytes])
                 .readRawBytes(null, 0, 10);
     }
 
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestinationDirect() throws IOException {
         int numBytes = 10;
-        ProtoSource.newUnsafeInstance().wrap(new byte[numBytes])
+        ProtoSource.newDirectSource().wrap(new byte[numBytes])
                 .readRawBytes(null, 0, 10);
     }
 

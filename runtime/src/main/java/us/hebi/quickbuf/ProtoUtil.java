@@ -20,10 +20,8 @@
 
 package us.hebi.quickbuf;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import static us.hebi.quickbuf.ProtoSource.*;
@@ -200,6 +198,7 @@ public class ProtoUtil {
     };
 
     static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.wrap(EMPTY_BYTE_ARRAY);
 
     private ProtoUtil() {
     }

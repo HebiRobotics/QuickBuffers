@@ -97,7 +97,7 @@ public class SbeThroughputBenchmarkQuickbuf {
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
-    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSource source = ProtoSource.newArraySource();
     final ProtoSink sink = ProtoSink.newInstance();
 
     final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());

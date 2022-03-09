@@ -145,10 +145,10 @@ public class SerializationBenchmarkQuickbuf {
     byte[] stringMsgOutBuffer = new byte[stringMessage.getSerializedSize()];
 
     final ProtoSink sink = ProtoSink.newInstance();
-    final ProtoSource source = ProtoSource.newInstance();
+    final ProtoSource source = ProtoSource.newArraySource();
 
     final ProtoSink unsafeSink = ProtoSink.newUnsafeInstance();
-    final ProtoSource unsafeSource = ProtoSource.newUnsafeInstance();
+    final ProtoSource unsafeSource = ProtoSource.newDirectSource();
 
     final ByteArrayOutputStream baos = new ByteArrayOutputStream(stringMsgOutBuffer.length);
     final ProtoSink streamSink = ProtoSink.wrap(baos);

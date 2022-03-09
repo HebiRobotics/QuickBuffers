@@ -42,6 +42,7 @@ class ArraySource extends ProtoSource{
     /** The absolute position of the end of the current message. */
     private int currentLimit = Integer.MAX_VALUE;
 
+    @Override
     protected ProtoSource resetInternalState() {
         super.resetInternalState();
         currentLimit = Integer.MAX_VALUE;
@@ -190,6 +191,11 @@ class ArraySource extends ProtoSource{
         this.position = this.offset = (int) off;
         this.limit = offset + len;
         return resetInternalState();
+    }
+
+    @Override
+    public ProtoSource clear() {
+        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     @Override

@@ -173,7 +173,7 @@ public class NumericTypesTest {
     private int n = 2000;
     private final TestAllTypes msg = TestAllTypes.newInstance();
     private final byte[] bytes = new byte[1024];
-    private final ProtoSource source = ProtoSource.newInstance();
+    private final ProtoSource source = ProtoSource.newArraySource();
     private final ProtoSink sink = ProtoSink.newInstance();
 
 }

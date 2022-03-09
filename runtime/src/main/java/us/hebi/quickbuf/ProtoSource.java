@@ -50,8 +50,11 @@
 
 package us.hebi.quickbuf;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -72,67 +75,115 @@ import static us.hebi.quickbuf.WireFormat.*;
  */
 public abstract class ProtoSource {
 
-    /** Create a new ProtoSource wrapping the given byte array. */
+    /** Create a new ProtoSource reading from the given byte array. */
     public static ProtoSource newInstance(final byte[] buf) {
         return newInstance(buf, 0, buf.length);
     }
 
-    /** Create a new ProtoSource wrapping the given byte array slice. */
+    /** Create a new ProtoSource reading from the given byte array slice. */
     public static ProtoSource newInstance(final byte[] buf,
                                           final int off,
                                           final int len) {
-        return newInstance().wrap(buf, off, len);
+        return newArraySource().wrap(buf, off, len);
+    }
+
+    /** Create a new ProtoSource reading from the given input stream. */
+    public static ProtoSource newInstance(InputStream stream) {
+        return newStreamSource().wrap(stream);
+    }
+
+    /** Create a new ProtoSource reading from the given input stream. */
+    public static ProtoSource newInstance(ByteBuffer buffer) {
+        return newBufferSource().wrap(buffer);
     }
 
     /**
-     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     * Creates a new {@code ProtoSource} that reads directly from a byte array.
      *
      * This method will return the fastest implementation available for the
      * current platform and may leverage features from sun.misc.Unsafe if
      * available.
      */
-    public static ProtoSource newInstance() {
+    public static ProtoSource newArraySource() {
         return new ArraySource();
     }
 
     /**
-     * Create a new {@code ProtoSource} that reads from a byte array or
-     * direct / off-heap memory.
+     * Creates a new {@code ProtoSource} that reads from a byte array or
+     * direct / off-heap memory. It is similar to the array source, but
+     * it allows null buffers to support raw memory addresses.
      *
-     * This source requires availability of sun.misc.Unsafe.
-     *
-     * Additionally, this sink removes null-argument checks and allows users to
-     * write to off-heap memory. Working with off-heap memory may cause segfaults
-     * of the runtime, so only use if you know what you are doing.
+     * This source requires availability of sun.misc.Unsafe. Be aware that
+     * passing incorrect memory addresses may cause the entire runtime to
+     * segfault.
      */
-    public static ProtoSource newUnsafeInstance() {
+    public static ProtoSource newDirectSource() {
         return new ArraySource.DirectArraySource();
     }
 
+    /**
+     * Creates a new {@code ProtoSource} that reads from an {@link InputStream}.
+     *
+     * The current implementation is a very lightweight wrapper that reads
+     * byte-by-byte and does not do any internal buffering. This is slower
+     * than reading from an array, but it does not require extra memory.
+     */
+    public static ProtoSource newStreamSource() {
+        return new StreamSource();
+    }
+
+    /**
+     * Creates a new {@code ProtoSource} that reads from an {@link ByteBuffer}.
+     *
+     * The current implementation is a very lightweight wrapper that
+     * reads byte-by-byte and uses the buffer state to keep track. This
+     * is slower than reading from an array, but it works on all
+     * platforms.
+     */
+    public static ProtoSource newBufferSource() {
+        return new BufferSource();
+    }
+
+    /**
+     * Changes the input to the given array. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     */
     public final ProtoSource wrap(byte[] buffer) {
         return wrap(buffer, 0, buffer.length);
     }
 
     /**
-     * Creates a lightweight wrapper to read protobuf messages
-     * from an {@link InputStream}). This is slower than reading
-     * from an array, but it does not require extra memory.
-     *
-     * @param inputStream target output
-     * @return wrapper
+     * Changes the input to the given array. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
      */
-    public static ProtoSource wrap(InputStream inputStream) {
-        return new StreamSource(inputStream);
+    public ProtoSource wrap(byte[] buffer, long off, int len) {
+        throw new UnsupportedOperationException("source does not support reading from arrays");
+    }
+
+    /**
+     * Changes the input to the given array. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     */
+    public ProtoSource wrap(InputStream stream) {
+        throw new UnsupportedOperationException("source does not support reading from streams");
+    }
+
+    /**
+     * Changes the input to the given array. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     */
+    public ProtoSource wrap(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("source does not support reading from ByteBuffers");
     }
 
     /**
      * Clears internal state and removes any references to previous inputs.
-     *
-     * @return this
      */
-    public ProtoSource clear() {
-        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
-    }
+    public abstract ProtoSource clear();
 
     // -----------------------------------------------------------------
 
@@ -862,18 +913,6 @@ public abstract class ProtoSource {
     /** see setDiscardUnknownFields */
     private boolean shouldDiscardUnknownFields = false;
 
-    /**
-     * Changes the input to the given array. This resets any existing
-     * internal state such as position and is equivalent to creating
-     * a new instance.
-     *
-     * @param buffer
-     * @param off
-     * @param len
-     * @return this
-     */
-    public abstract ProtoSource wrap(byte[] buffer, long off, int len) ;
-
     protected ProtoSource resetInternalState() {
         lastTag = 0;
         return this;
@@ -992,13 +1031,24 @@ public abstract class ProtoSource {
 
     static class StreamSource extends ProtoSource {
 
-        StreamSource(InputStream input) {
-            this.input = input;
+        @Override
+        public ProtoSource wrap(InputStream stream){
+            this.input = stream;
+            return resetInternalState();
         }
 
         @Override
-        public ProtoSource wrap(byte[] buffer, long off, int len) {
-            throw new UnsupportedOperationException();
+        protected ProtoSource resetInternalState() {
+            super.resetInternalState();
+            limit = Integer.MAX_VALUE;
+            peekByte = EOF;
+            position = 0;
+            return this;
+        }
+
+        @Override
+        public ProtoSource clear() {
+            return wrap(EMPTY_INPUT_STREAM);
         }
 
         @Override
@@ -1096,11 +1146,90 @@ public abstract class ProtoSource {
             position += numBytes;
         }
 
-        private int peekByte = EOF;
-        private final InputStream input;
-        private int position = 0;
+        private InputStream input = EMPTY_INPUT_STREAM;
         private int limit = Integer.MAX_VALUE;
+        private int peekByte = EOF;
+        private int position = 0;
+
+        private static final InputStream EMPTY_INPUT_STREAM = new ByteArrayInputStream(ProtoUtil.EMPTY_BYTE_ARRAY);
         private static final int EOF = -1;
+
+    }
+
+    static class BufferSource extends ProtoSource {
+
+        @Override
+        public ProtoSource wrap(ByteBuffer buffer) {
+            this.buffer = buffer;
+            return resetInternalState();
+        }
+
+        @Override
+        public ProtoSource clear() {
+            return wrap(ProtoUtil.EMPTY_BYTE_BUFFER);
+        }
+
+        @Override
+        public int pushLimit(int byteLimit) throws InvalidProtocolBufferException {
+            if (byteLimit < 0) {
+                throw InvalidProtocolBufferException.negativeSize();
+            }
+            byteLimit += buffer.position();
+            if (byteLimit > buffer.limit()) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            final int oldLimit = buffer.limit();
+            buffer.limit(byteLimit);
+            return oldLimit;
+        }
+
+        @Override
+        public void popLimit(int oldLimit) {
+            buffer.limit(oldLimit);
+        }
+
+        @Override
+        public int getBytesUntilLimit() {
+            return buffer.remaining();
+        }
+
+        @Override
+        public boolean isAtEnd() throws IOException {
+            return buffer.remaining() == 0;
+        }
+
+        @Override
+        public int getTotalBytesRead() {
+            return buffer.position();
+        }
+
+        @Override
+        public byte readRawByte() throws IOException {
+            try {
+                return buffer.get();
+            } catch (BufferUnderflowException bufe) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        @Override
+        public void skipRawBytes(int size) throws IOException {
+            if (buffer.remaining() < size) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            buffer.position(buffer.position() + size);
+        }
+
+        @Override
+        public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+            try {
+                buffer.get(values, offset, length);
+            } catch (BufferUnderflowException bufe) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        ByteBuffer buffer = ProtoUtil.EMPTY_BYTE_BUFFER;
 
     }
 

@@ -26,7 +26,6 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
-import us.hebi.quickbuf.InvalidProtocolBufferException;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
 
@@ -75,7 +74,7 @@ public class DecodingBenchmark {
     int[] values = new int[512];
     byte[] output = new byte[values.length * 10];
     ProtoSink sink = ProtoSink.newInstance();
-    ProtoSource source = ProtoSource.newInstance();
+    ProtoSource source = ProtoSource.newArraySource();
 
     @Setup(Level.Iteration)
     public void setup() throws IOException {
