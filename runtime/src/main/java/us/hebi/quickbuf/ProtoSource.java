@@ -50,7 +50,6 @@
 
 package us.hebi.quickbuf;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -186,7 +185,7 @@ public abstract class ProtoSource {
                 skipRawBytes(FIXED_64_SIZE);
                 return true;
             case WireFormat.WIRETYPE_LENGTH_DELIMITED:
-                skipRawBytes(readRawVarint32());
+                skipRawBytes(readLength());
                 return true;
             case WireFormat.WIRETYPE_START_GROUP:
                 skipMessage();
@@ -227,7 +226,7 @@ public abstract class ProtoSource {
                 return true;
             }
             case WireFormat.WIRETYPE_LENGTH_DELIMITED:{
-                int length = readRawVarint32();
+                int length = readLength();
                 ByteUtil.writeUInt32(unknownBytes, tag);
                 ByteUtil.writeUInt32(unknownBytes, length);
                 ByteUtil.writeBytes(unknownBytes, length, this);
@@ -291,9 +290,12 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code double} field value from the source. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
-        final int numEntries = readRawVarint32() / FIXED_64_SIZE;
-        final int offset = store.addLength(numEntries);
-        readRawDoubles(store.array, offset, numEntries);
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count = roundedCount64(length);
+        final int offset = store.addLength(count);
+        readRawDoubles(store.array, offset, count);
+        popLimit(limit);
     }
 
     protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
@@ -320,9 +322,12 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code float} field value from the source. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
-        final int numEntries = readRawVarint32() / FIXED_32_SIZE;
-        final int offset = store.addLength(numEntries);
-        readRawFloats(store.array, offset, numEntries);
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count =  roundedCount32(length);
+        final int offset = store.addLength(count);
+        readRawFloats(store.array, offset, count);
+        popLimit(limit);
     }
 
     protected void readRawFloats(float[] values, int offset, int length) throws IOException {
@@ -354,9 +359,12 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code fixed64} field value from the source. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
-        final int numEntries = readRawVarint32() / FIXED_64_SIZE;
-        final int offset = store.addLength(numEntries);
-        readRawFixed64s(store.array, offset, numEntries);
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count =  roundedCount64(length);
+        final int offset = store.addLength(count);
+        readRawFixed64s(store.array, offset, count);
+        popLimit(limit);
     }
 
     protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
@@ -398,9 +406,12 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code fixed32} field value from the source. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
-        final int numEntries = readRawVarint32() / FIXED_32_SIZE;
-        final int offset = store.addLength(numEntries);
-        readRawFixed32s(store.array, offset, numEntries);
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count =  roundedCount32(length);;
+        final int offset = store.addLength(count);
+        readRawFixed32s(store.array, offset, count);
+        popLimit(limit);
     }
 
     protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
@@ -444,7 +455,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code int64} field value from the source. */
     public void readPackedInt64(final RepeatedLong store, final int tag) throws IOException {
-        final int length = readRawVarint32();
+        final int length = readLength();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
             reservePackedVarintCapacity(store);
@@ -455,7 +466,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code sint64} field value from the source. */
     public void readPackedSInt64(final RepeatedLong store, final int tag) throws IOException {
-        final int length = readRawVarint32();
+        final int length = readLength();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
             reservePackedVarintCapacity(store);
@@ -511,7 +522,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code int32} field value from the source. */
     public void readPackedInt32(final RepeatedInt store, final int tag) throws IOException {
-        final int length = readRawVarint32();
+        final int length = readLength();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
             reservePackedVarintCapacity(store);
@@ -522,7 +533,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code sint32} field value from the source. */
     public void readPackedSInt32(final RepeatedInt store, final int tag) throws IOException {
-        final int length = readRawVarint32();
+        final int length = readLength();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
             reservePackedVarintCapacity(store);
@@ -573,7 +584,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code bool} field value from the source. */
     public void readPackedBool(RepeatedBoolean store) throws IOException {
-        final int length = readRawVarint32();
+        final int length = readLength();
         final int limit = pushLimit(length);
         store.reserve(length / MIN_BOOL_SIZE);
         while (!isAtEnd()) {
@@ -599,7 +610,7 @@ public abstract class ProtoSource {
 
     /** Read a repeated (packed) {@code enum} field value from the source. */
     public void readPackedEnum(final RepeatedEnum<?> store, final int tag) throws IOException {
-        final int length = readRawVarint32();
+        final int length = readLength();
         final int limit = pushLimit(length);
         while (!isAtEnd()) {
             reservePackedVarintCapacity(store);
@@ -626,6 +637,11 @@ public abstract class ProtoSource {
         return readRawVarint32();
     }
 
+    /** Read a length delimiter from the source. */
+    public int readLength() throws IOException {
+        return readRawVarint32();
+    }
+
     // ------------------------------ DELIMITED TYPES ------------------------------
 
     /** Read a repeated {@code string} field value from the source. */
@@ -640,9 +656,9 @@ public abstract class ProtoSource {
 
     /** Read a {@code string} field value from the source. */
     public void readString(final Utf8String store) throws IOException {
-        final int numBytes = readRawVarint32();
-        store.setSize(numBytes);
-        readRawBytes(store.bytes(), 0, numBytes);
+        final int length = readLength();
+        store.setSize(length);
+        readRawBytes(store.bytes(), 0, length);
     }
 
     /** Read a repeated {@code group} field value from the source. */
@@ -675,7 +691,7 @@ public abstract class ProtoSource {
 
     public void readMessage(final ProtoMessage<?> msg) throws IOException {
         // Note: recursive messages are impossible, so we don't need to check for limits
-        final int length = readRawVarint32();
+        final int length = readLength();
         final int oldLimit = pushLimit(length);
         msg.mergeFrom(this);
         checkLastTagWas(0);
@@ -695,9 +711,9 @@ public abstract class ProtoSource {
     /** Read a {@code bytes} field value from the source. */
     public void readBytes(RepeatedByte store) throws IOException {
         // note: bytes type gets replaced rather than merged
-        final int numBytes = readRawVarint32();
-        store.setLength(numBytes);
-        readRawBytes(store.array, 0, numBytes);
+        final int length = readLength();
+        store.setLength(length);
+        readRawBytes(store.array, 0, length);
     }
 
     /** Read raw {@code bytes} from the source. */

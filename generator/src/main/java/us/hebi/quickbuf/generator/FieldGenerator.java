@@ -155,11 +155,8 @@ public class FieldGenerator {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
             method.addNamedCode("$field:N.equals(other.$field:N)", m);
 
-        } else if (typeName == TypeName.DOUBLE) {
-            method.addNamedCode("Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N)", m);
-
-        } else if (typeName == TypeName.FLOAT) {
-            method.addNamedCode("Float.floatToIntBits($field:N) == Float.floatToIntBits(other.$field:N)", m);
+        } else if (typeName == TypeName.DOUBLE || typeName == TypeName.FLOAT) {
+            method.addNamedCode("$protoUtil:T.isEqual($field:N, other.$field:N)", m);
 
         } else if (info.isPrimitive() || info.isEnum()) {
             method.addNamedCode("$field:N == other.$field:N", m);
@@ -305,7 +302,7 @@ public class FieldGenerator {
         if (info.isFixedWidth() && info.isPacked()) {
             method.addNamedCode("" +
                     "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
-                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $bytesPerTag:L + $protoSink:T.computeDelimitedSize(dataSize);\n", m);
 
         } else if (info.isFixedWidth() && info.isRepeated()) { // non packed
             method.addStatement(named("size += ($bytesPerTag:L + $fixedWidth:L) * $field:N.length()"));
@@ -313,7 +310,7 @@ public class FieldGenerator {
         } else if (info.isPacked()) {
             method.addNamedCode("" +
                     "final int dataSize = $protoSink:T.computeRepeated$capitalizedType:LSizeNoTag($field:N);\n" +
-                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $bytesPerTag:L + $protoSink:T.computeDelimitedSize(dataSize);\n", m);
 
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +

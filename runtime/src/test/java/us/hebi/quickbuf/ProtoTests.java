@@ -660,7 +660,7 @@ public class ProtoTests {
         // Write varint delimited message
         byte[] outData = msg.toByteArray();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ProtoUtil.writeRawVarint32(outData.length, outputStream);
+        ProtoUtil.writeUInt32(outData.length, outputStream);
         outputStream.write(outData);
 
         // Read varint delimited message

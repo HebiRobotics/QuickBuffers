@@ -37,7 +37,7 @@ import static us.hebi.quickbuf.ProtoSource.*;
 public class ProtoUtil {
 
     /**
-     * Encode and write a varint to an OutputStream.  {@code value} is
+     * Encode and write a varint32 to an OutputStream.  {@code value} is
      * treated as unsigned, so it won't be sign-extended if negative.
      * <p>
      * The following is equal to Protobuf-Java's "msg.writeDelimitedTo(output)"
@@ -50,7 +50,7 @@ public class ProtoUtil {
      * @param output target stream
      * @return number of written bytes
      */
-    public static int writeRawVarint32(int value, OutputStream output) throws IOException {
+    public static int writeUInt32(int value, OutputStream output) throws IOException {
         int numBytes = 1;
         while (true) {
             if ((value & ~0x7F) == 0) {
@@ -137,6 +137,30 @@ public class ProtoUtil {
         return true;
     }
 
+    public static boolean isEqual(double a, double b) {
+        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
+    }
+
+    public static boolean isEqual(float a, float b) {
+        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
+    }
+
+    public static boolean isEqual(boolean a, boolean b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(long a, long b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(int a, int b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(byte a, byte b) {
+        return a == b;
+    }
+
     /**
      * Decodes utf8 bytes into a reusable StringBuilder object. Going through a builder
      * has benefits on JDK8, but is (significantly) slower when decoding ascii on JDK13.
@@ -176,30 +200,6 @@ public class ProtoUtil {
     };
 
     static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-
-    static boolean isEqual(boolean a, boolean b) {
-        return a == b;
-    }
-
-    static boolean isEqual(byte a, byte b) {
-        return a == b;
-    }
-
-    static boolean isEqual(int a, int b) {
-        return a == b;
-    }
-
-    static boolean isEqual(long a, long b) {
-        return a == b;
-    }
-
-    static boolean isEqual(float a, float b) {
-        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
-    }
-
-    static boolean isEqual(double a, double b) {
-        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
-    }
 
     private ProtoUtil() {
     }

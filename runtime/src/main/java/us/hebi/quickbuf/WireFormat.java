@@ -100,4 +100,22 @@ final class WireFormat {
         return (fieldNumber << TAG_TYPE_BITS) | wireType;
     }
 
+    /**
+     * Count of the number of fixed64 elements that fit within the size. The value
+     * is rounded up to match behavior and exceptions to match reading while
+     * getBytesUntilLimit() > 0.
+     */
+    static int roundedCount64(int length) {
+        return (length + 7)  / FIXED_64_SIZE;
+    }
+
+    /**
+     * Count of the number of fixed32 elements that fit within the size. The value
+     * is rounded up to match behavior and exceptions to match reading while
+     * getBytesUntilLimit() > 0.
+     */
+    static int roundedCount32(int length) {
+        return (length + 3)  / FIXED_32_SIZE;
+    }
+
 }

@@ -179,12 +179,12 @@ public abstract class ProtoSink {
 
     /** Encode and write a tag. */
     public void writeTag(final int fieldNumber, final int wireType) throws IOException {
-        writeRawVarint32(WireFormat.makeTag(fieldNumber, wireType));
+        writeUInt32NoTag(WireFormat.makeTag(fieldNumber, wireType));
     }
 
     /** Encode and write a packed tag for the given field number. */
     public void writePackedTag(final int fieldNumber) throws IOException {
-        writeRawVarint32(WireFormat.makeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED));
+        writeUInt32NoTag(WireFormat.makeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED));
     }
 
     /** Write a {@code double} field, including tag, to the sink. */
@@ -322,49 +322,49 @@ public abstract class ProtoSink {
     /** Write a repeated (packed) {@code double} field, excluding tag, to the sink. */
     public void writePackedDoubleNoTag(final RepeatedDouble values)
             throws IOException {
-        writeRawVarint32(values.length * FIXED_64_SIZE);
+        writeLength(values.length * FIXED_64_SIZE);
         writeRawDoubles(values.array, values.length);
     }
 
     /** Write a repeated (packed) {@code float} field, excluding tag, to the sink. */
     public void writePackedFloatNoTag(final RepeatedFloat values)
             throws IOException {
-        writeRawVarint32(values.length * FIXED_32_SIZE);
+        writeLength(values.length * FIXED_32_SIZE);
         writeRawFloats(values.array, values.length);
     }
 
     /** Write a repeated (packed){@code fixed64} field, excluding tag, to the sink. */
     public void writePackedFixed64NoTag(final RepeatedLong values)
             throws IOException {
-        writeRawVarint32(values.length * FIXED_64_SIZE);
+        writeLength(values.length * FIXED_64_SIZE);
         writeRawFixed64s(values.array, values.length);
     }
 
     /** Write a repeated (packed){@code fixed32} field, excluding tag, to the sink. */
     public void writePackedFixed32NoTag(final RepeatedInt values)
             throws IOException {
-        writeRawVarint32(values.length * FIXED_32_SIZE);
+        writeLength(values.length * FIXED_32_SIZE);
         writeRawFixed32s(values.array, values.length);
     }
 
     /** Write a repeated (packed) {@code sfixed32} field, excluding tag, to the sink. */
     public void writePackedSFixed32NoTag(final RepeatedInt values)
             throws IOException {
-        writeRawVarint32(values.length * FIXED_32_SIZE);
+        writeLength(values.length * FIXED_32_SIZE);
         writeRawFixed32s(values.array, values.length);
     }
 
     /** Write a repeated (packed) {@code sfixed64} field, excluding tag, to the sink. */
     public void writePackedSFixed64NoTag(final RepeatedLong values)
             throws IOException {
-        writeRawVarint32(values.length * FIXED_64_SIZE);
+        writeLength(values.length * FIXED_64_SIZE);
         writeRawFixed64s(values.array, values.length);
     }
 
     /** Write a repeated (non-packed){@code bool} field, excluding tag, to the sink. */
     public void writePackedBoolNoTag(final RepeatedBoolean values)
             throws IOException {
-        writeRawVarint32(values.length * MIN_BOOL_SIZE);
+        writeLength(values.length * MIN_BOOL_SIZE);
         writeRawBooleans(values.array, values.length);
     }
 
@@ -412,7 +412,7 @@ public abstract class ProtoSink {
 
     /** Write a repeated (packed) {@code enum} field to the sink. */
     public void writePackedEnumNoTag(final RepeatedEnum<?> values) throws IOException {
-        writeRawVarint32(computeRepeatedEnumSizeNoTag(values));
+        writeLength(computeRepeatedEnumSizeNoTag(values));
         final int length = values.length;
         for (int i = 0; i < length; i++) {
             writeEnumNoTag(values.array()[i]);
@@ -431,7 +431,7 @@ public abstract class ProtoSink {
 
     /** Write a repeated (packed) {@code int32} field to the sink. */
     public void writePackedInt32NoTag(final RepeatedInt values) throws IOException {
-        writeRawVarint32(computeRepeatedInt32SizeNoTag(values));
+        writeLength(computeRepeatedInt32SizeNoTag(values));
         final int length = values.length;
         for (int i = 0; i < length; i++) {
             writeInt32NoTag(values.array()[i]);
@@ -460,7 +460,7 @@ public abstract class ProtoSink {
 
     /** Write a repeated (packed) {@code sint32} field to the sink. */
     public void writePackedSInt32NoTag(final RepeatedInt values) throws IOException {
-        writeRawVarint32(computeRepeatedSInt32SizeNoTag(values));
+        writeLength(computeRepeatedSInt32SizeNoTag(values));
         final int length = values.length;
         for (int i = 0; i < length; i++) {
             writeSInt32NoTag(values.array()[i]);
@@ -479,7 +479,7 @@ public abstract class ProtoSink {
 
     /** Write a repeated (packed) {@code int32} field to the sink. */
     public void writePackedInt64NoTag(final RepeatedLong values) throws IOException {
-        writeRawVarint32(computeRepeatedInt64SizeNoTag(values));
+        writeLength(computeRepeatedInt64SizeNoTag(values));
         final int length = values.length;
         for (int i = 0; i < length; i++) {
             writeInt64NoTag(values.array()[i]);
@@ -508,7 +508,7 @@ public abstract class ProtoSink {
 
     /** Write a repeated (packed) {@code sint64} field to the sink. */
     public void writePackedSInt64NoTag(final RepeatedLong values) throws IOException {
-        writeRawVarint32(computeRepeatedSInt64SizeNoTag(values));
+        writeLength(computeRepeatedSInt64SizeNoTag(values));
         final int length = values.length;
         for (int i = 0; i < length; i++) {
             writeSInt64NoTag(values.array()[i]);
@@ -557,6 +557,11 @@ public abstract class ProtoSink {
 
     // -----------------------------------------------------------------
 
+    /** Write a length delimiter to the sink */
+    public void writeLength(final int length) throws IOException {
+        writeUInt32NoTag(length);
+    }
+
     /** Write a {@code double} field to the sink. */
     public void writeDoubleNoTag(final double value) throws IOException {
         writeRawLittleEndian64(Double.doubleToLongBits(value));
@@ -580,7 +585,7 @@ public abstract class ProtoSink {
     /** Write an {@code int32} field to the sink. */
     public void writeInt32NoTag(final int value) throws IOException {
         if (value >= 0) {
-            writeRawVarint32(value);
+            writeUInt32NoTag(value);
         } else {
             // Must sign-extend.
             writeRawVarint64(value);
@@ -605,13 +610,13 @@ public abstract class ProtoSink {
     /** Write a {@code string} field to the sink. */
     public void writeStringNoTag(final Utf8String value) throws IOException {
         final int length = value.size();
-        writeRawVarint32(length);
+        writeLength(length);
         writeRawBytes(value.bytes(), 0, length);
     }
 
     /** Write a {@code string} field to the sink. */
     public void writeStringNoTag(final CharSequence value) throws IOException {
-        writeRawVarint32(Utf8.encodedLength(value));
+        writeLength(Utf8.encodedLength(value));
         Utf8.encodeSink(value, this);
     }
 
@@ -622,19 +627,14 @@ public abstract class ProtoSink {
 
     /** Write an embedded message field to the sink. */
     public void writeMessageNoTag(final ProtoMessage<?> value) throws IOException {
-        writeRawVarint32(value.getCachedSize());
+        writeLength(value.getCachedSize());
         value.writeTo(this);
     }
 
     /** Write a {@code bytes} field to the sink. */
     public void writeBytesNoTag(final RepeatedByte value) throws IOException {
-        writeRawVarint32(value.length);
+        writeLength(value.length);
         writeRawBytes(value.array, 0, value.length);
-    }
-
-    /** Write a {@code uint32} field to the sink. */
-    public void writeUInt32NoTag(final int value) throws IOException {
-        writeRawVarint32(value);
     }
 
     /**
@@ -642,7 +642,7 @@ public abstract class ProtoSink {
      * for converting the enum value to its numeric value.
      */
     public void writeEnumNoTag(final int value) throws IOException {
-        writeRawVarint32(value);
+        writeUInt32NoTag(value);
     }
 
     /** Write an {@code sfixed32} field to the sink. */
@@ -657,7 +657,7 @@ public abstract class ProtoSink {
 
     /** Write an {@code sint32} field to the sink. */
     public void writeSInt32NoTag(final int value) throws IOException {
-        writeRawVarint32(encodeZigZag32(value));
+        writeUInt32NoTag(encodeZigZag32(value));
     }
 
     /** Write an {@code sint64} field to the sink. */
@@ -984,6 +984,14 @@ public abstract class ProtoSink {
         return computeRawVarint64Size(encodeZigZag64(value));
     }
 
+    /**
+     * Compute the number of bytes that would be needed to encode
+     * length bytes and a length delimiter.
+     */
+    public static int computeDelimitedSize(final int length) {
+        return computeRawVarint32Size(length) + length;
+    }
+
     // =================================================================
 
     /**
@@ -1059,11 +1067,8 @@ public abstract class ProtoSink {
         return computeRawVarint32Size(WireFormat.makeTag(fieldNumber, 0));
     }
 
-    /**
-     * Encode and write a varint.  {@code value} is treated as
-     * unsigned, so it won't be sign-extended if negative.
-     */
-    public void writeRawVarint32(int value) throws IOException {
+    /** Write a {@code uint32} field to the sink. */
+    public void writeUInt32NoTag(int value) throws IOException {
         while (true) {
             if ((value & ~0x7F) == 0) {
                 writeRawByte((byte) value);
@@ -1180,6 +1185,15 @@ public abstract class ProtoSink {
     public static long encodeZigZag64(final long n) {
         // Note:  the right-shift must be arithmetic
         return (n << 1) ^ (n >> 63);
+    }
+
+    /**
+     * Encode and write a varint.  {@code value} is treated as
+     * unsigned, so it won't be sign-extended if negative.
+     */
+    @Deprecated
+    public void writeRawVarint32(int value) throws IOException {
+        writeUInt32NoTag(value);
     }
 
     static class StreamSink extends ProtoSink {

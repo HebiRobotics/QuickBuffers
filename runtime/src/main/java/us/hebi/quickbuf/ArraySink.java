@@ -73,15 +73,14 @@ class ArraySink extends ProtoSink {
         // and at most 3 times of it. Optimize for the case where we know this length results in a
         // constant varint length - saves measuring length of the string.
         try {
-            final int minLengthVarIntSize = computeRawVarint32Size(value.length());
             final int maxLengthVarIntSize = computeRawVarint32Size(value.length() * Utf8.MAX_UTF8_EXPANSION);
-            if (minLengthVarIntSize == maxLengthVarIntSize) {
-                int startPosition = position + minLengthVarIntSize;
-                int endPosition = writeUtf8Encoded(value, buffer, startPosition, spaceLeft() - minLengthVarIntSize);
-                writeRawVarint32(endPosition - startPosition);
+            if (maxLengthVarIntSize == 1 || maxLengthVarIntSize == computeRawVarint32Size(value.length())) {
+                int startPosition = position + maxLengthVarIntSize;
+                int endPosition = writeUtf8Encoded(value, buffer, startPosition, spaceLeft() - maxLengthVarIntSize);
+                writeLength(endPosition - startPosition);
                 position = endPosition;
             } else {
-                writeRawVarint32(Utf8.encodedLength(value));
+                writeLength(Utf8.encodedLength(value));
                 position = writeUtf8Encoded(value, buffer, position, spaceLeft());
             }
         } catch (ArrayIndexOutOfBoundsException e) {
