@@ -191,6 +191,7 @@ class ArraySink extends ProtoSink {
     static class DirectArraySink extends ArraySink {
 
         private long baseOffset;
+        Object gcRef;
 
         DirectArraySink() {
             if (!UnsafeAccess.isAvailable())
@@ -199,6 +200,7 @@ class ArraySink extends ProtoSink {
 
         @Override
         public ProtoSink wrap(byte[] buffer, long offset, int length) {
+            gcRef = null;
             if (buffer != null) {
                 // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;

@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
@@ -590,6 +591,116 @@ class ByteUtil {
                 offset += FIXED_64_SIZE;
             }
         }
+    }
+
+    /**
+     * Wraps the memory backing a ByteBuffer such that the ArraySource
+     * starts at the currently set position and ends at set limit. Wrapper
+     * actions do not change the ByteBuffer state.
+     * <p>
+     * Wrapping a read-only or direct byte buffer may require unsafe
+     * operations and may fail on some platforms.
+     *
+     * @param wrapper ArraySource
+     * @param buffer  ByteBuffer
+     * @return wrapper
+     */
+    public static ProtoSource wrapBuffer(ProtoSource wrapper, ByteBuffer buffer) {
+        if (!(wrapper instanceof ArraySource)) {
+            throw new IllegalArgumentException("Expected ArraySource");
+        }
+
+        if (buffer.hasArray()) {
+
+            // heap array
+            byte[] array = buffer.array();
+            long offset = buffer.arrayOffset() + buffer.position();
+            int length = buffer.remaining();
+            wrapper.wrap(array, offset, length);
+
+        } else if (buffer.isReadOnly() && !buffer.isDirect()) {
+
+            if (!BufferAccess.isAvailable()) {
+                throw new UnsupportedOperationException("Accessors for read only buffer are not available");
+            }
+
+            // read-only heap array
+            byte[] array = BufferAccess.array(buffer);
+            long offset = BufferAccess.arrayOffset(buffer) + buffer.position();
+            int length = buffer.remaining();
+            wrapper.wrap(array, offset, length);
+
+        } else {
+
+            if (!BufferAccess.isAvailable()) {
+                throw new UnsupportedOperationException("Accessors for direct buffers are not available");
+            }else if (!(wrapper instanceof ArraySource.DirectArraySource)) {
+                throw new IllegalArgumentException("Expected DirectArraySource");
+            }
+
+            // direct buffer
+            byte[] array = null;
+            long offset = BufferAccess.address(buffer) + buffer.position();
+            int length = buffer.remaining();
+            wrapper.wrap(array, offset, length);
+
+            // keep native memory from being garbage collected
+            ((ArraySource.DirectArraySource) wrapper).gcRef = buffer;
+
+        }
+
+        return wrapper;
+
+    }
+
+    /**
+     * Wraps the memory backing a ByteBuffer such that the ArraySink
+     * starts at the currently set position and ends at set limit. Wrapper
+     * actions do not change the ByteBuffer state.
+     * <p>
+     * Wrapping a direct byte buffer may require unsafe
+     * operations and may fail on some platforms.
+     *
+     * @param wrapper ArraySink
+     * @param buffer  ByteBuffer
+     * @return wrapper
+     */
+    public static ProtoSink wrapBuffer(ProtoSink wrapper, ByteBuffer buffer) {
+        if (buffer.isReadOnly()) {
+            throw new IllegalArgumentException("ByteBuffer is read only.");
+        } else if (!(wrapper instanceof ArraySink)) {
+            throw new IllegalArgumentException("Expected ArraySink");
+        }
+
+        if (buffer.hasArray()) {
+
+            // heap array
+            byte[] array = buffer.array();
+            long offset = buffer.arrayOffset() + buffer.position();
+            int length = buffer.remaining();
+            wrapper.wrap(array, offset, length);
+
+        } else {
+
+            if (!BufferAccess.isAvailable()) {
+                throw new UnsupportedOperationException("Accessors for direct buffers are not available");
+            } else if (!(wrapper instanceof ArraySink.DirectArraySink)) {
+                throw new IllegalArgumentException("Expected DirectArraySink");
+            }
+
+            // direct buffer
+            byte[] array = null;
+            long offset = BufferAccess.address(buffer) + buffer.position();
+            int length = buffer.remaining();
+            wrapper.wrap(array, offset, length);
+
+            // keep native memory from being garbage collected
+            ((ArraySink.DirectArraySink) wrapper).gcRef = buffer;
+
+        }
+
+        return wrapper;
+
     }
 
     private ByteUtil() {

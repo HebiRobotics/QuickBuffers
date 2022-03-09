@@ -163,4 +163,18 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!-- above jdk 11 does not support java6. make sure to release with 8 or 11 -->
+        <profile>
+            <id>jdk17compat</id>
+            <activation>
+                <jdk>(11,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.source>7</maven.compiler.source>
+                <maven.compiler.target>7</maven.compiler.target>
+            </properties>
+        </profile>
+    </profiles>
+
 </project>

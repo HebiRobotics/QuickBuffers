@@ -276,6 +276,7 @@ class ArraySource extends ProtoSource{
     static class DirectArraySource extends ArraySource {
 
         private long baseOffset;
+        Object gcRef;
 
         DirectArraySource() {
             if (!UnsafeAccess.isAvailable())
@@ -284,6 +285,7 @@ class ArraySource extends ProtoSource{
 
         @Override
         public ProtoSource wrap(byte[] buffer, long offset, int length) {
+            gcRef = null;
             if (buffer != null) {
                 // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;

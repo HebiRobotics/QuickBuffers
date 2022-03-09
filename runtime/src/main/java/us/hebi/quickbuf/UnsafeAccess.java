@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,8 @@ package us.hebi.quickbuf;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
@@ -121,5 +123,93 @@ class UnsafeAccess {
 
     // copy memory (obj, long, obj, long, long) is @since 1.7
     static final boolean ENABLE_UNSAFE_COPY = ENABLE_UNSAFE && MAJOR_JAVA_VERSION >= 7;
+
+    /**
+     * Adapted from Agrona's BufferUtil class
+     */
+    static class BufferAccess {
+
+        public static boolean isAvailable() {
+            return IS_AVAILABLE;
+        }
+
+        /**
+         * Get the address at which the underlying buffer storage begins.
+         *
+         * @param buffer that wraps the underlying storage.
+         * @return the memory address at which the buffer storage begins.
+         */
+        static long address(final ByteBuffer buffer) {
+            if (!buffer.isDirect()) {
+                throw new IllegalArgumentException("buffer.isDirect() must be true");
+            }
+            return UNSAFE.getLong(buffer, BYTE_BUFFER_ADDRESS_FIELD_OFFSET);
+        }
+
+        /**
+         * Get the array from a read-only {@link ByteBuffer} similar to {@link ByteBuffer#array()}.
+         *
+         * @param buffer that wraps the underlying array.
+         * @return the underlying array.
+         */
+        static byte[] array(final ByteBuffer buffer) {
+            if (buffer.isDirect()) {
+                throw new IllegalArgumentException("buffer must wrap an array");
+            }
+            return (byte[]) UNSAFE.getObject(buffer, BYTE_BUFFER_HB_FIELD_OFFSET);
+        }
+
+        /**
+         * Get the array offset from a read-only {@link ByteBuffer} similar to {@link ByteBuffer#arrayOffset()}.
+         *
+         * @param buffer that wraps the underlying array.
+         * @return the underlying array offset at which this ByteBuffer starts.
+         */
+        static int arrayOffset(final ByteBuffer buffer) {
+            return UNSAFE.getInt(buffer, BYTE_BUFFER_OFFSET_FIELD_OFFSET);
+        }
+
+        static final boolean IS_AVAILABLE;
+
+        /**
+         * Byte array base offset.
+         */
+        static final long ARRAY_BASE_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
+
+        /**
+         * Offset of the {@code java.nio.ByteBuffer#hb} field.
+         */
+        static final long BYTE_BUFFER_HB_FIELD_OFFSET;
+
+        /**
+         * Offset of the {@code java.nio.ByteBuffer#offset} field.
+         */
+        static final long BYTE_BUFFER_OFFSET_FIELD_OFFSET;
+
+        /**
+         * Offset of the {@code java.nio.Buffer#address} field.
+         */
+        static final long BYTE_BUFFER_ADDRESS_FIELD_OFFSET;
+
+        static {
+            long hb = -1;
+            long offset = -1;
+            long address = -1;
+            boolean isAvailable;
+            try {
+                hb = UNSAFE.objectFieldOffset(ByteBuffer.class.getDeclaredField("hb"));
+                offset = UNSAFE.objectFieldOffset(ByteBuffer.class.getDeclaredField("offset"));
+                address = UNSAFE.objectFieldOffset(Buffer.class.getDeclaredField("address"));
+                isAvailable = true;
+            } catch (final Exception ex) {
+                isAvailable = false;
+            }
+            BYTE_BUFFER_HB_FIELD_OFFSET = hb;
+            BYTE_BUFFER_OFFSET_FIELD_OFFSET = offset;
+            BYTE_BUFFER_ADDRESS_FIELD_OFFSET = address;
+            IS_AVAILABLE = ENABLE_UNSAFE && isAvailable;
+        }
+
+    }
 
 }
