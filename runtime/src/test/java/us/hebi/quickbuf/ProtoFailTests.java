@@ -23,12 +23,13 @@ package us.hebi.quickbuf;
 import org.junit.Test;
 import protos.test.quickbuf.RepeatedPackables;
 import protos.test.quickbuf.TestAllTypes;
-import protos.test.quickbuf.UnittestRequired;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.*;
+import static protos.test.quickbuf.UnittestRequired.*;
 
 /**
  * @author Florian Enner
@@ -36,9 +37,69 @@ import static org.junit.Assert.*;
  */
 public class ProtoFailTests {
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = UninitializedMessageException.class)
     public void testMissingRequiredField() {
-        UnittestRequired.SimpleMessage.newInstance().toByteArray();
+        try {
+            SimpleMessage.newInstance().toByteArray();
+        } catch (UninitializedMessageException ex) {
+            assertEquals(1, ex.getMissingFields().size());
+            throw ex;
+        }
+    }
+
+    @Test(expected = UninitializedMessageException.class)
+    public void testMissingRequiredFieldAll() {
+        try {
+            TestAllTypesRequired.newInstance()
+                    .setRequiredNestedMessage(SimpleMessage.newInstance())
+                    .toByteArray();
+        } catch (UninitializedMessageException ex) {
+            List<String> missing = ex.getMissingFields();
+            // uncomment to generate copy paste values
+            /*for (String s : missing) {
+                System.out.println("\"" + s + "\",");
+            }*/
+            assertEquals(17, missing.size());
+            assertEquals(missing, Arrays.asList(
+                    "required_double",
+                    "required_fixed64",
+                    "required_sfixed64",
+                    "required_int64",
+                    "required_uint64",
+                    "required_sint64",
+                    "required_float",
+                    "required_fixed32",
+                    "required_sfixed32",
+                    "required_int32",
+                    "required_uint32",
+                    "required_sint32",
+                    "required_nested_enum",
+                    "required_bool",
+                    "required_nested_message.required_field",
+                    "required_bytes",
+                    "required_string"
+            ));
+            throw ex;
+        }
+    }
+
+    @Test(expected = InvalidProtocolBufferException.class)
+    public void testCheckInitializedRequired() throws InvalidProtocolBufferException {
+        TestAllTypesRequired.newInstance().checkInitialized();
+    }
+
+    @Test
+    public void testCheckInitializedOptional() throws InvalidProtocolBufferException {
+        TestAllTypes.newInstance().checkInitialized();
+    }
+
+    @Test(expected = UninitializedMessageException.class)
+    public void testParseFromUninitialized() throws Throwable {
+        try {
+            SimpleMessage.parseFrom(new byte[0]);
+        } catch (InvalidProtocolBufferException e) {
+            throw e.getCause();
+        }
     }
 
     // --------------------------------------------------------------------------------------

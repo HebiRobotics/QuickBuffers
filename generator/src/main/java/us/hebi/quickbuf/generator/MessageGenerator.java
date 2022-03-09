@@ -461,7 +461,7 @@ class MessageGenerator {
                 .addException(RuntimeClasses.InvalidProtocolBufferException)
                 .addParameter(byte[].class, "data", Modifier.FINAL)
                 .returns(info.getTypeName())
-                .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.AbstractMessage, info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), data).checkInitialized()", RuntimeClasses.AbstractMessage, info.getTypeName())
                 .build());
 
         type.addMethod(MethodSpec.methodBuilder("parseFrom")
@@ -469,7 +469,7 @@ class MessageGenerator {
                 .addException(IOException.class)
                 .addParameter(RuntimeClasses.ProtoSource, "input", Modifier.FINAL)
                 .returns(info.getTypeName())
-                .addStatement("return $T.mergeFrom(new $T(), input)", RuntimeClasses.AbstractMessage, info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), input).checkInitialized()", RuntimeClasses.AbstractMessage, info.getTypeName())
                 .build());
     }
 
@@ -487,6 +487,7 @@ class MessageGenerator {
                 .map(FieldGenerator::getInfo)
                 .filter(FieldInfo::isMessageOrGroup)
                 .forEach(field -> {
+                    // isInitialized check
                     if (field.isRequired()) {
                         // has bit was already checked
                         isInitialized.beginControlFlow("if (!$N.isInitialized())", field.getFieldName());
@@ -501,11 +502,52 @@ class MessageGenerator {
 
         isInitialized.addStatement("return true");
         type.addMethod(isInitialized.build());
+
+        // Don't generate lookup if there is no point
+        if (fields.stream()
+                .map(FieldGenerator::getInfo)
+                .noneMatch(field -> field.isRequired() || field.isMessageOrGroup())) {
+            return;
+        }
+
+        // missing fields lookup
+        MethodSpec.Builder getMissingFields = MethodSpec.methodBuilder("getMissingFields")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED, Modifier.FINAL)
+                .addParameter(String.class, "prefix")
+                .addParameter(ParameterizedTypeName.get(List.class, String.class), "results");
+
+        for (FieldGenerator fieldGen : fields) {
+            FieldInfo field = fieldGen.getInfo();
+            String name = field.getDescriptor().getName();
+            CodeBlock checkNestedField = CodeBlock.builder().addStatement(
+                    "getMissingFields(prefix, $S, $N, results)",
+                    name, field.getFieldName()
+            ).build();
+
+            if (field.isRequired()) {
+                getMissingFields.beginControlFlow("if (!$N())", field.getHazzerName())
+                        .addStatement("results.add(prefix + $S)", name);
+                if (field.isMessageOrGroup()) {
+                    getMissingFields.nextControlFlow("else", field.getFieldName())
+                            .addCode(checkNestedField);
+                }
+                getMissingFields.endControlFlow();
+
+            } else if (field.isMessageOrGroup()) {
+                getMissingFields.beginControlFlow("if ($L() && !$N.isInitialized())", field.getHazzerName(), field.getFieldName())
+                        .addCode(checkNestedField)
+                        .endControlFlow();
+            }
+        }
+
+        type.addMethod(getMissingFields.build());
+
     }
 
     private void insertFailOnMissingRequiredBits(MethodSpec.Builder method) {
-        String error = "Message is missing at least one required field";
-        insertOnMissingRequiredBits(method, m -> m.addStatement("throw new $T($S)", IllegalStateException.class, error));
+        insertOnMissingRequiredBits(method, m -> m.addStatement("throw new $T(this)",
+                RuntimeClasses.UninitializedMessageException));
     }
 
     private void insertOnMissingRequiredBits(MethodSpec.Builder method, Consumer<MethodSpec.Builder> onCondition) {

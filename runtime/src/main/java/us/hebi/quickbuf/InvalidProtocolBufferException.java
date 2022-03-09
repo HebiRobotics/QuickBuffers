@@ -65,6 +65,10 @@ public class InvalidProtocolBufferException extends IOException {
         super(description);
     }
 
+    InvalidProtocolBufferException(UninitializedMessageException cause) {
+        super(cause);
+    }
+
     static InvalidProtocolBufferException truncatedMessage() {
         return new InvalidProtocolBufferException(
                 "While parsing a protocol message, the input ended unexpectedly " +

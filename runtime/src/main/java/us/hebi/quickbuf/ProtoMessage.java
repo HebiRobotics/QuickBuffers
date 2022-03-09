@@ -21,6 +21,8 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract interface implemented by Protocol Message objects.
@@ -107,6 +109,25 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
+     * Helper method to check if this message is initialized, i.e.,
+     * if all required fields are set.
+     *
+     * Message content is not automatically checked after merging
+     * new data. This method should be called manually as needed.
+     *
+     * @throws InvalidProtocolBufferException if it is not initialized.
+     * @return this
+     */
+    @SuppressWarnings("unchecked")
+    public final MessageType checkInitialized() throws InvalidProtocolBufferException {
+        if (!isInitialized()) {
+            throw new UninitializedMessageException(this)
+                    .asInvalidProtocolBufferException();
+        }
+        return (MessageType) this;
+    }
+
+    /**
      * Computes the number of bytes required to encode this message. This does
      * not update the cached size.
      */
@@ -124,7 +145,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * Parse {@code input} as a message of this type and merge it with the
      * message being built.
      */
-    public abstract ProtoMessage mergeFrom(ProtoSource input) throws IOException;
+    public abstract MessageType mergeFrom(ProtoSource input) throws IOException;
 
     /**
      * Merge {@code other} into the message being built. {@code other} must have the exact same type
@@ -178,7 +199,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      *
      * @return byte array with the serialized data.
      */
-    public static byte[] toByteArray(ProtoMessage msg) {
+    public static byte[] toByteArray(ProtoMessage<?> msg) {
         final byte[] result = new byte[msg.getSerializedSize()];
         toByteArray(msg, result, 0, result.length);
         return result;
@@ -278,6 +299,35 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     @Override
     public ProtoMessage clone() throws CloneNotSupportedException {
         return (ProtoMessage) super.clone();
+    }
+
+    /**
+     * @return the full path to all missing required fields in the message
+     */
+    public List<String> getMissingFields(){
+        List<String> results = new ArrayList<String>();
+        getMissingFields("", results);
+        return results;
+    }
+
+    /**
+     * Adds the full path to all missing required fields in the message
+     */
+    protected void getMissingFields(String prefix, List<String> results) {
+    }
+
+    protected static void getMissingFields(String prefix, String fieldName, ProtoMessage<?> field, List<String> results) {
+        if (!field.isInitialized()) {
+            field.getMissingFields(prefix + fieldName + ".", results);
+        }
+    }
+
+    protected static void getMissingFields(String prefix, String fieldName, RepeatedMessage<?> field, List<String> results) {
+        for (int i = 0; i < field.length; i++) {
+            if (!field.array[i].isInitialized()) {
+                field.array[i].getMissingFields(prefix + fieldName + "[" + i + "].", results);
+            }
+        }
     }
 
     /**
