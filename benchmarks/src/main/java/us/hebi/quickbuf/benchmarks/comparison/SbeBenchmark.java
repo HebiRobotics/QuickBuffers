@@ -99,9 +99,9 @@ public class SbeBenchmark {
             int numMessages = maxNumBytes / sizePerMessage;
 
             byte[] data = new byte[sizePerMessage * numMessages];
-            ProtoSink sink = ProtoSink.newInstance().wrap(data);
+            ProtoSink sink = ProtoSink.newArraySink().wrap(data);
             for (int i = 0; i < numMessages; i++) {
-                sink.writeRawVarint32(singleMessage.length);
+                sink.writeUInt32NoTag(singleMessage.length);
                 sink.writeRawBytes(singleMessage);
             }
 
@@ -115,9 +115,9 @@ public class SbeBenchmark {
     final MarketDataIncrementalRefreshTrades marketMsg = MarketDataIncrementalRefreshTrades.newInstance();
     final Car carMsg = Car.newInstance();
     final ProtoSource source = ProtoSource.newArraySource();
-    final ProtoSink sink = ProtoSink.newInstance();
+    final ProtoSink sink = ProtoSink.newArraySink();
     final ProtoSource unsafeSource = ProtoSource.newDirectSource();
-    final ProtoSink unsafeSink = ProtoSink.newInstance();
+    final ProtoSink unsafeSink = ProtoSink.newArraySink();
 
     // ===================== DATASETS =====================
     final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
@@ -205,7 +205,7 @@ public class SbeBenchmark {
             source.readMessage(message.clearQuick());
             sink.writeMessageNoTag(message);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     static <MessageType extends AbstractMessageLite> int readProto(byte[] input, Parser<MessageType> parser) throws IOException {

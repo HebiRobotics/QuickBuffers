@@ -101,7 +101,7 @@ public class TagEncodeBenchmark {
 
     static final int n = 1000;
     final byte[] buffer = new byte[n * 5];
-    final ProtoSink sink = ProtoSink.newInstance();
+    final ProtoSink sink = ProtoSink.newArraySink();
 
     private static final byte[] TAG_1 = new byte[1];
     private static final byte[] TAG_2 = new byte[2];
@@ -115,7 +115,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -125,7 +125,7 @@ public class TagEncodeBenchmark {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -136,7 +136,7 @@ public class TagEncodeBenchmark {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -148,7 +148,7 @@ public class TagEncodeBenchmark {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -161,7 +161,7 @@ public class TagEncodeBenchmark {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -170,7 +170,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -179,7 +179,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian16((short) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -189,7 +189,7 @@ public class TagEncodeBenchmark {
             sink.writeRawLittleEndian16((short) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -198,7 +198,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian32((short) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -208,7 +208,7 @@ public class TagEncodeBenchmark {
             sink.writeRawLittleEndian32((short) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -217,7 +217,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_1);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -226,7 +226,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_2);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -235,7 +235,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_3);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -244,7 +244,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_4);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -253,7 +253,7 @@ public class TagEncodeBenchmark {
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_5);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
 }

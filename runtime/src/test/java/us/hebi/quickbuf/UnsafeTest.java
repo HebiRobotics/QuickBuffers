@@ -56,7 +56,7 @@ public class UnsafeTest {
         // Write
         int offset = 11;
         byte[] target = new byte[array.length + offset]; // make sure offsets are handled correctly
-        ProtoSink sink = ProtoSink.newUnsafeInstance().wrap(target, offset, target.length - offset);
+        ProtoSink sink = ProtoSink.newDirectSink().wrap(target, offset, target.length - offset);
         message.writeTo(sink);
         sink.checkNoSpaceLeft();
         byte[] actual = Arrays.copyOfRange(target, offset, target.length);
@@ -70,9 +70,9 @@ public class UnsafeTest {
     @Test
     public void testUnsafeDirectMemory() throws IOException {
         // Write
-        ProtoSink sink = ProtoSink.newUnsafeInstance().wrap(null, BufferAccess.address(directBuffer), array.length);
+        ProtoSink sink = ProtoSink.newDirectSink().wrap(null, BufferAccess.address(directBuffer), array.length);
         message.writeTo(sink);
-        byte[] actual = new byte[sink.position()];
+        byte[] actual = new byte[sink.getTotalBytesWritten()];
         sink.checkNoSpaceLeft();
         directBuffer.get(actual);
         assertArrayEquals(array, actual);
@@ -88,7 +88,7 @@ public class UnsafeTest {
         int size = msg.getSerializedSize();
         ByteBuffer buffer = ByteBuffer.allocateDirect(size);
 
-        ProtoSink sink = ProtoSink.newUnsafeInstance().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSink sink = ProtoSink.newDirectSink().wrap(null, BufferAccess.address(buffer), size);
         msg.writeTo(sink);
         sink.checkNoSpaceLeft();
 
@@ -102,7 +102,7 @@ public class UnsafeTest {
         int size = msg.getSerializedSize();
         ByteBuffer buffer = ByteBuffer.allocateDirect(size);
 
-        ProtoSink sink = ProtoSink.newUnsafeInstance().wrap(null, BufferAccess.address(buffer), size);
+        ProtoSink sink = ProtoSink.newDirectSink().wrap(null, BufferAccess.address(buffer), size);
         msg.writeTo(sink);
         sink.checkNoSpaceLeft();
 
@@ -113,7 +113,7 @@ public class UnsafeTest {
     @Test
     public void testDirectBuffer() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocateDirect(bbSize);
-        testWriteByteBuffer(ProtoSink.newUnsafeInstance(), buffer);
+        testWriteByteBuffer(ProtoSink.newDirectSink(), buffer);
         testReadByteBuffer(ProtoSource.newDirectSource(), buffer);
         testReadByteBuffer(ProtoSource.newDirectSource(), buffer.asReadOnlyBuffer());
     }
@@ -121,10 +121,10 @@ public class UnsafeTest {
     @Test
     public void testHeapBuffer() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(bbSize);
-        testWriteByteBuffer(ProtoSink.newUnsafeInstance(), buffer);
+        testWriteByteBuffer(ProtoSink.newDirectSink(), buffer);
         testReadByteBuffer(ProtoSource.newDirectSource(), buffer);
         testReadByteBuffer(ProtoSource.newDirectSource(), buffer.asReadOnlyBuffer());
-        testWriteByteBuffer(ProtoSink.newInstance(), buffer);
+        testWriteByteBuffer(ProtoSink.newArraySink(), buffer);
         testReadByteBuffer(ProtoSource.newArraySource(), buffer);
         testReadByteBuffer(ProtoSource.newArraySource(), buffer.asReadOnlyBuffer());
     }
@@ -133,13 +133,13 @@ public class UnsafeTest {
     public void testDirectBufferFailures() throws Exception {
         ByteBuffer buffer = ByteBuffer.allocateDirect(bbSize);
         try {
-            testWriteByteBuffer(ProtoSink.newUnsafeInstance(), buffer.asReadOnlyBuffer());
+            testWriteByteBuffer(ProtoSink.newDirectSink(), buffer.asReadOnlyBuffer());
             fail("write to read-only");
         } catch (IllegalArgumentException args) {
         }
 
         try {
-            testWriteByteBuffer(ProtoSink.newInstance(), buffer);
+            testWriteByteBuffer(ProtoSink.newArraySink(), buffer);
             fail("heap sink with direct buffer");
         } catch (IllegalArgumentException args) {
         }
@@ -155,13 +155,13 @@ public class UnsafeTest {
     public void testHeapBufferFailures() throws Exception {
         ByteBuffer buffer = ByteBuffer.allocateDirect(bbSize);
         try {
-            testWriteByteBuffer(ProtoSink.newUnsafeInstance(), buffer.asReadOnlyBuffer());
+            testWriteByteBuffer(ProtoSink.newDirectSink(), buffer.asReadOnlyBuffer());
             fail("write to read-only");
         } catch (IllegalArgumentException args) {
         }
 
         try {
-            testWriteByteBuffer(ProtoSink.newInstance(), buffer.asReadOnlyBuffer());
+            testWriteByteBuffer(ProtoSink.newArraySink(), buffer.asReadOnlyBuffer());
             fail("heap with direct buffer");
         } catch (IllegalArgumentException args) {
         }
@@ -180,10 +180,10 @@ public class UnsafeTest {
 
     private void testWriteByteBuffer(ProtoSink sink, ByteBuffer buffer) throws IOException {
         ByteUtil.wrapBuffer(sink, prepare(buffer));
-        assertEquals(0, sink.position());
+        assertEquals(0, sink.getTotalBytesWritten());
         assertEquals(buffer.remaining(), sink.spaceLeft());
         message.writeTo(sink);
-        assertEquals(buffer.limit() - buffer.position(), sink.position());
+        assertEquals(buffer.limit() - buffer.position(), sink.getTotalBytesWritten());
         sink.checkNoSpaceLeft();
     }
 

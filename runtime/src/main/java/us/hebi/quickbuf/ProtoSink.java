@@ -52,6 +52,7 @@ package us.hebi.quickbuf;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 import static us.hebi.quickbuf.WireFormat.*;
@@ -84,7 +85,7 @@ public abstract class ProtoSink {
      * {@link OutOfSpaceException} will be thrown.
      */
     public static ProtoSink newInstance(final byte[] flatArray) {
-        return newInstance().wrap(flatArray);
+        return newArraySink().wrap(flatArray);
     }
 
     /**
@@ -95,11 +96,26 @@ public abstract class ProtoSink {
     public static ProtoSink newInstance(final byte[] flatArray,
                                         final int offset,
                                         final int length) {
-        return newInstance().wrap(flatArray, offset, length);
+        return newArraySink().wrap(flatArray, offset, length);
+    }
+
+    /** Create a new ProtoSink writing to the given {@link RepeatedByte}. */
+    public static ProtoSink newInstance(RepeatedByte bytes) {
+        return newBytesSink().wrap(bytes);
+    }
+
+    /** Create a new ProtoSink writing to the given {@link OutputStream}. */
+    public static ProtoSink newInstance(OutputStream stream) {
+        return newStreamSink().wrap(stream);
+    }
+
+    /** Create a new ProtoSink writing to the given {@link ByteBuffer}. */
+    public static ProtoSink newInstance(ByteBuffer buffer) {
+        return newBufferSink().wrap(buffer);
     }
 
     /**
-     * Create a new {@code ProtoSink} that writes directly to a byte array.
+     * Creates a new {@code ProtoSink} that writes directly to a byte array.
      * If more bytes are written than fit in the array, {@link OutOfSpaceException} will
      * be thrown.
      *
@@ -107,63 +123,92 @@ public abstract class ProtoSink {
      * current platform and may leverage features from sun.misc.Unsafe if
      * available.
      */
-    public static ProtoSink newInstance() {
+    public static ProtoSink newArraySink() {
         return new ArraySink();
     }
 
     /**
-     * Create a new {@code ProtoSink} that writes directly to a byte array or
+     * Creates a new {@code ProtoSink} that writes directly to a byte array or
      * direct memory. If more bytes are written than fit in the array, an
-     * {@link OutOfSpaceException} will be thrown.
+     * {@link OutOfSpaceException} will be thrown. It is similar to {@link ArraySink},
+     * but it allows null buffers to support raw memory addresses.
      *
-     * This sink requires availability of sun.misc.Unsafe.
-     *
-     * Additionally, this sink removes null-argument checks and allows users to
-     * write to off-heap memory. Working with off-heap memory may cause segfaults
-     * of the runtime, so only use if you know what you are doing.
+     * This sink requires availability of sun.misc.Unsafe. Be aware that
+     * passing incorrect memory addresses may cause the entire runtime to
+     * segfault.
      */
-    public static ProtoSink newUnsafeInstance() {
+    public static ProtoSink newDirectSink() {
         return new ArraySink.DirectArraySink();
     }
 
     /**
-     * Creates a lightweight wrapper to write protobuf messages
-     * to an {@link OutputStream}). This is slower than writing
-     * to an array, but it does not require extra memory.
-     *
-     * @param outputStream target output
-     * @return wrapper
+     * Creates a new {@code ProtoSink} that writes to a {@link RepeatedByte}. The
+     * size of the output grows automatically as more bytes are written.
      */
-    public static ProtoSink wrap(OutputStream outputStream) {
-        return new StreamSink(outputStream);
+    public static ProtoSink newBytesSink() {
+        return new ArraySink.RepeatedByteSink();
     }
 
     /**
-     * Creates a lightweight wrapper to write protobuf messages to
-     * a {@link ByteBuffer}). This is slower than  writing to an
-     * array, but it does not require extra memory.
+     * Creates a new {@code ProtoSink} that writes directly to an {@link OutputStream}.
      *
-     * @param buffer target output
-     * @return wrapper
+     * The implementation is lightweight and writes byte-by-byte without any internal
+     * buffering. This is slower than writing to an array, but it does not require
+     * extra memory.
      */
-    public static ProtoSink wrap(ByteBuffer buffer) {
-        return new BufferSink(buffer);
+    public static ProtoSink newStreamSink() {
+        return new StreamSink();
     }
 
     /**
-     * Changes the output to the given array. This resets any
-     * existing internal state such as position and is
-     * equivalent to creating a new instance.
+     * Creates a new {@code ProtoSink} that writes directly to a {@link ByteBuffer}.
      *
-     * @param buffer target buffer
-     * @param offset start index
-     * @param length buffer size
-     * @return this
+     * The current implementation is a very lightweight wrapper that writes
+     * individual bytes. This is slower than writing to an array, but it
+     * works on all platforms.
      */
-    public abstract ProtoSink wrap(byte[] buffer, long offset, int length);
+    public static ProtoSink newBufferSink() {
+        return new BufferSink();
+    }
 
+    /**
+     * Changes the output to the given array. This resets any existing internal state
+     * such as position and is equivalent to creating a new instance.
+     */
     public final ProtoSink wrap(byte[] buffer) {
         return wrap(buffer, 0, buffer.length);
+    }
+
+    /**
+     * Changes the output to the given array. This resets any existing internal state
+     * such as position and is equivalent to creating a new instance.
+     */
+    public ProtoSink wrap(byte[] buffer, long offset, int length) {
+        throw new UnsupportedOperationException("sink does not support writing to a byte array");
+    }
+
+    /**
+     * Changes the output to the given bytes. This resets any existing internal state
+     * such as position and is equivalent to creating a new instance.
+     */
+    public ProtoSink wrap(RepeatedByte bytes) {
+        throw new UnsupportedOperationException("sink does not support writing to RepeatedByte");
+    }
+
+    /**
+     * Changes the output to the given stream. This resets any existing internal state
+     * such as position and is equivalent to creating a new instance.
+     */
+    public ProtoSink wrap(OutputStream stream) {
+        throw new UnsupportedOperationException("sink does not support writing to an InputStream");
+    }
+
+    /**
+     * Changes the output to the given buffer. This resets any existing internal state
+     * such as position and is equivalent to creating a new instance.
+     */
+    public ProtoSink wrap(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("sink does not support writing to a ByteBuffer");
     }
 
     /**
@@ -171,9 +216,7 @@ public abstract class ProtoSink {
      *
      * @return this
      */
-    public ProtoSink clear() {
-        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
-    }
+    public abstract ProtoSink clear();
 
     // ---------------------- WRITES WITH TAG (NOT USED) ----------------------
 
@@ -1015,14 +1058,15 @@ public abstract class ProtoSink {
     }
 
     /**
-     * Returns the position within the internal buffer.
+     * Get the total number of bytes successfully written to this sink. The returned value is not
+     * guaranteed to be accurate if exceptions have been found in the middle of writing.
      */
-    public abstract int position();
+    public abstract int getTotalBytesWritten();
 
     /**
      * Resets the position within the internal buffer to zero.
      *
-     * @see #position
+     * @see #getTotalBytesWritten
      * @see #spaceLeft
      */
     public abstract ProtoSink reset();
@@ -1033,11 +1077,15 @@ public abstract class ProtoSink {
      * this exception will be thrown.
      */
     public static class OutOfSpaceException extends IOException {
-        private static final long serialVersionUID = -6947486886997889499L;
+        private static final long serialVersionUID = 0L;
+        private static final String MESSAGE = "ProtoSink was writing and ran out of space";
 
         OutOfSpaceException(int position, int limit) {
-            super("ProtoSink was writing to a flat byte array and ran " +
-                    "out of space (pos " + position + " limit " + limit + ").");
+            super(MESSAGE + ": (pos " + position + " limit " + limit + ").");
+        }
+
+        OutOfSpaceException(Throwable cause) {
+            super(MESSAGE, cause);
         }
     }
 
@@ -1197,36 +1245,51 @@ public abstract class ProtoSink {
     }
 
     static class StreamSink extends ProtoSink {
-        StreamSink(OutputStream outputStream) {
-            this.outputStream = outputStream;
+
+        @Override
+        public ProtoSink wrap(OutputStream outputStream) {
+            if(outputStream == null) {
+                throw new NullPointerException();
+            }
+            this.stream = outputStream;
+            return this;
         }
 
         @Override
-        public ProtoSink wrap(byte[] buffer, long offset, int length) {
-            throw new UnsupportedOperationException();
+        public ProtoSink clear() {
+            return wrap(EMPTY_OUTPUT_STREAM);
         }
 
         @Override
         public int spaceLeft() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("OutputStreams have no known size limit");
         }
 
         @Override
-        public int position() {
-            throw new UnsupportedOperationException();
+        public int getTotalBytesWritten() {
+            return position;
         }
 
         @Override
         public ProtoSink reset() {
-            throw new UnsupportedOperationException();
+            position = 0;
+            return this;
         }
 
         @Override
         public void writeRawByte(byte value) throws IOException {
-            outputStream.write(value);
+            stream.write(value);
+            position++;
         }
 
-        final OutputStream outputStream;
+        @Override
+        public void writeRawBytes(byte[] value, int offset, int length) throws IOException {
+            stream.write(value, offset, length);
+            position += length;
+        }
+
+        OutputStream stream = EMPTY_OUTPUT_STREAM;
+        int position = 0;
 
         private static final OutputStream EMPTY_OUTPUT_STREAM = new OutputStream() {
             @Override
@@ -1234,17 +1297,24 @@ public abstract class ProtoSink {
                 // do nothing
             }
         };
+
     }
 
     static class BufferSink extends ProtoSink {
 
-        BufferSink(ByteBuffer buffer) {
-            this.buffer = buffer;
+        BufferSink() {
         }
 
         @Override
-        public ProtoSink wrap(byte[] buffer, long offset, int length) {
-            throw new UnsupportedOperationException();
+        public ProtoSink wrap(ByteBuffer byteBuffer) {
+            buffer = byteBuffer;
+            initialPosition = buffer.position();
+            return this;
+        }
+
+        @Override
+        public ProtoSink clear() {
+            return wrap(ProtoUtil.EMPTY_BYTE_BUFFER);
         }
 
         @Override
@@ -1253,22 +1323,39 @@ public abstract class ProtoSink {
         }
 
         @Override
-        public int position() {
-            return buffer.position();
+        public int getTotalBytesWritten() {
+            return buffer.position() - initialPosition;
         }
 
         @Override
         public ProtoSink reset() {
-            buffer.rewind();
+            buffer.position(initialPosition);
             return this;
         }
 
         @Override
         public void writeRawByte(byte value) throws IOException {
-            buffer.put(value);
+            try {
+                buffer.put(value);
+            } catch (BufferOverflowException e) {
+                throw new OutOfSpaceException(e);
+            }
         }
 
-        final ByteBuffer buffer;
+        @Override
+        public void writeRawBytes(byte[] value, int offset, int length) throws IOException {
+            try {
+                buffer.put(value, offset, length);
+            } catch (IndexOutOfBoundsException e) {
+                throw new OutOfSpaceException(e);
+            } catch (BufferOverflowException e) {
+                throw new OutOfSpaceException(e);
+            }
+        }
+
+        ByteBuffer buffer = ProtoUtil.EMPTY_BYTE_BUFFER;
+        int initialPosition = 0;
+
     }
 
 }

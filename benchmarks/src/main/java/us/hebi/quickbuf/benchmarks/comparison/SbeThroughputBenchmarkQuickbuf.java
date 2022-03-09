@@ -98,7 +98,7 @@ public class SbeThroughputBenchmarkQuickbuf {
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
     final ProtoSource source = ProtoSource.newArraySource();
-    final ProtoSink sink = ProtoSink.newInstance();
+    final ProtoSink sink = ProtoSink.newArraySink();
 
     final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());
     final Car carFast = buildCarData(Car.newInstance());
@@ -129,7 +129,7 @@ public class SbeThroughputBenchmarkQuickbuf {
     public int testMarketWriteOnly() throws IOException {
         sink.wrap(encodeBuffer);
         marketDataFast.writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @BenchmarkMode(Mode.AverageTime)
@@ -152,28 +152,28 @@ public class SbeThroughputBenchmarkQuickbuf {
     public int testCarWriteOnly() throws IOException {
         sink.wrap(encodeBuffer);
         carFast.writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int testMarketEncodeFast() throws IOException { // no size computation
         sink.wrap(encodeBuffer);
         marketData.copyFrom(marketDataFast).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int testCarEncodeFast() throws IOException { // no size computation
         sink.wrap(encodeBuffer);
         car.copyFrom(carFast).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int testMarketEncode() throws IOException {
         sink.wrap(encodeBuffer);
         buildMarketData(marketData).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -186,7 +186,7 @@ public class SbeThroughputBenchmarkQuickbuf {
     public int testCarEncode() throws IOException {
         sink.wrap(encodeBuffer);
         buildCarData(car).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark

@@ -73,7 +73,7 @@ public class DecodingBenchmark {
 
     int[] values = new int[512];
     byte[] output = new byte[values.length * 10];
-    ProtoSink sink = ProtoSink.newInstance();
+    ProtoSink sink = ProtoSink.newArraySink();
     ProtoSource source = ProtoSource.newArraySource();
 
     @Setup(Level.Iteration)
@@ -87,9 +87,9 @@ public class DecodingBenchmark {
 
         sink.wrap(output);
         for (int i = 0; i < values.length; i++) {
-            sink.writeRawVarint32(values[i]);
+            sink.writeUInt32NoTag(values[i]);
         }
-        source.wrap(output, 0, sink.position());
+        source.wrap(output, 0, sink.getTotalBytesWritten());
     }
 
     @Benchmark

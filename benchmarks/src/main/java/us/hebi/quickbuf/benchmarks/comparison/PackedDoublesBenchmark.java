@@ -78,7 +78,7 @@ public class PackedDoublesBenchmark {
     final byte[] output = new byte[input.length + 100];
 
     final ProtoSource source = ProtoSource.newArraySource();
-    final ProtoSink sink = ProtoSink.newInstance();
+    final ProtoSink sink = ProtoSink.newArraySink();
 
     final Packed message = Packed.newInstance();
 
@@ -91,7 +91,7 @@ public class PackedDoublesBenchmark {
     @Benchmark
     public int readWriteQuick() throws IOException {
         message.clear().mergeFrom(source.wrap(input)).writeTo(sink.wrap(output));
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark

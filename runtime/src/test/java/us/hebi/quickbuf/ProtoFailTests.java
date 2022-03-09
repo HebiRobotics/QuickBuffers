@@ -189,7 +189,7 @@ public class ProtoFailTests {
     private void writeToTruncated(ProtoMessage msg) throws IOException {
         byte[] buffer = new byte[msg.getSerializedSize() - 1];
         // use unsafe to make sure that we aren't relying on normal array checks
-        ProtoSink output = ProtoSink.newUnsafeInstance().wrap(buffer);
+        ProtoSink output = ProtoSink.newDirectSink().wrap(buffer);
         msg.writeTo(output);
     }
 

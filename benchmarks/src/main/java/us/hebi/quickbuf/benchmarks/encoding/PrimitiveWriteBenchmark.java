@@ -125,7 +125,7 @@ public class PrimitiveWriteBenchmark {
     private int write(TestAllTypes msg) throws IOException {
         sink.reset();
         msg.writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
 }

@@ -53,6 +53,7 @@ package us.hebi.quickbuf;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
@@ -87,12 +88,17 @@ public abstract class ProtoSource {
         return newArraySource().wrap(buf, off, len);
     }
 
-    /** Create a new ProtoSource reading from the given input stream. */
+    /** Create a new ProtoSource reading from the given {@link RepeatedByte}. */
+    public static ProtoSource newInstance(RepeatedByte bytes) {
+        return newArraySource().wrap(bytes);
+    }
+
+    /** Create a new ProtoSource reading from the given {@link InputStream}. */
     public static ProtoSource newInstance(InputStream stream) {
         return newStreamSource().wrap(stream);
     }
 
-    /** Create a new ProtoSource reading from the given input stream. */
+    /** Create a new ProtoSource reading from the given {@link ByteBuffer}. */
     public static ProtoSource newInstance(ByteBuffer buffer) {
         return newBufferSource().wrap(buffer);
     }
@@ -135,10 +141,9 @@ public abstract class ProtoSource {
     /**
      * Creates a new {@code ProtoSource} that reads from an {@link ByteBuffer}.
      *
-     * The current implementation is a very lightweight wrapper that
-     * reads byte-by-byte and uses the buffer state to keep track. This
-     * is slower than reading from an array, but it works on all
-     * platforms.
+     * The current implementation is a very lightweight wrapper that reads
+     * individual bytes. This is slower than reading from an array, but it
+     * works on all platforms.
      */
     public static ProtoSource newBufferSource() {
         return new BufferSource();
@@ -159,25 +164,32 @@ public abstract class ProtoSource {
      * a new instance.
      */
     public ProtoSource wrap(byte[] buffer, long off, int len) {
-        throw new UnsupportedOperationException("source does not support reading from arrays");
+        throw new UnsupportedOperationException("source does not support reading from a byte array");
     }
 
     /**
-     * Changes the input to the given array. This resets any existing
+     * Changes the input to the current backing array of the bytes object.
+     */
+    public final ProtoSource wrap(RepeatedByte bytes) {
+        return wrap(bytes.array(), 0, bytes.length());
+    }
+
+    /**
+     * Changes the input to the given stream. This resets any existing
      * internal state such as position and is equivalent to creating
      * a new instance.
      */
     public ProtoSource wrap(InputStream stream) {
-        throw new UnsupportedOperationException("source does not support reading from streams");
+        throw new UnsupportedOperationException("source does not support reading from an InputStream");
     }
 
     /**
-     * Changes the input to the given array. This resets any existing
+     * Changes the input to the given buffer. This resets any existing
      * internal state such as position and is equivalent to creating
      * a new instance.
      */
     public ProtoSource wrap(ByteBuffer buffer) {
-        throw new UnsupportedOperationException("source does not support reading from ByteBuffers");
+        throw new UnsupportedOperationException("source does not support reading from a ByteBuffer");
     }
 
     /**

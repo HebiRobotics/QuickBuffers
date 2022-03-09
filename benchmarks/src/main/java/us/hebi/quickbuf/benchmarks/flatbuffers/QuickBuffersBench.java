@@ -68,7 +68,7 @@ public class QuickBuffersBench {
         try {
             sink.wrap(encodeBuffer);
             setData(encodeMsg).writeTo(sink);
-            return sink.position();
+            return sink.getTotalBytesWritten();
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -115,7 +115,7 @@ public class QuickBuffersBench {
     final FooBarContainer encodeMsg = setData(FooBarContainer.newInstance());
 
     byte[] encodeBuffer = encodeMsg.toByteArray();
-    ProtoSink sink = ProtoSink.newInstance().wrap(encodeBuffer);
+    ProtoSink sink = ProtoSink.newArraySink().wrap(encodeBuffer);
 
     FooBarContainer decodeMsg = FooBarContainer.newInstance();
     byte[] decodeBuffer = encodeBuffer.clone();

@@ -144,16 +144,16 @@ public class SerializationBenchmarkQuickbuf {
     byte[] stringMsgBytes = stringMessage.toByteArray();
     byte[] stringMsgOutBuffer = new byte[stringMessage.getSerializedSize()];
 
-    final ProtoSink sink = ProtoSink.newInstance();
+    final ProtoSink sink = ProtoSink.newArraySink();
     final ProtoSource source = ProtoSource.newArraySource();
 
-    final ProtoSink unsafeSink = ProtoSink.newUnsafeInstance();
+    final ProtoSink unsafeSink = ProtoSink.newDirectSink();
     final ProtoSource unsafeSource = ProtoSource.newDirectSource();
 
     final ByteArrayOutputStream baos = new ByteArrayOutputStream(stringMsgOutBuffer.length);
-    final ProtoSink streamSink = ProtoSink.wrap(baos);
-    final ProtoSink byteBufferSink = ProtoSink.wrap(ByteBuffer.allocate(stringMsgOutBuffer.length));
-    final ProtoSink directByteBufferSink = ProtoSink.wrap(ByteBuffer.allocateDirect(stringMsgOutBuffer.length));
+    final ProtoSink streamSink = ProtoSink.newInstance(baos);
+    final ProtoSink byteBufferSink = ProtoSink.newInstance(ByteBuffer.allocate(stringMsgOutBuffer.length));
+    final ProtoSink directByteBufferSink = ProtoSink.newInstance(ByteBuffer.allocateDirect(stringMsgOutBuffer.length));
 
     @Benchmark
     public TestAllTypes readMessage() throws IOException {
@@ -179,13 +179,13 @@ public class SerializationBenchmarkQuickbuf {
     @Benchmark
     public int writeMessage() throws IOException {
         msg.writeTo(sink.wrap(msgOutBuffer));
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeString() throws IOException {
         stringMessage.writeTo(sink.wrap(stringMsgOutBuffer));
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -202,13 +202,13 @@ public class SerializationBenchmarkQuickbuf {
     @Benchmark
     public int writeMessageUnsafe() throws IOException {
         msg.writeTo(unsafeSink.wrap(msgOutBuffer));
-        return unsafeSink.position();
+        return unsafeSink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeStringUnsafe() throws IOException {
         stringMessage.writeTo(unsafeSink.wrap(stringMsgOutBuffer));
-        return unsafeSink.position();
+        return unsafeSink.getTotalBytesWritten();
     }
 
     @Benchmark
@@ -221,13 +221,13 @@ public class SerializationBenchmarkQuickbuf {
     @Benchmark
     public int writeMessageToByteBuffer() throws IOException {
         msg.writeTo(byteBufferSink.reset());
-        return byteBufferSink.position();
+        return byteBufferSink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeMessageToDirectByteBuffer() throws IOException {
         msg.writeTo(directByteBufferSink.reset());
-        return directByteBufferSink.position();
+        return directByteBufferSink.getTotalBytesWritten();
     }
 
 }

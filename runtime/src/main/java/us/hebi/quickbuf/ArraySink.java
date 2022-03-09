@@ -39,10 +39,7 @@ class ArraySink extends ProtoSink {
     protected int position;
 
     @Override
-    public int position() {
-        // This used to return ByteBuffer.position(), which is
-        // the number of written bytes, and not the index within
-        // the array.
+    public int getTotalBytesWritten() {
         return position - offset;
     }
 
@@ -109,6 +106,11 @@ class ArraySink extends ProtoSink {
         this.limit = this.offset + length;
         this.position = this.offset;
         return this;
+    }
+
+    @Override
+    public ProtoSink clear() {
+        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
 
     @Override
@@ -297,6 +299,120 @@ class ArraySink extends ProtoSink {
                 position += numBytes;
             }
         }
+
+    }
+
+    static class RepeatedByteSink extends  ProtoSink {
+
+        public ProtoSink wrap(RepeatedByte bytes) {
+            initialPosition = bytes.length;
+            output = bytes;
+            return this;
+        }
+
+        @Override
+        public ProtoSink clear() {
+            initialPosition = 0;
+            output = null;
+            return this;
+        }
+
+        @Override
+        public int spaceLeft() {
+            throw new UnsupportedOperationException("Output grows automatically and has no size limit");
+        }
+
+        @Override
+        public int getTotalBytesWritten() {
+            return output.length() - initialPosition;
+        }
+
+        @Override
+        public ProtoSink reset() {
+            output.setLength(initialPosition);
+            return this;
+        }
+
+        @Override
+        public void writeRawByte(final byte value) throws IOException {
+            output.add(value);
+        }
+
+        @Override
+        public void writeLength(int length) throws IOException {
+            // Length bytes are always followed by that amount of
+            // content, so we can eagerly reserve the size.
+            output.reserve(MAX_VARINT32_SIZE + length);
+            super.writeLength(length);
+        }
+
+        @Override
+        public void writeRawLittleEndian16(final short value) throws IOException {
+            final int position = output.addLength(FIXED_16_SIZE);
+            ByteUtil.writeLittleEndian16(output.array(), position, value);
+        }
+
+        @Override
+        public void writeRawLittleEndian32(final int value) throws IOException {
+            final int position = output.addLength(FIXED_32_SIZE);
+            ByteUtil.writeLittleEndian32(output.array(), position, value);
+        }
+
+        @Override
+        public void writeRawLittleEndian64(final long value) throws IOException {
+            final int position = output.addLength(FIXED_64_SIZE);
+            ByteUtil.writeLittleEndian64(output.array(), position, value);
+        }
+
+        @Override
+        public void writeFloatNoTag(final float value) throws IOException {
+            final int position = output.addLength(FIXED_32_SIZE);
+            ByteUtil.writeFloat(output.array(), position, value);
+        }
+
+        @Override
+        public void writeDoubleNoTag(final double value) throws IOException {
+            final int position = output.addLength(FIXED_64_SIZE);
+            ByteUtil.writeDouble(output.array(), position, value);
+        }
+
+        @Override
+        public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
+            output.addAll(value, offset, length);
+        }
+
+        @Override
+        protected void writeRawBooleans(final boolean[] values, final int length) throws IOException {
+            final int position = output.addLength(length);
+            ByteUtil.writeBooleans(output.array(), position, values, length);
+        }
+
+        @Override
+        protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
+            final int position = output.addLength(length * FIXED_32_SIZE);
+            ByteUtil.writeLittleEndian32s(output.array(), position, values, length);
+        }
+
+        @Override
+        protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
+            final int position = output.addLength(length * FIXED_64_SIZE);
+            ByteUtil.writeLittleEndian64s(output.array(), position, values, length);
+        }
+
+        @Override
+        protected void writeRawFloats(final float[] values, final int length) throws IOException {
+            final int position = output.addLength(length * FIXED_32_SIZE);
+            ByteUtil.writeFloats(output.array(), position, values, length);
+        }
+
+        @Override
+        protected void writeRawDoubles(final double[] values, final int length) throws IOException {
+            final int position = output.addLength(length * FIXED_64_SIZE);
+            ByteUtil.writeDoubles(output.array(), position, values, length);
+        }
+
+        int initialPosition = 0;
+        RepeatedByte output;
 
     }
 

@@ -46,7 +46,7 @@ public class ProtoTests {
     public void testOutputStreamSink() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        msg.writeTo(ProtoSink.wrap(baos));
+        msg.writeTo(ProtoSink.newInstance(baos));
         byte[] expected = msg.toByteArray();
         byte[] actual = baos.toByteArray();
         assertEquals(msg, TestAllTypes.parseFrom(actual));
@@ -72,11 +72,20 @@ public class ProtoTests {
     public void testByteBufferSink() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
         ByteBuffer buffer = ByteBuffer.allocate(msg.getSerializedSize());
-        msg.writeTo(ProtoSink.wrap(buffer));
+        msg.writeTo(ProtoSink.newInstance(buffer));
         byte[] expected = msg.toByteArray();
         byte[] actual = buffer.array();
         assertEquals(msg, TestAllTypes.parseFrom(actual));
         assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void testRepeatedByteSerialization() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+        msg.writeTo(ProtoSink.newInstance(bytes));
+        assertEquals(msg.getSerializedSize(), bytes.length);
+        assertEquals(msg, TestAllTypes.parseFrom(ProtoSource.newInstance(bytes)));
     }
 
     @Test

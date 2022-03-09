@@ -215,7 +215,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      */
     public static void toByteArray(ProtoMessage<?> msg, byte[] data, int offset, int length) {
         try {
-            final ProtoSink output = ProtoSink.newInstance().wrap(data, offset, length);
+            final ProtoSink output = ProtoSink.newArraySink().wrap(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
