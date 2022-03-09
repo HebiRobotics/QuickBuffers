@@ -288,11 +288,12 @@ class ArraySource extends ProtoSource{
                 // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;
                 return super.wrap(buffer, offset, length);
+            } else if (offset <= 0) {
+                throw new NullPointerException("null reference with invalid base address");
+            } else if (length < 0) {
+                throw new ArrayIndexOutOfBoundsException("negative length");
             } else {
                 // Wrapping direct memory
-                if (offset <= 0) {
-                    throw new NullPointerException("null reference with invalid address offset");
-                }
                 this.buffer = null;
                 this.baseOffset = offset;
                 this.position = this.offset = 0;
