@@ -183,7 +183,11 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
 
     @Override
     protected void writeString(Utf8String value) {
-        StringEncoding.writeQuotedUtf8(value, output);
+        if (value.hasBytes()) {
+            StringEncoding.writeQuotedUtf8(value, output);
+        } else {
+            StringEncoding.writeQuotedUtf8(value.getString(), output);
+        }
         writeMore();
     }
 

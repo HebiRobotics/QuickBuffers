@@ -53,6 +53,10 @@ public final class Utf8String {
         return string != null;
     }
 
+    boolean hasBytes() {
+        return serializedSize >= 0;
+    }
+
     /**
      * Gets the number of bytes.
      *
