@@ -52,8 +52,8 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(2)
-@Warmup(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 public class SbeThroughputBenchmarkProtobuf {
 
