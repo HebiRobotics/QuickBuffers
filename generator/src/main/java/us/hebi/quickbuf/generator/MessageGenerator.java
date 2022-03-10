@@ -615,25 +615,23 @@ class MessageGenerator {
 
         // add case statements for every field
         for (FieldGenerator field : fields) {
-            Consumer<String> generateCase = (name) -> {
-                final int hash = FieldUtil.hash32(name);
-                mergeFrom.beginControlFlow("case $L:", hash)
-                        .beginControlFlow("if (input.isAtField($S))", name);
-                field.generateJsonDeserializationCode(mergeFrom);
-                mergeFrom.nextControlFlow("else")
-                        .addStatement("input.skipValue()")
-                        .endControlFlow()
-                        .addStatement("break")
-                        .endControlFlow();
-            };
 
-            String name1 = field.getInfo().getPrimaryJsonName();
-            generateCase.accept(name1);
+            int hash1 = FieldUtil.hash32(field.getInfo().getJsonName());
+            int hash2 = FieldUtil.hash32(field.getInfo().getProtoFieldName());
 
-            String name2 = field.getInfo().getSecondaryJsonName();
-            if (!name1.equals(name2)) {
-                generateCase.accept(name2);
+            if (hash1 != hash2) {
+                mergeFrom.addCode("case $L:\n", hash1);
             }
+            mergeFrom.beginControlFlow("case $L:", hash2)
+                    .beginControlFlow("if (input.isAtField($N.$N))",
+                            info.getFieldNamesClass().simpleName(),
+                            field.getInfo().getFieldName());
+            field.generateJsonDeserializationCode(mergeFrom);
+            mergeFrom.nextControlFlow("else")
+                    .addStatement("input.skipValue()")
+                    .endControlFlow()
+                    .addStatement("break")
+                    .endControlFlow();
         }
 
         // add default case
@@ -684,9 +682,14 @@ class MessageGenerator {
                 .addModifiers(Modifier.STATIC);
 
         fields.forEach(f -> {
-            fieldNamesClass.addField(FieldSpec.builder(RuntimeClasses.FieldName, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL)
-                    .initializer("$T.forField($S)", RuntimeClasses.FieldName, f.getInfo().getPrimaryJsonName())
-                    .build());
+            FieldSpec.Builder field = FieldSpec.builder(RuntimeClasses.FieldName, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL);
+            if (f.getInfo().getJsonName().equals(f.getInfo().getProtoFieldName())) {
+                field.initializer("$T.forField($S)", RuntimeClasses.FieldName, f.getInfo().getJsonName());
+            } else {
+                field.initializer("$T.forField($S, $S)", RuntimeClasses.FieldName,
+                        f.getInfo().getJsonName(), f.getInfo().getProtoFieldName());
+            }
+            fieldNamesClass.addField(field.build());
         });
 
         type.addType(fieldNamesClass.build());

@@ -293,6 +293,23 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink<SubType>
 
     protected boolean writeEnumStrings = false;
 
+    /**
+     * The serialized JSON object keys map to the value defined by the 'json_name'
+     * option, or the lowerCamelCase version of the field name in the proto file.
+     * <p>
+     * This option lets users choose to preserve the original field names as defined
+     * in the proto file. Conforming parsers accept both keys.
+     *
+     * @param value true uses the original field names as JSON object keys
+     * @return this
+     */
+    public SubType setPreserveProtoFieldNames(final boolean value) {
+        this.preserveProtoFieldNames = value;
+        return thisObj();
+    }
+
+    protected boolean preserveProtoFieldNames = false;
+
     // ==================== Child Interface ====================
 
     /**

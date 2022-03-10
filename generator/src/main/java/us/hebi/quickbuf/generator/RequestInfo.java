@@ -140,10 +140,6 @@ public class RequestInfo {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("store_unknown_fields", "false"));
     }
 
-    public boolean getJsonUseProtoName() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("json_use_proto_name", "false"));
-    }
-
     public boolean getEnforceHasChecks() {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("enforce_has_checks", "false"));
     }
@@ -488,16 +484,14 @@ public class RequestInfo {
             return type;
         }
 
-        // Used for serialization
-        public String getPrimaryJsonName() {
-            return parentFile.getParentRequest().getJsonUseProtoName() ?
-                    descriptor.getName() : descriptor.getJsonName();
+        // Used for JSON serialization (camelCase)
+        public String getJsonName() {
+            return descriptor.getJsonName();
         }
 
-        // Parsing should support both
-        public String getSecondaryJsonName() {
-            return !parentFile.getParentRequest().getJsonUseProtoName() ?
-                    descriptor.getName() : descriptor.getJsonName();
+        // Original field name (under_score). Optional for JSON serialization. Parsers should support both.
+        public String getProtoFieldName() {
+            return descriptor.getName();
         }
 
         public String getClearOtherOneOfName() {

@@ -75,7 +75,7 @@ public class GsonSink extends AbstractJsonSink<GsonSink> implements Closeable, F
 
     @Override
     protected void writeFieldName(final FieldName name) throws IOException {
-        writer.name(name.getString());
+        writer.name(!preserveProtoFieldNames ? name.getJsonName() : name.getProtoName());
     }
 
     @Override

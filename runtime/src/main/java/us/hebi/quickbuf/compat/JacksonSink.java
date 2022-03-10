@@ -63,7 +63,7 @@ public class JacksonSink extends AbstractJsonSink<JacksonSink> {
 
     @Override
     protected void writeFieldName(final FieldName name) throws IOException {
-        writer.writeFieldName(name.getString());
+        writer.writeFieldName(!preserveProtoFieldNames ? name.getJsonName() : name.getProtoName());
     }
 
     @Override

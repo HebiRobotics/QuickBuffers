@@ -32,16 +32,25 @@ import us.hebi.quickbuf.ProtoUtil.Charsets;
  */
 public final class FieldName {
 
-    public static FieldName forField(String fieldName) {
-        return new FieldName(fieldName);
+    public static FieldName forField(String jsonName) {
+        return new FieldName(jsonName, jsonName);
     }
 
-    private FieldName(String fieldName) {
-        this.fieldName = fieldName;
+    public static FieldName forField(String jsonName, String protoName) {
+        return new FieldName(jsonName, protoName);
     }
 
-    public String getString() {
-        return fieldName;
+    private FieldName(String jsonName, String protoName) {
+        this.jsonName = jsonName;
+        this.protoName = protoName;
+    }
+
+    public String getJsonName() {
+        return jsonName;
+    }
+
+    public String getProtoName() {
+        return protoName;
     }
 
     /**
@@ -49,12 +58,25 @@ public final class FieldName {
      */
     public byte[] getJsonKeyBytes() {
         if (jsonKey == null) {
-            jsonKey = ('"' + fieldName + '"' + ':').getBytes(Charsets.UTF_8);
+            jsonKey = ('"' + jsonName + '"' + ':').getBytes(Charsets.UTF_8);
         }
         return jsonKey;
     }
 
-    private final String fieldName;
+    /**
+     * @return utf8 bytes with name quotes and colon
+     */
+    public byte[] getProtoKeyBytes() {
+        if (protoKey == null) {
+            protoKey = ('"' + protoName + '"' + ':').getBytes(Charsets.UTF_8);
+        }
+        return protoKey;
+    }
+
+    private final String jsonName;
+    private final String protoName;
+
     private byte[] jsonKey;
+    private byte[] protoKey;
 
 }

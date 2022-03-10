@@ -355,8 +355,9 @@ public abstract class AbstractJsonSource implements Closeable {
      */
     protected abstract CharSequence nextName() throws IOException;
 
-    public boolean isAtField(String fieldName) {
-        return ProtoUtil.isEqual(fieldName, this.currentField);
+    public boolean isAtField(FieldName fieldName) {
+        return ProtoUtil.isEqual(fieldName.getJsonName(), currentField) ||
+                ProtoUtil.isEqual(fieldName.getProtoName(), currentField);
     }
 
     CharSequence currentField = null;
