@@ -346,7 +346,7 @@ class ArraySource extends ProtoSource{
 
         @Override
         public void readRawBytes(byte[] values, int offset, int length) throws IOException {
-            ByteUtil.verifyInput(values, offset, length);
+            ProtoUtil.checkBounds(values, offset, length);
             ByteUtil.readUnsafeBytes(buffer, require(length), values, offset, length);
         }
 

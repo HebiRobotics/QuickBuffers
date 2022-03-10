@@ -179,7 +179,7 @@ public class UnsafeTest {
     }
 
     private void testWriteByteBuffer(ProtoSink sink, ByteBuffer buffer) throws IOException {
-        ByteUtil.wrapBuffer(sink, prepare(buffer));
+        ByteUtil.setOutputRaw(sink, prepare(buffer));
         assertEquals(0, sink.getTotalBytesWritten());
         assertEquals(buffer.remaining(), sink.spaceLeft());
         message.writeTo(sink);
@@ -188,7 +188,7 @@ public class UnsafeTest {
     }
 
     private void testReadByteBuffer(ProtoSource source, ByteBuffer buffer) throws IOException {
-        ByteUtil.wrapBuffer(source, prepare(buffer));
+        ByteUtil.setInputRaw(source, prepare(buffer));
         assertEquals(0, source.getTotalBytesRead());
         assertEquals(-1, source.getBytesUntilLimit());
         assertFalse(source.isAtEnd());

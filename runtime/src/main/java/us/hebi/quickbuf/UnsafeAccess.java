@@ -29,6 +29,8 @@ import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 
+import static us.hebi.quickbuf.ProtoUtil.*;
+
 /**
  * @author Florian Enner
  * @since 31 Aug 2018
@@ -140,9 +142,8 @@ class UnsafeAccess {
          * @return the memory address at which the buffer storage begins.
          */
         static long address(final ByteBuffer buffer) {
-            if (!buffer.isDirect()) {
-                throw new IllegalArgumentException("buffer.isDirect() must be true");
-            }
+            checkState(isAvailable(), "native buffer access is disabled on this platform");
+            checkArgument(buffer.isDirect(), "buffer.isDirect() must be true");
             return UNSAFE.getLong(buffer, BYTE_BUFFER_ADDRESS_FIELD_OFFSET);
         }
 
@@ -153,9 +154,8 @@ class UnsafeAccess {
          * @return the underlying array.
          */
         static byte[] array(final ByteBuffer buffer) {
-            if (buffer.isDirect()) {
-                throw new IllegalArgumentException("buffer must wrap an array");
-            }
+            checkState(isAvailable(), "native buffer access is disabled on this platform");
+            checkArgument(!buffer.isDirect(), "buffer must wrap an array");
             return (byte[]) UNSAFE.getObject(buffer, BYTE_BUFFER_HB_FIELD_OFFSET);
         }
 
@@ -166,6 +166,8 @@ class UnsafeAccess {
          * @return the underlying array offset at which this ByteBuffer starts.
          */
         static int arrayOffset(final ByteBuffer buffer) {
+            checkState(isAvailable(), "native buffer access is disabled on this platform");
+            checkArgument(!buffer.isDirect(), "buffer must wrap an array");
             return UNSAFE.getInt(buffer, BYTE_BUFFER_OFFSET_FIELD_OFFSET);
         }
 

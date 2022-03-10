@@ -23,22 +23,23 @@ package us.hebi.quickbuf;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static us.hebi.quickbuf.ProtoUtil.*;
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
 
 /**
- * Utility methods for reading and writing bytes. Callers are responsible
- * for making sure that the buffers are large enough. There are no bounds
- * checks internally.
+ * Utility methods for reading and writing bytes. There are no bound checks
+ * internally, so callers are responsible for making sure that the buffers
+ * are large enough.
  * <p>
  * Platforms without unaligned access automatically disable it entirely.
  * Protobuf has many 1 byte tags and mostly random alignment, so it's
  * not worth checking for alignment.
  *
  * @author Florian Enner
- * @since 07 Mär 2022
+ * @since 07 March 2022
  */
-class ByteUtil {
+final class ByteUtil {
 
     static void writeUInt32(RepeatedByte output, int value) {
         while (true) {
@@ -324,14 +325,6 @@ class ByteUtil {
         }
     }
 
-    static void verifyInput(byte[] buffer, int offset, int length) {
-        if (buffer == null) {
-            throw new NullPointerException("buffer");
-        } else if (offset < 0 || length < 0 || offset + length > buffer.length) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
-    }
-
     static int writeUnsafeUInt32(final byte[] buffer, final long addressOffset, final int offset, final int limit, int value) throws ProtoSink.OutOfSpaceException {
         int position = offset;
         while (true) {
@@ -594,6 +587,13 @@ class ByteUtil {
     }
 
     /**
+     * @return true if access to direct buffers is enabled on this platform
+     */
+    public static boolean isDirectBufferAccessEnabled() {
+        return BufferAccess.isAvailable();
+    }
+
+    /**
      * Wraps the memory backing a ByteBuffer such that the ArraySource
      * starts at the currently set position and ends at set limit. Wrapper
      * actions do not change the ByteBuffer state.
@@ -605,10 +605,8 @@ class ByteUtil {
      * @param buffer  ByteBuffer
      * @return wrapper
      */
-    public static ProtoSource wrapBuffer(ProtoSource wrapper, ByteBuffer buffer) {
-        if (!(wrapper instanceof ArraySource)) {
-            throw new IllegalArgumentException("Expected ArraySource");
-        }
+    public static ProtoSource setInputRaw(ProtoSource wrapper, ByteBuffer buffer) {
+        checkArgument(wrapper instanceof ArraySource, "Expected ArraySource");
 
         if (buffer.hasArray()) {
 
@@ -620,11 +618,8 @@ class ByteUtil {
 
         } else if (buffer.isReadOnly() && !buffer.isDirect()) {
 
-            if (!BufferAccess.isAvailable()) {
-                throw new UnsupportedOperationException("Accessors for read only buffer are not available");
-            }
-
             // read-only heap array
+            checkArgument(BufferAccess.isAvailable(), "Accessors for read only buffers are not available");
             byte[] array = BufferAccess.array(buffer);
             long offset = BufferAccess.arrayOffset(buffer) + buffer.position();
             int length = buffer.remaining();
@@ -632,13 +627,9 @@ class ByteUtil {
 
         } else {
 
-            if (!BufferAccess.isAvailable()) {
-                throw new UnsupportedOperationException("Accessors for direct buffers are not available");
-            }else if (!(wrapper instanceof ArraySource.DirectArraySource)) {
-                throw new IllegalArgumentException("Expected DirectArraySource");
-            }
-
             // direct buffer
+            checkArgument(BufferAccess.isAvailable(), "Accessors for direct buffers are not available");
+            checkArgument(wrapper instanceof ArraySource.DirectArraySource, "Expected DirectArraySource");
             byte[] array = null;
             long offset = BufferAccess.address(buffer) + buffer.position();
             int length = buffer.remaining();
@@ -665,12 +656,9 @@ class ByteUtil {
      * @param buffer  ByteBuffer
      * @return wrapper
      */
-    public static ProtoSink wrapBuffer(ProtoSink wrapper, ByteBuffer buffer) {
-        if (buffer.isReadOnly()) {
-            throw new IllegalArgumentException("ByteBuffer is read only.");
-        } else if (!(wrapper instanceof ArraySink)) {
-            throw new IllegalArgumentException("Expected ArraySink");
-        }
+    public static ProtoSink setOutputRaw(ProtoSink wrapper, ByteBuffer buffer) {
+        checkArgument(!buffer.isReadOnly(), "ByteBuffer is read only");
+        checkArgument(wrapper instanceof ArraySink, "Expected ArraySource");
 
         if (buffer.hasArray()) {
 
@@ -682,13 +670,9 @@ class ByteUtil {
 
         } else {
 
-            if (!BufferAccess.isAvailable()) {
-                throw new UnsupportedOperationException("Accessors for direct buffers are not available");
-            } else if (!(wrapper instanceof ArraySink.DirectArraySink)) {
-                throw new IllegalArgumentException("Expected DirectArraySink");
-            }
-
             // direct buffer
+            checkArgument(BufferAccess.isAvailable(), "Accessors for direct buffers are not available");
+            checkArgument(wrapper instanceof ArraySink.DirectArraySink, "Expected DirectArraySource");
             byte[] array = null;
             long offset = BufferAccess.address(buffer) + buffer.position();
             int length = buffer.remaining();
