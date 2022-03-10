@@ -351,8 +351,8 @@ public class FieldGenerator {
             method.addStatement(named("$field:N = input.read$capitalizedType:L()"));
             method.addStatement(named("$setHas:L"));
         } else if (info.isEnum()) {
-            // TODO: notify json source about unknown value
-            method.addStatement(named("final $type:T value = input.read$capitalizedType:L($type:T.converter())"))
+            // TODO: notify json source about unknown value?
+            method.addStatement(named("final $protoEnum:T value = input.read$capitalizedType:L($type:T.converter())"))
                     .beginControlFlow("if (value != null)")
                     .addStatement(named("$field:N = value.getNumber()"))
                     .addStatement(named("$setHas:L"))
