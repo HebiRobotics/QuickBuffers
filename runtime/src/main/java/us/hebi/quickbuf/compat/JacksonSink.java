@@ -18,12 +18,12 @@
  * #L%
  */
 
-package us.hebi.quickbuf;
+package us.hebi.quickbuf.compat;
 
-import com.google.gson.stream.JsonWriter;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import us.hebi.quickbuf.*;
 
-import java.io.Closeable;
-import java.io.Flushable;
 import java.io.IOException;
 import java.io.StringWriter;
 
@@ -31,98 +31,95 @@ import java.io.StringWriter;
  * @author Florian Enner
  * @since 28 Nov 2019
  */
-public class GsonSink extends AbstractJsonSink<GsonSink> implements Closeable, Flushable {
+public class JacksonSink extends AbstractJsonSink<JacksonSink> {
 
     /**
      * @return A reusable sink that writes to String and resets after calling toString()
      */
-    public static GsonSink newStringWriter() {
-        final StringWriter output = new StringWriter();
-        return new GsonSink(new JsonWriter(output)) {
-            @Override
-            public String toString() {
-                try {
-                    flush();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+    public static JacksonSink newStringWriter() {
+        try {
+            final StringWriter output = new StringWriter();
+            return new JacksonSink(new JsonFactory().createGenerator(output)) {
+                @Override
+                public String toString() {
+                    try {
+                        flush();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    String string = output.getBuffer().toString();
+                    output.getBuffer().setLength(0);
+                    return string;
                 }
-                String string = output.getBuffer().toString();
-                output.getBuffer().setLength(0);
-                return string;
-            }
-        };
+            };
+        } catch (IOException e) {
+            throw new RuntimeException("IOException without I/O", e);
+        }
     }
 
-    public GsonSink(JsonWriter writer) {
+    public JacksonSink(JsonGenerator writer) {
         this.writer = writer;
     }
 
     @Override
-    public GsonSink beginObject() throws IOException {
-        writer.beginObject();
-        return this;
-    }
-
-    @Override
-    public GsonSink endObject() throws IOException {
-        writer.endObject();
-        return this;
-    }
-
-    @Override
     protected void writeFieldName(final FieldName name) throws IOException {
-        writer.name(name.getValue());
+        writer.writeFieldName(name.getValue());
     }
 
     @Override
     protected void writeNumber(double value) throws IOException {
         if (Double.isNaN(value)) {
-            writer.value("NaN");
+            writer.writeString("NaN");
         } else if (value == Double.POSITIVE_INFINITY) {
-            writer.value("Infinity");
+            writer.writeString("Infinity");
         } else if (value == Double.NEGATIVE_INFINITY) {
-            writer.value("-Infinity");
+            writer.writeString("-Infinity");
         } else {
-            writer.value(value);
+            writer.writeNumber(value);
         }
     }
 
     @Override
     protected void writeNumber(float value) throws IOException {
         if (Float.isNaN(value)) {
-            writer.value("NaN");
+            writer.writeString("NaN");
         } else if (value == Float.POSITIVE_INFINITY) {
-            writer.value("Infinity");
+            writer.writeString("Infinity");
         } else if (value == Float.NEGATIVE_INFINITY) {
-            writer.value("-Infinity");
+            writer.writeString("-Infinity");
         } else {
-            writer.value(value);
+            writer.writeNumber(value);
         }
     }
 
     @Override
     protected void writeNumber(long value) throws IOException {
-        writer.value(value);
+        writer.writeNumber(value);
     }
 
     @Override
     protected void writeNumber(int value) throws IOException {
-        writer.value(value);
+        writer.writeNumber(value);
     }
 
     @Override
     protected void writeBoolean(boolean value) throws IOException {
-        writer.value(value);
+        writer.writeBoolean(value);
     }
 
     @Override
     protected void writeString(Utf8String value) throws IOException {
-        writer.value(value.toString());
+        writer.writeString(value.toString());
     }
 
     @Override
     protected void writeString(CharSequence value) throws IOException {
-        writer.value(value.toString());
+        writer.writeString(value.toString());
+    }
+
+    @Override
+    protected void writeBinary(RepeatedByte value) throws IOException {
+        writer.writeBinary(value.array(), 0, value.length());
     }
 
     @Override
@@ -131,17 +128,29 @@ public class GsonSink extends AbstractJsonSink<GsonSink> implements Closeable, F
     }
 
     @Override
+    public JacksonSink beginObject() throws IOException {
+        writer.writeStartObject();
+        return this;
+    }
+
+    @Override
+    public JacksonSink endObject() throws IOException {
+        writer.writeEndObject();
+        return this;
+    }
+
+    @Override
     protected void beginArray() throws IOException {
-        writer.beginArray();
+        writer.writeStartArray();
     }
 
     @Override
     protected void endArray() throws IOException {
-        writer.endArray();
+        writer.writeEndArray();
     }
 
     @Override
-    protected GsonSink thisObj() {
+    protected JacksonSink thisObj() {
         return this;
     }
 
@@ -155,6 +164,6 @@ public class GsonSink extends AbstractJsonSink<GsonSink> implements Closeable, F
         writer.close();
     }
 
-    final JsonWriter writer;
+    final JsonGenerator writer;
 
 }

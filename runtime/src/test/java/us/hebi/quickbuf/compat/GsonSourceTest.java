@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,11 +18,16 @@
  * #L%
  */
 
-package us.hebi.quickbuf;
+package us.hebi.quickbuf.compat;
 
 import org.junit.Test;
 import protos.test.quickbuf.TestAllTypes;
+import us.hebi.quickbuf.AbstractJsonSource;
+import us.hebi.quickbuf.CompatibilityTest;
+import us.hebi.quickbuf.JsonSink;
+import us.hebi.quickbuf.ProtoMessage;
 
+import java.io.IOException;
 import java.io.StringReader;
 
 import static org.junit.Assert.*;
@@ -32,6 +37,20 @@ import static org.junit.Assert.*;
  * @since 07 Sep 2020
  */
 public class GsonSourceTest {
+
+    @Test
+    public void testReadJsonSink() throws IOException {
+        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        TestAllTypes actual = TestAllTypes.newInstance();
+
+        String json = JsonSink.newInstance().setWriteEnumStrings(true).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        assertEquals(expected, actual);
+
+        json = JsonSink.newInstance().setWriteEnumStrings(false).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        assertEquals(expected, actual);
+    }
 
     @Test
     public void testManualInput() throws Exception {
@@ -129,8 +148,8 @@ public class GsonSourceTest {
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
         assertTrue(msg.getOptionalNestedMessage().isEmpty());
         assertTrue(msg.hasRepeatedString());
-        assertEquals(0, msg.getRepeatedString().length);
-        assertEquals(2, msg.getRepeatedBytes().length);
+        assertEquals(0, msg.getRepeatedString().length());
+        assertEquals(2, msg.getRepeatedBytes().length());
     }
 
     @Test

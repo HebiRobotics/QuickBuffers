@@ -80,7 +80,7 @@ public class CompatibilityTest {
 
     }
 
-    static Iterable<byte[]> getAllMessages() {
+    public static Iterable<byte[]> getAllMessages() {
         return Arrays.asList(
                 optionalBytes(),
                 optionalPrimitives(),
@@ -96,7 +96,7 @@ public class CompatibilityTest {
     }
 
     // Update ProtoTests::testMergeFromMessage
-    static byte[] getCombinedMessage() throws IOException {
+    public static byte[] getCombinedMessage() throws IOException {
         TestAllTypes.Builder msg = TestAllTypes.newBuilder();
         for (byte[] bytes : getAllMessages()) {
             msg.mergeFrom(bytes);
@@ -108,7 +108,7 @@ public class CompatibilityTest {
                 .toByteArray();
     }
 
-    static byte[] optionalPrimitives() {
+    public static byte[] optionalPrimitives() {
         TestAllTypes msg = TestAllTypes.newBuilder()
                 .setOptionalBool(true)
                 .setOptionalDouble(100.0d)
@@ -127,7 +127,7 @@ public class CompatibilityTest {
         return msg.toByteArray();
     }
 
-    static byte[] repeatedPackablesNonPacked() {
+    public static byte[] repeatedPackablesNonPacked() {
         RepeatedPackables.NonPacked msg = RepeatedPackables.NonPacked.newBuilder()
                 .addAllBools(Arrays.asList(true, false, true, true))
                 .addAllDoubles(Arrays.asList(Double.POSITIVE_INFINITY, -2d, 3d, 4d))
@@ -146,7 +146,7 @@ public class CompatibilityTest {
         return msg.toByteArray();
     }
 
-    static byte[] repeatedPackablesPacked() {
+    public static byte[] repeatedPackablesPacked() {
         RepeatedPackables.Packed msg = RepeatedPackables.Packed.newBuilder()
                 .addAllBools(Arrays.asList(true, false, true, true))
                 .addAllDoubles(Arrays.asList(Double.POSITIVE_INFINITY, -2d, 3d, 4d))
@@ -165,7 +165,7 @@ public class CompatibilityTest {
         return msg.toByteArray();
     }
 
-    static byte[] optionalEnums() {
+    public static byte[] optionalEnums() {
         TestAllTypes msg = TestAllTypes.newBuilder()
                 .setOptionalNestedEnum(NestedEnum.FOO)
                 .setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR)
@@ -174,7 +174,7 @@ public class CompatibilityTest {
         return msg.toByteArray();
     }
 
-    static byte[] repeatedEnums() {
+    public static byte[] repeatedEnums() {
         return TestAllTypes.newBuilder()
                 .addRepeatedNestedEnum(NestedEnum.FOO)
                 .addRepeatedNestedEnum(NestedEnum.BAR)
@@ -184,7 +184,7 @@ public class CompatibilityTest {
                 .toByteArray();
     }
 
-    static byte[] optionalString() {
+    public static byte[] optionalString() {
         TestAllTypes msg = TestAllTypes.newBuilder()
                 .setOptionalString("optionalString\uD83D\uDCA9")
                 .setOptionalCord("hello!")
@@ -192,7 +192,7 @@ public class CompatibilityTest {
         return msg.toByteArray();
     }
 
-    static byte[] optionalMessages() {
+    public static byte[] optionalMessages() {
         TestAllTypes msg = TestAllTypes.newBuilder()
                 .setOptionalNestedMessage(TestAllTypes.NestedMessage.newBuilder().setBb(2).build())
                 .setOptionalForeignMessage(ForeignMessage.newBuilder().setC(3).build())
@@ -200,7 +200,7 @@ public class CompatibilityTest {
         return msg.toByteArray();
     }
 
-    static byte[] repeatedMessages() {
+    public static byte[] repeatedMessages() {
         return TestAllTypes.newBuilder()
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(0))
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(1))
@@ -209,14 +209,14 @@ public class CompatibilityTest {
                 .toByteArray();
     }
 
-    static byte[] repeatedStrings() {
+    public static byte[] repeatedStrings() {
         return TestAllTypes.newBuilder()
                 .addAllRepeatedString(Arrays.asList("hello", "world", "ascii", "utf8\uD83D\uDCA9"))
                 .build()
                 .toByteArray();
     }
 
-    static byte[] optionalBytes() {
+    public static byte[] optionalBytes() {
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
         return TestAllTypes.newBuilder()
@@ -226,7 +226,7 @@ public class CompatibilityTest {
                 .toByteArray();
     }
 
-    static byte[] repeatedBytes() {
+    public static byte[] repeatedBytes() {
         return TestAllTypes.newBuilder()
                 .addRepeatedBytes(ByteString.copyFromUtf8("ascii"))
                 .addRepeatedBytes(ByteString.copyFromUtf8("utf8\uD83D\uDCA9"))

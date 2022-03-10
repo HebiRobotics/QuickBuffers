@@ -27,7 +27,6 @@ import protos.test.quickbuf.TestAllTypes.NestedEnum;
 import protos.test.quickbuf.external.ImportEnum;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Base64;
 import java.util.Random;
 
@@ -38,20 +37,6 @@ import static org.junit.Assert.*;
  * @since 13 Jul 2020
  */
 public class JsonSinkTest {
-
-    @Test
-    public void testRoundTrip() throws IOException {
-        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
-        TestAllTypes actual = TestAllTypes.newInstance();
-
-        String json = JsonSink.newInstance().setWriteEnumStrings(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
-
-        json = JsonSink.newInstance().setWriteEnumStrings(false).writeMessage(expected).toString();
-        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
-    }
 
     @Test
     public void testEnumNumbers() throws IOException {

@@ -18,10 +18,14 @@
  * #L%
  */
 
-package us.hebi.quickbuf;
+package us.hebi.quickbuf.compat;
 
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import us.hebi.quickbuf.AbstractJsonSource;
+import us.hebi.quickbuf.ProtoEnum;
+import us.hebi.quickbuf.Utf8String;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -29,56 +33,63 @@ import java.io.StringReader;
 
 /**
  * @author Florian Enner
- * @since 07 Sep 2020
+ * @since 26 Feb 2022
  */
-public class GsonSource extends AbstractJsonSource {
+@Deprecated // not working yet
+public class JacksonSource extends AbstractJsonSource {
 
-    public GsonSource(String string) {
+    public JacksonSource(String string) throws IOException {
         this(new StringReader(string));
     }
 
-    public GsonSource(Reader reader) {
-        this(new JsonReader(reader));
-        this.reader.setLenient(true); // allow nan/infinity
+    public JacksonSource(Reader reader) throws IOException {
+        this(new JsonFactory().createParser(reader));
+        //this.reader.setLenient(true); // allow nan/infinity
     }
 
     /**
      * @param jsonReader custom json reader. Should be lenient to allow nan/infinity
      */
-    public GsonSource(JsonReader jsonReader) {
+    public JacksonSource(JsonParser jsonReader) {
         this.reader = jsonReader;
     }
 
-    final JsonReader reader;
+    final JsonParser reader;
 
     @Override
     public double nextDouble() throws IOException {
-        return reader.nextDouble();
+        next();
+        return reader.getDoubleValue();
     }
 
     @Override
     public int nextInt() throws IOException {
-        return reader.nextInt();
+        next();
+        return reader.getIntValue();
     }
 
     @Override
     public long nextLong() throws IOException {
-        return reader.nextLong();
+        next();
+        return reader.getLongValue();
     }
 
     @Override
     public boolean nextBoolean() throws IOException {
-        return reader.nextBoolean();
+        next();
+        return reader.getBooleanValue();
     }
 
     @Override
     public <T extends ProtoEnum<?>> T nextEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
-        if (tryReadNull()) {
-            return null;
-        } else if (reader.peek() == JsonToken.NUMBER) {
-            return converter.forNumber(reader.nextInt());
-        } else {
-            return converter.forName(reader.nextString());
+        switch (next()) {
+            case VALUE_NULL:
+                return null;
+            case VALUE_NUMBER_INT:
+            case VALUE_NUMBER_FLOAT:
+                return converter.forNumber(reader.getIntValue());
+            default:
+                return converter.forName(reader.getValueAsString());
         }
     }
 
@@ -87,37 +98,38 @@ public class GsonSource extends AbstractJsonSource {
         if (tryReadNull()) {
             store.clear();
         } else {
-            store.copyFrom(reader.nextString());
+            next();
+            store.copyFrom(reader.getValueAsString());
         }
     }
 
     @Override
     public void skipValue() throws IOException {
-        reader.skipValue();
+        reader.getValueAsString(); // TODO: is there a better way to do this?
     }
 
     @Override
     public boolean beginObject() throws IOException {
         if (tryReadNull()) return false;
-        reader.beginObject();
+//        reader.beginObject();
         return true;
     }
 
     @Override
     public void endObject() throws IOException {
-        reader.endObject();
+//       reader.endObject();
     }
 
     @Override
     public boolean beginArray() throws IOException {
         if (tryReadNull()) return false;
-        reader.beginArray();
+//        reader.beginArray();
         return true;
     }
 
     private boolean tryReadNull() throws IOException {
-        if (reader.peek() == JsonToken.NULL) {
-            reader.nextNull();
+        if (peek() == JsonToken.VALUE_NULL) {
+            skipValue();
             return true;
         }
         return false;
@@ -125,22 +137,36 @@ public class GsonSource extends AbstractJsonSource {
 
     @Override
     public void endArray() throws IOException {
-        reader.endArray();
+//        reader.endArray();
     }
 
     @Override
     public boolean hasNext() throws IOException {
-        return reader.hasNext();
+        return !reader.isClosed();
     }
 
     @Override
     protected CharSequence nextName() throws IOException {
-        return reader.nextName();
+        return reader.nextFieldName();
     }
 
     @Override
     public void close() throws IOException {
         reader.close();
     }
+
+    private JsonToken next() throws IOException {
+        try {
+            return peekToken != null ? peekToken : reader.nextToken();
+        } finally {
+            peekToken = null;
+        }
+    }
+
+    private JsonToken peek() throws IOException {
+        return peekToken != null ? peekToken : (peekToken = reader.nextToken());
+    }
+
+    JsonToken peekToken = null;
 
 }
