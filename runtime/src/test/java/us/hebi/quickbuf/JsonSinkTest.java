@@ -156,6 +156,9 @@ public class JsonSinkTest {
                 "    \"c\": 3\n" +
                 "  },\n" +
                 "  \"optionalImportMessage\": {},\n" +
+                "  \"optionalgroup\": {\n" +
+                "    \"a\": 4\n" +
+                "  },\n" +
                 "  \"optionalBytes\": \"dXRmOPCfkqk=\",\n" +
                 "  \"defaultBytes\": \"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\n" +
                 "  \"optionalString\": \"optionalString\uD83D\uDCA9\",\n" +
@@ -199,6 +202,14 @@ public class JsonSinkTest {
                 "    {},\n" +
                 "    {}\n" +
                 "  ],\n" +
+                "  \"repeatedgroup\": [\n" +
+                "    {\n" +
+                "      \"a\": 3\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"a\": 4\n" +
+                "    }\n" +
+                "  ],\n" +
                 "  \"repeatedBytes\": [\n" +
                 "    \"YXNjaWk=\",\n" +
                 "    \"dXRmOPCfkqk=\",\n" +
@@ -229,7 +240,7 @@ public class JsonSinkTest {
         msg.getMutableRepeatedFloat().clear();
 
         // Copied from https://codebeautify.org/jsonminifier
-        String desired = "{\"optionalDouble\":100,\"optionalFixed64\":103,\"optionalSfixed64\":105,\"optionalInt64\":109,\"optionalUint64\":111,\"optionalSint64\":107,\"optionalFloat\":101,\"optionalFixed32\":102,\"optionalSfixed32\":104,\"optionalInt32\":108,\"optionalUint32\":110,\"optionalSint32\":106,\"optionalNestedEnum\":\"FOO\",\"optionalForeignEnum\":\"FOREIGN_BAR\",\"optionalImportEnum\":\"IMPORT_BAZ\",\"optionalBool\":true,\"optionalNestedMessage\":{\"bb\":2},\"optionalForeignMessage\":{\"c\":3},\"optionalImportMessage\":{},\"optionalBytes\":\"dXRmOPCfkqk=\",\"defaultBytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optionalString\":\"optionalString\uD83D\uDCA9\",\"optionalCord\":\"hello!\",\"repeatedDouble\":[\"NaN\",\"-Infinity\",0,-28.3],\"repeatedFloat\":[],\"repeatedInt32\":[-2,-1,0,1,2,3,4,5],\"repeatedPackedInt32\":[-1,0,1,2,3,4,5],\"repeatedForeignMessage\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeatedBytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeatedString\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
+        String desired = "{\"optionalDouble\":100,\"optionalFixed64\":103,\"optionalSfixed64\":105,\"optionalInt64\":109,\"optionalUint64\":111,\"optionalSint64\":107,\"optionalFloat\":101,\"optionalFixed32\":102,\"optionalSfixed32\":104,\"optionalInt32\":108,\"optionalUint32\":110,\"optionalSint32\":106,\"optionalNestedEnum\":\"FOO\",\"optionalForeignEnum\":\"FOREIGN_BAR\",\"optionalImportEnum\":\"IMPORT_BAZ\",\"optionalBool\":true,\"optionalNestedMessage\":{\"bb\":2},\"optionalForeignMessage\":{\"c\":3},\"optionalImportMessage\":{},\"optionalgroup\":{\"a\":4},\"optionalBytes\":\"dXRmOPCfkqk=\",\"defaultBytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optionalString\":\"optionalString\uD83D\uDCA9\",\"optionalCord\":\"hello!\",\"repeatedDouble\":[\"NaN\",\"-Infinity\",0,-28.3],\"repeatedFloat\":[],\"repeatedInt32\":[-2,-1,0,1,2,3,4,5],\"repeatedPackedInt32\":[-1,0,1,2,3,4,5],\"repeatedForeignMessage\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeatedgroup\":[{\"a\":3},{\"a\":4}],\"repeatedBytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeatedString\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
         assertEquals(desired, JsonSink.newInstance().setPreserveProtoFieldNames(false).setWriteEnumsAsInts(false).writeMessage(msg).toString());
     }
 
@@ -246,7 +257,7 @@ public class JsonSinkTest {
         msg.getMutableRepeatedFloat().clear();
 
         // Copied from https://codebeautify.org/jsonminifier
-        String desired = "{\"optional_double\":100,\"optional_fixed64\":103,\"optional_sfixed64\":105,\"optional_int64\":109,\"optional_uint64\":111,\"optional_sint64\":107,\"optional_float\":101,\"optional_fixed32\":102,\"optional_sfixed32\":104,\"optional_int32\":108,\"optional_uint32\":110,\"optional_sint32\":106,\"optional_nested_enum\":\"FOO\",\"optional_foreign_enum\":\"FOREIGN_BAR\",\"optional_import_enum\":\"IMPORT_BAZ\",\"optional_bool\":true,\"optional_nested_message\":{\"bb\":2},\"optional_foreign_message\":{\"c\":3},\"optional_import_message\":{},\"optional_bytes\":\"dXRmOPCfkqk=\",\"default_bytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optional_string\":\"optionalString\uD83D\uDCA9\",\"optional_cord\":\"hello!\",\"repeated_double\":[\"NaN\",\"-Infinity\",0,-28.3],\"repeated_float\":[],\"repeated_int32\":[-2,-1,0,1,2,3,4,5],\"repeated_packed_int32\":[-1,0,1,2,3,4,5],\"repeated_foreign_message\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeated_bytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeated_string\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
+        String desired = "{\"optional_double\":100,\"optional_fixed64\":103,\"optional_sfixed64\":105,\"optional_int64\":109,\"optional_uint64\":111,\"optional_sint64\":107,\"optional_float\":101,\"optional_fixed32\":102,\"optional_sfixed32\":104,\"optional_int32\":108,\"optional_uint32\":110,\"optional_sint32\":106,\"optional_nested_enum\":\"FOO\",\"optional_foreign_enum\":\"FOREIGN_BAR\",\"optional_import_enum\":\"IMPORT_BAZ\",\"optional_bool\":true,\"optional_nested_message\":{\"bb\":2},\"optional_foreign_message\":{\"c\":3},\"optional_import_message\":{},\"optionalgroup\":{\"a\":4},\"optional_bytes\":\"dXRmOPCfkqk=\",\"default_bytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optional_string\":\"optionalString\uD83D\uDCA9\",\"optional_cord\":\"hello!\",\"repeated_double\":[\"NaN\",\"-Infinity\",0,-28.3],\"repeated_float\":[],\"repeated_int32\":[-2,-1,0,1,2,3,4,5],\"repeated_packed_int32\":[-1,0,1,2,3,4,5],\"repeated_foreign_message\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeatedgroup\":[{\"a\":3},{\"a\":4}],\"repeated_bytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeated_string\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
         assertEquals(desired, JsonSink.newInstance().setPreserveProtoFieldNames(true).setWriteEnumsAsInts(false).writeMessage(msg).toString());
     }
 

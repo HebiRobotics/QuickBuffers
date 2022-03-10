@@ -237,6 +237,8 @@ public class FieldGenerator {
         if (info.isPacked()) {
             m.put("writePackedTagToOutput", generateWriteVarint32(getInfo().getPackedTag()));
         }
+        m.put("writeEndGroupTagToOutput", !info.isGroup() ? "" :
+                generateWriteVarint32(getInfo().getEndGroupTag()));
 
         if (info.isPacked()) {
             method.addNamedCode("" +
@@ -248,12 +250,16 @@ public class FieldGenerator {
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "$writeTagToOutput:L" +
                     "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
+                    "$writeEndGroupTagToOutput:L" +
                     "$<}\n", m);
 
         } else {
             // unroll varint tag loop
-            method.addNamedCode("$writeTagToOutput:L", m);
-            method.addStatement(named("output.write$capitalizedType:LNoTag($field:N)")); // non-repeated
+            method.addNamedCode("" + // non-repeated
+                    "$writeTagToOutput:L" +
+                    "output.write$capitalizedType:LNoTag($field:N);\n" +
+                    "$writeEndGroupTagToOutput:L", m
+            );
         }
     }
 

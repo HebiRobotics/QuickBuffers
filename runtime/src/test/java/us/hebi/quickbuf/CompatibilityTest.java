@@ -196,6 +196,7 @@ public class CompatibilityTest {
         TestAllTypes msg = TestAllTypes.newBuilder()
                 .setOptionalNestedMessage(TestAllTypes.NestedMessage.newBuilder().setBb(2).build())
                 .setOptionalForeignMessage(ForeignMessage.newBuilder().setC(3).build())
+                .setOptionalGroup(TestAllTypes.OptionalGroup.newBuilder().setA(4))
                 .build();
         return msg.toByteArray();
     }
@@ -205,6 +206,8 @@ public class CompatibilityTest {
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(0))
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(1))
                 .addRepeatedForeignMessage(ForeignMessage.newBuilder().setC(2))
+                .addRepeatedGroup(TestAllTypes.RepeatedGroup.newBuilder().setA(3))
+                .addRepeatedGroup(TestAllTypes.RepeatedGroup.newBuilder().setA(4))
                 .build()
                 .toByteArray();
     }

@@ -328,7 +328,8 @@ public class RequestInfo {
             clearName = "clear" + upperName;
             isPrimitive = FieldUtil.isPrimitive(descriptor.getType());
             tag = FieldUtil.makeTag(descriptor);
-            bytesPerTag = FieldUtil.computeRawVarint32Size(tag);
+            bytesPerTag = FieldUtil.computeRawVarint32Size(tag) +
+                    (!isGroup() ? 0 : FieldUtil.computeRawVarint32Size(getEndGroupTag()));
             packedTag = FieldUtil.makePackedTag(descriptor);
             number = descriptor.getNumber();
             fieldName = NamingUtil.filterKeyword(lowerName);
@@ -378,6 +379,10 @@ public class RequestInfo {
                     return isRepeated() ? ArrayTypeName.of(TypeName.BYTE) : TypeName.BYTE;
             }
             return getTypeName();
+        }
+
+        public int getEndGroupTag() {
+            return FieldUtil.makeGroupEndTag(tag);
         }
 
         public boolean isGroup() {

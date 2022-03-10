@@ -1041,7 +1041,9 @@ public abstract class ProtoSink {
      * Returns remaining space when there is a known limit.
      * Otherwise, throws {@code UnsupportedOperationException}.
      */
-    public abstract int spaceLeft();
+    public int spaceLeft() {
+        throw new UnsupportedOperationException("The space limit for this sink is unknown");
+    }
 
     /**
      * Verifies that {@link #spaceLeft()} returns zero.  It's common to create
@@ -1053,7 +1055,7 @@ public abstract class ProtoSink {
     public void checkNoSpaceLeft() {
         if (spaceLeft() != 0) {
             throw new IllegalStateException(
-                    "Did not write as much data as expected.");
+                    "Did not write as much data as expected. Remaining bytes: " + spaceLeft());
         }
     }
 
@@ -1321,11 +1323,6 @@ public abstract class ProtoSink {
         @Override
         public ProtoSink clear() {
             return setOutput(EMPTY_OUTPUT_STREAM);
-        }
-
-        @Override
-        public int spaceLeft() {
-            throw new UnsupportedOperationException("OutputStreams have no known size limit");
         }
 
         @Override

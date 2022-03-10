@@ -449,6 +449,11 @@ public class ProtoTests {
         msg.setOptionalForeignMessage(ForeignMessage.newInstance().setC(3));
         assertTrue(msg.hasOptionalForeignMessage());
 
+        // Copy from
+        assertFalse(msg.hasOptionalGroup());
+        msg.getMutableOptionalGroup().copyFrom(TestAllTypes.OptionalGroup.newInstance().setA(4));
+        assertTrue(msg.hasOptionalGroup());
+
         // Compare w/ gen-Java and round-trip parsing
         assertEquals(msg, TestAllTypes.parseFrom(CompatibilityTest.optionalMessages()));
         assertEquals(msg, TestAllTypes.parseFrom(msg.toByteArray()));
@@ -465,7 +470,9 @@ public class ProtoTests {
         TestAllTypes msg2 = TestAllTypes.newInstance()
                 .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(0))
                 .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(1))
-                .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(2));
+                .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(2))
+                .addRepeatedGroup(TestAllTypes.RepeatedGroup.newInstance().setA(3))
+                .addRepeatedGroup(TestAllTypes.RepeatedGroup.newInstance().setA(4));
         assertEquals(msg, msg2);
 
         TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg2).toByteArray());
