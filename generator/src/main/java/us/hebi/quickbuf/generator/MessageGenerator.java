@@ -474,6 +474,11 @@ class MessageGenerator {
     }
 
     private void generateIsInitialized(TypeSpec.Builder type) {
+        // don't generate it if there is nothing that can be added
+        if (!info.hasRequiredFieldsInHierarchy()) {
+            return;
+        }
+
         MethodSpec.Builder isInitialized = MethodSpec.methodBuilder("isInitialized")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
@@ -485,7 +490,7 @@ class MessageGenerator {
         // Check sub-messages (including optional and repeated)
         fields.stream()
                 .map(FieldGenerator::getInfo)
-                .filter(FieldInfo::isMessageOrGroup)
+                .filter(FieldInfo::isMessageOrGroupWithRequiredFieldsInHierarchy)
                 .forEach(field -> {
                     // isInitialized check
                     if (field.isRequired()) {
@@ -528,13 +533,13 @@ class MessageGenerator {
             if (field.isRequired()) {
                 getMissingFields.beginControlFlow("if (!$N())", field.getHazzerName())
                         .addStatement("results.add(prefix + $S)", name);
-                if (field.isMessageOrGroup()) {
+                if (field.isMessageOrGroupWithRequiredFieldsInHierarchy()) {
                     getMissingFields.nextControlFlow("else", field.getFieldName())
                             .addCode(checkNestedField);
                 }
                 getMissingFields.endControlFlow();
 
-            } else if (field.isMessageOrGroup()) {
+            } else if (field.isMessageOrGroupWithRequiredFieldsInHierarchy()) {
                 getMissingFields.beginControlFlow("if ($L() && !$N.isInitialized())", field.getHazzerName(), field.getFieldName())
                         .addCode(checkNestedField)
                         .endControlFlow();
