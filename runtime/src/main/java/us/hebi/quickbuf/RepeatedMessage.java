@@ -62,11 +62,12 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
         return (MessageType[]) new ProtoMessage[desiredSize];
     }
 
-    public final void clearQuick() {
+    public final RepeatedMessage<MessageType> clearQuick() {
         for (int i = 0; i < length; i++) {
             array[i].clearQuick();
         }
         length = 0;
+        return this;
     }
 
     /**
