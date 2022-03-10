@@ -50,7 +50,11 @@
 
 package us.hebi.quickbuf;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -69,81 +73,128 @@ import static us.hebi.quickbuf.WireFormat.*;
  * @author kenton@google.com Kenton Varda
  * @author Florian Enner
  */
-public class ProtoSource {
+public abstract class ProtoSource {
 
-    /** Create a new ProtoSource wrapping the given byte array. */
+    /** Create a new ProtoSource reading from the given byte array. */
     public static ProtoSource newInstance(final byte[] buf) {
         return newInstance(buf, 0, buf.length);
     }
 
-    /** Create a new ProtoSource wrapping the given byte array slice. */
+    /** Create a new ProtoSource reading from the given byte array slice. */
     public static ProtoSource newInstance(final byte[] buf,
                                           final int off,
                                           final int len) {
-        return newSafeInstance().wrap(buf, off, len);
+        return newArraySource().setInput(buf, off, len);
+    }
+
+    /** Create a new ProtoSource reading from the given {@link RepeatedByte}. */
+    public static ProtoSource newInstance(RepeatedByte bytes) {
+        return newArraySource().setInput(bytes);
+    }
+
+    /** Create a new ProtoSource reading from the given {@link InputStream}. */
+    public static ProtoSource newInstance(InputStream stream) {
+        return newStreamSource().setInput(stream);
+    }
+
+    /** Create a new ProtoSource reading from the given {@link ByteBuffer}. */
+    public static ProtoSource newInstance(ByteBuffer buffer) {
+        return newBufferSource().setInput(buffer);
     }
 
     /**
-     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     * Creates a new {@code ProtoSource} that reads directly from a byte array.
      *
      * This method will return the fastest implementation available for the
      * current platform and may leverage features from sun.misc.Unsafe if
      * available.
      */
-    public static ProtoSource newInstance() {
-        if (UnsafeArraySource.isAvailable()) {
-            if (UnsafeAccess.allowUnalignedAccess()) {
-                return new UnsafeArraySource.Unaligned(false);
-            } else {
-                return new UnsafeArraySource(false);
-            }
-        }
-        return newSafeInstance();
+    public static ProtoSource newArraySource() {
+        return new ArraySource();
     }
 
     /**
-     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     * Creates a new {@code ProtoSource} that reads from a byte array or
+     * direct / off-heap memory. It is similar to the array source, but
+     * it allows null buffers to support raw memory addresses.
      *
-     * This method returns an implementation that does not leverage any
-     * features from sun.misc.Unsafe, even if they are available on the
-     * current platform.
-     *
-     * Unless you are doing comparisons you probably want to call
-     * {@link #newInstance()} instead.
+     * This source requires availability of sun.misc.Unsafe. Be aware that
+     * passing incorrect memory addresses may cause the entire runtime to
+     * segfault.
      */
-    public static ProtoSource newSafeInstance() {
-        return new ProtoSource();
+    public static ProtoSource newDirectSource() {
+        return new ArraySource.DirectArraySource();
     }
 
     /**
-     * Create a new {@code ProtoSource} that reads directly from a byte array.
+     * Creates a new {@code ProtoSource} that reads from an {@link InputStream}.
      *
-     * This sink requires availability of sun.misc.Unsafe and Java 7 or higher.
-     *
-     * Additionally, this sink removes null-argument checks and allows users to
-     * write to off-heap memory. Working with off-heap memory may cause segfaults
-     * of the runtime, so only use if you know what you are doing.
+     * The current implementation is a very lightweight wrapper that reads
+     * byte-by-byte and does not do any internal buffering. This is slower
+     * than reading from an array, but it does not require extra memory.
      */
-    public static ProtoSource newUnsafeInstance() {
-        if (UnsafeAccess.allowUnalignedAccess()) {
-            return new UnsafeArraySource.Unaligned(true);
-        } else {
-            return new UnsafeArraySource(true);
-        }
+    public static ProtoSource newStreamSource() {
+        return new StreamSource();
     }
 
-    public final ProtoSource wrap(byte[] buffer) {
-        return wrap(buffer, 0, buffer.length);
+    /**
+     * Creates a new {@code ProtoSource} that reads from an {@link ByteBuffer}.
+     *
+     * The current implementation is a very lightweight wrapper that reads
+     * individual bytes. This is slower than reading from an array, but it
+     * works on all platforms.
+     */
+    public static ProtoSource newBufferSource() {
+        return new BufferSource();
+    }
+
+    /**
+     * Changes the input to the given array. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     */
+    public final ProtoSource setInput(byte[] buffer) {
+        return setInput(buffer, 0, buffer.length);
+    }
+
+    /**
+     * Changes the input to the given array. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     */
+    public ProtoSource setInput(byte[] buffer, long off, int len) {
+        throw new UnsupportedOperationException("source does not support reading from a byte array");
+    }
+
+    /**
+     * Changes the input to the current backing array of the bytes object.
+     */
+    public final ProtoSource setInput(RepeatedByte bytes) {
+        return setInput(bytes.array(), 0, bytes.length());
+    }
+
+    /**
+     * Changes the input to the given stream. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     */
+    public ProtoSource setInput(InputStream stream) {
+        throw new UnsupportedOperationException("source does not support reading from an InputStream");
+    }
+
+    /**
+     * Changes the input to the given buffer. This resets any existing
+     * internal state such as position and is equivalent to creating
+     * a new instance.
+     */
+    public ProtoSource setInput(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("source does not support reading from a ByteBuffer");
     }
 
     /**
      * Clears internal state and removes any references to previous inputs.
-     *
-     * @return this
      */
-    public ProtoSource clear() {
-        return wrap(ProtoUtil.EMPTY_BYTE_ARRAY);
-    }
+    public abstract ProtoSource clear();
 
     // -----------------------------------------------------------------
 
@@ -159,27 +210,12 @@ public class ProtoSource {
         }
 
         lastTag = readRawVarint32();
-        if (lastTag == 0) {
-            // If we actually read zero, that's not a valid tag.
+        if (WireFormat.getTagFieldNumber(lastTag) == 0) {
+            // If we actually read zero (or any tag number corresponding
+            // to field number zero), that's not a valid tag.
             throw InvalidProtocolBufferException.invalidTag();
         }
         return lastTag;
-    }
-
-    /**
-     * Marks the current position and reads the tag. See {@link ProtoSource#readTag()}
-     */
-    public int readTagMarked() throws IOException {
-        lastTagMark = bufferPos;
-        return readTag();
-    }
-
-    /**
-     * Copies the bytes from the last position marked by {@link ProtoSource#readTagMarked()}.
-     * This allows to efficiently store unknown (skipped) bytes.
-     */
-    public void copyBytesSinceMark(RepeatedByte store) {
-        store.addAll(buffer, lastTagMark, bufferPos - lastTagMark);
     }
 
     /**
@@ -190,8 +226,7 @@ public class ProtoSource {
      * @throws InvalidProtocolBufferException {@code value} does not match the
      *                                        last tag.
      */
-    public void checkLastTagWas(final int value)
-            throws InvalidProtocolBufferException {
+    public void checkLastTagWas(final int value) throws InvalidProtocolBufferException {
         if (lastTag != value) {
             throw InvalidProtocolBufferException.invalidEndTag();
         }
@@ -206,24 +241,23 @@ public class ProtoSource {
     public boolean skipField(final int tag) throws IOException {
         switch (WireFormat.getTagWireType(tag)) {
             case WireFormat.WIRETYPE_VARINT:
-                readRawVarint32();
+                readRawVarint32(); // Note: not worth adding a skipVarint method
                 return true;
             case WireFormat.WIRETYPE_FIXED64:
-                skipRawBytes(SIZEOF_FIXED_64);
+                skipRawBytes(FIXED_64_SIZE);
                 return true;
             case WireFormat.WIRETYPE_LENGTH_DELIMITED:
-                skipRawBytes(readRawVarint32());
+                skipRawBytes(readLength());
                 return true;
             case WireFormat.WIRETYPE_START_GROUP:
                 skipMessage();
-                checkLastTagWas(
-                        WireFormat.makeTag(WireFormat.getTagFieldNumber(tag),
-                                WireFormat.WIRETYPE_END_GROUP));
+                int endGroupTag = WireFormat.makeTag(WireFormat.getTagFieldNumber(tag), WireFormat.WIRETYPE_END_GROUP);
+                checkLastTagWas(endGroupTag);
                 return true;
             case WireFormat.WIRETYPE_END_GROUP:
                 return false;
             case WireFormat.WIRETYPE_FIXED32:
-                skipRawBytes(SIZEOF_FIXED_32);
+                skipRawBytes(FIXED_32_SIZE);
                 return true;
             default:
                 throw InvalidProtocolBufferException.invalidWireType();
@@ -231,10 +265,72 @@ public class ProtoSource {
     }
 
     /**
+     * Reads and discards a single field, given its tag value. Discarded bytes
+     * are added to unknownBytes.
+     *
+     * @return {@code false} if the tag is an endgroup tag, in which case
+     * nothing is skipped.  Otherwise, returns {@code true}.
+     */
+    public boolean skipField(final int tag, final RepeatedByte unknownBytes) throws IOException {
+        if (shouldDiscardUnknownFields) {
+            return skipField(tag);
+        }
+        switch (WireFormat.getTagWireType(tag)) {
+            case WireFormat.WIRETYPE_VARINT: {
+                long value = readRawVarint64();
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeVarint64(unknownBytes, value);
+                return true;
+            }
+            case WireFormat.WIRETYPE_FIXED64: {
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeBytes(unknownBytes, FIXED_64_SIZE, this);
+                return true;
+            }
+            case WireFormat.WIRETYPE_LENGTH_DELIMITED:{
+                int length = readLength();
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeUInt32(unknownBytes, length);
+                ByteUtil.writeBytes(unknownBytes, length, this);
+                return true;
+            }
+            case WireFormat.WIRETYPE_START_GROUP:{
+                int endTag = WireFormat.makeTag(WireFormat.getTagFieldNumber(tag), WireFormat.WIRETYPE_END_GROUP);
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                skipMessage(unknownBytes);
+                checkLastTagWas(endTag);
+                ByteUtil.writeUInt32(unknownBytes, endTag);
+                return true;
+            }
+            case WireFormat.WIRETYPE_END_GROUP: {
+                return false;
+            }
+            case WireFormat.WIRETYPE_FIXED32:{
+                ByteUtil.writeUInt32(unknownBytes, tag);
+                ByteUtil.writeBytes(unknownBytes, FIXED_32_SIZE, this);
+                return true;
+            }
+            default:
+                throw InvalidProtocolBufferException.invalidWireType();
+        }
+    }
+
+    /**
+     * Skips an enum that has already been read, but had a value that is not known. Discarded
+     * bytes are added to unknownBytes.
+     */
+    public void skipEnum(final int tag, final int value, final RepeatedByte unknownBytes) throws IOException {
+        if (!shouldDiscardUnknownFields) {
+            ByteUtil.writeUInt32(unknownBytes, tag);
+            ByteUtil.writeUInt32(unknownBytes, value);
+        }
+    }
+
+    /**
      * Reads and discards an entire message.  This will read either until EOF
      * or until an endgroup tag, whichever comes first.
      */
-    public void skipMessage() throws IOException {
+    protected void skipMessage() throws IOException {
         while (true) {
             final int tag = readTag();
             if (tag == 0 || !skipField(tag)) {
@@ -243,63 +339,25 @@ public class ProtoSource {
         }
     }
 
-    // -----------------------------------------------------------------
+    protected void skipMessage(RepeatedByte unknownBytes) throws IOException {
+        while (true) {
+            final int tag = readTag();
+            if (tag == 0 || !skipField(tag, unknownBytes)) {
+                return;
+            }
+        }
+    }
+
+    // ------------------------------ FIXED WIDTH TYPES ------------------------------
 
     /** Read a repeated (packed) {@code double} field value from the source. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.reserve(numEntries);
-        readRawDoubles(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code fixed64} field value from the source. */
-    public void readPackedFixed64(RepeatedLong store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.reserve(numEntries);
-        readRawFixed64s(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code sfixed64} field value from the source. */
-    public void readPackedSFixed64(RepeatedLong store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_64;
-        store.reserve(numEntries);
-        readRawFixed64s(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code float} field value from the source. */
-    public void readPackedFloat(RepeatedFloat store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.reserve(numEntries);
-        readRawFloats(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code fixed32} field value from the source. */
-    public void readPackedFixed32(RepeatedInt store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.reserve(numEntries);
-        readRawFixed32s(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code sfixed32} field value from the source. */
-    public void readPackedSFixed32(RepeatedInt store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_32;
-        store.reserve(numEntries);
-        readRawFixed32s(store.array, store.length, numEntries);
-        store.length += numEntries;
-    }
-
-    /** Read a repeated (packed) {@code bool} field value from the source. */
-    public void readPackedBool(RepeatedBoolean store) throws IOException {
-        final int numEntries = readRawVarint32() / SIZEOF_FIXED_BOOL;
-        store.reserve(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            store.add(readBool());
-        }
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count = roundedCount64(length);
+        final int offset = store.addLength(count);
+        readRawDoubles(store.array, offset, count);
+        popLimit(limit);
     }
 
     protected void readRawDoubles(double[] values, int offset, int length) throws IOException {
@@ -309,11 +367,66 @@ public class ProtoSource {
         }
     }
 
+    /** Read a repeated (non-packed) {@code double} field value from the source. */
+    public int readRepeatedDouble(final RepeatedDouble store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readDouble());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code double} field value from the source. */
+    public double readDouble() throws IOException {
+        return Double.longBitsToDouble(readRawLittleEndian64());
+    }
+
+    /** Read a repeated (packed) {@code float} field value from the source. */
+    public void readPackedFloat(RepeatedFloat store) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count =  roundedCount32(length);
+        final int offset = store.addLength(count);
+        readRawFloats(store.array, offset, count);
+        popLimit(limit);
+    }
+
     protected void readRawFloats(float[] values, int offset, int length) throws IOException {
         final int limit = offset + length;
         for (int i = offset; i < limit; i++) {
             values[i] = readFloat();
         }
+    }
+
+    /** Read a repeated (non-packed) {@code float} field value from the source. */
+    public int readRepeatedFloat(final RepeatedFloat store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readFloat());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code float} field value from the source. */
+    public float readFloat() throws IOException {
+        return Float.intBitsToFloat(readRawLittleEndian32());
+    }
+
+    /** Read a repeated (packed) {@code sfixed64} field value from the source. */
+    public void readPackedSFixed64(RepeatedLong store) throws IOException {
+        readPackedFixed64(store);
+    }
+
+    /** Read a repeated (packed) {@code fixed64} field value from the source. */
+    public void readPackedFixed64(RepeatedLong store) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count =  roundedCount64(length);
+        final int offset = store.addLength(count);
+        readRawFixed64s(store.array, offset, count);
+        popLimit(limit);
     }
 
     protected void readRawFixed64s(long[] values, int offset, int length) throws IOException {
@@ -323,6 +436,46 @@ public class ProtoSource {
         }
     }
 
+    /** Read a repeated (non-packed) {@code sfixed64} field value from the source. */
+    public int readRepeatedSFixed64(final RepeatedLong store, final int tag) throws IOException {
+        return readRepeatedFixed64(store, tag);
+    }
+
+    /** Read a repeated (non-packed) {@code fixed64} field value from the source. */
+    public int readRepeatedFixed64(RepeatedLong store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readFixed64());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read an {@code sfixed64} field value from the source. */
+    public long readSFixed64() throws IOException {
+        return readRawLittleEndian64();
+    }
+
+    /** Read a {@code fixed64} field value from the source. */
+    public long readFixed64() throws IOException {
+        return readRawLittleEndian64();
+    }
+
+    /** Read a repeated (packed) {@code sfixed32} field value from the source. */
+    public void readPackedSFixed32(RepeatedInt store) throws IOException {
+        readPackedFixed32(store);
+    }
+
+    /** Read a repeated (packed) {@code fixed32} field value from the source. */
+    public void readPackedFixed32(RepeatedInt store) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        final int count =  roundedCount32(length);;
+        final int offset = store.addLength(count);
+        readRawFixed32s(store.array, offset, count);
+        popLimit(limit);
+    }
+
     protected void readRawFixed32s(int[] values, int offset, int length) throws IOException {
         final int limit = offset + length;
         for (int i = offset; i < limit; i++) {
@@ -330,16 +483,83 @@ public class ProtoSource {
         }
     }
 
-    // -----------------------------------------------------------------
-
-    /** Read a {@code double} field value from the source. */
-    public double readDouble() throws IOException {
-        return Double.longBitsToDouble(readRawLittleEndian64());
+    /** Read a repeated (non-packed) {@code sfixed32} field value from the source. */
+    public int readRepeatedSFixed32(final RepeatedInt store, final int tag) throws IOException {
+        return readRepeatedFixed32(store, tag);
     }
 
-    /** Read a {@code float} field value from the source. */
-    public float readFloat() throws IOException {
-        return Float.intBitsToFloat(readRawLittleEndian32());
+    /** Read a repeated (non-packed) {@code fixed32} field value from the source. */
+    public int readRepeatedFixed32(RepeatedInt store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readFixed32());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read an {@code sfixed32} field value from the source. */
+    public int readSFixed32() throws IOException {
+        return readRawLittleEndian32();
+    }
+
+    /** Read a {@code fixed32} field value from the source. */
+    public int readFixed32() throws IOException {
+        return readRawLittleEndian32();
+    }
+
+    // ------------------------------ VARINT TYPES ------------------------------
+
+    /** Read a repeated (packed) {@code uint64} field value from the source. */
+    public void readPackedUInt64(final RepeatedLong store, final int tag) throws IOException {
+        readPackedInt64(store, tag);
+    }
+
+    /** Read a repeated (packed) {@code int64} field value from the source. */
+    public void readPackedInt64(final RepeatedLong store, final int tag) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        while (!isAtEnd()) {
+            reservePackedVarintCapacity(store);
+            store.add(readInt64());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated (packed) {@code sint64} field value from the source. */
+    public void readPackedSInt64(final RepeatedLong store, final int tag) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        while (!isAtEnd()) {
+            reservePackedVarintCapacity(store);
+            store.add(readSInt64());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated {@code uint64} field value from the source. */
+    public int readRepeatedUInt64(final RepeatedLong store, final int tag) throws IOException {
+        return readRepeatedInt64(store, tag);
+    }
+
+    /** Read a repeated {@code int64} field value from the source. */
+    public int readRepeatedInt64(final RepeatedLong store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readInt64());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a repeated {@code sint64} field value from the source. */
+    public int readRepeatedSInt64(final RepeatedLong store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readSInt64());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
     }
 
     /** Read a {@code uint64} field value from the source. */
@@ -352,19 +572,97 @@ public class ProtoSource {
         return readRawVarint64();
     }
 
+    /** Read an {@code sint64} field value from the source. */
+    public long readSInt64() throws IOException {
+        return decodeZigZag64(readRawVarint64());
+    }
+
+    /** Read a repeated (packed) {@code uint32} field value from the source. */
+    public void readPackedUInt32(final RepeatedInt store, final int tag) throws IOException {
+        readPackedInt32(store, tag);
+    }
+
+    /** Read a repeated (packed) {@code int32} field value from the source. */
+    public void readPackedInt32(final RepeatedInt store, final int tag) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        while (!isAtEnd()) {
+            reservePackedVarintCapacity(store);
+            store.add(readInt32());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated (packed) {@code sint32} field value from the source. */
+    public void readPackedSInt32(final RepeatedInt store, final int tag) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        while (!isAtEnd()) {
+            reservePackedVarintCapacity(store);
+            store.add(readSInt32());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated {@code uint32} field value from the source. */
+    public int readRepeatedUInt32(final RepeatedInt store, final int tag) throws IOException {
+        return readRepeatedInt32(store, tag);
+    }
+
+    /** Read a repeated {@code int32} field value from the source. */
+    public int readRepeatedInt32(final RepeatedInt store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readInt32());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a repeated {@code sint32} field value from the source. */
+    public int readRepeatedSInt32(final RepeatedInt store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readSInt32());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code uint32} field value from the source. */
+    public int readUInt32() throws IOException {
+        return readRawVarint32();
+    }
+
     /** Read an {@code int32} field value from the source. */
     public int readInt32() throws IOException {
         return readRawVarint32();
     }
 
-    /** Read a {@code fixed64} field value from the source. */
-    public long readFixed64() throws IOException {
-        return readRawLittleEndian64();
+    /** Read an {@code sint32} field value from the source. */
+    public int readSInt32() throws IOException {
+        return decodeZigZag32(readRawVarint32());
     }
 
-    /** Read a {@code fixed32} field value from the source. */
-    public int readFixed32() throws IOException {
-        return readRawLittleEndian32();
+    /** Read a repeated (packed) {@code bool} field value from the source. */
+    public void readPackedBool(RepeatedBoolean store) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        store.reserve(length / MIN_BOOL_SIZE);
+        while (!isAtEnd()) {
+            store.add(readBool());
+        }
+        popLimit(limit);
+    }
+
+    /** Read a repeated (non-packed) {@code bool} field value from the source. */
+    public int readRepeatedBool(final RepeatedBoolean store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.add(readBool());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
     }
 
     /** Read a {@code bool} field value from the source. */
@@ -372,60 +670,25 @@ public class ProtoSource {
         return readRawVarint32() != 0;
     }
 
-    /** Read a {@code string} field value from the source. */
-    public void readString(final Utf8String store) throws IOException {
-        final int numBytes = readRawVarint32();
-        requireRemaining(numBytes);
-        store.setSize(numBytes);
-        System.arraycopy(buffer, bufferPos, store.bytes(), 0, numBytes);
-        bufferPos += numBytes;
-    }
-
-    /** Read a {@code string} field value from the source. */
-    public void readString(StringBuilder output) throws IOException {
-        final int size = readRawVarint32();
-        requireRemaining(size);
-        Utf8.decodeArray(buffer, bufferPos, size, output);
-        bufferPos += size;
-    }
-
-    /** Read a {@code group} field value from the source. */
-    public void readGroup(final ProtoMessage msg, final int fieldNumber)
-            throws IOException {
-        if (recursionDepth >= recursionLimit) {
-            throw InvalidProtocolBufferException.recursionLimitExceeded();
+    /** Read a repeated (packed) {@code enum} field value from the source. */
+    public void readPackedEnum(final RepeatedEnum<?> store, final int tag) throws IOException {
+        final int length = readLength();
+        final int limit = pushLimit(length);
+        while (!isAtEnd()) {
+            reservePackedVarintCapacity(store);
+            store.addValue(readEnum());
         }
-        ++recursionDepth;
-        msg.mergeFrom(this);
-        checkLastTagWas(WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
-        --recursionDepth;
+        popLimit(limit);
     }
 
-    public void readMessage(final ProtoMessage msg)
-            throws IOException {
-        final int length = readRawVarint32();
-        if (recursionDepth >= recursionLimit) {
-            throw InvalidProtocolBufferException.recursionLimitExceeded();
-        }
-        final int oldLimit = pushLimit(length);
-        ++recursionDepth;
-        msg.mergeFrom(this);
-        checkLastTagWas(0);
-        --recursionDepth;
-        popLimit(oldLimit);
-    }
-
-    /** Read a {@code bytes} field value from the source. */
-    public void readBytes(RepeatedByte store) throws IOException {
-        final int numBytes = readRawVarint32();
-        requireRemaining(numBytes);
-        store.copyFrom(buffer, bufferPos, numBytes);
-        bufferPos += numBytes;
-    }
-
-    /** Read a {@code uint32} field value from the source. */
-    public int readUInt32() throws IOException {
-        return readRawVarint32();
+    /** Read a repeated {@code enum} field value from the source. */
+    public int readRepeatedEnum(final RepeatedEnum<?> store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            store.addValue(readEnum());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
     }
 
     /**
@@ -436,24 +699,90 @@ public class ProtoSource {
         return readRawVarint32();
     }
 
-    /** Read an {@code sfixed32} field value from the source. */
-    public int readSFixed32() throws IOException {
-        return readRawLittleEndian32();
+    /** Read a length delimiter from the source. */
+    public int readLength() throws IOException {
+        return readRawVarint32();
     }
 
-    /** Read an {@code sfixed64} field value from the source. */
-    public long readSFixed64() throws IOException {
-        return readRawLittleEndian64();
+    // ------------------------------ DELIMITED TYPES ------------------------------
+
+    /** Read a repeated {@code string} field value from the source. */
+    public int readRepeatedString(final RepeatedString store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            readString(store.next());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
     }
 
-    /** Read an {@code sint32} field value from the source. */
-    public int readSInt32() throws IOException {
-        return decodeZigZag32(readRawVarint32());
+    /** Read a {@code string} field value from the source. */
+    public void readString(final Utf8String store) throws IOException {
+        final int length = readLength();
+        store.setSize(length);
+        readRawBytes(store.bytes(), 0, length);
     }
 
-    /** Read an {@code sint64} field value from the source. */
-    public long readSInt64() throws IOException {
-        return decodeZigZag64(readRawVarint64());
+    /** Read a repeated {@code group} field value from the source. */
+    public int readRepeatedGroup(final RepeatedMessage<?> store, final int tag) throws IOException {
+        int fieldNumber = WireFormat.getTagFieldNumber(tag);
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            readGroup(store.next(), fieldNumber);
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code group} field value from the source. */
+    public void readGroup(final ProtoMessage<?> msg, final int fieldNumber) throws IOException {
+        // Note: recursive messages are impossible, so we don't need to check for limits
+        msg.mergeFrom(this);
+        checkLastTagWas(WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
+    }
+
+    /** Read a repeated {@code message} field value from the source. */
+    public int readRepeatedMessage(final RepeatedMessage<?> store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            readMessage(store.next());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    public void readMessage(final ProtoMessage<?> msg) throws IOException {
+        // Note: recursive messages are impossible, so we don't need to check for limits
+        final int length = readLength();
+        final int oldLimit = pushLimit(length);
+        msg.mergeFrom(this);
+        checkLastTagWas(0);
+        popLimit(oldLimit);
+    }
+
+    /** Read a repeated {@code bytes} field value from the source. */
+    public int readRepeatedBytes(final RepeatedBytes store, final int tag) throws IOException {
+        int nextTag;
+        do {
+            reserveRepeatedFieldCapacity(store, tag);
+            readBytes(store.next());
+        } while ((nextTag = readTag()) == tag);
+        return nextTag;
+    }
+
+    /** Read a {@code bytes} field value from the source. */
+    public void readBytes(RepeatedByte store) throws IOException {
+        // note: bytes type gets replaced rather than merged
+        final int length = readLength();
+        store.setLength(length);
+        readRawBytes(store.array, 0, length);
+    }
+
+    /** Read raw {@code bytes} from the source. */
+    public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+        for (int i = 0; i < length; i++) {
+            values[offset + i] = readRawByte();
+        }
     }
 
     // =================================================================
@@ -537,37 +866,27 @@ public class ProtoSource {
 
     /** Read a 16-bit little-endian integer from the source. */
     public short readRawLittleEndian16() throws IOException {
-        final int b1 = (readRawByte() & 0xFF);
-        final int b2 = (readRawByte() & 0xFF) << 8;
-        return (short) (b1 | b2);
+        return (short) ((readRawByte() & 0xFF) | (readRawByte() & 0xFF) << 8);
     }
 
     /** Read a 32-bit little-endian integer from the source. */
     public int readRawLittleEndian32() throws IOException {
-        requireRemaining(SIZEOF_FIXED_32);
-        final byte[] buffer = this.buffer;
-        final int offset = bufferPos;
-        bufferPos += SIZEOF_FIXED_32;
-        return (buffer[offset] & 0xFF) |
-                (buffer[offset + 1] & 0xFF) << 8 |
-                (buffer[offset + 2] & 0xFF) << 16 |
-                (buffer[offset + 3] & 0xFF) << 24;
+        return (readRawByte() & 0xFF) |
+                (readRawByte() & 0xFF) << 8 |
+                (readRawByte() & 0xFF) << 16 |
+                (readRawByte() & 0xFF) << 24;
     }
 
     /** Read a 64-bit little-endian integer from the source. */
     public long readRawLittleEndian64() throws IOException {
-        requireRemaining(SIZEOF_FIXED_64);
-        final byte[] buffer = this.buffer;
-        final int offset = bufferPos;
-        bufferPos += SIZEOF_FIXED_64;
-        return (buffer[offset] & 0xFFL) |
-                (buffer[offset + 1] & 0xFFL) << 8 |
-                (buffer[offset + 2] & 0xFFL) << 16 |
-                (buffer[offset + 3] & 0xFFL) << 24 |
-                (buffer[offset + 4] & 0xFFL) << 32 |
-                (buffer[offset + 5] & 0xFFL) << 40 |
-                (buffer[offset + 6] & 0xFFL) << 48 |
-                (buffer[offset + 7] & 0xFFL) << 56;
+        return (readRawByte() & 0xFFL) |
+                (readRawByte() & 0xFFL) << 8 |
+                (readRawByte() & 0xFFL) << 16 |
+                (readRawByte() & 0xFFL) << 24 |
+                (readRawByte() & 0xFFL) << 32 |
+                (readRawByte() & 0xFFL) << 40 |
+                (readRawByte() & 0xFFL) << 48 |
+                (readRawByte() & 0xFFL) << 56;
     }
 
     /**
@@ -600,48 +919,18 @@ public class ProtoSource {
 
     // -----------------------------------------------------------------
 
-    protected byte[] buffer;
-    protected int bufferStart;
-    protected int bufferSize;
-    private int bufferSizeAfterLimit;
-    protected int bufferPos;
     private int lastTag;
-    protected int lastTagMark;
 
     /** The absolute position of the end of the current message. */
-    private int currentLimit = Integer.MAX_VALUE;
+    protected int currentLimit = NO_LIMIT;
+    protected static final int NO_LIMIT = Integer.MAX_VALUE;
 
-    /** See setRecursionLimit() */
-    private int recursionDepth;
-    private int recursionLimit = DEFAULT_RECURSION_LIMIT;
-    private static final int DEFAULT_RECURSION_LIMIT = 64;
-
-    /**
-     * Changes the input to the given array. This resets any existing
-     * internal state such as position and is equivalent to creating
-     * a new instance.
-     *
-     * @param buffer
-     * @param off
-     * @param len
-     * @return this
-     */
-    public ProtoSource wrap(byte[] buffer, long off, int len) {
-        if (off < 0 || len < 0 || off > buffer.length || off + len > buffer.length)
-            throw new ArrayIndexOutOfBoundsException();
-        this.buffer = buffer;
-        bufferStart = (int) off;
-        bufferSize = bufferStart + len;
-        bufferPos = bufferStart;
-        return resetInternalState();
-    }
+    /** see setDiscardUnknownFields */
+    private boolean shouldDiscardUnknownFields = false;
 
     protected ProtoSource resetInternalState() {
-        currentLimit = Integer.MAX_VALUE;
-        bufferSizeAfterLimit = 0;
         lastTag = 0;
-        lastTagMark = 0;
-        recursionDepth = 0;
+        currentLimit = NO_LIMIT;
         return this;
     }
 
@@ -649,20 +938,38 @@ public class ProtoSource {
     }
 
     /**
-     * Set the maximum message recursion depth.  In order to prevent malicious
-     * messages from causing stack overflows, {@code ProtoSource} limits
-     * how deeply messages may be nested.  The default limit is 64.
+     * Set the maximum message recursion depth. Due to pre-allocating
+     * all memory, it is impossible for recursive messages to appear.
+     * This method exists for compatibility with Protobuf code, and
+     * as a reminder to re-implement it if we ever support recursive
+     * messages.
      *
-     * @return the old limit.
+     * @return old limit
      */
+    @Deprecated
     public int setRecursionLimit(final int limit) {
-        if (limit < 0) {
-            throw new IllegalArgumentException(
-                    "Recursion limit cannot be negative: " + limit);
-        }
-        final int oldLimit = recursionLimit;
-        recursionLimit = limit;
-        return oldLimit;
+        return 64;
+    }
+
+    /**
+     * Sets this {@code ProtoSource} to discard unknown fields. This only impacts
+     * messages that were generated with support for retaining unknown fields.
+     *
+     * <p>Note calling this function alone will have NO immediate effect on the underlying input data.
+     * The unknown fields will be discarded during parsing.
+     */
+    public final ProtoSource discardUnknownFields() {
+        shouldDiscardUnknownFields = true;
+        return this;
+    }
+
+    /**
+     * Reverts the unknown fields preservation behavior to the default. This only applies
+     * to messages that were generated with support for retaining unknown fields.
+     */
+    public final ProtoSource unsetDiscardUnknownFields() {
+        shouldDiscardUnknownFields = false;
+        return this;
     }
 
     /**
@@ -675,28 +982,13 @@ public class ProtoSource {
         if (byteLimit < 0) {
             throw InvalidProtocolBufferException.negativeSize();
         }
-        byteLimit += bufferPos;
-        final int oldLimit = currentLimit;
-        if (byteLimit > oldLimit) {
+        byteLimit += getTotalBytesRead();
+        if (byteLimit > currentLimit) {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+        final int oldLimit = currentLimit;
         currentLimit = byteLimit;
-
-        recomputeBufferSizeAfterLimit();
-
         return oldLimit;
-    }
-
-    private void recomputeBufferSizeAfterLimit() {
-        bufferSize += bufferSizeAfterLimit;
-        final int bufferEnd = bufferSize;
-        if (bufferEnd > currentLimit) {
-            // Limit is in current buffer.
-            bufferSizeAfterLimit = bufferEnd - currentLimit;
-            bufferSize -= bufferSizeAfterLimit;
-        } else {
-            bufferSizeAfterLimit = 0;
-        }
     }
 
     /**
@@ -704,9 +996,8 @@ public class ProtoSource {
      *
      * @param oldLimit The old limit, as returned by {@code pushLimit}.
      */
-    public void popLimit(final int oldLimit) {
+    public void popLimit(int oldLimit) {
         currentLimit = oldLimit;
-        recomputeBufferSizeAfterLimit();
     }
 
     /**
@@ -717,9 +1008,7 @@ public class ProtoSource {
         if (currentLimit == Integer.MAX_VALUE) {
             return -1;
         }
-
-        final int currentAbsolutePosition = bufferPos;
-        return currentLimit - currentAbsolutePosition;
+        return currentLimit - getTotalBytesRead();
     }
 
     /**
@@ -727,26 +1016,10 @@ public class ProtoSource {
      * case if either the end of the underlying input source has been reached or
      * if the source has reached a limit created using {@link #pushLimit(int)}.
      */
-    public boolean isAtEnd() {
-        return bufferPos == bufferSize;
-    }
+    public abstract boolean isAtEnd() throws IOException;
 
-    /** Get current position in buffer relative to beginning offset. */
-    public int getPosition() {
-        return bufferPos - bufferStart;
-    }
-
-    /** Rewind to previous position. Cannot go forward. */
-    public void rewindToPosition(int position) {
-        if (position > bufferPos - bufferStart) {
-            throw new IllegalArgumentException(
-                    "Position " + position + " is beyond current " + (bufferPos - bufferStart));
-        }
-        if (position < 0) {
-            throw new IllegalArgumentException("Bad position " + position);
-        }
-        bufferPos = bufferStart + position;
-    }
+    /** Get total bytes read up to the current position. */
+    public abstract int getTotalBytesRead();
 
     /**
      * Read one byte from the input.
@@ -754,12 +1027,7 @@ public class ProtoSource {
      * @throws InvalidProtocolBufferException The end of the source or the current
      *                                        limit was reached.
      */
-    public byte readRawByte() throws IOException {
-        if (bufferPos == bufferSize) {
-            throw InvalidProtocolBufferException.truncatedMessage();
-        }
-        return buffer[bufferPos++];
-    }
+    public abstract byte readRawByte() throws IOException;
 
     /**
      * Reads and discards {@code size} bytes.
@@ -767,52 +1035,179 @@ public class ProtoSource {
      * @throws InvalidProtocolBufferException The end of the source or the current
      *                                        limit was reached.
      */
-    public void skipRawBytes(final int size) throws IOException {
-        requireRemaining(size);
-        bufferPos += size;
-    }
+    public abstract void skipRawBytes(final int size) throws IOException;
 
-    protected int remaining() {
-        // bufferSize is always the same as currentLimit
-        // in cases where currentLimit != Integer.MAX_VALUE
-        return bufferSize - bufferPos;
-    }
-
-    protected void requireRemaining(int numBytes) throws IOException {
-        if (numBytes < 0) {
-            throw InvalidProtocolBufferException.negativeSize();
-
-        } else if (numBytes > remaining()) {
-            // Read to the end of the current sub-message before failing
-            if (numBytes > currentLimit - bufferPos) {
-                bufferPos = currentLimit;
-            }
-            throw InvalidProtocolBufferException.truncatedMessage();
-        }
+    /**
+     * Reserves space in the repeated field store to hold additional values. We assume that in
+     * the common case repeated fields are contiguously serialized, so we can look ahead to
+     * see how many values are remaining to avoid unnecessary allocations. Note that this is
+     * an optimization that may do nothing if looking ahead is not supported.
+     *
+     * @param store target store
+     * @param tag tag of the contained repeated field
+     * @throws IOException
+     */
+    protected void reserveRepeatedFieldCapacity(RepeatedField<?,?> store, int tag) throws IOException {
+        // implement in child classes that support looking ahead
     }
 
     /**
-     * Computes the array length of a repeated field. We assume that in the common case repeated
-     * fields are contiguously serialized but we still correctly handle interspersed values of a
-     * repeated field (but with extra allocations).
-     * <p>
-     * Rewinds to current input position before returning.
+     * Reserves space in the repeated field store to hold the number of remaining varints until
+     * the limit or end of stream is reached. Note that this is an optimization that may do
+     * nothing if looking ahead is not supported.
      *
-     * @param input source input, pointing to the byte after the first tag
-     * @param tag   repeated field tag just read
-     * @return length of array
+     * @param store target store
      * @throws IOException
      */
-    public static int getRepeatedFieldArrayLength(final ProtoSource input, final int tag) throws IOException {
-        int arrayLength = 1;
-        int startPos = input.getPosition();
-        input.skipField(tag);
-        while (input.readTag() == tag) {
-            input.skipField(tag);
-            arrayLength++;
+    protected void reservePackedVarintCapacity(RepeatedField<?,?> store) throws IOException {
+        // implement in child classes that support looking ahead
+    }
+
+    static class StreamSource extends ProtoSource {
+
+        @Override
+        public ProtoSource setInput(InputStream stream){
+            this.input = stream;
+            return resetInternalState();
         }
-        input.rewindToPosition(startPos);
-        return arrayLength;
+
+        @Override
+        protected ProtoSource resetInternalState() {
+            super.resetInternalState();
+            peekByte = EOF;
+            position = 0;
+            return this;
+        }
+
+        @Override
+        public ProtoSource clear() {
+            return setInput(EMPTY_INPUT_STREAM);
+        }
+
+        @Override
+        public boolean isAtEnd() throws IOException {
+            return position == currentLimit || peek() == EOF;
+        }
+
+        @Override
+        public int getTotalBytesRead() {
+            return position;
+        }
+
+        @Override
+        public byte readRawByte() throws IOException {
+            if (position == currentLimit || peek() == EOF) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            try {
+                position++;
+                return (byte) peekByte;
+            } finally {
+                peekByte = EOF;
+            }
+        }
+
+        private int peek() throws IOException {
+            if (peekByte == EOF && (peekByte = input.read()) == EOF && getBytesUntilLimit() > 0) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            return peekByte;
+        }
+
+        @Override
+        public void skipRawBytes(int length) throws IOException {
+            require(length);
+            if (peekByte != EOF) {
+                peekByte = EOF;
+                length--;
+            }
+            if (input.skip(length) < length) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        @Override
+        public void readRawBytes(byte[] buffer, int offset, int length) throws IOException {
+            require(length);
+            if (peekByte != EOF) {
+                buffer[offset++] = (byte) peekByte;
+                length--;
+                peekByte = EOF;
+            }
+            if (input.read(buffer, offset, length) < length) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        private void require(int numBytes) throws IOException {
+            if (numBytes < 0) {
+                throw InvalidProtocolBufferException.negativeSize();
+            } else if (numBytes > currentLimit - position) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            position += numBytes;
+        }
+
+        private InputStream input = EMPTY_INPUT_STREAM;
+        private int peekByte = EOF;
+        private int position = 0;
+
+        private static final InputStream EMPTY_INPUT_STREAM = new ByteArrayInputStream(ProtoUtil.EMPTY_BYTE_ARRAY);
+        private static final int EOF = -1;
+
+    }
+
+    static class BufferSource extends ProtoSource {
+
+        @Override
+        public ProtoSource setInput(ByteBuffer buffer) {
+            this.buffer = buffer;
+            return resetInternalState();
+        }
+
+        @Override
+        public ProtoSource clear() {
+            return setInput(ProtoUtil.EMPTY_BYTE_BUFFER);
+        }
+
+        @Override
+        public boolean isAtEnd() throws IOException {
+            return buffer.position() == currentLimit || buffer.remaining() == 0;
+        }
+
+        @Override
+        public int getTotalBytesRead() {
+            return buffer.position();
+        }
+
+        @Override
+        public byte readRawByte() throws IOException {
+            try {
+                return buffer.get();
+            } catch (BufferUnderflowException truncated) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        @Override
+        public void skipRawBytes(int size) throws IOException {
+            if (buffer.remaining() < size) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            buffer.position(buffer.position() + size);
+        }
+
+        @Override
+        public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+            try {
+                buffer.get(values, offset, length);
+            } catch (BufferUnderflowException truncated) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        ByteBuffer buffer = ProtoUtil.EMPTY_BYTE_BUFFER;
+
     }
 
 }

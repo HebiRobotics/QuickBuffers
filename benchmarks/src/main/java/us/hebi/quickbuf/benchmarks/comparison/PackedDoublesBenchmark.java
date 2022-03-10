@@ -77,21 +77,21 @@ public class PackedDoublesBenchmark {
     final byte[] input = Packed.newInstance().addAllDoubles(new double[8 * 1024 * 1024]).toByteArray();
     final byte[] output = new byte[input.length + 100];
 
-    final ProtoSource source = ProtoSource.newInstance();
-    final ProtoSink sink = ProtoSink.newInstance();
+    final ProtoSource source = ProtoSource.newArraySource();
+    final ProtoSink sink = ProtoSink.newArraySink();
 
     final Packed message = Packed.newInstance();
 
     @Benchmark
     public Object readQuick() throws IOException {
-        source.wrap(input);
+        source.setInput(input);
         return message.clear().mergeFrom(source);
     }
 
     @Benchmark
     public int readWriteQuick() throws IOException {
-        message.clear().mergeFrom(source.wrap(input)).writeTo(sink.wrap(output));
-        return sink.position();
+        message.clear().mergeFrom(source.setInput(input)).writeTo(sink.setOutput(output));
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark

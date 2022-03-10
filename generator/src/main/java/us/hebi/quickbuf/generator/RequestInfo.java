@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -284,6 +284,10 @@ public class RequestInfo {
 
         }
 
+        public boolean hasRequiredFieldsInHierarchy() {
+            return getParentFile().getParentRequest().getTypeRegistry().hasRequiredFieldsInHierarchy(typeName);
+        }
+
         private final DescriptorProtos.DescriptorProto descriptor;
         private final int fieldCount;
         private final List<FieldInfo> fields = new ArrayList<>();
@@ -442,6 +446,11 @@ public class RequestInfo {
         public TypeName getTypeName() {
             // Lazy because type registry is not constructed at creation time
             return getParentFile().getParentRequest().getTypeRegistry().resolveJavaTypeFromProto(descriptor);
+        }
+
+        public boolean isMessageOrGroupWithRequiredFieldsInHierarchy() {
+            // Lazy because type registry is not constructed at creation time
+            return isMessageOrGroup() && getParentFile().getParentRequest().getTypeRegistry().hasRequiredFieldsInHierarchy(getTypeName());
         }
 
         public TypeName getStoreType() {

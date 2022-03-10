@@ -30,7 +30,6 @@ import protos.benchmarks.real_logic.quickbuf.Examples;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix;
 import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
-import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
 
@@ -97,8 +96,8 @@ public class SbeThroughputBenchmarkQuickbuf {
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
 
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
-    final ProtoSource source = ProtoSource.newInstance();
-    final ProtoSink sink = ProtoSink.newInstance();
+    final ProtoSource source = ProtoSource.newArraySource();
+    final ProtoSink sink = ProtoSink.newArraySink();
 
     final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());
     final Car carFast = buildCarData(Car.newInstance());
@@ -127,9 +126,9 @@ public class SbeThroughputBenchmarkQuickbuf {
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     @Benchmark
     public int testMarketWriteOnly() throws IOException {
-        sink.wrap(encodeBuffer);
+        sink.setOutput(encodeBuffer);
         marketDataFast.writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @BenchmarkMode(Mode.AverageTime)
@@ -150,48 +149,48 @@ public class SbeThroughputBenchmarkQuickbuf {
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     @Benchmark
     public int testCarWriteOnly() throws IOException {
-        sink.wrap(encodeBuffer);
+        sink.setOutput(encodeBuffer);
         carFast.writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int testMarketEncodeFast() throws IOException { // no size computation
-        sink.wrap(encodeBuffer);
+        sink.setOutput(encodeBuffer);
         marketData.copyFrom(marketDataFast).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int testCarEncodeFast() throws IOException { // no size computation
-        sink.wrap(encodeBuffer);
+        sink.setOutput(encodeBuffer);
         car.copyFrom(carFast).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int testMarketEncode() throws IOException {
-        sink.wrap(encodeBuffer);
+        sink.setOutput(encodeBuffer);
         buildMarketData(marketData).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public Object testMarketDecode() throws IOException {
-        source.wrap(marketDecodeBuffer);
+        source.setInput(marketDecodeBuffer);
         return marketData.clearQuick().mergeFrom(source);
     }
 
     @Benchmark
     public int testCarEncode() throws IOException {
-        sink.wrap(encodeBuffer);
+        sink.setOutput(encodeBuffer);
         buildCarData(car).writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public Object testCarDecode() throws IOException {
-        source.wrap(carDecodeBuffer);
+        source.setInput(carDecodeBuffer);
         return car.clearQuick().mergeFrom(source);
     }
 

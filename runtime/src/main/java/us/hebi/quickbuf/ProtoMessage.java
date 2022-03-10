@@ -21,6 +21,8 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract interface implemented by Protocol Message objects.
@@ -29,7 +31,7 @@ import java.io.IOException;
  *
  * @author Florian Enner
  */
-public abstract class ProtoMessage<MessageType extends ProtoMessage> {
+public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
 
     private static final long serialVersionUID = 0L;
     protected int cachedSize = -1;
@@ -38,27 +40,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     // is likely in the same cache line as the object header
     protected int bitField0_;
 
-    // Allow storing unknown bytes so that messages can be routed
-    // without having full knowledge of the definition
-    protected final RepeatedByte unknownBytes;
-    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes");
-
     protected ProtoMessage() {
-        this(false);
-    }
-
-    protected ProtoMessage(boolean storeUnknownBytes) {
-        this.unknownBytes = storeUnknownBytes ? RepeatedByte.newEmptyInstance() : null;
-    }
-
-    /**
-     * @return binary representation of all fields with tags that could not be parsed
-     */
-    public final RepeatedByte getUnknownBytes() {
-        if (unknownBytes == null) {
-            throw new IllegalStateException("Storing unknown bytes is not enabled");
-        }
-        return unknownBytes;
     }
 
     /**
@@ -127,6 +109,25 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     }
 
     /**
+     * Helper method to check if this message is initialized, i.e.,
+     * if all required fields are set.
+     *
+     * Message content is not automatically checked after merging
+     * new data. This method should be called manually as needed.
+     *
+     * @throws InvalidProtocolBufferException if it is not initialized.
+     * @return this
+     */
+    @SuppressWarnings("unchecked")
+    public final MessageType checkInitialized() throws InvalidProtocolBufferException {
+        if (!isInitialized()) {
+            throw new UninitializedMessageException(this)
+                    .asInvalidProtocolBufferException();
+        }
+        return (MessageType) this;
+    }
+
+    /**
      * Computes the number of bytes required to encode this message. This does
      * not update the cached size.
      */
@@ -144,7 +145,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * Parse {@code input} as a message of this type and merge it with the
      * message being built.
      */
-    public abstract ProtoMessage mergeFrom(ProtoSource input) throws IOException;
+    public abstract MessageType mergeFrom(ProtoSource input) throws IOException;
 
     /**
      * Merge {@code other} into the message being built. {@code other} must have the exact same type
@@ -198,7 +199,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      *
      * @return byte array with the serialized data.
      */
-    public static final byte[] toByteArray(ProtoMessage msg) {
+    public static byte[] toByteArray(ProtoMessage<?> msg) {
         final byte[] result = new byte[msg.getSerializedSize()];
         toByteArray(msg, result, 0, result.length);
         return result;
@@ -212,9 +213,9 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
      * and if length bytes are not written then IllegalStateException
      * is thrown.
      */
-    public static final void toByteArray(ProtoMessage msg, byte[] data, int offset, int length) {
+    public static void toByteArray(ProtoMessage<?> msg, byte[] data, int offset, int length) {
         try {
-            final ProtoSink output = ProtoSink.newSafeInstance().wrap(data, offset, length);
+            final ProtoSink output = ProtoSink.newArraySink().setOutput(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -224,31 +225,33 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     }
 
     /**
-     * Parse {@code data} as a message of this type and merge it with the
-     * message being built.
+     * Parse {@code data} as a message of this type and merge it with the message being built.
      */
-    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data)
-            throws InvalidProtocolBufferException {
+    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data) throws InvalidProtocolBufferException {
         return mergeFrom(msg, data, 0, data.length);
     }
 
     /**
-     * Parse {@code data} as a message of this type and merge it with the
-     * message being built.
+     * Parse {@code data} as a message of this type and merge it with the message being built.
      */
-    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data,
-                                                             final int off, final int len) throws InvalidProtocolBufferException {
+    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data, final int off, final int len)
+            throws InvalidProtocolBufferException {
         try {
-            final ProtoSource input = ProtoSource.newInstance(data, off, len);
-            msg.mergeFrom(input);
-            input.checkLastTagWas(0);
-            return msg;
+            return ProtoMessage.mergeFrom(msg, ProtoSource.newInstance(data, off, len));
         } catch (InvalidProtocolBufferException e) {
             throw e;
         } catch (IOException e) {
-            throw new RuntimeException("Reading from a byte array threw an IOException (should "
-                    + "never happen).");
+            throw new RuntimeException("Reading from a byte array threw an IOException (should never happen).");
         }
+    }
+
+    /**
+     * Parse {@code data} as a message of this type and merge it with the message being built.
+     */
+    public static <T extends ProtoMessage> T mergeFrom(T msg, ProtoSource input) throws IOException {
+        msg.mergeFrom(input);
+        input.checkLastTagWas(0);
+        return msg;
     }
 
     /**
@@ -299,11 +302,52 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage> {
     }
 
     /**
+     * @return the full path to all missing required fields in the message
+     */
+    public List<String> getMissingFields(){
+        List<String> results = new ArrayList<String>();
+        getMissingFields("", results);
+        return results;
+    }
+
+    /**
+     * Adds the full path to all missing required fields in the message
+     */
+    protected void getMissingFields(String prefix, List<String> results) {
+    }
+
+    protected static void getMissingFields(String prefix, String fieldName, ProtoMessage<?> field, List<String> results) {
+        if (!field.isInitialized()) {
+            field.getMissingFields(prefix + fieldName + ".", results);
+        }
+    }
+
+    protected static void getMissingFields(String prefix, String fieldName, RepeatedMessage<?> field, List<String> results) {
+        for (int i = 0; i < field.length; i++) {
+            if (!field.array[i].isInitialized()) {
+                field.array[i].getMissingFields(prefix + fieldName + "[" + i + "].", results);
+            }
+        }
+    }
+
+    /**
      * Helper to determine the default value for 'Bytes' fields. The Protobuf
      * generator encodes raw bytes as strings with ISO-8859-1 encoding.
      */
     protected static byte[] bytesDefaultValue(String bytes) {
         return bytes.getBytes(ProtoUtil.Charsets.ISO_8859_1);
     }
+
+    /**
+     * @return binary representation of all fields with tags that could not be parsed
+     */
+    public RepeatedByte getUnknownBytes() {
+        throw new IllegalStateException("Support for unknown bytes has not been generated.");
+    }
+
+    /**
+     * JSON field name for serializing unknown bytes
+     */
+    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes");
 
 }

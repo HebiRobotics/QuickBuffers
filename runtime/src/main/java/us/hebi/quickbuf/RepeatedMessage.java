@@ -32,8 +32,7 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
     }
 
     private RepeatedMessage(MessageFactory<MessageType> factory) {
-        if (factory == null) throw new NullPointerException();
-        this.factory = factory;
+        this.factory = ProtoUtil.checkNotNull(factory);
     }
 
     @Override

@@ -76,7 +76,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <maven.compiler.testSource>8</maven.compiler.testSource>
         <maven.compiler.testTarget>8</maven.compiler.testTarget>
-        <protoc.version>3.16.1</protoc.version>
+        <protoc.version>3.19.4</protoc.version>
         <proto.dir>${project.basedir}/../runtime/src/test/resources/protos</proto.dir>
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
 
@@ -124,7 +124,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.8</version>
+                <version>1.18.22</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>

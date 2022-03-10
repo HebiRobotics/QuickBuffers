@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import static us.hebi.quickbuf.ProtoSource.*;
@@ -34,10 +35,10 @@ import static us.hebi.quickbuf.ProtoSource.*;
  * @author Florian Enner
  * @since 09 Aug 2019
  */
-public class ProtoUtil {
+public final class ProtoUtil {
 
     /**
-     * Encode and write a varint to an OutputStream.  {@code value} is
+     * Encode and write a varint32 to an OutputStream.  {@code value} is
      * treated as unsigned, so it won't be sign-extended if negative.
      * <p>
      * The following is equal to Protobuf-Java's "msg.writeDelimitedTo(output)"
@@ -50,7 +51,7 @@ public class ProtoUtil {
      * @param output target stream
      * @return number of written bytes
      */
-    public static int writeRawVarint32(int value, OutputStream output) throws IOException {
+    public static int writeUInt32(int value, OutputStream output) throws IOException {
         int numBytes = 1;
         while (true) {
             if ((value & ~0x7F) == 0) {
@@ -137,6 +138,30 @@ public class ProtoUtil {
         return true;
     }
 
+    public static boolean isEqual(double a, double b) {
+        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
+    }
+
+    public static boolean isEqual(float a, float b) {
+        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
+    }
+
+    public static boolean isEqual(boolean a, boolean b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(long a, long b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(int a, int b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(byte a, byte b) {
+        return a == b;
+    }
+
     /**
      * Decodes utf8 bytes into a reusable StringBuilder object. Going through a builder
      * has benefits on JDK8, but is (significantly) slower when decoding ascii on JDK13.
@@ -145,13 +170,11 @@ public class ProtoUtil {
         Utf8.decodeArray(bytes, offset, length, output);
     }
 
-    // =========== Internal utility methods used by the runtime API ===========
-
     /**
      * Hash code for JSON field name lookup. Any changes need to be
      * synchronized between FieldUtil::hash32 and ProtoUtil::hash32.
      */
-    static int hash32(CharSequence value) {
+    public static int hash32(CharSequence value) {
         // To start off with we use a simple hash identical to String::hashCode. The
         // algorithm has been documented since JDK 1.2, so it can't change without
         // breaking backwards compatibility.
@@ -168,6 +191,33 @@ public class ProtoUtil {
         }
     }
 
+    public static void checkState(boolean condition, String message) {
+        if (!condition) {
+            throw new IllegalStateException(message);
+        }
+    }
+
+    public static void checkArgument(boolean condition, String message) {
+        if (!condition) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    public static <T> T checkNotNull(T object) {
+        if (object == null) {
+            throw new NullPointerException();
+        }
+        return object;
+    }
+
+    public static void checkBounds(byte[] buffer, int offset, int length) {
+        if (buffer == null) {
+            throw new NullPointerException("buffer");
+        } else if (offset < 0 || length < 0 || offset + length > buffer.length) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+    }
+
     static final Utf8Decoder DEFAULT_UTF8_DECODER = new Utf8Decoder() {
         @Override
         public String decode(byte[] bytes, int offset, int length) {
@@ -176,30 +226,7 @@ public class ProtoUtil {
     };
 
     static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-
-    static boolean isEqual(boolean a, boolean b) {
-        return a == b;
-    }
-
-    static boolean isEqual(byte a, byte b) {
-        return a == b;
-    }
-
-    static boolean isEqual(int a, int b) {
-        return a == b;
-    }
-
-    static boolean isEqual(long a, long b) {
-        return a == b;
-    }
-
-    static boolean isEqual(float a, float b) {
-        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
-    }
-
-    static boolean isEqual(double a, double b) {
-        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
-    }
+    static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.wrap(EMPTY_BYTE_ARRAY);
 
     private ProtoUtil() {
     }

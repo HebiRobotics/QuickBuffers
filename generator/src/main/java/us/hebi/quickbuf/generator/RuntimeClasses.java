@@ -42,6 +42,7 @@ class RuntimeClasses {
     static final ClassName Utf8Decoder = ClassName.get(API_PACKAGE,"Utf8Decoder");
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");
     static final ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
+    static final ClassName UninitializedMessageException = ClassName.get(API_PACKAGE, "UninitializedMessageException");
     static final ClassName JsonSink = ClassName.get(API_PACKAGE, "AbstractJsonSink");
     static final ClassName JsonSource = ClassName.get(API_PACKAGE, "AbstractJsonSource");
     static final ClassName FieldName = ClassName.get(API_PACKAGE, "FieldName");

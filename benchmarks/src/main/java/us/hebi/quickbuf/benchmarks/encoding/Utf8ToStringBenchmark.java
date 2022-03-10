@@ -34,16 +34,18 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * === JDK8
- * Utf8ToStringBenchmark.readBuiltinAscii  avgt   10  0.343 ± 0.007  us/op
- * Utf8ToStringBenchmark.readBuiltinUtf8   avgt   10  0.623 ± 0.014  us/op
- * Utf8ToStringBenchmark.readManualAscii   avgt   10  0.283 ± 0.009  us/op
- * Utf8ToStringBenchmark.readManualUtf8    avgt   10  0.431 ± 0.006  us/op
+ * Benchmark                               Mode  Cnt  Score   Error  Units
+ * Utf8ToStringBenchmark.readBuiltinAscii  avgt   10  0,332 ± 0,020  us/op
+ * Utf8ToStringBenchmark.readBuiltinUtf8   avgt   10  0,617 ± 0,015  us/op
+ * Utf8ToStringBenchmark.readManualAscii   avgt   10  0,468 ± 0,028  us/op
+ * Utf8ToStringBenchmark.readManualUtf8    avgt   10  0,692 ± 0,046  us/op
  *
- * === JDK13
- * Utf8ToStringBenchmark.readBuiltinAscii  avgt   10  0.064 ± 0.001  us/op
- * Utf8ToStringBenchmark.readBuiltinUtf8   avgt   10  0.480 ± 0.007  us/op
- * Utf8ToStringBenchmark.readManualAscii   avgt   10  0.726 ± 0.012  us/op
- * Utf8ToStringBenchmark.readManualUtf8    avgt   10  0.545 ± 0.010  us/op
+ * === JDK17
+ * Benchmark                               Mode  Cnt  Score   Error  Units
+ * Utf8ToStringBenchmark.readBuiltinAscii  avgt   10  0,068 ± 0,001  us/op
+ * Utf8ToStringBenchmark.readBuiltinUtf8   avgt   10  0,676 ± 0,016  us/op
+ * Utf8ToStringBenchmark.readManualAscii   avgt   10  0,525 ± 0,021  us/op
+ * Utf8ToStringBenchmark.readManualUtf8    avgt   10  0,658 ± 0,003  us/op
  *
  * @author Florian Enner
  * @since 26 Nov 2019

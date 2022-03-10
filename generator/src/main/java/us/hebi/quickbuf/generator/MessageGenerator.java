@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -80,7 +80,6 @@ class MessageGenerator {
         // Constructor
         type.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
-                .addStatement("super($L)", info.isStoreUnknownFields())
                 .build());
 
         // Member state (the first bitfield is in the parent class)
@@ -88,6 +87,7 @@ class MessageGenerator {
             type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
         }
         fields.forEach(f -> f.generateMemberFields(type));
+        generateUnknownByteMembers(type);
 
         // OneOf Accessors
         info.getOneOfs().stream()
@@ -123,6 +123,23 @@ class MessageGenerator {
                 .build());
 
         return type.build();
+    }
+
+    private void generateUnknownByteMembers(TypeSpec.Builder type) {
+        if (!info.isStoreUnknownFields()) {
+            return;
+        }
+        type.addField(FieldSpec.builder(RuntimeClasses.BytesType, "unknownBytes")
+                .addJavadoc(named("Stores unknown fields to enable message routing without a full definition."))
+                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .initializer("$T.newEmptyInstance()", RuntimeClasses.BytesType)
+                .build());
+        type.addMethod(MethodSpec.methodBuilder("getUnknownBytes")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .returns(RuntimeClasses.BytesType)
+                .addStatement("return unknownBytes")
+                .build());
     }
 
     private void generateClear(TypeSpec.Builder type) {
@@ -236,37 +253,36 @@ class MessageGenerator {
             case None: // no optimization
                 break;
         }
-
-        m.put("readTag", info.isStoreUnknownFields() ? "readTagMarked" : "readTag");
-
         if (enableFallthroughOptimization) {
             mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
-            mergeFrom.addStatement(named("int tag = input.$readTag:N()"));
-            mergeFrom.beginControlFlow("while (true)");
-        } else {
-            mergeFrom.beginControlFlow("while (true)");
-            mergeFrom.addStatement(named("int tag = input.$readTag:N()"));
         }
-        mergeFrom.beginControlFlow("switch (tag)");
+
+        mergeFrom.addStatement(named("int tag = input.readTag()"))
+                .beginControlFlow("while (true)")
+                .beginControlFlow("switch (tag)");
 
         // Add fields by the expected order and type
         for (int i = 0; i < sortedFields.size(); i++) {
             FieldGenerator field = sortedFields.get(i);
 
             // Assume all packable fields are written packed. Add non-packed cases to the end.
+            boolean readTag = true;
             if (field.getInfo().isPackable()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
-                field.generateMergingCodeFromPacked(mergeFrom);
+                readTag = field.generateMergingCodeFromPacked(mergeFrom);
             } else {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
-                field.generateMergingCode(mergeFrom);
+                readTag = field.generateMergingCode(mergeFrom);
+            }
+
+            if (readTag) {
+                mergeFrom.addCode(named("tag = input.readTag();\n"));
             }
 
             if (enableFallthroughOptimization) {
                 // try falling to 0 (exit) at last field
                 final int nextCase = (i == sortedFields.size() - 1) ? 0 : getPackedTagOrTag(sortedFields.get(i + 1));
-                mergeFrom.addCode(named("if ((tag = input.$readTag:N())"));
-                mergeFrom.beginControlFlow(" != $L)", nextCase);
+                mergeFrom.beginControlFlow("if (tag != $L)", nextCase);
                 mergeFrom.addStatement("break");
                 mergeFrom.endControlFlow();
             } else {
@@ -282,27 +298,25 @@ class MessageGenerator {
                 .endControlFlow();
 
         // default case -> skip field
-        mergeFrom.beginControlFlow("default:")
-                .beginControlFlow("if (!input.skipField(tag))")
-                .addStatement("return this");
-        if (info.isStoreUnknownFields()) {
-            mergeFrom.nextControlFlow("else")
-                    .addStatement(named("input.copyBytesSinceMark($unknownBytes:N)"));
-        }
-        mergeFrom.endControlFlow();
+        CodeBlock ifSkipField = info.isStoreUnknownFields() ?
+                named("if (!input.skipField(tag, $unknownBytes:N))") :
+                named("if (!input.skipField(tag))");
 
-        if (enableFallthroughOptimization) {
-            mergeFrom.addStatement(named("tag = input.$readTag:N()"));
-        }
-        mergeFrom.addStatement("break").endControlFlow();
+        mergeFrom.beginControlFlow("default:")
+                .beginControlFlow(ifSkipField)
+                .addStatement("return this");
+        mergeFrom.endControlFlow()
+                .addStatement(named("tag = input.readTag()"))
+                .addStatement("break")
+                .endControlFlow();
 
         // Generate missing non-packed cases for packable fields for compatibility reasons
         for (FieldGenerator field : sortedFields) {
             if (field.getInfo().isPackable()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
-                field.generateMergingCode(mergeFrom);
-                if (enableFallthroughOptimization) {
-                    mergeFrom.addStatement(named("tag = input.$readTag:N()"));
+                boolean readTag = field.generateMergingCode(mergeFrom);
+                if (readTag) {
+                    mergeFrom.addCode(named("tag = input.readTag();\n"));
                 }
                 mergeFrom.addStatement("break").endControlFlow();
             }
@@ -447,11 +461,24 @@ class MessageGenerator {
                 .addException(RuntimeClasses.InvalidProtocolBufferException)
                 .addParameter(byte[].class, "data", Modifier.FINAL)
                 .returns(info.getTypeName())
-                .addStatement("return $T.mergeFrom(new $T(), data)", RuntimeClasses.AbstractMessage, info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), data).checkInitialized()", RuntimeClasses.AbstractMessage, info.getTypeName())
+                .build());
+
+        type.addMethod(MethodSpec.methodBuilder("parseFrom")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addException(IOException.class)
+                .addParameter(RuntimeClasses.ProtoSource, "input", Modifier.FINAL)
+                .returns(info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), input).checkInitialized()", RuntimeClasses.AbstractMessage, info.getTypeName())
                 .build());
     }
 
     private void generateIsInitialized(TypeSpec.Builder type) {
+        // don't generate it if there is nothing that can be added
+        if (!info.hasRequiredFieldsInHierarchy()) {
+            return;
+        }
+
         MethodSpec.Builder isInitialized = MethodSpec.methodBuilder("isInitialized")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
@@ -463,8 +490,9 @@ class MessageGenerator {
         // Check sub-messages (including optional and repeated)
         fields.stream()
                 .map(FieldGenerator::getInfo)
-                .filter(FieldInfo::isMessageOrGroup)
+                .filter(FieldInfo::isMessageOrGroupWithRequiredFieldsInHierarchy)
                 .forEach(field -> {
+                    // isInitialized check
                     if (field.isRequired()) {
                         // has bit was already checked
                         isInitialized.beginControlFlow("if (!$N.isInitialized())", field.getFieldName());
@@ -479,11 +507,52 @@ class MessageGenerator {
 
         isInitialized.addStatement("return true");
         type.addMethod(isInitialized.build());
+
+        // Don't generate lookup if there is no point
+        if (fields.stream()
+                .map(FieldGenerator::getInfo)
+                .noneMatch(field -> field.isRequired() || field.isMessageOrGroup())) {
+            return;
+        }
+
+        // missing fields lookup
+        MethodSpec.Builder getMissingFields = MethodSpec.methodBuilder("getMissingFields")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED, Modifier.FINAL)
+                .addParameter(String.class, "prefix")
+                .addParameter(ParameterizedTypeName.get(List.class, String.class), "results");
+
+        for (FieldGenerator fieldGen : fields) {
+            FieldInfo field = fieldGen.getInfo();
+            String name = field.getDescriptor().getName();
+            CodeBlock checkNestedField = CodeBlock.builder().addStatement(
+                    "getMissingFields(prefix, $S, $N, results)",
+                    name, field.getFieldName()
+            ).build();
+
+            if (field.isRequired()) {
+                getMissingFields.beginControlFlow("if (!$N())", field.getHazzerName())
+                        .addStatement("results.add(prefix + $S)", name);
+                if (field.isMessageOrGroupWithRequiredFieldsInHierarchy()) {
+                    getMissingFields.nextControlFlow("else", field.getFieldName())
+                            .addCode(checkNestedField);
+                }
+                getMissingFields.endControlFlow();
+
+            } else if (field.isMessageOrGroupWithRequiredFieldsInHierarchy()) {
+                getMissingFields.beginControlFlow("if ($L() && !$N.isInitialized())", field.getHazzerName(), field.getFieldName())
+                        .addCode(checkNestedField)
+                        .endControlFlow();
+            }
+        }
+
+        type.addMethod(getMissingFields.build());
+
     }
 
     private void insertFailOnMissingRequiredBits(MethodSpec.Builder method) {
-        String error = "Message is missing at least one required field";
-        insertOnMissingRequiredBits(method, m -> m.addStatement("throw new $T($S)", IllegalStateException.class, error));
+        insertOnMissingRequiredBits(method, m -> m.addStatement("throw new $T(this)",
+                RuntimeClasses.UninitializedMessageException));
     }
 
     private void insertOnMissingRequiredBits(MethodSpec.Builder method, Consumer<MethodSpec.Builder> onCondition) {

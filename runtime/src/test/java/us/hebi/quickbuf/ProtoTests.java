@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@ import protos.test.quickbuf.external.ImportEnum;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -40,6 +41,62 @@ import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
  * @since 13 Aug 2019
  */
 public class ProtoTests {
+
+    @Test
+    public void testOutputStreamSink() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        msg.writeTo(ProtoSink.newInstance(baos));
+        byte[] expected = msg.toByteArray();
+        byte[] actual = baos.toByteArray();
+        assertEquals(msg, TestAllTypes.parseFrom(actual));
+        assertArrayEquals(expected, actual);
+        assertArrayEquals(msg.toByteArray(), baos.toByteArray());
+    }
+
+    @Test
+    public void testInputStreamSource() throws IOException {
+        byte[] bytes = CompatibilityTest.getCombinedMessage();
+        TestAllTypes actual = TestAllTypes.parseFrom(ProtoSource.newInstance(new ByteArrayInputStream(bytes)));
+        assertEquals(TestAllTypes.parseFrom(bytes), actual);
+    }
+
+    @Test
+    public void testByteBufferSource() throws IOException {
+        byte[] bytes = CompatibilityTest.getCombinedMessage();
+        TestAllTypes actual = TestAllTypes.parseFrom(ProtoSource.newInstance(ByteBuffer.wrap(bytes)));
+        assertEquals(TestAllTypes.parseFrom(bytes), actual);
+    }
+
+    @Test
+    public void testByteBufferSink() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        ByteBuffer buffer = ByteBuffer.allocate(msg.getSerializedSize());
+        msg.writeTo(ProtoSink.newInstance(buffer));
+        byte[] expected = msg.toByteArray();
+        byte[] actual = buffer.array();
+        assertEquals(msg, TestAllTypes.parseFrom(actual));
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void testRepeatedByteSerialization() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+        msg.writeTo(ProtoSink.newInstance(bytes));
+        assertEquals(msg.getSerializedSize(), bytes.length);
+        assertEquals(msg, TestAllTypes.parseFrom(ProtoSource.newInstance(bytes)));
+    }
+
+    @Test
+    public void testSourceWithOffset() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        int offset = 31;
+        int size = msg.getSerializedSize();
+        byte[] bytes = new byte[offset + size];
+        msg.writeTo(ProtoSink.newInstance(bytes, offset, size));
+        assertEquals(msg, TestAllTypes.newInstance().mergeFrom(ProtoSource.newInstance(bytes, offset, size)));
+    }
 
     @Test
     public void testDefaults() throws IOException {
@@ -502,9 +559,26 @@ public class ProtoTests {
 
     @Test
     public void testSkipUnknownFields() throws IOException {
-        ProtoSource source = ProtoSource.newInstance().wrap(CompatibilityTest.getCombinedMessage());
+        ProtoSource source = ProtoSource.newInstance(CompatibilityTest.getCombinedMessage());
         TestAllTypes.NestedMessage.newInstance().mergeFrom(source);
         assertTrue(source.isAtEnd());
+    }
+
+    @Test
+    public void testStoreUnknownFields() throws IOException {
+        byte[] bytes = CompatibilityTest.getCombinedMessage();
+        TestAllTypes expected = TestAllTypes.parseFrom(bytes);
+
+        TestAllTypes.NestedMessage wrongMessage = TestAllTypes.NestedMessage.newInstance();
+        wrongMessage.mergeFrom(ProtoSource.newInstance(bytes));
+        byte[] unknowns = wrongMessage.toByteArray();
+
+        assertEquals(bytes.length, unknowns.length);
+        assertEquals(TestAllTypes.parseFrom(bytes), TestAllTypes.parseFrom(unknowns));
+
+        assertEquals(2, TestAllTypes.NestedMessage.parseFrom(
+                        ProtoSource.newInstance(bytes).discardUnknownFields())
+                .getSerializedSize());
     }
 
     @Test
@@ -602,7 +676,7 @@ public class ProtoTests {
         // Write varint delimited message
         byte[] outData = msg.toByteArray();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ProtoUtil.writeRawVarint32(outData.length, outputStream);
+        ProtoUtil.writeUInt32(outData.length, outputStream);
         outputStream.write(outData);
 
         // Read varint delimited message

@@ -99,9 +99,9 @@ public class SbeBenchmark {
             int numMessages = maxNumBytes / sizePerMessage;
 
             byte[] data = new byte[sizePerMessage * numMessages];
-            ProtoSink sink = ProtoSink.newInstance().wrap(data);
+            ProtoSink sink = ProtoSink.newArraySink().setOutput(data);
             for (int i = 0; i < numMessages; i++) {
-                sink.writeRawVarint32(singleMessage.length);
+                sink.writeUInt32NoTag(singleMessage.length);
                 sink.writeRawBytes(singleMessage);
             }
 
@@ -114,10 +114,10 @@ public class SbeBenchmark {
     // ===================== REUSABLE STATE =====================
     final MarketDataIncrementalRefreshTrades marketMsg = MarketDataIncrementalRefreshTrades.newInstance();
     final Car carMsg = Car.newInstance();
-    final ProtoSource source = ProtoSource.newSafeInstance();
-    final ProtoSink sink = ProtoSink.newSafeInstance();
-    final ProtoSource unsafeSource = ProtoSource.newInstance();
-    final ProtoSink unsafeSink = ProtoSink.newInstance();
+    final ProtoSource source = ProtoSource.newArraySource();
+    final ProtoSink sink = ProtoSink.newArraySink();
+    final ProtoSource unsafeSource = ProtoSource.newDirectSource();
+    final ProtoSink unsafeSink = ProtoSink.newArraySink();
 
     // ===================== DATASETS =====================
     final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
@@ -128,43 +128,43 @@ public class SbeBenchmark {
     // ===================== UNSAFE OPTION DISABLED (e.g. Android) =====================
     @Benchmark
     public int marketQuickRead() throws IOException {
-        return readQuick(source.wrap(marketDataMessages), marketMsg);
+        return readQuick(source.setInput(marketDataMessages), marketMsg);
     }
 
     @Benchmark
     public int marketQuickReadWrite() throws IOException {
-        return readWriteQuick(source.wrap(marketDataMessages), marketMsg, sink.wrap(output));
+        return readWriteQuick(source.setInput(marketDataMessages), marketMsg, sink.setOutput(output));
     }
 
     @Benchmark
     public int carQuickRead() throws IOException {
-        return readQuick(source.wrap(carDataMessages), carMsg);
+        return readQuick(source.setInput(carDataMessages), carMsg);
     }
 
     @Benchmark
     public int carQuickReadWrite() throws IOException {
-        return readWriteQuick(source.wrap(carDataMessages), carMsg, sink.wrap(output));
+        return readWriteQuick(source.setInput(carDataMessages), carMsg, sink.setOutput(output));
     }
 
     // ===================== UNSAFE OPTION ENABLED =====================
     @Benchmark
     public int marketUnsafeQuickRead() throws IOException {
-        return readQuick(unsafeSource.wrap(marketDataMessages), marketMsg);
+        return readQuick(unsafeSource.setInput(marketDataMessages), marketMsg);
     }
 
     @Benchmark
     public int marketUnsafeQuickReadWrite() throws IOException {
-        return readWriteQuick(unsafeSource.wrap(marketDataMessages), marketMsg, unsafeSink.wrap(output));
+        return readWriteQuick(unsafeSource.setInput(marketDataMessages), marketMsg, unsafeSink.setOutput(output));
     }
 
     @Benchmark
     public int carUnsafeQuickRead() throws IOException {
-        return readQuick(unsafeSource.wrap(carDataMessages), carMsg);
+        return readQuick(unsafeSource.setInput(carDataMessages), carMsg);
     }
 
     @Benchmark
     public int carUnsafeQuickReadReadWrite() throws IOException {
-        return readWriteQuick(unsafeSource.wrap(carDataMessages), carMsg, unsafeSink.wrap(output));
+        return readWriteQuick(unsafeSource.setInput(carDataMessages), carMsg, unsafeSink.setOutput(output));
     }
 
     // ===================== STOCK PROTOBUF =====================
@@ -196,7 +196,7 @@ public class SbeBenchmark {
             message.clearQuick().mergeFrom(source);
             source.popLimit(limit);
         }
-        return source.getPosition();
+        return source.getTotalBytesRead();
     }
 
     static int readWriteQuick(final ProtoSource source, final ProtoMessage message, final ProtoSink sink) throws IOException {
@@ -205,7 +205,7 @@ public class SbeBenchmark {
             source.readMessage(message.clearQuick());
             sink.writeMessageNoTag(message);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     static <MessageType extends AbstractMessageLite> int readProto(byte[] input, Parser<MessageType> parser) throws IOException {

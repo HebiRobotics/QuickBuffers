@@ -164,8 +164,8 @@ public class NumericTypesTest {
     }
 
     private TestAllTypes encodeAndDecode(TestAllTypes msg) throws IOException {
-        msg.writeTo(sink.wrap(bytes));
-        msg.clear().mergeFrom(source.wrap(bytes, 0, sink.position()));
+        msg.writeTo(sink.setOutput(bytes));
+        msg.clear().mergeFrom(source.setInput(bytes, 0, sink.getTotalBytesWritten()));
         return msg;
     }
 
@@ -173,7 +173,7 @@ public class NumericTypesTest {
     private int n = 2000;
     private final TestAllTypes msg = TestAllTypes.newInstance();
     private final byte[] bytes = new byte[1024];
-    private final ProtoSource source = ProtoSource.newInstance();
-    private final ProtoSink sink = ProtoSink.newInstance();
+    private final ProtoSource source = ProtoSource.newArraySource();
+    private final ProtoSink sink = ProtoSink.newArraySink();
 
 }

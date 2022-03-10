@@ -101,7 +101,7 @@ public class TagEncodeBenchmark {
 
     static final int n = 1000;
     final byte[] buffer = new byte[n * 5];
-    final ProtoSink sink = ProtoSink.newSafeInstance();
+    final ProtoSink sink = ProtoSink.newArraySink();
 
     private static final byte[] TAG_1 = new byte[1];
     private static final byte[] TAG_2 = new byte[2];
@@ -111,49 +111,49 @@ public class TagEncodeBenchmark {
 
     @Benchmark
     public int writeBytes_1() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeBytes_2() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeBytes_3() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeBytes_4() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeBytes_5() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
@@ -161,99 +161,99 @@ public class TagEncodeBenchmark {
             sink.writeRawByte((byte) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeFixed_1() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeFixed_2() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian16((short) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeFixed_3() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian16((short) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeFixed_4() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian32((short) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeFixed_5() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawLittleEndian32((short) 0);
             sink.writeRawByte((byte) 0);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeArray_1() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_1);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeArray_2() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_2);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeArray_3() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_3);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeArray_4() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_4);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
     @Benchmark
     public int writeArray_5() throws IOException {
-        sink.wrap(buffer);
+        sink.setOutput(buffer);
         for (int i = 0; i < n; i++) {
             sink.writeRawBytes(TAG_5);
         }
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
 }

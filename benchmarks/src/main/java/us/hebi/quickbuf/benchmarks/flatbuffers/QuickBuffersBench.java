@@ -66,9 +66,9 @@ public class QuickBuffersBench {
 
     public int encode() {
         try {
-            sink.wrap(encodeBuffer);
+            sink.setOutput(encodeBuffer);
             setData(encodeMsg).writeTo(sink);
-            return sink.position();
+            return sink.getTotalBytesWritten();
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -76,7 +76,7 @@ public class QuickBuffersBench {
 
     public FooBarContainer decode() {
         try {
-            return decodeMsg.clearQuick().mergeFrom(source.wrap(decodeBuffer));
+            return decodeMsg.clearQuick().mergeFrom(source.setInput(decodeBuffer));
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -115,11 +115,11 @@ public class QuickBuffersBench {
     final FooBarContainer encodeMsg = setData(FooBarContainer.newInstance());
 
     byte[] encodeBuffer = encodeMsg.toByteArray();
-    ProtoSink sink = ProtoSink.newInstance().wrap(encodeBuffer);
+    ProtoSink sink = ProtoSink.newArraySink().setOutput(encodeBuffer);
 
     FooBarContainer decodeMsg = FooBarContainer.newInstance();
     byte[] decodeBuffer = encodeBuffer.clone();
-    ProtoSource source = ProtoSource.newInstance().wrap(decodeBuffer);
+    ProtoSource source = ProtoSource.newArraySource().setInput(decodeBuffer);
 
     private static int vecLen = 3;
     private static String location = "http://google.com/flatbuffers/";

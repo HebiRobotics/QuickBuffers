@@ -63,6 +63,23 @@ public class CompatibilityTest {
 
     }
 
+    @Test
+    public void testCompatibilityWithProtobufJava_Unsafe() throws IOException {
+        byte[] serializedMsg = getCombinedMessage();
+        TestAllTypes.Builder expected = TestAllTypes.newBuilder();
+        protos.test.quickbuf.TestAllTypes msg = protos.test.quickbuf.TestAllTypes.newInstance();
+
+        // multiple merges to check expanding repeated behavior
+        for (int i = 0; i < 3; i++) {
+            expected.mergeFrom(serializedMsg);
+            msg.mergeFrom(ProtoSource.newDirectSource().setInput(serializedMsg));
+        }
+
+        assertEquals(expected.build(), TestAllTypes.parseFrom(msg.toByteArray()));
+        assertEquals(msg, protos.test.quickbuf.TestAllTypes.parseFrom(msg.toByteArray()));
+
+    }
+
     static Iterable<byte[]> getAllMessages() {
         return Arrays.asList(
                 optionalBytes(),

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,7 @@ import static us.hebi.quickbuf.generator.Preconditions.*;
 
 /**
  * Maps proto type ids to Java class names, e.g.,
- *
+ * <p>
  * .proto.package.Message.SubMessage -> us.hebi.quickbuf.OuterMessage.Message.SubMessage
  *
  * @author Florian Enner
@@ -104,6 +104,7 @@ class TypeRegistry {
         if (typeInfo instanceof MessageInfo) {
             ((MessageInfo) typeInfo).getNestedTypes().forEach(this::registerType);
             ((MessageInfo) typeInfo).getNestedEnums().forEach(this::registerType);
+            messageMap.put(typeInfo.getTypeName(), (MessageInfo) typeInfo);
         }
     }
 
@@ -111,5 +112,34 @@ class TypeRegistry {
     }
 
     final Map<String, ClassName> typeMap = new HashMap<>();
+
+    /**
+     * Checks message types for any required fields in their hierarchy. Many
+     * cases don't have any or very few required fields, so we don't need to
+     * check the messages that will always return true anyways.
+     */
+    boolean hasRequiredFieldsInHierarchy(TypeName type) {
+        if (!messageMap.containsKey(type)) {
+            throw new IllegalStateException("Not a message or group type: " + type);
+        }
+
+        if (!hasRequiredMap.containsKey(type)) {
+            boolean hasRequired = false;
+            MessageInfo info = messageMap.get(type);
+            for (RequestInfo.FieldInfo field : info.getFields()) {
+                if (field.isRequired() || (field.isMessageOrGroup() && hasRequiredFieldsInHierarchy(field.getTypeName()))) {
+                    hasRequired = true;
+                    break;
+                }
+            }
+            hasRequiredMap.put(type, hasRequired);
+            return hasRequired;
+        }
+        return hasRequiredMap.get(type);
+
+    }
+
+    final Map<TypeName, MessageInfo> messageMap = new HashMap<>();
+    final Map<TypeName, Boolean> hasRequiredMap = new HashMap<>();
 
 }
