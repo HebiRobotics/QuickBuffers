@@ -74,10 +74,12 @@ public class JsonSourceBenchmark {
 
     public JsonSourceBenchmark() {
         marketBytes = JsonSink.newInstance()
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildMarketData(marketData))
                 .getBuffer()
                 .toArray();
         carBytes = JsonSink.newInstance()
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildCarData(carData))
                 .getBuffer()
                 .toArray();

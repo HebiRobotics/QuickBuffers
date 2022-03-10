@@ -356,11 +356,12 @@ public class FieldGenerator {
                     .beginControlFlow("if (value != null)")
                     .addStatement(named("$field:N = value.getNumber()"))
                     .addStatement(named("$setHas:L"))
+                    .nextControlFlow("else")
+                    .addStatement("input.skipUnknownEnumValue()")
                     .endControlFlow();
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
-
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
@@ -649,7 +650,7 @@ public class FieldGenerator {
         m.put("protoSource", RuntimeClasses.ProtoSource);
         m.put("protoSink", RuntimeClasses.ProtoSink);
         m.put("protoUtil", RuntimeClasses.ProtoUtil);
-        m.put("readTag", getInfo().getParentTypeInfo().isStoreUnknownFields() ? "readTagMarked" : "readTag");
+        m.put("protoEnum", RuntimeClasses.ProtoEnum);
     }
 
     protected final RequestInfo.FieldInfo info;

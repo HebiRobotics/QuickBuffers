@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,9 +30,9 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
+import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.compat.GsonSink;
 import us.hebi.quickbuf.compat.JacksonSink;
-import us.hebi.quickbuf.JsonSink;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -50,7 +50,7 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
  * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   496,499 ±   2,560  ops/ms
  * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1413,708 ±  10,256  ops/ms
  * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3223,580 ±  76,672  ops/ms
- *
+ * <p>
  * === JDK17
  * Benchmark                                   Mode  Cnt     Score     Error   Units
  * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   244.408 ±   2.071  ops/ms
@@ -79,7 +79,7 @@ public class JsonSinkBenchmark {
         new Runner(options).run();
     }
 
-    final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
+    final JsonSink jsonSink = JsonSink.newInstance().setWriteEnumsAsInts(true).reserve(2048);
     final MarketDataIncrementalRefreshTrades marketData = MarketDataIncrementalRefreshTrades.newInstance();
     final Car car = Car.newInstance();
     static final Gson gson = new Gson();
@@ -107,6 +107,7 @@ public class JsonSinkBenchmark {
     public Object testGsonMarketEncode() throws IOException {
         StringWriter string = new StringWriter();
         new GsonSink(gson.newJsonWriter(string))
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildMarketData(marketData));
         return string.getBuffer();
     }
@@ -115,6 +116,7 @@ public class JsonSinkBenchmark {
     public Object testGsonCarEncode() throws IOException {
         StringWriter string = new StringWriter();
         new GsonSink(gson.newJsonWriter(string))
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildCarData(car));
         return string.getBuffer();
     }
@@ -123,6 +125,7 @@ public class JsonSinkBenchmark {
     public Object testJacksonMarketEncode() throws IOException {
         encodeBuffer.reset();
         new JacksonSink(jsonFactory.createGenerator(encodeBuffer))
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildMarketData(marketData));
         return encodeBuffer.size();
     }
@@ -131,6 +134,7 @@ public class JsonSinkBenchmark {
     public Object testJacksonCarEncode() throws IOException {
         encodeBuffer.reset();
         new JacksonSink(jsonFactory.createGenerator(encodeBuffer))
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildCarData(car));
         return encodeBuffer.size();
     }

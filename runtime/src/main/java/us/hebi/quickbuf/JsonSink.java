@@ -56,7 +56,8 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
      * can be accessed with {@link JsonSink#getBuffer()}
      * <p>
      * The output is minimized JSON without extra whitespace for
-     * sending data over the wire.
+     * sending data over the wire. Enums are serialized as strings
+     * by default.
      */
     public static JsonSink newInstance() {
         return newInstance(RepeatedByte.newEmptyInstance());
@@ -71,7 +72,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
      */
     public static JsonSink newPrettyInstance() {
         return newInstance(RepeatedByte.newEmptyInstance())
-                .setPretty(true)
+                .setPrettyPrinting(true)
                 .setWriteEnumsAsInts(false);
     }
 
@@ -101,15 +102,14 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     }
 
     /**
-     * Sets the output to be pretty printed (newlines and spaces) to be
-     * more human readable, or minified (default without extra characters)
-     * to be more efficient.
+     * Sets the output to be pretty printed (newlines and spaces) for increased
+     * readability, or minified (default without whitespace) for efficiency.
      *
-     * @param pretty true to format the result more human readable
+     * @param prettyPrinting true adds whitespace to make the result more human-readable
      * @return this
      */
-    public JsonSink setPretty(boolean pretty) {
-        this.pretty = pretty;
+    public JsonSink setPrettyPrinting(boolean prettyPrinting) {
+        this.pretty = prettyPrinting;
         return this;
     }
 

@@ -21,6 +21,7 @@
 package us.hebi.quickbuf.compat;
 
 import org.junit.Test;
+import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
 import us.hebi.quickbuf.AbstractJsonSource;
 import us.hebi.quickbuf.CompatibilityTest;
@@ -54,6 +55,24 @@ public class GsonSourceTest {
         json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testSkipping() throws Exception {
+        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
+        ForeignMessage wrongMsg = ForeignMessage.newInstance();
+
+        // Ignore unknown fields
+        wrongMsg.clear().mergeFrom(new GsonSource(json).setIgnoreUnknownFields(true));
+
+        // Expect a failure
+        try {
+            wrongMsg.mergeFrom(new GsonSource(json).setIgnoreUnknownFields(false));
+            fail("expected to fail on unknown fields");
+        } catch (IllegalArgumentException e) {
+        }
+
     }
 
     @Test

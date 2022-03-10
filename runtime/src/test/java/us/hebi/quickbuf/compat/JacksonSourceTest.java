@@ -61,7 +61,18 @@ public class JacksonSourceTest {
     public void testSkipping() throws Exception {
         TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
         String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
-        ForeignMessage wrongMsg = ForeignMessage.newInstance().mergeFrom(new JacksonSource(json));
+        ForeignMessage wrongMsg = ForeignMessage.newInstance();
+
+        // Ignore unknown fields
+        wrongMsg.clear().mergeFrom(new JacksonSource(json).setIgnoreUnknownFields(true));
+
+        // Expect a failure
+        try {
+            wrongMsg.mergeFrom(new JacksonSource(json).setIgnoreUnknownFields(false));
+            fail("expected to fail on unknown fields");
+        } catch (IllegalArgumentException e) {
+        }
+
     }
 
     @Test

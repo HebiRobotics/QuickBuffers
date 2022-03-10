@@ -287,7 +287,7 @@ public abstract class AbstractJsonSink<SubType extends AbstractJsonSink<SubType>
      * @return this
      */
     public SubType setWriteEnumsAsInts(final boolean writeEnumAsInts) {
-        this.writeEnumsAsInts = !writeEnumAsInts;
+        this.writeEnumsAsInts = writeEnumAsInts;
         return thisObj();
     }
 

@@ -275,16 +275,16 @@ public abstract class AbstractJsonSource<SubType extends AbstractJsonSource<SubT
         endArray();
     }
 
-    public final void skipUnknownField() throws IOException {
+    public void skipUnknownField() throws IOException {
         if (!ignoreUnknownFields) {
             throw new IllegalArgumentException("Encountered unknown field: " + currentField);
         }
         skipValue();
     }
 
-    public final void skipUnknownEnumValue() throws IOException {
+    public void skipUnknownEnumValue() throws IOException {
         if (!ignoreUnknownFields) {
-            throw new IllegalArgumentException("Encountered unknown enum value");
+            throw new IllegalArgumentException("Encountered unknown enum value on field: " + currentField);
         }
     }
 
@@ -305,7 +305,7 @@ public abstract class AbstractJsonSource<SubType extends AbstractJsonSource<SubT
         return thisObj();
     }
 
-    protected boolean ignoreUnknownFields = true;
+    protected boolean ignoreUnknownFields = false;
 
     // ==================== Implementation Interface ====================
 
