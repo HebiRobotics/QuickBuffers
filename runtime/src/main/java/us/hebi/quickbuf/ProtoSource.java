@@ -87,7 +87,7 @@ public abstract class ProtoSource {
         return newArraySource().setInput(buf, off, len);
     }
 
-    /** Create a new ProtoSource reading from the given {@link RepeatedByte}. */
+    /** Create a new ProtoSource reading from the current array of the given {@link RepeatedByte}. */
     public static ProtoSource newInstance(RepeatedByte bytes) {
         return newArraySource().setInput(bytes);
     }
@@ -167,7 +167,7 @@ public abstract class ProtoSource {
     }
 
     /**
-     * Changes the input to the current backing array of the bytes object.
+     * Changes the input to the current array of the given {@link RepeatedByte}.
      */
     public final ProtoSource setInput(RepeatedByte bytes) {
         return setInput(bytes.array(), 0, bytes.length());

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -89,6 +89,54 @@ public class NumericTypesTest {
     }
 
     @Test
+    public void testInt32() throws IOException {
+        for (int i = 0; i < 32; i++) {
+            testInt32(1 << i);
+            testInt32(~(1 << i));
+            testInt32(~0 << i);
+            testInt32(1 << i | Integer.MIN_VALUE);
+            testInt32(~0 << i | Integer.MIN_VALUE);
+            testInt32(-(1 << i));
+        }
+    }
+
+    @Test
+    public void testInt64() throws IOException {
+        for (int i = 0; i < 64; i++) {
+            testInt64(1L << i);
+            testInt64(~(1L << i));
+            testInt64(~0L << i);
+            testInt64(1L << i | Long.MIN_VALUE);
+            testInt64(~0L << i | Long.MIN_VALUE);
+            testInt64(-(1L << i));
+        }
+    }
+
+    @Test
+    public void testUInt32() throws IOException {
+        for (int i = 0; i < 32; i++) {
+            testUInt32(1 << i);
+            testUInt32(~(1 << i));
+            testUInt32(~0 << i);
+            testUInt32(1 << i | Integer.MIN_VALUE);
+            testUInt32(~0 << i | Integer.MIN_VALUE);
+            testUInt32(-(1 << i));
+        }
+    }
+
+    @Test
+    public void testUInt64() throws IOException {
+        for (int i = 0; i < 64; i++) {
+            testUInt64(1L << i);
+            testUInt64(~(1L << i));
+            testUInt64(~0L << i);
+            testUInt64(1L << i | Long.MIN_VALUE);
+            testUInt64(~0L << i | Long.MIN_VALUE);
+            testUInt64(-(1L << i));
+        }
+    }
+
+    @Test
     public void testFixed32() throws IOException {
         testFixed32(0);
         testFixed32(1);
@@ -163,17 +211,38 @@ public class NumericTypesTest {
                 Double.doubleToLongBits(encodeAndDecode(msg.setOptionalDouble(value)).getOptionalDouble()));
     }
 
+    private void testInt32(int value) throws IOException {
+        sink.reset().writeInt32NoTag(value);
+        assertEquals(value, source.setInput(bytes).readInt32());
+    }
+
+    private void testInt64(long value) throws IOException {
+        sink.reset().writeInt64NoTag(value);
+        assertEquals(value, source.setInput(bytes).readInt64());
+    }
+
+    private void testUInt32(int value) throws IOException {
+        sink.reset().writeUInt32NoTag(value);
+        assertEquals(value, source.setInput(bytes).readUInt32());
+    }
+
+    private void testUInt64(long value) throws IOException {
+        sink.reset().writeUInt64NoTag(value);
+        assertEquals(value, source.setInput(bytes).readUInt64());
+    }
+
     private TestAllTypes encodeAndDecode(TestAllTypes msg) throws IOException {
-        msg.writeTo(sink.setOutput(bytes));
-        msg.clear().mergeFrom(source.setInput(bytes, 0, sink.getTotalBytesWritten()));
+        bytes.clear();
+        msg.writeTo(sink.reset());
+        msg.clear().mergeFrom(source.setInput(bytes));
         return msg;
     }
 
     private Random rnd = new Random(0);
-    private int n = 2000;
+    private static final int n = 2000;
     private final TestAllTypes msg = TestAllTypes.newInstance();
-    private final byte[] bytes = new byte[1024];
-    private final ProtoSource source = ProtoSource.newArraySource();
-    private final ProtoSink sink = ProtoSink.newArraySink();
+    private final RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+    private final ProtoSource source = ProtoSource.newInstance(bytes);
+    private final ProtoSink sink = ProtoSink.newInstance(bytes);
 
 }
