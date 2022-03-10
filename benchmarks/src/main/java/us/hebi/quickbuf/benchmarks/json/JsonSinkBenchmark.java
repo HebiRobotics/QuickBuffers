@@ -44,21 +44,21 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
 /**
  * === JDK 8
  * Benchmark                                   Mode  Cnt     Score     Error   Units
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   252,810 ±  39,957  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   450,060 ±  63,790  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   364,245 ±   7,705  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   475,648 ±  12,104  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1374,798 ±  24,455  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3413,242 ± 143,734  ops/ms
+ * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   260,005 ±  40,651  ops/ms
+ * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   454,905 ±  64,111  ops/ms
+ * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   385,079 ±   3,634  ops/ms
+ * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   496,499 ±   2,560  ops/ms
+ * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1413,708 ±  10,256  ops/ms
+ * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3223,580 ±  76,672  ops/ms
  *
  * === JDK17
  * Benchmark                                   Mode  Cnt     Score     Error   Units
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   242,962 ±   4,886  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   425,402 ±   6,106  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   323,485 ±   9,031  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   433,531 ±   7,282  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1410,040 ±  12,219  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3600,006 ± 139,574  ops/ms
+ * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   244.408 ±   2.071  ops/ms
+ * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   418.432 ±   3.404  ops/ms
+ * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   327.974 ±   3.657  ops/ms
+ * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   429.415 ±   6.475  ops/ms
+ * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1376.977 ±  23.032  ops/ms
+ * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3269.737 ±  45.623  ops/ms
  *
  * @author Florian Enner
  * @since 28 Nov 2019

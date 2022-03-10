@@ -39,12 +39,19 @@ import java.util.concurrent.TimeUnit;
 import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuickbuf.*;
 
 /**
- * === JDK 17
+ * === JDK 17 (no fallthrough)
+ * Benchmark                                     Mode  Cnt    Score    Error   Units
+ * JsonSourceBenchmark.testGsonCarDecode        thrpt   10  243,683 ±  9,024  ops/ms
+ * JsonSourceBenchmark.testGsonMarketDecode     thrpt   10  379,985 ± 11,020  ops/ms
+ * JsonSourceBenchmark.testJacksonCarDecode     thrpt   10  199,277 ±  2,230  ops/ms
+ * JsonSourceBenchmark.testJacksonMarketDecode  thrpt   10  288,962 ±  1,458  ops/ms
+ * <p>
+ * === JDK 17 (with fallthrough)
  * Benchmark                                     Mode  Cnt    Score   Error   Units
- * JsonSourceBenchmark.testGsonCarDecode        thrpt   10  266,933 ± 1,648  ops/ms
- * JsonSourceBenchmark.testGsonMarketDecode     thrpt   10  408,924 ± 8,140  ops/ms
- * JsonSourceBenchmark.testJacksonCarDecode     thrpt   10  199,554 ± 2,211  ops/ms
- * JsonSourceBenchmark.testJacksonMarketDecode  thrpt   10  296,007 ± 2,351  ops/ms
+ * JsonSourceBenchmark.testGsonCarDecode        thrpt   10  259,449 ± 4,185  ops/ms
+ * JsonSourceBenchmark.testGsonMarketDecode     thrpt   10  411,372 ± 4,356  ops/ms
+ * JsonSourceBenchmark.testJacksonCarDecode     thrpt   10  190,302 ± 3,499  ops/ms
+ * JsonSourceBenchmark.testJacksonMarketDecode  thrpt   10  277,333 ± 4,390  ops/ms
  *
  * @author Florian Enner
  * @since 01 Mär 2022

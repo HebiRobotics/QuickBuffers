@@ -50,6 +50,10 @@ public class GsonSourceTest {
         json = JsonSink.newInstance().setWriteEnumStrings(false).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
         assertEquals(expected, actual);
+
+        json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        assertEquals(expected, actual);
     }
 
     @Test
