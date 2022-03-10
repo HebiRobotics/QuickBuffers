@@ -334,8 +334,12 @@ class MessageGenerator {
                 .addParameter(RuntimeClasses.ProtoSink, "output", Modifier.FINAL)
                 .addException(IOException.class);
 
-        // Fail if any required bits are missing
-        insertFailOnMissingRequiredBits(writeTo);
+        boolean needsInitializationChecks = info.hasRequiredFieldsInHierarchy();
+        if (needsInitializationChecks) {
+            // Fail if any required bits are missing
+            insertFailOnMissingRequiredBits(writeTo);
+            writeTo.beginControlFlow("try");
+        }
 
         fields.forEach(f -> {
             if (f.getInfo().isRequired()) {
@@ -353,6 +357,13 @@ class MessageGenerator {
                     .addStatement(named("output.writeRawBytes($unknownBytes:N.array(), 0, $unknownBytes:N.length())"))
                     .endControlFlow();
         }
+
+        if (needsInitializationChecks) {
+            writeTo.nextControlFlow("catch ($T nestedFail)", RuntimeClasses.UninitializedMessageException)
+                    .addStatement("throw rethrowFromParent(nestedFail)")
+                    .endControlFlow();
+        }
+
         type.addMethod(writeTo.build());
     }
 
@@ -362,8 +373,12 @@ class MessageGenerator {
                 .addModifiers(Modifier.PROTECTED)
                 .returns(int.class);
 
-        // Fail if any required bits are missing
-        insertFailOnMissingRequiredBits(computeSerializedSize);
+        boolean needsInitializationChecks = info.hasRequiredFieldsInHierarchy();
+        if (needsInitializationChecks) {
+            // Fail if any required bits are missing
+            insertFailOnMissingRequiredBits(computeSerializedSize);
+            computeSerializedSize.beginControlFlow("try");
+        }
 
         // Check all required fields at once
         computeSerializedSize.addStatement("int size = 0");
@@ -381,6 +396,12 @@ class MessageGenerator {
             computeSerializedSize.addStatement(named("size += $unknownBytes:N.length()"));
         }
         computeSerializedSize.addStatement("return size");
+
+        if (needsInitializationChecks) {
+            computeSerializedSize.nextControlFlow("catch ($T nestedFail)", RuntimeClasses.UninitializedMessageException)
+                    .addStatement("throw rethrowFromParent(nestedFail)")
+                    .endControlFlow();
+        }
         type.addMethod(computeSerializedSize.build());
     }
 

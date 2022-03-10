@@ -116,9 +116,6 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     /**
      * Ensures that the underlying buffer can hold at least
      * the desired number of bytes.
-     *
-     * @param length
-     * @return this
      */
     public JsonSink reserve(int length) {
         output.reserve(length);

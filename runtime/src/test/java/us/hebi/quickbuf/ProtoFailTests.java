@@ -81,6 +81,28 @@ public class ProtoFailTests {
                     "required_bytes",
                     "required_string"
             ));
+            assertTrue(ex.getMessage().contains("required_float"));
+            assertTrue(ex.getMessage().contains("required_nested_message.required_field"));
+            throw ex;
+        }
+    }
+
+    @Test(expected = UninitializedMessageException.class)
+    public void testNestedErrorMessage() {
+        try {
+            NestedRequiredMessage.newInstance().toByteArray();
+        } catch (UninitializedMessageException ex) {
+            fail("root message has no required fields");
+        }
+        try {
+            NestedRequiredMessage.newInstance()
+                    .setOptionalSimpleMessage(SimpleMessage.newInstance())
+                    .toByteArray();
+        } catch (UninitializedMessageException ex) {
+            List<String> missing = ex.getMissingFields();
+            assertEquals(1, missing.size());
+            assertEquals(missing, Arrays.asList("optional_simple_message.required_field"));
+            assertTrue(ex.getMessage().contains("optional_simple_message.required_field"));
             throw ex;
         }
     }

@@ -58,9 +58,7 @@ public final class Utf8String {
     }
 
     /**
-     * Gets the number of bytes.
-     *
-     * @return size in bytes
+     * @return size in encoded utf8 bytes
      */
     public int size() {
         ensureSerialized();
@@ -104,9 +102,6 @@ public final class Utf8String {
     /**
      * Holds on to immutable Strings and lazily encodes them, or
      * encodes the sequence directly if it is not a String.
-     *
-     * @param other
-     * @return
      */
     public Utf8String copyFrom(CharSequence other) {
         return other instanceof String ? copyFrom((String) other) : copyFromEncoded(other);
@@ -124,9 +119,6 @@ public final class Utf8String {
 
     /**
      * Encodes the sequence immediately and does not hold on to the reference
-     *
-     * @param other sequence
-     * @return this
      */
     public Utf8String copyFromEncoded(CharSequence other) {
         // Store in encoded utf8 form
@@ -138,9 +130,6 @@ public final class Utf8String {
 
     /**
      * Holds on to the reference of the String and encodes it when required.
-     *
-     * @param other string
-     * @return this
      */
     public Utf8String copyFrom(String other) {
         serializedSize = -1;

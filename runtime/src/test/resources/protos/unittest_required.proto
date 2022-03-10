@@ -39,6 +39,10 @@ message SimpleMessage {
     required int32 required_field = 1 [deprecated = true];
 }
 
+message NestedRequiredMessage {
+    optional SimpleMessage optional_simple_message = 1;
+}
+
 message TestAllTypesRequired {
 
     enum NestedEnum {
