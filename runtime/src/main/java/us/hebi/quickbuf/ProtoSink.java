@@ -1184,13 +1184,12 @@ public abstract class ProtoSink {
     /** write a negative {@code int32} that must be sign-extended to 10 bytes */
     protected void writeNegativeVarint32(int value) throws IOException {
         if (UnsafeAccess.allowUnalignedAccess()) {
-            long first8 = 0x8080808080808080L
-                    | (((long) value & 0xFF))
-                    | (((long) value << 1) & ((0xFFL << 8)))
-                    | (((long) value << 2) & ((0xFFL << 16)))
-                    | (((long) value << 3) & ((0xFFL << 24)))
-                    | (((long) value << 4) & ((0xFFL << 32)))
-                    | (~0L << 35);
+            long first8 = (0x8080808080808080L | (~0L << 36))
+                    | ((value & 0x7FL))
+                    | ((value & (0x7FL << 7)) << 1)
+                    | ((value & (0x7FL << 14)) << 2)
+                    | ((value & (0x7FL << 21)) << 3)
+                    | ((value & (0x0FL << 28)) << 4);
             writeRawLittleEndian64(first8);
             writeRawLittleEndian16((short) 0x1FF);
         } else {
@@ -1211,30 +1210,30 @@ public abstract class ProtoSink {
     protected void writeNegativeVarint64(long value) throws IOException {
         if (UnsafeAccess.allowUnalignedAccess()) {
             long first8 = 0x8080808080808080L
-                    | ((value & 0xFF))
-                    | ((value << 1) & ((0xFFL << 8)))
-                    | ((value << 2) & ((0xFFL << 16)))
-                    | ((value << 3) & ((0xFFL << 24)))
-                    | ((value << 4) & ((0xFFL << 32)))
-                    | ((value << 5) & ((0xFFL << 40)))
-                    | ((value << 6) & ((0xFFL << 48)))
-                    | ((value << 7) & ((0xFFL << 56)));
+                    | ((value & 0x7FL))
+                    | ((value & (0x7FL << 7)) << 1)
+                    | ((value & (0x7FL << 14)) << 2)
+                    | ((value & (0x7FL << 21)) << 3)
+                    | ((value & (0x7FL << 28)) << 4)
+                    | ((value & (0x7FL << 35)) << 5)
+                    | ((value & (0x7FL << 42)) << 6)
+                    | ((value & (0x7FL << 49)) << 7);
             long last2 = 0x80L
-                    | ((value >>> 56) & 0xFF)
-                    | ((value >>> 55) & (0xFF << 8));
+                    | ((value & (0x7FL << 56)) >>> 56)
+                    | ((value & (0x01L << 63)) >>> 55);
             writeRawLittleEndian64(first8);
             writeRawLittleEndian16((short) last2);
         } else {
-            writeRawByte((byte) (((int) value) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 7)) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 14)) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 21)) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 28)) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 35)) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 42)) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 49)) | 0x80));
-            writeRawByte((byte) (((int) (value >>> 56)) | 0x80));
-            writeRawByte((byte) (value >>> 63));
+            writeRawByte((((int) value) | 0x80));
+            writeRawByte((((int) (value >>> 7)) | 0x80));
+            writeRawByte((((int) (value >>> 14)) | 0x80));
+            writeRawByte((((int) (value >>> 21)) | 0x80));
+            writeRawByte((((int) (value >>> 28)) | 0x80));
+            writeRawByte((((int) (value >>> 35)) | 0x80));
+            writeRawByte((((int) (value >>> 42)) | 0x80));
+            writeRawByte((((int) (value >>> 49)) | 0x80));
+            writeRawByte((((int) (value >>> 56)) | 0x80));
+            writeRawByte(((byte) (value >>> 63)));
         }
     }
 

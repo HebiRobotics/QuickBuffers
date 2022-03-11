@@ -844,6 +844,8 @@ public abstract class ProtoSource {
         } else if ((x ^= ((long) readRawByte() << 49)) < 0L) {
             return x ^ xorBits49L;
         } else {
+            // Note: this does not work for non-canonical varints where
+            // positive numbers have been artificially extended to 10 bytes.
             x ^= ((long) readRawByte() << 56) ^ xorBits56L;
             if (x < 0L) {
                 if (readRawByte() < 0) {
@@ -863,6 +865,18 @@ public abstract class ProtoSource {
     private static final long xorBits42L = xorBits35L ^ (~0L << 42);
     private static final long xorBits49L = xorBits42L ^ (~0L << 49);
     private static final long xorBits56L = xorBits49L ^ (~0L << 56);
+
+    long readRawVarint64SlowPath() throws IOException {
+        long result = 0;
+        for (int shift = 0; shift < 64; shift += 7) {
+            final byte b = readRawByte();
+            result |= (long) (b & 0x7F) << shift;
+            if ((b & 0x80) == 0) {
+                return result;
+            }
+        }
+        throw InvalidProtocolBufferException.malformedVarint();
+    }
 
     /** Read a 16-bit little-endian integer from the source. */
     public short readRawLittleEndian16() throws IOException {
