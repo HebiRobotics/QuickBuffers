@@ -1309,6 +1309,29 @@ public abstract class ProtoSink {
         writeUInt64NoTag(value);
     }
 
+    /**
+     * Encode and write a varint32 to an {@link OutputStream}. {@code value} is
+     * treated as unsigned, so it won't be sign-extended if negative. This
+     * can be used to write length delimiters before writing messages.
+     *
+     * @param value  uint32 value to be encoded as varint
+     * @param output target stream
+     * @return number of written bytes
+     */
+    public static int writeUInt32(OutputStream output, int value) throws IOException {
+        int numBytes = 1;
+        while (true) {
+            if ((value & ~0x7F) == 0) {
+                output.write(value);
+                return numBytes;
+            } else {
+                output.write((value & 0x7F) | 0x80);
+                value >>>= 7;
+                numBytes++;
+            }
+        }
+    }
+
     static class StreamSink extends ProtoSink {
 
         @Override

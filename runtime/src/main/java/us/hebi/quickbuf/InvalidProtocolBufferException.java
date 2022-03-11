@@ -79,13 +79,13 @@ public class InvalidProtocolBufferException extends IOException {
 
     static InvalidProtocolBufferException negativeSize() {
         return new InvalidProtocolBufferException(
-                "CodedInputStream encountered an embedded string or message " +
+                "ProtoSource encountered an embedded string or message " +
                         "which claimed to have negative size.");
     }
 
     static InvalidProtocolBufferException malformedVarint() {
         return new InvalidProtocolBufferException(
-                "CodedInputStream encountered a malformed varint.");
+                "ProtoSource encountered a malformed varint.");
     }
 
     static InvalidProtocolBufferException invalidTag() {
@@ -106,12 +106,12 @@ public class InvalidProtocolBufferException extends IOException {
     static InvalidProtocolBufferException recursionLimitExceeded() {
         return new InvalidProtocolBufferException(
                 "Protocol message had too many levels of nesting.  May be malicious.  " +
-                        "Use CodedInputStream.setRecursionLimit() to increase the depth limit.");
+                        "Use ProtoSink.setRecursionLimit() to increase the depth limit.");
     }
 
     static InvalidProtocolBufferException sizeLimitExceeded() {
         return new InvalidProtocolBufferException(
                 "Protocol message was too large.  May be malicious.  " +
-                        "Use CodedInputStream.setSizeLimit() to increase the size limit.");
+                        "Use ProtoSink.setSizeLimit() to increase the size limit.");
     }
 }

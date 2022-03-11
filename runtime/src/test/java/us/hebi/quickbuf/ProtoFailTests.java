@@ -88,7 +88,7 @@ public class ProtoFailTests {
     }
 
     @Test(expected = UninitializedMessageException.class)
-    public void testNestedErrorMessage() {
+    public void testMissingRequiredNestedField() {
         try {
             NestedRequiredMessage.newInstance().toByteArray();
         } catch (UninitializedMessageException ex) {
@@ -410,6 +410,37 @@ public class ProtoFailTests {
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestinationBuffer() throws IOException {
         ProtoSource.newInstance(ByteBuffer.wrap(new byte[n])).readRawBytes(null, 0, n);
+    }
+
+    // --------------------------------------------------------------------------------------
+
+    @Test
+    public void testStreamLimitsExceeded() throws IOException {
+        byte[] bytes = CompatibilityTest.optionalPrimitives();
+        ProtoSource source = ProtoSource.newInstance(new ByteArrayInputStream(bytes));
+
+        try {
+            source.setSizeLimit(bytes.length - 1);
+            TestAllTypes.parseFrom(source);
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("size limit"));
+        }
+
+        assertEquals(bytes.length - 1, source.getTotalBytesRead());
+        source.resetSizeCounter();
+        assertEquals(0, source.getTotalBytesRead());
+
+        try {
+            source.setSizeLimit(bytes.length);
+            source.setInput(new ByteArrayInputStream(bytes));
+            source.pushLimit(bytes.length - 20);
+            TestAllTypes.parseFrom(source);
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("input ended unexpectedly"));
+        }
+
     }
 
 }

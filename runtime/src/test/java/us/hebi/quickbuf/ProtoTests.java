@@ -683,13 +683,13 @@ public class ProtoTests {
         // Write varint delimited message
         byte[] outData = msg.toByteArray();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ProtoUtil.writeUInt32(outData.length, outputStream);
+        ProtoSink.writeUInt32(outputStream, outData.length);
         outputStream.write(outData);
 
         // Read varint delimited message
         byte[] result = outputStream.toByteArray();
         ByteArrayInputStream inputStream = new ByteArrayInputStream(result);
-        int length = ProtoUtil.readRawVarint32(inputStream);
+        int length = ProtoSource.readRawVarint32(inputStream);
         assertEquals(outData.length, length);
 
         byte[] inData = new byte[length];

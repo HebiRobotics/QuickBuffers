@@ -145,7 +145,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * length delimited form.
      */
     public MessageType writeDelimitedTo(ProtoSink output) throws IOException {
-        computeSerializedSize();
+        getSerializedSize(); // force cache update
         output.writeMessageNoTag(this);
         return getThis();
     }

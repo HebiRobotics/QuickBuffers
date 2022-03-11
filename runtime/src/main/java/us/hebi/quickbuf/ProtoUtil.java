@@ -38,131 +38,6 @@ import static us.hebi.quickbuf.ProtoSource.*;
 public final class ProtoUtil {
 
     /**
-     * Encode and write a varint32 to an OutputStream.  {@code value} is
-     * treated as unsigned, so it won't be sign-extended if negative.
-     * <p>
-     * The following is equal to Protobuf-Java's "msg.writeDelimitedTo(output)"
-     * <p>
-     * byte[] data = msg.toByteArray();
-     * writeRawVarint32(data.length, output);
-     * output.write(data);
-     *
-     * @param value  int32 value to be encoded as varint
-     * @param output target stream
-     * @return number of written bytes
-     */
-    public static int writeUInt32(int value, OutputStream output) throws IOException {
-        int numBytes = 1;
-        while (true) {
-            if ((value & ~0x7F) == 0) {
-                output.write(value);
-                return numBytes;
-            } else {
-                output.write((value & 0x7F) | 0x80);
-                value >>>= 7;
-                numBytes++;
-            }
-        }
-    }
-
-    /**
-     * Reads and decodes a varint from the given input stream. If larger than 32
-     * bits, discard the upper bits.
-     * <p>
-     * The following is equal to Protobuf-Java's "msg.readDelimitedFrom(input)"
-     * <p>
-     * int length = readRawVarint32(input);
-     * byte[] data = new byte[length];
-     * if(input.readData(data) != length) {
-     * throw new IOException("truncated message");
-     * }
-     * return MyMessage.parseFrom(data);
-     *
-     * @param input source stream
-     * @return value of the decoded varint
-     * @throws EOFException                   if the input has no more data
-     * @throws InvalidProtocolBufferException if the varint is malformed
-     * @throws IOException                    if the stream can't be read
-     */
-    public static int readRawVarint32(InputStream input) throws IOException {
-        int x = readRawByte(input);
-        if (x >= 0) {
-            return x;
-        } else if ((x ^= (readRawByte(input) << 7)) < 0) {
-            return x ^ signs7;
-        } else if ((x ^= (readRawByte(input) << 14)) >= 0) {
-            return x ^ signs14;
-        } else if ((x ^= (readRawByte(input) << 21)) < 0) {
-            return x ^ signs21;
-        } else {
-
-            // Discard upper 32 bits.
-            final int y = readRawByte(input);
-            if (y < 0
-                    && readRawByte(input) < 0
-                    && readRawByte(input) < 0
-                    && readRawByte(input) < 0
-                    && readRawByte(input) < 0
-                    && readRawByte(input) < 0) {
-                throw InvalidProtocolBufferException.malformedVarint();
-            }
-
-            return x ^ (y << 28) ^ signs28i;
-        }
-    }
-
-    private static byte readRawByte(InputStream input) throws IOException {
-        int value = input.read();
-        if (value < 0) {
-            throw new EOFException();
-        }
-        return (byte) (value);
-    }
-
-    /**
-     * Compares whether the contents of two CharSequences are equal
-     *
-     * @param a sequence A
-     * @param b sequence B
-     * @return true if the contents of both sequences are the same
-     */
-    public static boolean isEqual(CharSequence a, CharSequence b) {
-        if (a.length() != b.length())
-            return false;
-
-        for (int i = 0; i < a.length(); i++) {
-            if (a.charAt(i) != b.charAt(i))
-                return false;
-        }
-
-        return true;
-    }
-
-    public static boolean isEqual(double a, double b) {
-        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
-    }
-
-    public static boolean isEqual(float a, float b) {
-        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
-    }
-
-    public static boolean isEqual(boolean a, boolean b) {
-        return a == b;
-    }
-
-    public static boolean isEqual(long a, long b) {
-        return a == b;
-    }
-
-    public static boolean isEqual(int a, int b) {
-        return a == b;
-    }
-
-    public static boolean isEqual(byte a, byte b) {
-        return a == b;
-    }
-
-    /**
      * Decodes utf8 bytes into a reusable StringBuilder object. Going through a builder
      * has benefits on JDK8, but is (significantly) slower when decoding ascii on JDK13.
      */
@@ -218,6 +93,42 @@ public final class ProtoUtil {
         }
     }
 
+    public static boolean isEqual(CharSequence a, CharSequence b) {
+        if (a.length() != b.length())
+            return false;
+
+        for (int i = 0; i < a.length(); i++) {
+            if (a.charAt(i) != b.charAt(i))
+                return false;
+        }
+
+        return true;
+    }
+
+    public static boolean isEqual(double a, double b) {
+        return Double.doubleToLongBits(a) == Double.doubleToLongBits(b);
+    }
+
+    public static boolean isEqual(float a, float b) {
+        return Float.floatToIntBits(a) == Float.floatToIntBits(b);
+    }
+
+    public static boolean isEqual(boolean a, boolean b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(long a, long b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(int a, int b) {
+        return a == b;
+    }
+
+    public static boolean isEqual(byte a, byte b) {
+        return a == b;
+    }
+
     static final Utf8Decoder DEFAULT_UTF8_DECODER = new Utf8Decoder() {
         @Override
         public String decode(byte[] bytes, int offset, int length) {
@@ -236,4 +147,5 @@ public final class ProtoUtil {
         static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
         static final Charset ASCII = Charset.forName("US-ASCII");
     }
+
 }
