@@ -20,14 +20,8 @@
 
 package us.hebi.quickbuf;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-
-import static us.hebi.quickbuf.ProtoSource.*;
 
 /**
  * Utility methods for working with protobuf messages

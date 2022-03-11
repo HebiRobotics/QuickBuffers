@@ -470,7 +470,7 @@ public abstract class ProtoSource {
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int length = readLength();
         final int limit = pushLimit(length);
-        final int count =  roundedCount32(length);;
+        final int count =  roundedCount32(length);
         final int offset = store.addLength(count);
         readRawFixed32s(store.array, offset, count);
         popLimit(limit);

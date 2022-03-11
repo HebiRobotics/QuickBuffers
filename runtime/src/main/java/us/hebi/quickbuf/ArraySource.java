@@ -85,7 +85,7 @@ class ArraySource extends ProtoSource{
         return position - offset;
     }
 
-    protected void rewindToPosition(int position) throws InvalidProtocolBufferException {
+    protected void rewindToPosition(int position) {
         this.position = offset + position;
     }
 

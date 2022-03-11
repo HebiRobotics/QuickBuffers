@@ -630,10 +630,9 @@ final class ByteUtil {
             // direct buffer
             checkArgument(BufferAccess.isAvailable(), "Accessors for direct buffers are not available");
             checkArgument(wrapper instanceof ArraySource.DirectArraySource, "Expected DirectArraySource");
-            byte[] array = null;
             long offset = BufferAccess.address(buffer) + buffer.position();
             int length = buffer.remaining();
-            wrapper.setInput(array, offset, length);
+            wrapper.setInput(null, offset, length);
 
             // keep native memory from being garbage collected
             ((ArraySource.DirectArraySource) wrapper).gcRef = buffer;
@@ -673,10 +672,9 @@ final class ByteUtil {
             // direct buffer
             checkArgument(BufferAccess.isAvailable(), "Accessors for direct buffers are not available");
             checkArgument(wrapper instanceof ArraySink.DirectArraySink, "Expected DirectArraySource");
-            byte[] array = null;
             long offset = BufferAccess.address(buffer) + buffer.position();
             int length = buffer.remaining();
-            wrapper.setOutput(array, offset, length);
+            wrapper.setOutput(null, offset, length);
 
             // keep native memory from being garbage collected
             ((ArraySink.DirectArraySink) wrapper).gcRef = buffer;

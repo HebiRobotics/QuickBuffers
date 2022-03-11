@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -101,7 +102,7 @@ public class ProtoFailTests {
         } catch (UninitializedMessageException ex) {
             List<String> missing = ex.getMissingFields();
             assertEquals(1, missing.size());
-            assertEquals(missing, Arrays.asList("optional_simple_message.required_field"));
+            assertEquals(missing, Collections.singletonList("optional_simple_message.required_field"));
             assertTrue(ex.getMessage().contains("optional_simple_message.required_field"));
             throw ex;
         }

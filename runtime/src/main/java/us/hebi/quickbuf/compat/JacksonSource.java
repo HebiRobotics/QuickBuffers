@@ -51,7 +51,7 @@ public class JacksonSource extends AbstractJsonSource<JacksonSource> {
     }
 
     private static class Parsers {
-        private static JsonFactory factory = new JsonFactory()
+        private static final JsonFactory factory = new JsonFactory()
                 .configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true); // allow nan/inf
     }
 
@@ -108,12 +108,11 @@ public class JacksonSource extends AbstractJsonSource<JacksonSource> {
 
     @Override
     public void nextString(Utf8String store) throws IOException {
-        switch (next()) {
-            case VALUE_NULL:
-                store.clear();
-                return;
-            default:
-                store.copyFrom(reader.getValueAsString());
+        if (next() == JsonToken.VALUE_NULL) {
+            store.clear();
+            return;
+        } else {
+            store.copyFrom(reader.getValueAsString());
         }
     }
 

@@ -238,7 +238,7 @@ public class NumericTypesTest {
         return msg;
     }
 
-    private Random rnd = new Random(0);
+    private final Random rnd = new Random(0);
     private static final int n = 2000;
     private final TestAllTypes msg = TestAllTypes.newInstance();
     private final RepeatedByte bytes = RepeatedByte.newEmptyInstance();

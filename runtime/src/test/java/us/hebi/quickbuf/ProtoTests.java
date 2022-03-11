@@ -521,7 +521,7 @@ public class ProtoTests {
         try {
             expected.clearRequiredBool().toByteArray();
             fail("should not serialize with missing required field");
-        } catch (Throwable t) {
+        } catch (UninitializedMessageException missingRequired) {
         }
 
         // Check isInitialized()
