@@ -32,9 +32,9 @@ import static us.hebi.quickbuf.WireFormat.*;
  * internally, so callers are responsible for making sure that the buffers
  * are large enough.
  * <p>
- * Platforms without unaligned access automatically disable it entirely.
- * Protobuf has many 1 byte tags and mostly random alignment, so it's
- * not worth checking for alignment.
+ * Multi-byte operations are disabled on platforms without unaligned access.
+ * Protobuf has many 1 byte tags resulting in random alignment, so it's
+ * not worth checking.
  *
  * @author Florian Enner
  * @since 07 March 2022
@@ -220,7 +220,7 @@ final class ByteUtil {
         }
     }
 
-    public static short readLittleEndian16(byte[] buffer, int offset) {
+    static short readLittleEndian16(byte[] buffer, int offset) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             final short value = UNSAFE.getShort(buffer, BYTE_ARRAY_OFFSET + offset);
             return IS_LITTLE_ENDIAN ? value : Short.reverseBytes(value);
@@ -229,7 +229,7 @@ final class ByteUtil {
         }
     }
 
-    public static int readLittleEndian32(byte[] buffer, int offset) {
+    static int readLittleEndian32(byte[] buffer, int offset) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             final int value = UNSAFE.getInt(buffer, BYTE_ARRAY_OFFSET + offset);
             return IS_LITTLE_ENDIAN ? value : Integer.reverseBytes(value);
@@ -241,7 +241,7 @@ final class ByteUtil {
         }
     }
 
-    public static long readLittleEndian64(byte[] buffer, int offset) {
+    static long readLittleEndian64(byte[] buffer, int offset) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             final long value = UNSAFE.getLong(buffer, BYTE_ARRAY_OFFSET + offset);
             return IS_LITTLE_ENDIAN ? value : Long.reverseBytes(value);
@@ -257,7 +257,7 @@ final class ByteUtil {
         }
     }
 
-    public static float readFloat(byte[] buffer, int offset) {
+    static float readFloat(byte[] buffer, int offset) {
         if (ENABLE_UNSAFE_UNALIGNED && IS_LITTLE_ENDIAN) {
             return UNSAFE.getFloat(buffer, BYTE_ARRAY_OFFSET + offset);
         } else {
@@ -265,7 +265,7 @@ final class ByteUtil {
         }
     }
 
-    public static double readDouble(byte[] buffer, int offset) {
+    static double readDouble(byte[] buffer, int offset) {
         if (ENABLE_UNSAFE_UNALIGNED && IS_LITTLE_ENDIAN) {
             return UNSAFE.getDouble(buffer, BYTE_ARRAY_OFFSET + offset);
         } else {
@@ -273,11 +273,11 @@ final class ByteUtil {
         }
     }
 
-    public static void readBytes(byte[] buffer, int offset, byte[] dst, int dstOffset, int dstLength) {
+    static void readBytes(byte[] buffer, int offset, byte[] dst, int dstOffset, int dstLength) {
         System.arraycopy(buffer, offset, dst, dstOffset, dstLength);
     }
 
-    public static void readLittleEndian32s(byte[] buffer, int offset, int[] dst, int dstOffset, int dstLength) {
+    static void readLittleEndian32s(byte[] buffer, int offset, int[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_32_SIZE;
             final long targetOffset = INT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
@@ -289,7 +289,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readLittleEndian64s(byte[] buffer, int offset, long[] dst, int dstOffset, int dstLength) {
+    static void readLittleEndian64s(byte[] buffer, int offset, long[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_64_SIZE;
             final long targetOffset = LONG_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
@@ -301,7 +301,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readFloats(byte[] buffer, int offset, float[] dst, int dstOffset, int dstLength) {
+    static void readFloats(byte[] buffer, int offset, float[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_32_SIZE;
             final long targetOffset = FLOAT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
@@ -313,7 +313,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readDoubles(byte[] buffer, int offset, double[] dst, int dstOffset, int dstLength) {
+    static void readDoubles(byte[] buffer, int offset, double[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_64_SIZE;
             final long targetOffset = DOUBLE_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
@@ -470,7 +470,7 @@ final class ByteUtil {
         }
     }
 
-    public static short readUnsafeLittleEndian16(byte[] buffer, long offset) {
+    static short readUnsafeLittleEndian16(byte[] buffer, long offset) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             final short value = UNSAFE.getShort(buffer, offset);
             return IS_LITTLE_ENDIAN ? value : Short.reverseBytes(value);
@@ -479,7 +479,7 @@ final class ByteUtil {
         }
     }
 
-    public static int readUnsafeLittleEndian32(byte[] buffer, long offset) {
+    static int readUnsafeLittleEndian32(byte[] buffer, long offset) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             final int value = UNSAFE.getInt(buffer, offset);
             return IS_LITTLE_ENDIAN ? value : Integer.reverseBytes(value);
@@ -491,7 +491,7 @@ final class ByteUtil {
         }
     }
 
-    public static long readUnsafeLittleEndian64(byte[] buffer, long offset) {
+    static long readUnsafeLittleEndian64(byte[] buffer, long offset) {
         if (ENABLE_UNSAFE_UNALIGNED) {
             final long value = UNSAFE.getLong(buffer, offset);
             return IS_LITTLE_ENDIAN ? value : Long.reverseBytes(value);
@@ -507,7 +507,7 @@ final class ByteUtil {
         }
     }
 
-    public static float readUnsafeFloat(byte[] buffer, long offset) {
+    static float readUnsafeFloat(byte[] buffer, long offset) {
         if (ENABLE_UNSAFE_UNALIGNED && IS_LITTLE_ENDIAN) {
             return UNSAFE.getFloat(buffer, offset);
         } else {
@@ -515,7 +515,7 @@ final class ByteUtil {
         }
     }
 
-    public static double readUnsafeDouble(byte[] buffer, long offset) {
+    static double readUnsafeDouble(byte[] buffer, long offset) {
         if (ENABLE_UNSAFE_UNALIGNED && IS_LITTLE_ENDIAN) {
             return UNSAFE.getDouble(buffer, offset);
         } else {
@@ -523,7 +523,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readUnsafeBytes(byte[] buffer, long offset, byte[] dst, int dstOffset, int dstLength) {
+    static void readUnsafeBytes(byte[] buffer, long offset, byte[] dst, int dstOffset, int dstLength) {
         if (ENABLE_UNSAFE_COPY) {
             UNSAFE.copyMemory(buffer, offset, dst, BYTE_ARRAY_OFFSET + dstOffset, dstLength);
         } else {
@@ -534,7 +534,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readUnsafeLittleEndian32s(byte[] buffer, long offset, int[] dst, int dstOffset, int dstLength) {
+    static void readUnsafeLittleEndian32s(byte[] buffer, long offset, int[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_32_SIZE;
             final long targetOffset = INT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
@@ -547,7 +547,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readUnsafeLittleEndian64s(byte[] buffer, long offset, long[] dst, int dstOffset, int dstLength) {
+    static void readUnsafeLittleEndian64s(byte[] buffer, long offset, long[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_64_SIZE;
             final long targetOffset = LONG_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
@@ -560,7 +560,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readUnsafeFloats(byte[] buffer, long offset, float[] dst, int dstOffset, int dstLength) {
+    static void readUnsafeFloats(byte[] buffer, long offset, float[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_32_SIZE;
             final long targetOffset = FLOAT_ARRAY_OFFSET + (long) dstOffset * FIXED_32_SIZE;
@@ -573,7 +573,7 @@ final class ByteUtil {
         }
     }
 
-    public static void readUnsafeDoubles(byte[] buffer, long offset, double[] dst, int dstOffset, int dstLength) {
+    static void readUnsafeDoubles(byte[] buffer, long offset, double[] dst, int dstOffset, int dstLength) {
         if (IS_LITTLE_ENDIAN && ENABLE_UNSAFE_COPY) {
             final int numBytes = dstLength * FIXED_64_SIZE;
             final long targetOffset = DOUBLE_ARRAY_OFFSET + (long) dstOffset * FIXED_64_SIZE;
@@ -589,7 +589,7 @@ final class ByteUtil {
     /**
      * @return true if access to direct buffers is enabled on this platform
      */
-    public static boolean isDirectBufferAccessEnabled() {
+    static boolean isDirectBufferAccessEnabled() {
         return BufferAccess.isAvailable();
     }
 
@@ -605,7 +605,7 @@ final class ByteUtil {
      * @param buffer  ByteBuffer
      * @return wrapper
      */
-    public static ProtoSource setInputRaw(ProtoSource wrapper, ByteBuffer buffer) {
+    static ProtoSource setRawInput(ProtoSource wrapper, ByteBuffer buffer) {
         checkArgument(wrapper instanceof ArraySource, "Expected ArraySource");
 
         if (buffer.hasArray()) {
@@ -655,7 +655,7 @@ final class ByteUtil {
      * @param buffer  ByteBuffer
      * @return wrapper
      */
-    public static ProtoSink setOutputRaw(ProtoSink wrapper, ByteBuffer buffer) {
+    static ProtoSink setRawOutput(ProtoSink wrapper, ByteBuffer buffer) {
         checkArgument(!buffer.isReadOnly(), "ByteBuffer is read only");
         checkArgument(wrapper instanceof ArraySink, "Expected ArraySource");
 

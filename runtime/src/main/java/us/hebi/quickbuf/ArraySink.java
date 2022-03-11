@@ -21,7 +21,9 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import static us.hebi.quickbuf.ProtoUtil.*;
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -106,6 +108,13 @@ class ArraySink extends ProtoSink {
         this.limit = this.offset + length;
         this.position = this.offset;
         return this;
+    }
+
+    @Override
+    public ProtoSink setOutput(ByteBuffer buffer) {
+        checkArgument(!buffer.isDirect(), "ArraySink does not support direct buffers");
+        checkArgument(!buffer.isReadOnly(), "Buffer is read only");
+        return ByteUtil.setRawOutput(this, buffer);
     }
 
     @Override
@@ -219,6 +228,12 @@ class ArraySink extends ProtoSink {
                 this.limit = length;
                 return this;
             }
+        }
+
+        @Override
+        public ProtoSink setOutput(ByteBuffer buffer) {
+            checkArgument(!buffer.isReadOnly(), "Buffer is read only");
+            return ByteUtil.setRawOutput(this, buffer);
         }
 
         @Override

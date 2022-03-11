@@ -206,6 +206,10 @@ public abstract class ProtoSink {
     /**
      * Changes the output to the given buffer. This resets any existing internal state
      * such as position and is equivalent to creating a new instance.
+     *
+     * A BufferSink wraps the buffer directly and modifies the buffer state.
+     * ArraySink and DirectSink wrap the backing memory and do not modify the
+     * buffer state.
      */
     public ProtoSink setOutput(ByteBuffer buffer) {
         throw new UnsupportedOperationException("sink does not support writing to a ByteBuffer");

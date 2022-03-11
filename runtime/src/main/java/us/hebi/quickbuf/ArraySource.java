@@ -21,7 +21,9 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import static us.hebi.quickbuf.ProtoUtil.*;
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -190,6 +192,14 @@ class ArraySource extends ProtoSource{
     }
 
     @Override
+    public ProtoSource setInput(ByteBuffer buffer) {
+        checkArgument(!buffer.isDirect(), "ArraySource does not support direct buffers");
+        checkArgument(!buffer.isReadOnly() || BufferAccess.isAvailable(),
+                "Buffer is read only and can't be accessed on this platform");
+        return ByteUtil.setRawInput(this, buffer);
+    }
+
+    @Override
     public ProtoSource clear() {
         return setInput(ProtoUtil.EMPTY_BYTE_ARRAY);
     }
@@ -304,6 +314,11 @@ class ArraySource extends ProtoSource{
                 this.limit = length;
                 return resetInternalState();
             }
+        }
+
+        @Override
+        public ProtoSource setInput(ByteBuffer buffer) {
+            return ByteUtil.setRawInput(this, buffer);
         }
 
         @Override

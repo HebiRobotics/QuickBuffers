@@ -186,6 +186,10 @@ public abstract class ProtoSource {
      * Changes the input to the given buffer. This resets any existing
      * internal state such as position and is equivalent to creating
      * a new instance.
+     *
+     * A BufferSource wraps the buffer directly and modifies the buffer state.
+     * ArraySource and DirectSource wrap the backing memory and do not modify the
+     * buffer state.
      */
     public ProtoSource setInput(ByteBuffer buffer) {
         throw new UnsupportedOperationException("source does not support reading from a ByteBuffer");
