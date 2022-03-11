@@ -82,10 +82,8 @@ class MessageGenerator {
                 .addModifiers(Modifier.PRIVATE)
                 .build());
 
-        // Member state (the first bitfield is in the parent class)
-        for (int i = 1; i < numBitFields; i++) {
-            type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
-        }
+        // Member state
+        BitField.generateMemberFields(type, numBitFields);
         fields.forEach(f -> f.generateMemberFields(type));
         generateUnknownByteMembers(type);
 
@@ -169,9 +167,7 @@ class MessageGenerator {
 
         // clear has state
         clear.addStatement("cachedSize = -1");
-        for (int i = 0; i < numBitFields; i++) {
-            clear.addStatement("$L = 0", BitField.fieldName(i));
-        }
+        BitField.generateClearCode(clear, numBitFields);
 
         if (isFullClear) {
             fields.forEach(field -> field.generateClearCode(clear));
@@ -207,9 +203,9 @@ class MessageGenerator {
 
         // Check whether all of the same fields are set
         if (info.getFieldCount() > 0) {
-            equals.addCode("return $1L == other.$1L$>", BitField.fieldName(0));
+            equals.addCode("return $L$>", BitField.getEqualsStatement(0));
             for (int i = 1; i < numBitFields; i++) {
-                equals.addCode("\n&& $1L == other.$1L", BitField.fieldName(i));
+                equals.addCode("\n&& $L", BitField.getEqualsStatement(i));
             }
 
             for (FieldGenerator field : fields) {
@@ -414,13 +410,12 @@ class MessageGenerator {
         copyFrom.addStatement("cachedSize = other.cachedSize");
         for (int i = 0; i < numBitFields; i++) {
             final int fieldIndex = i;
-            String bitField = BitField.fieldName(fieldIndex);
 
             // We don't need to copy if neither message has any fields set
-            copyFrom.beginControlFlow("if (($1L | other.$1L) != 0)", bitField);
-            copyFrom.addStatement("$1L = other.$1L", bitField);
+            copyFrom.beginControlFlow("if ($L)", BitField.isCopyFromNeeded(fieldIndex));
+            BitField.generateCopyFromCode(copyFrom, fieldIndex);
             fields.stream()
-                    .filter(field -> BitField.getFieldIndex(field.info.getBitIndex()) == fieldIndex)
+                    .filter(field -> BitField.isBitInField(field.info.getBitIndex(), fieldIndex))
                     .forEach(field -> field.generateCopyFromCode(copyFrom));
             copyFrom.endControlFlow();
         }
@@ -577,8 +572,7 @@ class MessageGenerator {
                 .collect(Collectors.toList());
 
         if (requiredFields.size() > 0) {
-            int[] bitset = BitField.generateBitset(requiredFields);
-            method.beginControlFlow("if ($L)", BitField.isMissingAnyBit(bitset));
+            method.beginControlFlow("if ($L)", BitField.isMissingAnyBit(requiredFields));
             onCondition.accept(method);
             method.endControlFlow();
         }

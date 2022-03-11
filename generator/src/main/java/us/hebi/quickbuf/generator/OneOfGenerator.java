@@ -41,13 +41,11 @@ public class OneOfGenerator {
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
-        int[] bitset = BitField.generateBitset(fields);
-
         // Checks if any has state is true
         MethodSpec.Builder has = MethodSpec.methodBuilder(info.getHazzerName())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(boolean.class)
-                .addStatement("return $L", BitField.hasAnyBit(bitset));
+                .addStatement("return $L", BitField.hasAnyBit(fields));
 
         // Method that clears all fields
         MethodSpec.Builder clear = MethodSpec.methodBuilder(info.getClearName())
@@ -71,11 +69,10 @@ public class OneOfGenerator {
                 List<FieldInfo> otherFields = fields.stream()
                         .filter(info -> info != field)
                         .collect(Collectors.toList());
-                int[] otherBits = BitField.generateBitset(otherFields);
 
                 MethodSpec.Builder clearOthers = MethodSpec.methodBuilder(field.getClearOtherOneOfName())
                         .addModifiers(Modifier.PRIVATE)
-                        .beginControlFlow("if ($L)", BitField.hasAnyBit(otherBits));
+                        .beginControlFlow("if ($L)", BitField.hasAnyBit(otherFields));
 
                 for (FieldInfo otherField : otherFields) {
                     clearOthers.addStatement("$N()", otherField.getClearName());
