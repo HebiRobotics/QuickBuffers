@@ -449,6 +449,11 @@ public class ProtoTests {
         msg.setOptionalForeignMessage(ForeignMessage.newInstance().setC(3));
         assertTrue(msg.hasOptionalForeignMessage());
 
+        // Copy from
+        assertFalse(msg.hasOptionalGroup());
+        msg.getMutableOptionalGroup().copyFrom(TestAllTypes.OptionalGroup.newInstance().setA(4));
+        assertTrue(msg.hasOptionalGroup());
+
         // Compare w/ gen-Java and round-trip parsing
         assertEquals(msg, TestAllTypes.parseFrom(CompatibilityTest.optionalMessages()));
         assertEquals(msg, TestAllTypes.parseFrom(msg.toByteArray()));
@@ -465,7 +470,9 @@ public class ProtoTests {
         TestAllTypes msg2 = TestAllTypes.newInstance()
                 .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(0))
                 .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(1))
-                .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(2));
+                .addRepeatedForeignMessage(ForeignMessage.newInstance().setC(2))
+                .addRepeatedGroup(TestAllTypes.RepeatedGroup.newInstance().setA(3))
+                .addRepeatedGroup(TestAllTypes.RepeatedGroup.newInstance().setA(4));
         assertEquals(msg, msg2);
 
         TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg2).toByteArray());
@@ -514,7 +521,7 @@ public class ProtoTests {
         try {
             expected.clearRequiredBool().toByteArray();
             fail("should not serialize with missing required field");
-        } catch (Throwable t) {
+        } catch (UninitializedMessageException missingRequired) {
         }
 
         // Check isInitialized()
@@ -676,13 +683,13 @@ public class ProtoTests {
         // Write varint delimited message
         byte[] outData = msg.toByteArray();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ProtoUtil.writeUInt32(outData.length, outputStream);
+        ProtoSink.writeUInt32(outputStream, outData.length);
         outputStream.write(outData);
 
         // Read varint delimited message
         byte[] result = outputStream.toByteArray();
         ByteArrayInputStream inputStream = new ByteArrayInputStream(result);
-        int length = ProtoUtil.readRawVarint32(inputStream);
+        int length = ProtoSource.readRawVarint32(inputStream);
         assertEquals(outData.length, length);
 
         byte[] inData = new byte[length];

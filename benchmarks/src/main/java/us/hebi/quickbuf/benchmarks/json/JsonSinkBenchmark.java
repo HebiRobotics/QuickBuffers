@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,8 @@ import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
 import us.hebi.quickbuf.JsonSink;
+import us.hebi.quickbuf.compat.GsonSink;
+import us.hebi.quickbuf.compat.JacksonSink;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,25 +43,22 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
 
 /**
  * === JDK 8
- * Benchmark                                   Mode  Cnt     Score    Error   Units
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   188.928 ±  65.934  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   396.440 ± 170.741  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   417.064 ±   5.880  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   595.311 ±  21.524  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1490.562 ±  16.291  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3438.101 ±  35.577  ops/ms
- *
- * === JDK13
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   219.425 ±  3.166  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   475.153 ±  9.760  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   338.599 ±  6.220  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   478.171 ± 10.901  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1400.559 ± 36.754  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3446.400 ± 53.235  ops/ms
- *
- * === before FieldName layer of indirection
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1604.781 ± 25.897  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3624.096 ± 24.779  ops/ms
+ * Benchmark                                   Mode  Cnt     Score     Error   Units
+ * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   260,005 ±  40,651  ops/ms
+ * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   454,905 ±  64,111  ops/ms
+ * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   385,079 ±   3,634  ops/ms
+ * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   496,499 ±   2,560  ops/ms
+ * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1413,708 ±  10,256  ops/ms
+ * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3223,580 ±  76,672  ops/ms
+ * <p>
+ * === JDK17
+ * Benchmark                                   Mode  Cnt     Score     Error   Units
+ * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   244.408 ±   2.071  ops/ms
+ * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   418.432 ±   3.404  ops/ms
+ * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   327.974 ±   3.657  ops/ms
+ * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   429.415 ±   6.475  ops/ms
+ * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1376.977 ±  23.032  ops/ms
+ * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3269.737 ±  45.623  ops/ms
  *
  * @author Florian Enner
  * @since 28 Nov 2019
@@ -80,7 +79,7 @@ public class JsonSinkBenchmark {
         new Runner(options).run();
     }
 
-    final JsonSink jsonSink = JsonSink.newInstance().reserve(2048);
+    final JsonSink jsonSink = JsonSink.newInstance().setWriteEnumsAsInts(true).reserve(2048);
     final MarketDataIncrementalRefreshTrades marketData = MarketDataIncrementalRefreshTrades.newInstance();
     final Car car = Car.newInstance();
     static final Gson gson = new Gson();
@@ -108,6 +107,7 @@ public class JsonSinkBenchmark {
     public Object testGsonMarketEncode() throws IOException {
         StringWriter string = new StringWriter();
         new GsonSink(gson.newJsonWriter(string))
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildMarketData(marketData));
         return string.getBuffer();
     }
@@ -116,6 +116,7 @@ public class JsonSinkBenchmark {
     public Object testGsonCarEncode() throws IOException {
         StringWriter string = new StringWriter();
         new GsonSink(gson.newJsonWriter(string))
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildCarData(car));
         return string.getBuffer();
     }
@@ -124,7 +125,8 @@ public class JsonSinkBenchmark {
     public Object testJacksonMarketEncode() throws IOException {
         encodeBuffer.reset();
         new JacksonSink(jsonFactory.createGenerator(encodeBuffer))
-                .writeMessageValue(buildMarketData(marketData));
+                .setWriteEnumsAsInts(true)
+                .writeMessage(buildMarketData(marketData));
         return encodeBuffer.size();
     }
 
@@ -132,6 +134,7 @@ public class JsonSinkBenchmark {
     public Object testJacksonCarEncode() throws IOException {
         encodeBuffer.reset();
         new JacksonSink(jsonFactory.createGenerator(encodeBuffer))
+                .setWriteEnumsAsInts(true)
                 .writeMessage(buildCarData(car));
         return encodeBuffer.size();
     }

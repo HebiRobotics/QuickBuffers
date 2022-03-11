@@ -87,7 +87,7 @@ public abstract class ProtoSource {
         return newArraySource().setInput(buf, off, len);
     }
 
-    /** Create a new ProtoSource reading from the given {@link RepeatedByte}. */
+    /** Create a new ProtoSource reading from the current array of the given {@link RepeatedByte}. */
     public static ProtoSource newInstance(RepeatedByte bytes) {
         return newArraySource().setInput(bytes);
     }
@@ -167,7 +167,7 @@ public abstract class ProtoSource {
     }
 
     /**
-     * Changes the input to the current backing array of the bytes object.
+     * Changes the input to the current array of the given {@link RepeatedByte}.
      */
     public final ProtoSource setInput(RepeatedByte bytes) {
         return setInput(bytes.array(), 0, bytes.length());
@@ -186,6 +186,10 @@ public abstract class ProtoSource {
      * Changes the input to the given buffer. This resets any existing
      * internal state such as position and is equivalent to creating
      * a new instance.
+     *
+     * A BufferSource wraps the buffer directly and modifies the buffer state.
+     * ArraySource and DirectSource wrap the backing memory and do not modify the
+     * buffer state.
      */
     public ProtoSource setInput(ByteBuffer buffer) {
         throw new UnsupportedOperationException("source does not support reading from a ByteBuffer");
@@ -470,7 +474,7 @@ public abstract class ProtoSource {
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int length = readLength();
         final int limit = pushLimit(length);
-        final int count =  roundedCount32(length);;
+        final int count =  roundedCount32(length);
         final int offset = store.addLength(count);
         readRawFixed32s(store.array, offset, count);
         popLimit(limit);
@@ -793,11 +797,11 @@ public abstract class ProtoSource {
         if (x >= 0) {
             return x;
         } else if ((x ^= (readRawByte() << 7)) < 0) {
-            return x ^ signs7;
+            return x ^ xorBits7;
         } else if ((x ^= (readRawByte() << 14)) >= 0) {
-            return x ^ signs14;
+            return x ^ xorBits14;
         } else if ((x ^= (readRawByte() << 21)) < 0) {
-            return x ^ signs21;
+            return x ^ xorBits21;
         } else {
 
             // Discard upper 32 bits.
@@ -811,7 +815,7 @@ public abstract class ProtoSource {
                 throw InvalidProtocolBufferException.malformedVarint();
             }
 
-            return x ^ (y << 28) ^ signs28i;
+            return x ^ (y << 28) ^ xorBits28;
         }
     }
 
@@ -827,24 +831,27 @@ public abstract class ProtoSource {
         if ((y = readRawByte()) >= 0) {
             return y;
         } else if ((y ^= (readRawByte() << 7)) < 0) {
-            return y ^ signs7;
+            return y ^ xorBits7;
         } else if ((y ^= (readRawByte() << 14)) >= 0) {
-            return y ^ signs14;
+            return y ^ xorBits14;
         } else if ((y ^= (readRawByte() << 21)) < 0) {
-            return y ^ signs21;
+            return y ^ xorBits21;
         }
 
         long x;
         if ((x = y ^ ((long) readRawByte() << 28)) >= 0L) {
-            return x ^ signs28;
+            return x ^ xorBits28L;
         } else if ((x ^= ((long) readRawByte() << 35)) < 0L) {
-            return x ^ signs35;
+            return x ^ xorBits35L;
         } else if ((x ^= ((long) readRawByte() << 42)) >= 0L) {
-            return x ^ signs42;
+            return x ^ xorBits42L;
         } else if ((x ^= ((long) readRawByte() << 49)) < 0L) {
-            return x ^ signs49;
+            return x ^ xorBits49L;
         } else {
-            x ^= ((long) readRawByte() << 56) ^ signs56;
+            // Note: the signed bit is always set, so this does not work for
+            // non-canonical varints where positive numbers have been artificially
+            // extended to 10 bytes.
+            x ^= ((long) readRawByte() << 56) ^ xorBits56L;
             if (x < 0L) {
                 if (readRawByte() < 0) {
                     throw InvalidProtocolBufferException.malformedVarint();
@@ -854,15 +861,27 @@ public abstract class ProtoSource {
         }
     }
 
-    static final int signs7 = ~0 << 7;
-    static final int signs14 = signs7 ^ (~0 << 14);
-    static final int signs21 = signs14 ^ (~0 << 21);
-    static final int signs28i = signs21 ^ (~0 << 28);
-    private static final long signs28 = signs21 ^ (~0L << 28);
-    private static final long signs35 = signs28 ^ (~0L << 35);
-    private static final long signs42 = signs35 ^ (~0L << 42);
-    private static final long signs49 = signs42 ^ (~0L << 49);
-    private static final long signs56 = signs49 ^ (~0L << 56);
+    private static final int xorBits7 = ~0 << 7;
+    private static final int xorBits14 = xorBits7 ^ (~0 << 14);
+    private static final int xorBits21 = xorBits14 ^ (~0 << 21);
+    private static final int xorBits28 = xorBits21 ^ (~0 << 28);
+    private static final long xorBits28L = xorBits21 ^ (~0L << 28);
+    private static final long xorBits35L = xorBits28L ^ (~0L << 35);
+    private static final long xorBits42L = xorBits35L ^ (~0L << 42);
+    private static final long xorBits49L = xorBits42L ^ (~0L << 49);
+    private static final long xorBits56L = xorBits49L ^ (~0L << 56);
+
+    long readRawVarint64SlowPath() throws IOException {
+        long result = 0;
+        for (int shift = 0; shift < 64; shift += 7) {
+            final byte b = readRawByte();
+            result |= (long) (b & 0x7F) << shift;
+            if ((b & 0x80) == 0) {
+                return result;
+            }
+        }
+        throw InvalidProtocolBufferException.malformedVarint();
+    }
 
     /** Read a 16-bit little-endian integer from the source. */
     public short readRawLittleEndian16() throws IOException {
@@ -952,6 +971,33 @@ public abstract class ProtoSource {
     }
 
     /**
+     * Only valid for {@link InputStream}-backed streams.
+     *
+     * <p>Set the maximum message size. In order to prevent malicious messages from exhausting memory
+     * or causing integer overflows, {@code ProtoSource} limits how large a message may be. The
+     * default limit is {@code Integer.MAX_VALUE}. You should set this limit as small as you can
+     * without harming your app's functionality. Note that size limits only apply when reading from an
+     * {@code InputStream}, not when constructed around a raw byte array.
+     *
+     * <p>If you want to read several messages from a single CodedInputStream, you could call {@link
+     * #resetSizeCounter()} after each one to avoid hitting the size limit.
+     *
+     * @return the old limit.
+     */
+    public int setSizeLimit(final int limit) {
+        throw new UnsupportedOperationException("Only valid for stream backed sources");
+    }
+
+    /**
+     * Resets the current size counter to zero (see {@link #setSizeLimit(int)}). Only valid for {@link
+     * InputStream}-backed streams.
+     * @return
+     */
+    public ProtoSource resetSizeCounter() {
+        throw new UnsupportedOperationException("Only valid for stream backed sources");
+    }
+
+    /**
      * Sets this {@code ProtoSource} to discard unknown fields. This only impacts
      * messages that were generated with support for retaining unknown fields.
      *
@@ -970,6 +1016,14 @@ public abstract class ProtoSource {
     public final ProtoSource unsetDiscardUnknownFields() {
         shouldDiscardUnknownFields = false;
         return this;
+    }
+
+    /**
+     * Whether unknown fields in this input stream should be discarded during parsing into full
+     * runtime messages.
+     */
+    final boolean shouldDiscardUnknownFields() {
+        return shouldDiscardUnknownFields;
     }
 
     /**
@@ -1015,10 +1069,15 @@ public abstract class ProtoSource {
      * Returns true if the source has reached the end of the input.  This is the
      * case if either the end of the underlying input source has been reached or
      * if the source has reached a limit created using {@link #pushLimit(int)}.
+     * This function may get blocked when using {@link InputStream}-backed
+     * streams as it tries to peek ahead.
      */
     public abstract boolean isAtEnd() throws IOException;
 
-    /** Get total bytes read up to the current position. */
+    /**
+     * The total bytes read up to the current position. Calling {@link #resetSizeCounter()}
+     * resets this value to zero on supported implementations.
+     */
     public abstract int getTotalBytesRead();
 
     /**
@@ -1063,6 +1122,55 @@ public abstract class ProtoSource {
         // implement in child classes that support looking ahead
     }
 
+    /**
+     * Like {@link #readRawVarint32(InputStream)}, but expects that the caller has already read one
+     * byte. This allows the caller to determine if EOF has been reached before attempting to read.
+     */
+    public static int readRawVarint32(final int firstByte, final InputStream input)
+            throws IOException {
+        if ((firstByte & 0x80) == 0) {
+            return firstByte;
+        }
+
+        int result = firstByte & 0x7f;
+        int offset = 7;
+        for (; offset < 32; offset += 7) {
+            final int b = input.read();
+            if (b == -1) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            result |= (b & 0x7f) << offset;
+            if ((b & 0x80) == 0) {
+                return result;
+            }
+        }
+        // Keep reading up to 64 bits.
+        for (; offset < 64; offset += 7) {
+            final int b = input.read();
+            if (b == -1) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+            if ((b & 0x80) == 0) {
+                return result;
+            }
+        }
+        throw InvalidProtocolBufferException.malformedVarint();
+    }
+
+    /**
+     * Reads a varint from the input one byte at a time, so that it does not read any bytes after the
+     * end of the varint. If you simply wrapped the stream in a CodedInputStream and used {@link
+     * #readRawVarint32(InputStream)} then you would probably end up reading past the end of the
+     * varint since CodedInputStream buffers its input.
+     */
+    static int readRawVarint32(final InputStream input) throws IOException {
+        final int firstByte = input.read();
+        if (firstByte == -1) {
+            throw InvalidProtocolBufferException.truncatedMessage();
+        }
+        return readRawVarint32(firstByte, input);
+    }
+
     static class StreamSource extends ProtoSource {
 
         @Override
@@ -1073,15 +1181,31 @@ public abstract class ProtoSource {
 
         @Override
         protected ProtoSource resetInternalState() {
-            super.resetInternalState();
             peekByte = EOF;
             position = 0;
-            return this;
+            sizeLimit = NO_LIMIT;
+            return super.resetInternalState();
         }
 
         @Override
         public ProtoSource clear() {
             return setInput(EMPTY_INPUT_STREAM);
+        }
+
+        @Override
+        public int setSizeLimit(final int limit) {
+            if (limit < 0) {
+                throw new IllegalArgumentException("Size limit cannot be negative: " + limit);
+            }
+            final int oldLimit = sizeLimit;
+            sizeLimit = limit;
+            return oldLimit;
+        }
+
+        @Override
+        public ProtoSource resetSizeCounter() {
+            position = 0;
+            return this;
         }
 
         @Override
@@ -1096,8 +1220,8 @@ public abstract class ProtoSource {
 
         @Override
         public byte readRawByte() throws IOException {
-            if (position == currentLimit || peek() == EOF) {
-                throw InvalidProtocolBufferException.truncatedMessage();
+            if (position == sizeLimit || position == currentLimit || peek() == EOF) {
+                require(1); // throws appropriate error
             }
             try {
                 position++;
@@ -1139,18 +1263,22 @@ public abstract class ProtoSource {
             }
         }
 
-        private void require(int numBytes) throws IOException {
-            if (numBytes < 0) {
+        private void require(int size) throws IOException {
+            final int newPosition = position + size;
+            if (size < 0) {
                 throw InvalidProtocolBufferException.negativeSize();
-            } else if (numBytes > currentLimit - position) {
+            } else if (newPosition - sizeLimit > 0) { // int overflow conscious
+                throw InvalidProtocolBufferException.sizeLimitExceeded();
+            } else if (newPosition > currentLimit) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
-            position += numBytes;
+            position = newPosition;
         }
 
-        private InputStream input = EMPTY_INPUT_STREAM;
         private int peekByte = EOF;
         private int position = 0;
+        private int sizeLimit = Integer.MAX_VALUE;
+        private InputStream input = EMPTY_INPUT_STREAM;
 
         private static final InputStream EMPTY_INPUT_STREAM = new ByteArrayInputStream(ProtoUtil.EMPTY_BYTE_ARRAY);
         private static final int EOF = -1;

@@ -118,13 +118,12 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * @throws InvalidProtocolBufferException if it is not initialized.
      * @return this
      */
-    @SuppressWarnings("unchecked")
     public final MessageType checkInitialized() throws InvalidProtocolBufferException {
         if (!isInitialized()) {
             throw new UninitializedMessageException(this)
                     .asInvalidProtocolBufferException();
         }
-        return (MessageType) this;
+        return getThis();
     }
 
     /**
@@ -140,6 +139,24 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * @throws IOException if an error occurred writing to {@code output}.
      */
     public abstract void writeTo(ProtoSink output) throws IOException;
+
+    /**
+     * Serializes the message and writes it to the {@code output} in
+     * length delimited form.
+     */
+    public MessageType writeDelimitedTo(ProtoSink output) throws IOException {
+        getSerializedSize(); // force cache update
+        output.writeMessageNoTag(this);
+        return getThis();
+    }
+
+    /**
+     * Merges the contents for one message written in length delimited form.
+     */
+    public MessageType mergeDelimitedFrom(ProtoSource input) throws IOException {
+        input.readMessage(this);
+        return getThis();
+    }
 
     /**
      * Parse {@code input} as a message of this type and merge it with the
@@ -215,7 +232,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      */
     public static void toByteArray(ProtoMessage<?> msg, byte[] data, int offset, int length) {
         try {
-            final ProtoSink output = ProtoSink.newArraySink().setOutput(data, offset, length);
+            final ProtoSink output = ProtoSink.newInstance(data, offset, length);
             msg.writeTo(output);
             output.checkNoSpaceLeft();
         } catch (IOException e) {
@@ -227,14 +244,14 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * Parse {@code data} as a message of this type and merge it with the message being built.
      */
-    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data) throws InvalidProtocolBufferException {
+    public static <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data) throws InvalidProtocolBufferException {
         return mergeFrom(msg, data, 0, data.length);
     }
 
     /**
      * Parse {@code data} as a message of this type and merge it with the message being built.
      */
-    public static final <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data, final int off, final int len)
+    public static <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data, final int off, final int len)
             throws InvalidProtocolBufferException {
         try {
             return ProtoMessage.mergeFrom(msg, ProtoSource.newInstance(data, off, len));
@@ -328,6 +345,15 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
                 field.array[i].getMissingFields(prefix + fieldName + "[" + i + "].", results);
             }
         }
+    }
+
+    protected UninitializedMessageException rethrowFromParent(UninitializedMessageException ex) {
+        throw ex.withParentMessage(this);
+    }
+
+    @SuppressWarnings("unchecked")
+    private MessageType getThis(){
+        return (MessageType) this;
     }
 
     /**

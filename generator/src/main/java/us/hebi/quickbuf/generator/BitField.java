@@ -20,8 +20,12 @@
 
 package us.hebi.quickbuf.generator;
 
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
 import us.hebi.quickbuf.generator.RequestInfo.FieldInfo;
 
+import javax.lang.model.element.Modifier;
 import java.util.List;
 
 /**
@@ -32,14 +36,45 @@ import java.util.List;
  */
 class BitField {
 
-    static int BITS_PER_FIELD = 32;
-
-    static int getFieldIndex(int fieldIndex) {
-        return fieldIndex / BITS_PER_FIELD;
+    static int getNumberOfFields(int fieldCount) {
+        return (fieldCount + (BITS_PER_FIELD - 1)) / BITS_PER_FIELD;
     }
 
-    static int getBitIndex(int fieldIndex) {
-        return fieldIndex % BITS_PER_FIELD;
+    static void generateMemberFields(TypeSpec.Builder type, int numBitFields){
+        // first bitfield is in the parent class
+        for (int i = 1; i < numBitFields; i++) {
+            type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
+        }
+    }
+
+    static void generateClearCode(MethodSpec.Builder clear, int numBitFields){
+        for (int i = 0; i < numBitFields; i++) {
+            clear.addStatement("$L = 0", BitField.fieldName(i));
+        }
+    }
+
+    static String getEqualsStatement(int fieldIndex) {
+        return String.format("bitField%d_ == other.bitField%d_", fieldIndex, fieldIndex);
+    }
+
+    static String isCopyFromNeeded(int fieldIndex) {
+        return String.format("(bitField%d_ | other.bitField%d_) != 0", fieldIndex, fieldIndex);
+    }
+
+    static void generateCopyFromCode(MethodSpec.Builder copyFrom, int fieldIndex) {
+        copyFrom.addStatement("$1L = other.$1L", BitField.fieldName(fieldIndex));
+    }
+
+    static String hasAnyBit(List<FieldInfo> fields) {
+        return hasAnyBit(generateBitset(fields));
+    }
+
+    static String isMissingAnyBit(List<FieldInfo> fields) {
+        return isMissingAnyBit(generateBitset(fields));
+    }
+
+    static boolean isBitInField(int bitIndex, int fieldIndex){
+        return getFieldIndex(bitIndex) == fieldIndex;
     }
 
     static String hasBit(int hasBitIndex) {
@@ -63,7 +98,7 @@ class BitField {
         return output + ") == 0)";
     }
 
-    static String isMissingAnyBit(int[] bitset) {
+    private static String isMissingAnyBit(int[] bitset) {
         StringBuilder builder = new StringBuilder();
         int usedFields = 0;
         for (int i = 0; i < bitset.length; i++) {
@@ -76,7 +111,7 @@ class BitField {
         return builder.toString();
     }
 
-    static String hasAnyBit(int[] bitset) {
+    private static String hasAnyBit(int[] bitset) {
         StringBuilder builder = new StringBuilder();
         int usedFields = 0;
         for (int i = 0; i < bitset.length; i++) {
@@ -88,7 +123,7 @@ class BitField {
         return builder.toString();
     }
 
-    static int[] generateBitset(List<FieldInfo> fields) {
+    private static int[] generateBitset(List<FieldInfo> fields) {
         int maxIndex = fields.stream().mapToInt(FieldInfo::getBitIndex).max().orElse(0);
         int[] bits = new int[getNumberOfFields(maxIndex) + 1];
         for (FieldInfo field : fields) {
@@ -108,18 +143,25 @@ class BitField {
      * @param hasBitIndex
      * @return
      */
-    static String oneOrZeroBit(int hasBitIndex) {
+    @Deprecated // used for testing whether
+    private static String oneOrZeroBit(int hasBitIndex) {
         int intSlot = hasBitIndex / BITS_PER_FIELD;
         int indexInSlot = hasBitIndex - (intSlot * BITS_PER_FIELD);
         return String.format("((bitField%d_ & 0x%08x) >>> %d)", intSlot, 1 << indexInSlot, indexInSlot);
     }
 
-    static String fieldName(int intIndex) {
+    private static String fieldName(int intIndex) {
         return String.format("bitField%d_", intIndex);
     }
 
-    static int getNumberOfFields(int fieldCount) {
-        return (fieldCount + (BITS_PER_FIELD - 1)) / BITS_PER_FIELD;
+    private static int getFieldIndex(int fieldIndex) {
+        return fieldIndex / BITS_PER_FIELD;
     }
+
+    private static int getBitIndex(int fieldIndex) {
+        return fieldIndex % BITS_PER_FIELD;
+    }
+
+    static int BITS_PER_FIELD = 32;
 
 }

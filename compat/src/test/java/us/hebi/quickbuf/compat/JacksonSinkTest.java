@@ -2,14 +2,14 @@
  * #%L
  * quickbuf-runtime
  * %%
- * Copyright (C) 2019 - 2020 HEBI Robotics
+ * Copyright (C) 2019 - 2022 HEBI Robotics
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,15 +18,20 @@
  * #L%
  */
 
-package us.hebi.quickbuf;
+package us.hebi.quickbuf.compat;
 
+import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.ForeignEnum;
 import protos.test.quickbuf.TestAllTypes;
-import protos.test.quickbuf.TestAllTypes.NestedEnum;
 import protos.test.quickbuf.external.ImportEnum;
+import us.hebi.quickbuf.CompatibilityTest;
+import us.hebi.quickbuf.FieldName;
+import us.hebi.quickbuf.JsonSink;
+import us.hebi.quickbuf.RepeatedFloat;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Base64;
 import java.util.Random;
 
@@ -34,44 +39,58 @@ import static org.junit.Assert.*;
 
 /**
  * @author Florian Enner
- * @since 13 Jul 2020
+ * @since 25 Feb 2022
  */
-public class JsonSinkTest {
+public class JacksonSinkTest {
+
+    @Test
+    public void testRoundTrip() throws IOException {
+        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        TestAllTypes actual = TestAllTypes.newInstance();
+
+        String json = JacksonSink.newStringWriter().setWriteEnumsAsInts(false).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        Assert.assertEquals(expected, actual);
+
+        json = JacksonSink.newStringWriter().setWriteEnumsAsInts(true).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        Assert.assertEquals(expected, actual);
+    }
 
     @Test
     public void testEnumNumbers() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
-        msg.setOptionalNestedEnumValue(NestedEnum.BAR_VALUE);
+        msg.setOptionalNestedEnumValue(TestAllTypes.NestedEnum.BAR_VALUE);
         msg.setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR);
         msg.setOptionalImportEnum(ImportEnum.IMPORT_BAZ);
 
         String desired = "{\"optionalNestedEnum\":2,\"optionalForeignEnum\":5,\"optionalImportEnum\":9}";
-        String result = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(msg).toString();
+        String result = JacksonSink.newStringWriter().setWriteEnumsAsInts(true).writeMessage(msg).toString();
         assertEquals(desired, result);
     }
 
     @Test
     public void testEnumStrings() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
-        msg.setOptionalNestedEnumValue(NestedEnum.BAR_VALUE);
+        msg.setOptionalNestedEnumValue(TestAllTypes.NestedEnum.BAR_VALUE);
         msg.setOptionalForeignEnum(ForeignEnum.FOREIGN_BAR);
         msg.setOptionalImportEnum(ImportEnum.IMPORT_BAZ);
 
         String desired = "{\"optionalNestedEnum\":\"BAR\",\"optionalForeignEnum\":\"FOREIGN_BAR\",\"optionalImportEnum\":\"IMPORT_BAZ\"}";
-        String result = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(msg).toString();
+        String result = JacksonSink.newStringWriter().setWriteEnumsAsInts(false).writeMessage(msg).toString();
         assertEquals(desired, result);
     }
 
     @Test
     public void testRepeatedEnums() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
-        msg.getMutableRepeatedNestedEnum().addAll(NestedEnum.FOO, NestedEnum.BAR, NestedEnum.BAZ, NestedEnum.BAZ);
+        msg.getMutableRepeatedNestedEnum().addAll(TestAllTypes.NestedEnum.FOO, TestAllTypes.NestedEnum.BAR, TestAllTypes.NestedEnum.BAZ, TestAllTypes.NestedEnum.BAZ);
 
         assertEquals("{\"repeatedNestedEnum\":[\"FOO\",\"BAR\",\"BAZ\",\"BAZ\"]}",
-                JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(msg).toString());
+                JacksonSink.newStringWriter().setWriteEnumsAsInts(false).writeMessage(msg).toString());
 
         assertEquals("{\"repeatedNestedEnum\":[1,2,3,3]}",
-                JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(msg).toString());
+                JacksonSink.newStringWriter().setWriteEnumsAsInts(true).writeMessage(msg).toString());
     }
 
     @Test
@@ -90,7 +109,7 @@ public class JsonSinkTest {
         String desired = String.format(
                 "{\"optionalBytes\":\"%s\",\"repeatedBytes\":[\"\",\"QQ==\",\"QUI=\",\"QUJD\",\"%s\"]}",
                 javaBase64, javaBase64);
-        assertEquals(desired, JsonSink.newInstance().writeMessage(msg).toString());
+        assertEquals(desired, JacksonSink.newStringWriter().writeMessage(msg).toString());
     }
 
     @Test
@@ -101,10 +120,10 @@ public class JsonSinkTest {
 
         // minimal
         assertEquals("{\"optionalNestedMessage\":{\"bb\":2},\"optionalForeignMessage\":{}}",
-                JsonSink.newInstance().writeMessage(msg).toString());
+                JacksonSink.newStringWriter().writeMessage(msg).toString());
 
         // pretty print
-        assertEquals("{\n" +
+        Assert.assertEquals("{\n" +
                 "  \"optionalNestedMessage\": {\n" +
                 "    \"bb\": 2\n" +
                 "  },\n" +
@@ -115,8 +134,8 @@ public class JsonSinkTest {
     @Test
     public void testEmptyMessage() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
-        assertEquals("{}", JsonSink.newInstance().writeMessage(msg).toString());
-        assertEquals("{}", JsonSink.newPrettyInstance().writeMessage(msg).toString());
+        assertEquals("{}", JacksonSink.newStringWriter().writeMessage(msg).toString());
+        Assert.assertEquals("{}", JsonSink.newPrettyInstance().writeMessage(msg).toString());
     }
 
     @Test
@@ -224,7 +243,7 @@ public class JsonSinkTest {
                 "    \"utf8\uD83D\uDCA9\"\n" +
                 "  ]\n" +
                 "}";
-        assertEquals(desired, msg.toString());
+        Assert.assertEquals(desired, msg.toString());
     }
 
     @Test
@@ -240,8 +259,8 @@ public class JsonSinkTest {
         msg.getMutableRepeatedFloat().clear();
 
         // Copied from https://codebeautify.org/jsonminifier
-        String desired = "{\"optionalDouble\":100,\"optionalFixed64\":103,\"optionalSfixed64\":105,\"optionalInt64\":109,\"optionalUint64\":111,\"optionalSint64\":107,\"optionalFloat\":101,\"optionalFixed32\":102,\"optionalSfixed32\":104,\"optionalInt32\":108,\"optionalUint32\":110,\"optionalSint32\":106,\"optionalNestedEnum\":\"FOO\",\"optionalForeignEnum\":\"FOREIGN_BAR\",\"optionalImportEnum\":\"IMPORT_BAZ\",\"optionalBool\":true,\"optionalNestedMessage\":{\"bb\":2},\"optionalForeignMessage\":{\"c\":3},\"optionalImportMessage\":{},\"optionalgroup\":{\"a\":4},\"optionalBytes\":\"dXRmOPCfkqk=\",\"defaultBytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optionalString\":\"optionalString\uD83D\uDCA9\",\"optionalCord\":\"hello!\",\"repeatedDouble\":[\"NaN\",\"-Infinity\",0,-28.3],\"repeatedFloat\":[],\"repeatedInt32\":[-2,-1,0,1,2,3,4,5],\"repeatedPackedInt32\":[-1,0,1,2,3,4,5],\"repeatedForeignMessage\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeatedgroup\":[{\"a\":3},{\"a\":4}],\"repeatedBytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeatedString\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
-        assertEquals(desired, JsonSink.newInstance().setPreserveProtoFieldNames(false).setWriteEnumsAsInts(false).writeMessage(msg).toString());
+        String desired = "{\"optionalDouble\":100.0,\"optionalFixed64\":103,\"optionalSfixed64\":105,\"optionalInt64\":109,\"optionalUint64\":111,\"optionalSint64\":107,\"optionalFloat\":101.0,\"optionalFixed32\":102,\"optionalSfixed32\":104,\"optionalInt32\":108,\"optionalUint32\":110,\"optionalSint32\":106,\"optionalNestedEnum\":\"FOO\",\"optionalForeignEnum\":\"FOREIGN_BAR\",\"optionalImportEnum\":\"IMPORT_BAZ\",\"optionalBool\":true,\"optionalNestedMessage\":{\"bb\":2},\"optionalForeignMessage\":{\"c\":3},\"optionalImportMessage\":{},\"optionalgroup\":{\"a\":4},\"optionalBytes\":\"dXRmOPCfkqk=\",\"defaultBytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optionalString\":\"optionalString\uD83D\uDCA9\",\"optionalCord\":\"hello!\",\"repeatedDouble\":[\"NaN\",\"-Infinity\",0.0,-28.3],\"repeatedFloat\":[],\"repeatedInt32\":[-2,-1,0,1,2,3,4,5],\"repeatedPackedInt32\":[-1,0,1,2,3,4,5],\"repeatedForeignMessage\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeatedgroup\":[{\"a\":3},{\"a\":4}],\"repeatedBytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeatedString\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
+        assertEquals(desired, JacksonSink.newStringWriter().setWriteEnumsAsInts(false).writeMessage(msg).toString());
     }
 
     @Test
@@ -257,8 +276,8 @@ public class JsonSinkTest {
         msg.getMutableRepeatedFloat().clear();
 
         // Copied from https://codebeautify.org/jsonminifier
-        String desired = "{\"optional_double\":100,\"optional_fixed64\":103,\"optional_sfixed64\":105,\"optional_int64\":109,\"optional_uint64\":111,\"optional_sint64\":107,\"optional_float\":101,\"optional_fixed32\":102,\"optional_sfixed32\":104,\"optional_int32\":108,\"optional_uint32\":110,\"optional_sint32\":106,\"optional_nested_enum\":\"FOO\",\"optional_foreign_enum\":\"FOREIGN_BAR\",\"optional_import_enum\":\"IMPORT_BAZ\",\"optional_bool\":true,\"optional_nested_message\":{\"bb\":2},\"optional_foreign_message\":{\"c\":3},\"optional_import_message\":{},\"optionalgroup\":{\"a\":4},\"optional_bytes\":\"dXRmOPCfkqk=\",\"default_bytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optional_string\":\"optionalString\uD83D\uDCA9\",\"optional_cord\":\"hello!\",\"repeated_double\":[\"NaN\",\"-Infinity\",0,-28.3],\"repeated_float\":[],\"repeated_int32\":[-2,-1,0,1,2,3,4,5],\"repeated_packed_int32\":[-1,0,1,2,3,4,5],\"repeated_foreign_message\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeatedgroup\":[{\"a\":3},{\"a\":4}],\"repeated_bytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeated_string\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
-        assertEquals(desired, JsonSink.newInstance().setPreserveProtoFieldNames(true).setWriteEnumsAsInts(false).writeMessage(msg).toString());
+        String desired = "{\"optional_double\":100.0,\"optional_fixed64\":103,\"optional_sfixed64\":105,\"optional_int64\":109,\"optional_uint64\":111,\"optional_sint64\":107,\"optional_float\":101.0,\"optional_fixed32\":102,\"optional_sfixed32\":104,\"optional_int32\":108,\"optional_uint32\":110,\"optional_sint32\":106,\"optional_nested_enum\":\"FOO\",\"optional_foreign_enum\":\"FOREIGN_BAR\",\"optional_import_enum\":\"IMPORT_BAZ\",\"optional_bool\":true,\"optional_nested_message\":{\"bb\":2},\"optional_foreign_message\":{\"c\":3},\"optional_import_message\":{},\"optionalgroup\":{\"a\":4},\"optional_bytes\":\"dXRmOPCfkqk=\",\"default_bytes\":\"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\"optional_string\":\"optionalString\uD83D\uDCA9\",\"optional_cord\":\"hello!\",\"repeated_double\":[\"NaN\",\"-Infinity\",0.0,-28.3],\"repeated_float\":[],\"repeated_int32\":[-2,-1,0,1,2,3,4,5],\"repeated_packed_int32\":[-1,0,1,2,3,4,5],\"repeated_foreign_message\":[{\"c\":0},{\"c\":1},{\"c\":2},{},{}],\"repeatedgroup\":[{\"a\":3},{\"a\":4}],\"repeated_bytes\":[\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"YXNjaWk=\",\"dXRmOPCfkqk=\",\"\"],\"repeated_string\":[\"hello\",\"world\",\"ascii\",\"utf8\uD83D\uDCA9\"]}";
+        assertEquals(desired, JacksonSink.newStringWriter().setPreserveProtoFieldNames(true).setWriteEnumsAsInts(false).writeMessage(msg).toString());
     }
 
     @Test
@@ -268,12 +287,12 @@ public class JsonSinkTest {
             floats.add(i / 2f);
         }
         FieldName field = FieldName.forField("data");
-        String result = JsonSink.newInstance()
+        String result = JacksonSink.newStringWriter()
                 .beginObject()
                 .writeRepeatedFloat(field, floats)
                 .endObject()
                 .toString();
-        assertEquals("{\"data\":[-2,-1.5,-1,-0.5,0,0.5,1,1.5]}", result);
+        assertEquals("{\"data\":[-2.0,-1.5,-1.0,-0.5,0.0,0.5,1.0,1.5]}", result);
     }
 
 }

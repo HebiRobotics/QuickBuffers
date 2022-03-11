@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,11 +18,18 @@
  * #L%
  */
 
-package us.hebi.quickbuf;
+package us.hebi.quickbuf.compat;
 
+import org.junit.Assert;
 import org.junit.Test;
+import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
+import us.hebi.quickbuf.AbstractJsonSource;
+import us.hebi.quickbuf.CompatibilityTest;
+import us.hebi.quickbuf.JsonSink;
+import us.hebi.quickbuf.ProtoMessage;
 
+import java.io.IOException;
 import java.io.StringReader;
 
 import static org.junit.Assert.*;
@@ -32,6 +39,42 @@ import static org.junit.Assert.*;
  * @since 07 Sep 2020
  */
 public class GsonSourceTest {
+
+    @Test
+    public void testReadJsonSink() throws IOException {
+        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        TestAllTypes actual = TestAllTypes.newInstance();
+
+        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        Assert.assertEquals(expected, actual);
+
+        json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        Assert.assertEquals(expected, actual);
+
+        json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
+        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testSkipping() throws Exception {
+        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
+        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
+        ForeignMessage wrongMsg = ForeignMessage.newInstance();
+
+        // Ignore unknown fields
+        wrongMsg.clear().mergeFrom(new GsonSource(json).setIgnoreUnknownFields(true));
+
+        // Expect a failure
+        try {
+            wrongMsg.mergeFrom(new GsonSource(json).setIgnoreUnknownFields(false));
+            fail("expected to fail on unknown fields");
+        } catch (IllegalArgumentException e) {
+        }
+
+    }
 
     @Test
     public void testManualInput() throws Exception {
@@ -119,18 +162,18 @@ public class GsonSourceTest {
 
         AbstractJsonSource source = new GsonSource(new StringReader(json));
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
-        assertEquals(json, msg.toString());
+        Assert.assertEquals(json, msg.toString());
     }
 
     @Test
     public void testNullInput() throws Exception {
-        String json = "{optionalNestedMessage=null,repeatedString=null,optionalForeignMessage={},repeatedBytes=[null,null]}";
+        String json = "{\"optionalNestedMessage\":null,\"repeatedString\":null,\"optionalForeignMessage\":{},\"repeatedBytes\":[null,null]}";
         AbstractJsonSource source = new GsonSource(new StringReader(json));
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
         assertTrue(msg.getOptionalNestedMessage().isEmpty());
         assertTrue(msg.hasRepeatedString());
-        assertEquals(0, msg.getRepeatedString().length);
-        assertEquals(2, msg.getRepeatedBytes().length);
+        Assert.assertEquals(0, msg.getRepeatedString().length());
+        Assert.assertEquals(2, msg.getRepeatedBytes().length());
     }
 
     @Test
@@ -158,7 +201,7 @@ public class GsonSourceTest {
         AbstractJsonSource source = new GsonSource(new StringReader(json));
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
 
-        assertArrayEquals(new double[]{
+        Assert.assertArrayEquals(new double[]{
                 Double.NaN,
                 Double.NEGATIVE_INFINITY,
                 0,
@@ -168,7 +211,7 @@ public class GsonSourceTest {
                 17E-3,
                 Double.POSITIVE_INFINITY}, msg.getRepeatedDouble().toArray(), 0);
 
-        assertArrayEquals(new int[]{
+        Assert.assertArrayEquals(new int[]{
                 0,
                 Integer.MAX_VALUE,
                 Integer.MIN_VALUE,
@@ -207,7 +250,7 @@ public class GsonSourceTest {
                 .clone()
                 .clear()
                 .mergeFrom(new GsonSource(new StringReader(sink.toString())));
-        assertEquals(msg, msg2);
+        Assert.assertEquals(msg, msg2);
     }
 
     private final JsonSink minimized = JsonSink.newInstance();

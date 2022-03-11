@@ -206,6 +206,10 @@ public abstract class ProtoSink {
     /**
      * Changes the output to the given buffer. This resets any existing internal state
      * such as position and is equivalent to creating a new instance.
+     *
+     * A BufferSink wraps the buffer directly and modifies the buffer state.
+     * ArraySink and DirectSink wrap the backing memory and do not modify the
+     * buffer state.
      */
     public ProtoSink setOutput(ByteBuffer buffer) {
         throw new UnsupportedOperationException("sink does not support writing to a ByteBuffer");
@@ -615,14 +619,14 @@ public abstract class ProtoSink {
         writeRawLittleEndian32(Float.floatToIntBits(value));
     }
 
-    /** Write a {@code uint64} field to the sink. */
-    public void writeUInt64NoTag(final long value) throws IOException {
-        writeRawVarint64(value);
-    }
-
     /** Write an {@code int64} field to the sink. */
     public void writeInt64NoTag(final long value) throws IOException {
-        writeRawVarint64(value);
+        if (value >= 0) {
+            writeUInt64NoTag(value);
+        } else {
+            // Must sign-extend
+            writeNegativeVarint64(value);
+        }
     }
 
     /** Write an {@code int32} field to the sink. */
@@ -631,7 +635,7 @@ public abstract class ProtoSink {
             writeUInt32NoTag(value);
         } else {
             // Must sign-extend.
-            writeRawVarint64(value);
+            writeNegativeVarint32(value);
         }
     }
 
@@ -705,7 +709,7 @@ public abstract class ProtoSink {
 
     /** Write an {@code sint64} field to the sink. */
     public void writeSInt64NoTag(final long value) throws IOException {
-        writeRawVarint64(encodeZigZag64(value));
+        writeUInt64NoTag(encodeZigZag64(value));
     }
 
     // =================================================================
@@ -1041,7 +1045,9 @@ public abstract class ProtoSink {
      * Returns remaining space when there is a known limit.
      * Otherwise, throws {@code UnsupportedOperationException}.
      */
-    public abstract int spaceLeft();
+    public int spaceLeft() {
+        throw new UnsupportedOperationException("The space limit for this sink is unknown");
+    }
 
     /**
      * Verifies that {@link #spaceLeft()} returns zero.  It's common to create
@@ -1053,7 +1059,7 @@ public abstract class ProtoSink {
     public void checkNoSpaceLeft() {
         if (spaceLeft() != 0) {
             throw new IllegalStateException(
-                    "Did not write as much data as expected.");
+                    "Did not write as much data as expected. Remaining bytes: " + spaceLeft());
         }
     }
 
@@ -1141,14 +1147,14 @@ public abstract class ProtoSink {
         return 5;
     }
 
-    /** Encode and write a varint. */
-    public void writeRawVarint64(long value) throws IOException {
+    /** Write a {@code uint64} field to the sink. */
+    public void writeUInt64NoTag(long value) throws IOException {
         while (true) {
             if ((value & ~0x7FL) == 0) {
                 writeRawByte((byte) value);
                 return;
             } else {
-                writeRawByte((((int) value) | 0x80));
+                writeRawByte((byte) (((int) value) | 0x80));
                 value >>>= 7;
             }
         }
@@ -1177,6 +1183,62 @@ public abstract class ProtoSink {
             n += 1;
         }
         return n;
+    }
+
+    /** write a negative {@code int32} that must be sign-extended to 10 bytes */
+    protected void writeNegativeVarint32(int value) throws IOException {
+        if (UnsafeAccess.allowUnalignedAccess()) {
+            long first8 = (0x8080808080808080L | (~0L << 36))
+                    | ((value & 0x7FL))
+                    | ((value & (0x7FL << 7)) << 1)
+                    | ((value & (0x7FL << 14)) << 2)
+                    | ((value & (0x7FL << 21)) << 3)
+                    | ((value & (0x0FL << 28)) << 4);
+            writeRawLittleEndian64(first8);
+            writeRawLittleEndian16((short) 0x1FF);
+        } else {
+            writeRawByte((byte) (value | 0x80));
+            writeRawByte((byte) (((value >>> 7)) | 0x80));
+            writeRawByte((byte) (((value >>> 14)) | 0x80));
+            writeRawByte((byte) (((value >>> 21)) | 0x80));
+            writeRawByte((byte) (((value >>> 28)) | 0x80));
+            writeRawByte((byte) -1);
+            writeRawByte((byte) -1);
+            writeRawByte((byte) -1);
+            writeRawByte((byte) -1);
+            writeRawByte((byte) 1);
+        }
+    }
+
+    /** write a negative {@code int64} that must be sign-extended to 10 bytes */
+    protected void writeNegativeVarint64(long value) throws IOException {
+        if (UnsafeAccess.allowUnalignedAccess()) {
+            long first8 = 0x8080808080808080L
+                    | ((value & 0x7FL))
+                    | ((value & (0x7FL << 7)) << 1)
+                    | ((value & (0x7FL << 14)) << 2)
+                    | ((value & (0x7FL << 21)) << 3)
+                    | ((value & (0x7FL << 28)) << 4)
+                    | ((value & (0x7FL << 35)) << 5)
+                    | ((value & (0x7FL << 42)) << 6)
+                    | ((value & (0x7FL << 49)) << 7);
+            long last2 = 0x80L
+                    | ((value & (0x7FL << 56)) >>> 56)
+                    | ((value & (0x01L << 63)) >>> 55);
+            writeRawLittleEndian64(first8);
+            writeRawLittleEndian16((short) last2);
+        } else {
+            writeRawByte((((int) value) | 0x80));
+            writeRawByte((((int) (value >>> 7)) | 0x80));
+            writeRawByte((((int) (value >>> 14)) | 0x80));
+            writeRawByte((((int) (value >>> 21)) | 0x80));
+            writeRawByte((((int) (value >>> 28)) | 0x80));
+            writeRawByte((((int) (value >>> 35)) | 0x80));
+            writeRawByte((((int) (value >>> 42)) | 0x80));
+            writeRawByte((((int) (value >>> 49)) | 0x80));
+            writeRawByte((((int) (value >>> 56)) | 0x80));
+            writeRawByte(((byte) (value >>> 63)));
+        }
     }
 
     /** Write a little-endian 16-bit integer. */
@@ -1244,6 +1306,35 @@ public abstract class ProtoSink {
         writeUInt32NoTag(value);
     }
 
+    /** Encode and write a varint. */
+    @Deprecated
+    public void writeRawVarint64(final long value) throws IOException {
+        writeUInt64NoTag(value);
+    }
+
+    /**
+     * Encode and write a varint32 to an {@link OutputStream}. {@code value} is
+     * treated as unsigned, so it won't be sign-extended if negative. This
+     * can be used to write length delimiters before writing messages.
+     *
+     * @param value  uint32 value to be encoded as varint
+     * @param output target stream
+     * @return number of written bytes
+     */
+    public static int writeUInt32(OutputStream output, int value) throws IOException {
+        int numBytes = 1;
+        while (true) {
+            if ((value & ~0x7F) == 0) {
+                output.write(value);
+                return numBytes;
+            } else {
+                output.write((value & 0x7F) | 0x80);
+                value >>>= 7;
+                numBytes++;
+            }
+        }
+    }
+
     static class StreamSink extends ProtoSink {
 
         @Override
@@ -1258,11 +1349,6 @@ public abstract class ProtoSink {
         @Override
         public ProtoSink clear() {
             return setOutput(EMPTY_OUTPUT_STREAM);
-        }
-
-        @Override
-        public int spaceLeft() {
-            throw new UnsupportedOperationException("OutputStreams have no known size limit");
         }
 
         @Override

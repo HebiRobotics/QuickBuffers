@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -81,6 +82,28 @@ public class ProtoFailTests {
                     "required_bytes",
                     "required_string"
             ));
+            assertTrue(ex.getMessage().contains("required_float"));
+            assertTrue(ex.getMessage().contains("required_nested_message.required_field"));
+            throw ex;
+        }
+    }
+
+    @Test(expected = UninitializedMessageException.class)
+    public void testMissingRequiredNestedField() {
+        try {
+            NestedRequiredMessage.newInstance().toByteArray();
+        } catch (UninitializedMessageException ex) {
+            fail("root message has no required fields");
+        }
+        try {
+            NestedRequiredMessage.newInstance()
+                    .setOptionalSimpleMessage(SimpleMessage.newInstance())
+                    .toByteArray();
+        } catch (UninitializedMessageException ex) {
+            List<String> missing = ex.getMissingFields();
+            assertEquals(1, missing.size());
+            assertEquals(missing, Collections.singletonList("optional_simple_message.required_field"));
+            assertTrue(ex.getMessage().contains("optional_simple_message.required_field"));
             throw ex;
         }
     }
@@ -388,6 +411,37 @@ public class ProtoFailTests {
     @Test(expected = NullPointerException.class)
     public void testReadIntoNullDestinationBuffer() throws IOException {
         ProtoSource.newInstance(ByteBuffer.wrap(new byte[n])).readRawBytes(null, 0, n);
+    }
+
+    // --------------------------------------------------------------------------------------
+
+    @Test
+    public void testStreamLimitsExceeded() throws IOException {
+        byte[] bytes = CompatibilityTest.optionalPrimitives();
+        ProtoSource source = ProtoSource.newInstance(new ByteArrayInputStream(bytes));
+
+        try {
+            source.setSizeLimit(bytes.length - 1);
+            TestAllTypes.parseFrom(source);
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("size limit"));
+        }
+
+        assertEquals(bytes.length - 1, source.getTotalBytesRead());
+        source.resetSizeCounter();
+        assertEquals(0, source.getTotalBytesRead());
+
+        try {
+            source.setSizeLimit(bytes.length);
+            source.setInput(new ByteArrayInputStream(bytes));
+            source.pushLimit(bytes.length - 20);
+            TestAllTypes.parseFrom(source);
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("input ended unexpectedly"));
+        }
+
     }
 
 }

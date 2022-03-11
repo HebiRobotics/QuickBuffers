@@ -21,7 +21,9 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import static us.hebi.quickbuf.ProtoUtil.*;
 import static us.hebi.quickbuf.UnsafeAccess.*;
 import static us.hebi.quickbuf.WireFormat.*;
 
@@ -106,6 +108,13 @@ class ArraySink extends ProtoSink {
         this.limit = this.offset + length;
         this.position = this.offset;
         return this;
+    }
+
+    @Override
+    public ProtoSink setOutput(ByteBuffer buffer) {
+        checkArgument(!buffer.isDirect(), "ArraySink does not support direct buffers");
+        checkArgument(!buffer.isReadOnly(), "Buffer is read only");
+        return ByteUtil.setRawOutput(this, buffer);
     }
 
     @Override
@@ -222,6 +231,12 @@ class ArraySink extends ProtoSink {
         }
 
         @Override
+        public ProtoSink setOutput(ByteBuffer buffer) {
+            checkArgument(!buffer.isReadOnly(), "Buffer is read only");
+            return ByteUtil.setRawOutput(this, buffer);
+        }
+
+        @Override
         public void writeRawByte(final byte value) throws IOException {
             if (position == limit) {
                 throw outOfSpace();
@@ -334,7 +349,7 @@ class ArraySink extends ProtoSink {
         }
 
         @Override
-        public void writeRawByte(final byte value) throws IOException {
+        public void writeRawByte(final byte value) {
             output.add(value);
         }
 
@@ -347,66 +362,66 @@ class ArraySink extends ProtoSink {
         }
 
         @Override
-        public void writeRawLittleEndian16(final short value) throws IOException {
+        public void writeRawLittleEndian16(final short value) {
             final int position = output.addLength(FIXED_16_SIZE);
             ByteUtil.writeLittleEndian16(output.array(), position, value);
         }
 
         @Override
-        public void writeRawLittleEndian32(final int value) throws IOException {
+        public void writeRawLittleEndian32(final int value) {
             final int position = output.addLength(FIXED_32_SIZE);
             ByteUtil.writeLittleEndian32(output.array(), position, value);
         }
 
         @Override
-        public void writeRawLittleEndian64(final long value) throws IOException {
+        public void writeRawLittleEndian64(final long value) {
             final int position = output.addLength(FIXED_64_SIZE);
             ByteUtil.writeLittleEndian64(output.array(), position, value);
         }
 
         @Override
-        public void writeFloatNoTag(final float value) throws IOException {
+        public void writeFloatNoTag(final float value) {
             final int position = output.addLength(FIXED_32_SIZE);
             ByteUtil.writeFloat(output.array(), position, value);
         }
 
         @Override
-        public void writeDoubleNoTag(final double value) throws IOException {
+        public void writeDoubleNoTag(final double value) {
             final int position = output.addLength(FIXED_64_SIZE);
             ByteUtil.writeDouble(output.array(), position, value);
         }
 
         @Override
-        public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
+        public void writeRawBytes(final byte[] value, int offset, int length) {
             output.addAll(value, offset, length);
         }
 
         @Override
-        protected void writeRawBooleans(final boolean[] values, final int length) throws IOException {
+        protected void writeRawBooleans(final boolean[] values, final int length) {
             final int position = output.addLength(length);
             ByteUtil.writeBooleans(output.array(), position, values, length);
         }
 
         @Override
-        protected void writeRawFixed32s(final int[] values, final int length) throws IOException {
+        protected void writeRawFixed32s(final int[] values, final int length) {
             final int position = output.addLength(length * FIXED_32_SIZE);
             ByteUtil.writeLittleEndian32s(output.array(), position, values, length);
         }
 
         @Override
-        protected void writeRawFixed64s(final long[] values, final int length) throws IOException {
+        protected void writeRawFixed64s(final long[] values, final int length) {
             final int position = output.addLength(length * FIXED_64_SIZE);
             ByteUtil.writeLittleEndian64s(output.array(), position, values, length);
         }
 
         @Override
-        protected void writeRawFloats(final float[] values, final int length) throws IOException {
+        protected void writeRawFloats(final float[] values, final int length) {
             final int position = output.addLength(length * FIXED_32_SIZE);
             ByteUtil.writeFloats(output.array(), position, values, length);
         }
 
         @Override
-        protected void writeRawDoubles(final double[] values, final int length) throws IOException {
+        protected void writeRawDoubles(final double[] values, final int length) {
             final int position = output.addLength(length * FIXED_64_SIZE);
             ByteUtil.writeDoubles(output.array(), position, values, length);
         }

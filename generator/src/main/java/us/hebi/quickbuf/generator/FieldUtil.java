@@ -49,6 +49,11 @@ class FieldUtil {
         return descriptor.getNumber() << 3 | WIRETYPE_LENGTH_DELIMITED;
     }
 
+    static int makeGroupEndTag(int startTag) {
+        int fieldId = startTag >>> TAG_TYPE_BITS;
+        return fieldId << TAG_TYPE_BITS | WIRETYPE_END_GROUP;
+    }
+
     /**
      * Compute the number of bytes that would be needed to encode a varint.
      * {@code value} is treated as unsigned, so it won't be sign-extended if

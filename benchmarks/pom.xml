@@ -19,8 +19,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>us.hebi.quickbuf</groupId>
+            <groupId>${parent.groupId}</groupId>
             <artifactId>quickbuf-runtime</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${parent.groupId}</groupId>
+            <artifactId>quickbuf-compat</artifactId>
             <version>${parent.version}</version>
         </dependency>
         <dependency>
@@ -51,12 +56,10 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.10.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.8.6</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -93,7 +96,7 @@
                                 <outputTarget>
                                     <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
-                                    <outputOptions>replace_package=(protobuf)=quickbuf,indent=4,input_order=quickbuf,java8_optional=true
+                                    <outputOptions>replace_package=(protobuf)=quickbuf,indent=4,input_order=quickbuf,java8_optional=true,json_gen_merge=true
                                     </outputOptions>
                                     <addSources>main</addSources>
                                 </outputTarget>

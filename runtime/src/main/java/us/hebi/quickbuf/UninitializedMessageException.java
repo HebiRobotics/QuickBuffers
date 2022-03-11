@@ -20,7 +20,6 @@
 
 package us.hebi.quickbuf;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,15 +39,36 @@ public class UninitializedMessageException extends RuntimeException {
     private static final long serialVersionUID = 0L;
 
     public UninitializedMessageException(final ProtoMessage<?> message) {
-        this(message.getMissingFields());
+        super("Message missing required fields");
+        this.origin = message;
     }
 
     public UninitializedMessageException(final List<String> missingFields) {
-        super(buildDescription(missingFields));
+        super("Message missing required fields");
         this.missingFields = missingFields;
     }
 
-    private final List<String> missingFields;
+    /** set from the base message */
+    UninitializedMessageException withParentMessage(ProtoMessage<?> message) {
+        this.origin = message;
+        this.description = null;
+        this.missingFields = null;
+        return this;
+    }
+
+    public String getMessage() {
+        if (description == null) {
+            if (missingFields == null) {
+                missingFields = origin.getMissingFields();
+            }
+            description = buildDescription(missingFields);
+        }
+        return description;
+    }
+
+    String description;
+    private ProtoMessage<?> origin;
+    private List<String> missingFields;
 
     /**
      * Get a list of human-readable names of required fields missing from this message. Each name is a
@@ -56,6 +76,9 @@ public class UninitializedMessageException extends RuntimeException {
      * it lacks the ability to find missing fields.
      */
     public List<String> getMissingFields() {
+        if(missingFields == null) {
+            missingFields = origin.getMissingFields();
+        }
         return Collections.unmodifiableList(missingFields);
     }
 

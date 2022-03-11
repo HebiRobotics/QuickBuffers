@@ -13,12 +13,12 @@
     <artifactId>quickbuf-runtime</artifactId>
 
     <properties>
+        <javaModuleName>us.hebi.quickbuf.runtime</javaModuleName>
         <maven.compiler.source>6</maven.compiler.source>
         <maven.compiler.target>6</maven.compiler.target>
         <apiDirectory>us/hebi/quickbuf</apiDirectory>
         <copyFromDir>${basedir}/src/main/java/${apiDirectory}</copyFromDir>
         <copyToDir>${basedir}/target/generated-sources/${apiDirectory}</copyToDir>
-        <javaModuleName>us.hebi.quickbuf.runtime</javaModuleName>
     </properties>
 
     <dependencies>
@@ -30,12 +30,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.8.6</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -128,7 +122,7 @@
                                     <!-- Linux finds absolute file, Windows finds it via executing PATH -->
                                     <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
-                                    <outputOptions>replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,json_use_proto_name=false,enforce_has_checks=false,json_gen_merge=true,input_order=quickbuf
+                                    <outputOptions>replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=false,json_gen_merge=true,input_order=quickbuf
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>
@@ -164,13 +158,13 @@
     </build>
 
     <profiles>
-        <!-- above jdk 11 does not support java6. make sure to release with 8 or 11 -->
         <profile>
             <id>jdk17compat</id>
             <activation>
                 <jdk>(11,)</jdk>
             </activation>
             <properties>
+                <!-- increase language level for jdk11+ to allow compiling. Release with 8 or 11 -->
                 <maven.compiler.source>7</maven.compiler.source>
                 <maven.compiler.target>7</maven.compiler.target>
             </properties>

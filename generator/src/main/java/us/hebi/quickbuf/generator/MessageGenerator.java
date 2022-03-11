@@ -82,10 +82,8 @@ class MessageGenerator {
                 .addModifiers(Modifier.PRIVATE)
                 .build());
 
-        // Member state (the first bitfield is in the parent class)
-        for (int i = 1; i < numBitFields; i++) {
-            type.addField(FieldSpec.builder(int.class, BitField.fieldName(i), Modifier.PRIVATE).build());
-        }
+        // Member state
+        BitField.generateMemberFields(type, numBitFields);
         fields.forEach(f -> f.generateMemberFields(type));
         generateUnknownByteMembers(type);
 
@@ -169,9 +167,7 @@ class MessageGenerator {
 
         // clear has state
         clear.addStatement("cachedSize = -1");
-        for (int i = 0; i < numBitFields; i++) {
-            clear.addStatement("$L = 0", BitField.fieldName(i));
-        }
+        BitField.generateClearCode(clear, numBitFields);
 
         if (isFullClear) {
             fields.forEach(field -> field.generateClearCode(clear));
@@ -207,9 +203,9 @@ class MessageGenerator {
 
         // Check whether all of the same fields are set
         if (info.getFieldCount() > 0) {
-            equals.addCode("return $1L == other.$1L$>", BitField.fieldName(0));
+            equals.addCode("return $L$>", BitField.getEqualsStatement(0));
             for (int i = 1; i < numBitFields; i++) {
-                equals.addCode("\n&& $1L == other.$1L", BitField.fieldName(i));
+                equals.addCode("\n&& $L", BitField.getEqualsStatement(i));
             }
 
             for (FieldGenerator field : fields) {
@@ -244,15 +240,8 @@ class MessageGenerator {
         // backwards compatibility. However, any production proto file should already be using the packed
         // option whenever possible, so we don't need to optimize the non-packed case.
         final boolean enableFallthroughOptimization = info.getExpectedIncomingOrder() != ExpectedIncomingOrder.None;
-        final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
-        switch (info.getExpectedIncomingOrder()) {
-            case AscendingNumber:
-                sortedFields.sort(FieldUtil.AscendingNumberSorter);
-                break;
-            case Quickbuf: // keep existing order
-            case None: // no optimization
-                break;
-        }
+        final List<FieldGenerator> sortedFields = getFieldSortedByExpectedIncomingOrder();
+
         if (enableFallthroughOptimization) {
             mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
         }
@@ -341,8 +330,12 @@ class MessageGenerator {
                 .addParameter(RuntimeClasses.ProtoSink, "output", Modifier.FINAL)
                 .addException(IOException.class);
 
-        // Fail if any required bits are missing
-        insertFailOnMissingRequiredBits(writeTo);
+        boolean needsInitializationChecks = info.hasRequiredFieldsInHierarchy();
+        if (needsInitializationChecks) {
+            // Fail if any required bits are missing
+            insertFailOnMissingRequiredBits(writeTo);
+            writeTo.beginControlFlow("try");
+        }
 
         fields.forEach(f -> {
             if (f.getInfo().isRequired()) {
@@ -360,6 +353,13 @@ class MessageGenerator {
                     .addStatement(named("output.writeRawBytes($unknownBytes:N.array(), 0, $unknownBytes:N.length())"))
                     .endControlFlow();
         }
+
+        if (needsInitializationChecks) {
+            writeTo.nextControlFlow("catch ($T nestedFail)", RuntimeClasses.UninitializedMessageException)
+                    .addStatement("throw rethrowFromParent(nestedFail)")
+                    .endControlFlow();
+        }
+
         type.addMethod(writeTo.build());
     }
 
@@ -369,8 +369,12 @@ class MessageGenerator {
                 .addModifiers(Modifier.PROTECTED)
                 .returns(int.class);
 
-        // Fail if any required bits are missing
-        insertFailOnMissingRequiredBits(computeSerializedSize);
+        boolean needsInitializationChecks = info.hasRequiredFieldsInHierarchy();
+        if (needsInitializationChecks) {
+            // Fail if any required bits are missing
+            insertFailOnMissingRequiredBits(computeSerializedSize);
+            computeSerializedSize.beginControlFlow("try");
+        }
 
         // Check all required fields at once
         computeSerializedSize.addStatement("int size = 0");
@@ -388,6 +392,12 @@ class MessageGenerator {
             computeSerializedSize.addStatement(named("size += $unknownBytes:N.length()"));
         }
         computeSerializedSize.addStatement("return size");
+
+        if (needsInitializationChecks) {
+            computeSerializedSize.nextControlFlow("catch ($T nestedFail)", RuntimeClasses.UninitializedMessageException)
+                    .addStatement("throw rethrowFromParent(nestedFail)")
+                    .endControlFlow();
+        }
         type.addMethod(computeSerializedSize.build());
     }
 
@@ -400,13 +410,12 @@ class MessageGenerator {
         copyFrom.addStatement("cachedSize = other.cachedSize");
         for (int i = 0; i < numBitFields; i++) {
             final int fieldIndex = i;
-            String bitField = BitField.fieldName(fieldIndex);
 
             // We don't need to copy if neither message has any fields set
-            copyFrom.beginControlFlow("if (($1L | other.$1L) != 0)", bitField);
-            copyFrom.addStatement("$1L = other.$1L", bitField);
+            copyFrom.beginControlFlow("if ($L)", BitField.isCopyFromNeeded(fieldIndex));
+            BitField.generateCopyFromCode(copyFrom, fieldIndex);
             fields.stream()
-                    .filter(field -> BitField.getFieldIndex(field.info.getBitIndex()) == fieldIndex)
+                    .filter(field -> BitField.isBitInField(field.info.getBitIndex(), fieldIndex))
                     .forEach(field -> field.generateCopyFromCode(copyFrom));
             copyFrom.endControlFlow();
         }
@@ -563,8 +572,7 @@ class MessageGenerator {
                 .collect(Collectors.toList());
 
         if (requiredFields.size() > 0) {
-            int[] bitset = BitField.generateBitset(requiredFields);
-            method.beginControlFlow("if ($L)", BitField.isMissingAnyBit(bitset));
+            method.beginControlFlow("if ($L)", BitField.isMissingAnyBit(requiredFields));
             onCondition.accept(method);
             method.endControlFlow();
         }
@@ -610,42 +618,101 @@ class MessageGenerator {
                 .addStatement("return this")
                 .endControlFlow();
 
-        mergeFrom.beginControlFlow("while (input.hasNext())")
-                .beginControlFlow("switch (input.nextFieldHash())");
+        // Fallthrough optimization:
+        //
+        // Reads tag after case parser and checks if it can fall-through. In the ideal case if all fields are set
+        // and the expected order matches the incoming data, the switch would only need to be executed once
+        // for the first field.
+        // TODO: On Jackson/Gson sources this has negligible benefits. Deactivate for now to keep the code cleaner.
+        final boolean enableFallthroughOptimization = false; // info.getExpectedIncomingOrder() != ExpectedIncomingOrder.None;
+        final List<FieldGenerator> sortedFields = fields; // getFieldSortedByExpectedIncomingOrder();
+
+        if (enableFallthroughOptimization) {
+            mergeFrom.addStatement("int hash = input.nextFieldHashOrZero()")
+                    .beginControlFlow("while (true)")
+                    .beginControlFlow("switch (hash)");
+        } else {
+            mergeFrom.beginControlFlow("while (input.hasNext())")
+                    .beginControlFlow("switch (input.nextFieldHash())");
+        }
 
         // add case statements for every field
-        for (FieldGenerator field : fields) {
-            Consumer<String> generateCase = (name) -> {
-                final int hash = FieldUtil.hash32(name);
-                mergeFrom.beginControlFlow("case $L:", hash)
-                        .beginControlFlow("if (input.isAtField($S))", name);
-                field.generateJsonDeserializationCode(mergeFrom);
-                mergeFrom.nextControlFlow("else")
-                        .addStatement("input.skipValue()")
-                        .endControlFlow()
-                        .addStatement("break")
-                        .endControlFlow();
-            };
+        for (int i = 0; i < sortedFields.size(); i++) {
+            FieldGenerator field = sortedFields.get(i);
 
-            String name1 = field.getInfo().getPrimaryJsonName();
-            generateCase.accept(name1);
-
-            String name2 = field.getInfo().getSecondaryJsonName();
-            if (!name1.equals(name2)) {
-                generateCase.accept(name2);
+            // Synonym hash check
+            int hash1 = FieldUtil.hash32(field.getInfo().getJsonName());
+            int hash2 = FieldUtil.hash32(field.getInfo().getProtoFieldName());
+            if (hash1 != hash2) {
+                mergeFrom.addCode("case $L:\n", hash1);
             }
+
+            // Known hash -> try to parse
+            mergeFrom.beginControlFlow("case $L:", hash2)
+                    .beginControlFlow("if (input.isAtField($N.$N))",
+                            info.getFieldNamesClass().simpleName(),
+                            field.getInfo().getFieldName());
+            field.generateJsonDeserializationCode(mergeFrom);
+
+            // Unknown field -> skip
+            mergeFrom.nextControlFlow("else")
+                    .addStatement("input.skipUnknownField()")
+                    .endControlFlow();
+
+            // See if we can fallthrough to the next case
+            if (enableFallthroughOptimization) {
+                // Find hashes of next entry
+                int nextHash1 = 0;
+                int nextHash2 = 0;
+                if (i + 1 < sortedFields.size()) {
+                    FieldGenerator nextField = sortedFields.get(i + 1);
+                    nextHash1 = FieldUtil.hash32(nextField.getInfo().getJsonName());
+                    nextHash2 = FieldUtil.hash32(nextField.getInfo().getProtoFieldName());
+                }
+
+                // Check if we can fall through
+                mergeFrom.addStatement("hash = input.nextFieldHashOrZero()");
+                if (nextHash1 == nextHash2) {
+                    mergeFrom.beginControlFlow("if (hash != $L)", nextHash1)
+                            .addStatement("break")
+                            .endControlFlow();
+                } else {
+                    mergeFrom.beginControlFlow("if (hash != $L && hash != $L)", nextHash1, nextHash2)
+                            .addStatement("break")
+                            .endControlFlow();
+                }
+
+            } else {
+                // Always go to main switch
+                mergeFrom.addStatement("break");
+            }
+            mergeFrom.endControlFlow();
+
+        }
+
+        // add zero case -> no more entries
+        if (enableFallthroughOptimization) {
+            mergeFrom.beginControlFlow("case 0:")
+                    .addStatement("input.endObject()")
+                    .addStatement("return this")
+                    .endControlFlow();
         }
 
         // add default case
         mergeFrom.beginControlFlow("default:")
-                .addStatement("input.skipValue()")
-                .addStatement("break")
-                .endControlFlow();
+                .addStatement("input.skipUnknownField()");
+        if (enableFallthroughOptimization) {
+            mergeFrom.addStatement("hash = input.nextFieldHashOrZero()");
+        }
+        mergeFrom.addStatement("break")
+                .endControlFlow() // case
+                .endControlFlow() // switch
+                .endControlFlow(); // while
 
-        mergeFrom.endControlFlow()
-                .endControlFlow()
-                .addStatement("input.endObject()")
-                .addStatement("return this");
+        if (!enableFallthroughOptimization) {
+            mergeFrom.addStatement("input.endObject()")
+                    .addStatement("return this");
+        }
 
         type.addMethod(mergeFrom.build());
     }
@@ -684,9 +751,14 @@ class MessageGenerator {
                 .addModifiers(Modifier.STATIC);
 
         fields.forEach(f -> {
-            fieldNamesClass.addField(FieldSpec.builder(RuntimeClasses.FieldName, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL)
-                    .initializer("$T.forField($S)", RuntimeClasses.FieldName, f.getInfo().getPrimaryJsonName())
-                    .build());
+            FieldSpec.Builder field = FieldSpec.builder(RuntimeClasses.FieldName, f.getInfo().getFieldName(), Modifier.STATIC, Modifier.FINAL);
+            if (f.getInfo().getJsonName().equals(f.getInfo().getProtoFieldName())) {
+                field.initializer("$T.forField($S)", RuntimeClasses.FieldName, f.getInfo().getJsonName());
+            } else {
+                field.initializer("$T.forField($S, $S)", RuntimeClasses.FieldName,
+                        f.getInfo().getJsonName(), f.getInfo().getProtoFieldName());
+            }
+            fieldNamesClass.addField(field.build());
         });
 
         type.addType(fieldNamesClass.build());
@@ -700,6 +772,19 @@ class MessageGenerator {
         m.put("abstractMessage", RuntimeClasses.AbstractMessage);
         m.put("unknownBytes", RuntimeClasses.unknownBytesField);
         m.put("unknownBytesKey", RuntimeClasses.unknownBytesFieldName);
+    }
+
+    private List<FieldGenerator> getFieldSortedByExpectedIncomingOrder() {
+        final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
+        switch (info.getExpectedIncomingOrder()) {
+            case AscendingNumber:
+                sortedFields.sort(FieldUtil.AscendingNumberSorter);
+                break;
+            case Quickbuf: // keep existing order
+            case None: // no optimization
+                break;
+        }
+        return sortedFields;
     }
 
     final MessageInfo info;

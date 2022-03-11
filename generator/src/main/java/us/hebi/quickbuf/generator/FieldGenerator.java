@@ -237,6 +237,8 @@ public class FieldGenerator {
         if (info.isPacked()) {
             m.put("writePackedTagToOutput", generateWriteVarint32(getInfo().getPackedTag()));
         }
+        m.put("writeEndGroupTagToOutput", !info.isGroup() ? "" :
+                generateWriteVarint32(getInfo().getEndGroupTag()));
 
         if (info.isPacked()) {
             method.addNamedCode("" +
@@ -248,12 +250,16 @@ public class FieldGenerator {
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "$writeTagToOutput:L" +
                     "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
+                    "$writeEndGroupTagToOutput:L" +
                     "$<}\n", m);
 
         } else {
             // unroll varint tag loop
-            method.addNamedCode("$writeTagToOutput:L", m);
-            method.addStatement(named("output.write$capitalizedType:LNoTag($field:N)")); // non-repeated
+            method.addNamedCode("" + // non-repeated
+                    "$writeTagToOutput:L" +
+                    "output.write$capitalizedType:LNoTag($field:N);\n" +
+                    "$writeEndGroupTagToOutput:L", m
+            );
         }
     }
 
@@ -351,16 +357,17 @@ public class FieldGenerator {
             method.addStatement(named("$field:N = input.read$capitalizedType:L()"));
             method.addStatement(named("$setHas:L"));
         } else if (info.isEnum()) {
-            // TODO: notify json source about unknown value
-            method.addStatement(named("final $type:T value = input.read$capitalizedType:L($type:T.converter())"))
+            // TODO: notify json source about unknown value?
+            method.addStatement(named("final $protoEnum:T value = input.read$capitalizedType:L($type:T.converter())"))
                     .beginControlFlow("if (value != null)")
                     .addStatement(named("$field:N = value.getNumber()"))
                     .addStatement(named("$setHas:L"))
+                    .nextControlFlow("else")
+                    .addStatement("input.skipUnknownEnumValue()")
                     .endControlFlow();
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
-
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
@@ -649,7 +656,7 @@ public class FieldGenerator {
         m.put("protoSource", RuntimeClasses.ProtoSource);
         m.put("protoSink", RuntimeClasses.ProtoSink);
         m.put("protoUtil", RuntimeClasses.ProtoUtil);
-        m.put("readTag", getInfo().getParentTypeInfo().isStoreUnknownFields() ? "readTagMarked" : "readTag");
+        m.put("protoEnum", RuntimeClasses.ProtoEnum);
     }
 
     protected final RequestInfo.FieldInfo info;

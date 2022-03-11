@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,7 +56,8 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
      * can be accessed with {@link JsonSink#getBuffer()}
      * <p>
      * The output is minimized JSON without extra whitespace for
-     * sending data over the wire.
+     * sending data over the wire. Enums are serialized as strings
+     * by default.
      */
     public static JsonSink newInstance() {
         return newInstance(RepeatedByte.newEmptyInstance());
@@ -71,17 +72,11 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
      */
     public static JsonSink newPrettyInstance() {
         return newInstance(RepeatedByte.newEmptyInstance())
-                .setPretty(true)
-                .setWriteEnumStrings(true);
+                .setPrettyPrinting(true)
+                .setWriteEnumsAsInts(false);
     }
 
     // ==================== Extra API ====================
-
-    @Override
-    public JsonSink setWriteEnumStrings(boolean value) {
-        super.setWriteEnumStrings(value);
-        return this;
-    }
 
     /**
      * Changes the output to the given buffer
@@ -107,24 +102,20 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     }
 
     /**
-     * Sets the output to be pretty printed (newlines and spaces) to be
-     * more human readable, or minified (default without extra characters)
-     * to be more efficient.
+     * Sets the output to be pretty printed (newlines and spaces) for increased
+     * readability, or minified (default without whitespace) for efficiency.
      *
-     * @param pretty true to format the result more human readable
+     * @param prettyPrinting true adds whitespace to make the result more human-readable
      * @return this
      */
-    public JsonSink setPretty(boolean pretty) {
-        this.pretty = pretty;
+    public JsonSink setPrettyPrinting(boolean prettyPrinting) {
+        this.pretty = prettyPrinting;
         return this;
     }
 
     /**
      * Ensures that the underlying buffer can hold at least
      * the desired number of bytes.
-     *
-     * @param length
-     * @return this
      */
     public JsonSink reserve(int length) {
         output.reserve(length);
@@ -138,13 +129,11 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
         return output;
     }
 
-    public JsonSink writeMessage(ProtoMessage value) {
+    public JsonSink writeMessage(ProtoMessage<?> value) {
         try {
             value.writeTo(this);
         } catch (IOException e) {
-            IllegalStateException unexpected = new IllegalStateException("IOException while writing to memory");
-            unexpected.initCause(e);
-            throw unexpected;
+            throw new IllegalStateException("IOException while writing to memory", e);
         }
         return this;
     }
@@ -153,7 +142,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
 
     @Override
     protected void writeFieldName(final FieldName name) {
-        final byte[] key = name.asJsonKey();
+        final byte[] key = !preserveProtoFieldNames ? name.getJsonKeyBytes() : name.getProtoKeyBytes();
         final int pos = output.addLength(key.length);
         System.arraycopy(key, 0, output.array, pos, key.length);
         writeSpaceAfterFieldName();
@@ -191,7 +180,11 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
 
     @Override
     protected void writeString(Utf8String value) {
-        StringEncoding.writeQuotedUtf8(value, output);
+        if (value.hasBytes()) {
+            StringEncoding.writeQuotedUtf8(value, output);
+        } else {
+            StringEncoding.writeQuotedUtf8(value.getString(), output);
+        }
         writeMore();
     }
 
@@ -208,7 +201,7 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     }
 
     @Override
-    public void writeMessageValue(ProtoMessage value) throws IOException {
+    public void writeMessageValue(ProtoMessage<?> value) throws IOException {
         value.writeTo(this);
         writeMore();
     }
@@ -299,6 +292,15 @@ public class JsonSink extends AbstractJsonSink<JsonSink> {
     @Override
     public String toString() {
         return new String(output.array, 0, output.length, Charsets.UTF_8);
+    }
+
+    @Override
+    public void close() throws IOException {
+        output.extendCapacityTo(0);
+    }
+
+    @Override
+    public void flush() throws IOException {
     }
 
     protected JsonSink() {

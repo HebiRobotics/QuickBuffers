@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,6 +61,10 @@ public class NumericTypesTest {
         }
     }
 
+    private void testVarint32(int value) throws IOException {
+        assertEquals(value, encodeAndDecode(msg.setOptionalInt32(value)).getOptionalInt32());
+    }
+
     @Test
     public void testVarint64() throws IOException {
         testVarint64(0);
@@ -88,6 +92,137 @@ public class NumericTypesTest {
         }
     }
 
+    private void testVarint64(long value) throws IOException {
+        assertEquals(value, encodeAndDecode(msg.setOptionalInt64(value)).getOptionalInt64());
+    }
+
+    @Test
+    public void testInt32() throws IOException {
+        for (int i = 0; i < 32; i++) {
+            testInt32(1 << i);
+            testInt32(~(1 << i));
+            testInt32(~0 << i);
+            testInt32(1 << i | Integer.MIN_VALUE);
+            testInt32(~0 << i | Integer.MIN_VALUE);
+            testInt32(-(1 << i));
+        }
+    }
+
+    private void testInt32(int value) throws IOException {
+        sink.reset().writeInt32NoTag(value);
+        assertEquals(value, source.setInput(bytes).readInt32());
+    }
+
+    @Test
+    public void testInt64() throws IOException {
+        for (int i = 0; i < 64; i++) {
+            testInt64(1L << i);
+            testInt64(~(1L << i));
+            testInt64(~0L << i);
+            testInt64(1L << i | Long.MIN_VALUE);
+            testInt64(~0L << i | Long.MIN_VALUE);
+            testInt64(-(1L << i));
+        }
+    }
+
+    private void testInt64(long value) throws IOException {
+        sink.reset().writeInt64NoTag(value);
+        assertEquals(value, source.setInput(bytes).readInt64());
+    }
+
+    @Test
+    public void testExtendedInt32() throws IOException {
+        for (int i = 0; i < 32; i++) {
+            testExtendedInt32(1 << i);
+            testExtendedInt32(~(1 << i));
+            testExtendedInt32(~0 << i);
+            testExtendedInt32(1 << i | Integer.MIN_VALUE);
+            testExtendedInt32(~0 << i | Integer.MIN_VALUE);
+            testExtendedInt32(-(1 << i));
+        }
+    }
+
+    private void testExtendedInt32(int value) throws IOException {
+        sink.reset().writeNegativeVarint32(value);
+        assertEquals(value, source.setInput(bytes).readRawVarint32());
+        assertEquals(value, (int) source.setInput(bytes).readRawVarint64SlowPath());
+    }
+
+    @Test
+    public void testExtendedInt64() throws IOException {
+        for (int i = 0; i < 64; i++) {
+            testExtendedInt64(1L << i);
+            testExtendedInt64(~(1L << i));
+            testExtendedInt64(~0L << i);
+            testExtendedInt64(1L << i | Long.MIN_VALUE);
+            testExtendedInt64(~0L << i | Long.MIN_VALUE);
+            testExtendedInt64(-(1L << i));
+        }
+    }
+
+    private void testExtendedInt64(long value) throws IOException {
+        sink.reset().writeNegativeVarint64(value);
+        assertEquals(value, source.setInput(bytes).readRawVarint64SlowPath());
+    }
+
+    @Test
+    public void testExtendedInt64Error() throws IOException {
+        // there is an issue with the optimized implementation when
+        // parsing non-canonical varints where positive values were
+        // extended to 10 bytes. This should never occur in production.
+        for (int i = 0; i < 63; i++) {
+            testExtendedInt64Error(1L << i);
+            testExtendedInt64Error(-(1L << i) ^ Long.MIN_VALUE);
+        }
+
+        // The issue does not apply when a varint has been extended to
+        // fewer bits
+        int value = 0x11;
+        sink.reset().writeRawLittleEndian32(0x808080 | value);
+        assertEquals(value, source.setInput(bytes).readRawVarint64SlowPath());
+        assertEquals(value, source.setInput(bytes).readRawVarint64());
+    }
+
+    private void testExtendedInt64Error(long value) throws IOException {
+        sink.reset().writeNegativeVarint64(value);
+        assertEquals(value, source.setInput(bytes).readRawVarint64SlowPath());
+        assertNotEquals(value, source.setInput(bytes).readRawVarint64());
+    }
+
+    @Test
+    public void testUInt32() throws IOException {
+        for (int i = 0; i < 32; i++) {
+            testUInt32(1 << i);
+            testUInt32(~(1 << i));
+            testUInt32(~0 << i);
+            testUInt32(1 << i | Integer.MIN_VALUE);
+            testUInt32(~0 << i | Integer.MIN_VALUE);
+            testUInt32(-(1 << i));
+        }
+    }
+
+    private void testUInt32(int value) throws IOException {
+        sink.reset().writeUInt32NoTag(value);
+        assertEquals(value, source.setInput(bytes).readUInt32());
+    }
+
+    @Test
+    public void testUInt64() throws IOException {
+        for (int i = 0; i < 64; i++) {
+            testUInt64(1L << i);
+            testUInt64(~(1L << i));
+            testUInt64(~0L << i);
+            testUInt64(1L << i | Long.MIN_VALUE);
+            testUInt64(~0L << i | Long.MIN_VALUE);
+            testUInt64(-(1L << i));
+        }
+    }
+
+    private void testUInt64(long value) throws IOException {
+        sink.reset().writeUInt64NoTag(value);
+        assertEquals(value, source.setInput(bytes).readUInt64());
+    }
+
     @Test
     public void testFixed32() throws IOException {
         testFixed32(0);
@@ -99,6 +234,10 @@ public class NumericTypesTest {
         for (int i = 1; i < n; i++) {
             testFixed32(rnd.nextInt() % (int) Math.pow(n, 3));
         }
+    }
+
+    private void testFixed32(int value) throws IOException {
+        assertEquals(value, encodeAndDecode(msg.setOptionalFixed32(value)).getOptionalFixed32());
     }
 
     @Test
@@ -114,6 +253,10 @@ public class NumericTypesTest {
         }
     }
 
+    private void testFixed64(long value) throws IOException {
+        assertEquals(value, encodeAndDecode(msg.setOptionalFixed64(value)).getOptionalFixed64());
+    }
+
     @Test
     public void testFloat() throws IOException {
         testFloat(Float.POSITIVE_INFINITY);
@@ -124,6 +267,10 @@ public class NumericTypesTest {
         for (int i = 1; i < n; i++) {
             testFloat(rnd.nextFloat());
         }
+    }
+
+    private void testFloat(float value) throws IOException {
+        assertEquals(Float.floatToIntBits(value), Float.floatToIntBits(encodeAndDecode(msg.setOptionalFloat(value)).getOptionalFloat()));
     }
 
     @Test
@@ -138,42 +285,39 @@ public class NumericTypesTest {
         }
     }
 
-    private void testVarint32(int value) throws IOException {
-        assertEquals(value, encodeAndDecode(msg.setOptionalInt32(value)).getOptionalInt32());
-    }
-
-    private void testVarint64(long value) throws IOException {
-        assertEquals(value, encodeAndDecode(msg.setOptionalInt64(value)).getOptionalInt64());
-    }
-
-    private void testFixed32(int value) throws IOException {
-        assertEquals(value, encodeAndDecode(msg.setOptionalFixed32(value)).getOptionalFixed32());
-    }
-
-    private void testFixed64(long value) throws IOException {
-        assertEquals(value, encodeAndDecode(msg.setOptionalFixed64(value)).getOptionalFixed64());
-    }
-
-    private void testFloat(float value) throws IOException {
-        assertEquals(Float.floatToIntBits(value), Float.floatToIntBits(encodeAndDecode(msg.setOptionalFloat(value)).getOptionalFloat()));
-    }
-
     private void testDouble(double value) throws IOException {
         assertEquals(Double.doubleToLongBits(value),
                 Double.doubleToLongBits(encodeAndDecode(msg.setOptionalDouble(value)).getOptionalDouble()));
     }
 
+    private static void assertEqual(int expected, int actual){
+        if(expected != actual) {
+            fail("Values are not equal:\n" +
+                    "Expected: " + Integer.toBinaryString(expected) + "\n" +
+                    "Actual:   " + Integer.toBinaryString(actual));
+        }
+    }
+
+    private static void assertEquals(long expected, long actual){
+        if(expected != actual) {
+            fail("Values are not equal:\n" +
+                    "Expected: " + Long.toBinaryString(expected) + "\n" +
+                    "Actual:   " + Long.toBinaryString(actual));
+        }
+    }
+
     private TestAllTypes encodeAndDecode(TestAllTypes msg) throws IOException {
-        msg.writeTo(sink.setOutput(bytes));
-        msg.clear().mergeFrom(source.setInput(bytes, 0, sink.getTotalBytesWritten()));
+        bytes.clear();
+        msg.writeTo(sink.reset());
+        msg.clear().mergeFrom(source.setInput(bytes));
         return msg;
     }
 
-    private Random rnd = new Random(0);
-    private int n = 2000;
+    private final Random rnd = new Random(0);
+    private static final int n = 2000;
     private final TestAllTypes msg = TestAllTypes.newInstance();
-    private final byte[] bytes = new byte[1024];
-    private final ProtoSource source = ProtoSource.newArraySource();
-    private final ProtoSink sink = ProtoSink.newArraySink();
+    private final RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+    private final ProtoSource source = ProtoSource.newInstance(bytes);
+    private final ProtoSink sink = ProtoSink.newInstance(bytes);
 
 }

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,7 @@ import java.io.IOException;
  * @author Florian Enner
  * @since 08 Sep 2020
  */
-public abstract class AbstractJsonSource implements Closeable {
+public abstract class AbstractJsonSource<SubType extends AbstractJsonSource<SubType>> implements Closeable {
 
     // ==================== Common Type Forwarders ====================
 
@@ -82,7 +82,7 @@ public abstract class AbstractJsonSource implements Closeable {
     /**
      * Read a nested message value from the source
      */
-    public void readMessage(final ProtoMessage msg) throws IOException {
+    public void readMessage(final ProtoMessage<?> msg) throws IOException {
         msg.mergeFrom(this);
     }
 
@@ -124,7 +124,7 @@ public abstract class AbstractJsonSource implements Closeable {
     /**
      * Read a {@code group} field value from the source.
      */
-    public void readGroup(final ProtoMessage msg)
+    public void readGroup(final ProtoMessage<?> msg)
             throws IOException {
         readMessage(msg);
     }
@@ -275,7 +275,41 @@ public abstract class AbstractJsonSource implements Closeable {
         endArray();
     }
 
+    public void skipUnknownField() throws IOException {
+        if (!ignoreUnknownFields) {
+            throw new IllegalArgumentException("Encountered unknown field: " + currentField);
+        }
+        skipValue();
+    }
+
+    public void skipUnknownEnumValue() throws IOException {
+        if (!ignoreUnknownFields) {
+            throw new IllegalArgumentException("Encountered unknown enum value on field: " + currentField);
+        }
+    }
+
+    // ==================== Configuration ====================
+
+    /**
+     * Allows to serialize enums as human readable strings or
+     * as JSON numbers. Compatible parsers are able to parse
+     * either case.
+     * <p>
+     * Unknown values will still be serialized as numbers.
+     *
+     * @param ignoreUnknownFields true if values should use strings
+     * @return this
+     */
+    public SubType setIgnoreUnknownFields(final boolean ignoreUnknownFields) {
+        this.ignoreUnknownFields = ignoreUnknownFields;
+        return thisObj();
+    }
+
+    protected boolean ignoreUnknownFields = false;
+
     // ==================== Implementation Interface ====================
+
+    protected abstract SubType thisObj();
 
     /**
      * JSON value will be a number or one of the special string values "NaN",
@@ -345,6 +379,13 @@ public abstract class AbstractJsonSource implements Closeable {
      */
     public abstract boolean hasNext() throws IOException;
 
+    /**
+     * @return next field hash or zero if hasNext() returns false
+     */
+    public final int nextFieldHashOrZero() throws IOException {
+        return hasNext() ? nextFieldHash() : 0;
+    }
+
     public final int nextFieldHash() throws IOException {
         currentField = nextName();
         return ProtoUtil.hash32(currentField);
@@ -355,8 +396,9 @@ public abstract class AbstractJsonSource implements Closeable {
      */
     protected abstract CharSequence nextName() throws IOException;
 
-    public boolean isAtField(String fieldName) {
-        return ProtoUtil.isEqual(fieldName, this.currentField);
+    public boolean isAtField(FieldName fieldName) {
+        return ProtoUtil.isEqual(fieldName.getJsonName(), currentField) ||
+                ProtoUtil.isEqual(fieldName.getProtoName(), currentField);
     }
 
     CharSequence currentField = null;
