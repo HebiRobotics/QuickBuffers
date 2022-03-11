@@ -20,6 +20,7 @@
 
 package us.hebi.quickbuf.compat;
 
+import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.ForeignEnum;
 import protos.test.quickbuf.TestAllTypes;
@@ -49,11 +50,11 @@ public class GsonSinkTest {
 
         String json = GsonSink.newStringWriter().setWriteEnumsAsInts(false).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
 
         json = GsonSink.newStringWriter().setWriteEnumsAsInts(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
     }
 
     @Test
@@ -122,7 +123,7 @@ public class GsonSinkTest {
                 GsonSink.newStringWriter().writeMessage(msg).toString());
 
         // pretty print
-        assertEquals("{\n" +
+        Assert.assertEquals("{\n" +
                 "  \"optionalNestedMessage\": {\n" +
                 "    \"bb\": 2\n" +
                 "  },\n" +
@@ -134,7 +135,7 @@ public class GsonSinkTest {
     public void testEmptyMessage() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         assertEquals("{}", GsonSink.newStringWriter().writeMessage(msg).toString());
-        assertEquals("{}", JsonSink.newPrettyInstance().writeMessage(msg).toString());
+        Assert.assertEquals("{}", JsonSink.newPrettyInstance().writeMessage(msg).toString());
     }
 
     @Test
@@ -242,7 +243,7 @@ public class GsonSinkTest {
                 "    \"utf8\uD83D\uDCA9\"\n" +
                 "  ]\n" +
                 "}";
-        assertEquals(desired, msg.toString());
+        Assert.assertEquals(desired, msg.toString());
     }
 
     @Test

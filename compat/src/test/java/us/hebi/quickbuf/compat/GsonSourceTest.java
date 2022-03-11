@@ -20,6 +20,7 @@
 
 package us.hebi.quickbuf.compat;
 
+import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
@@ -46,15 +47,15 @@ public class GsonSourceTest {
 
         String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
     }
 
     @Test
@@ -161,7 +162,7 @@ public class GsonSourceTest {
 
         AbstractJsonSource source = new GsonSource(new StringReader(json));
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
-        assertEquals(json, msg.toString());
+        Assert.assertEquals(json, msg.toString());
     }
 
     @Test
@@ -171,8 +172,8 @@ public class GsonSourceTest {
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
         assertTrue(msg.getOptionalNestedMessage().isEmpty());
         assertTrue(msg.hasRepeatedString());
-        assertEquals(0, msg.getRepeatedString().length());
-        assertEquals(2, msg.getRepeatedBytes().length());
+        Assert.assertEquals(0, msg.getRepeatedString().length());
+        Assert.assertEquals(2, msg.getRepeatedBytes().length());
     }
 
     @Test
@@ -200,7 +201,7 @@ public class GsonSourceTest {
         AbstractJsonSource source = new GsonSource(new StringReader(json));
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
 
-        assertArrayEquals(new double[]{
+        Assert.assertArrayEquals(new double[]{
                 Double.NaN,
                 Double.NEGATIVE_INFINITY,
                 0,
@@ -210,7 +211,7 @@ public class GsonSourceTest {
                 17E-3,
                 Double.POSITIVE_INFINITY}, msg.getRepeatedDouble().toArray(), 0);
 
-        assertArrayEquals(new int[]{
+        Assert.assertArrayEquals(new int[]{
                 0,
                 Integer.MAX_VALUE,
                 Integer.MIN_VALUE,
@@ -249,7 +250,7 @@ public class GsonSourceTest {
                 .clone()
                 .clear()
                 .mergeFrom(new GsonSource(new StringReader(sink.toString())));
-        assertEquals(msg, msg2);
+        Assert.assertEquals(msg, msg2);
     }
 
     private final JsonSink minimized = JsonSink.newInstance();

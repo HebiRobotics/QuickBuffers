@@ -67,6 +67,7 @@
         <module>parser</module>
         <module>generator</module>
         <module>runtime</module>
+        <module>compat</module>
         <module>benchmarks</module>
     </modules>
 

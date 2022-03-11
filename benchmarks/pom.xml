@@ -19,8 +19,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>us.hebi.quickbuf</groupId>
+            <groupId>${parent.groupId}</groupId>
             <artifactId>quickbuf-runtime</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${parent.groupId}</groupId>
+            <artifactId>quickbuf-compat</artifactId>
             <version>${parent.version}</version>
         </dependency>
         <dependency>

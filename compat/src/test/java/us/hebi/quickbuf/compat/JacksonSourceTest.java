@@ -20,6 +20,7 @@
 
 package us.hebi.quickbuf.compat;
 
+import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
@@ -46,15 +47,15 @@ public class JacksonSourceTest {
 
         String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
         actual.clear().mergeFrom(new JacksonSource(json));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new JacksonSource(json));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new JacksonSource(json));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
     }
 
     @Test
@@ -160,7 +161,7 @@ public class JacksonSourceTest {
                 "}";
 
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(new JacksonSource(json));
-        assertEquals(json, msg.toString());
+        Assert.assertEquals(json, msg.toString());
     }
 
     @Test
@@ -170,8 +171,8 @@ public class JacksonSourceTest {
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
         assertTrue(msg.getOptionalNestedMessage().isEmpty());
         assertTrue(msg.hasRepeatedString());
-        assertEquals(0, msg.getRepeatedString().length());
-        assertEquals(2, msg.getRepeatedBytes().length());
+        Assert.assertEquals(0, msg.getRepeatedString().length());
+        Assert.assertEquals(2, msg.getRepeatedBytes().length());
     }
 
     @Test
@@ -199,7 +200,7 @@ public class JacksonSourceTest {
         AbstractJsonSource source = new JacksonSource(json);
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
 
-        assertArrayEquals(new double[]{
+        Assert.assertArrayEquals(new double[]{
                 Double.NaN,
                 Double.NEGATIVE_INFINITY,
                 0,
@@ -209,7 +210,7 @@ public class JacksonSourceTest {
                 17E-3,
                 Double.POSITIVE_INFINITY}, msg.getRepeatedDouble().toArray(), 0);
 
-        assertArrayEquals(new int[]{
+        Assert.assertArrayEquals(new int[]{
                 0,
                 Integer.MAX_VALUE,
                 Integer.MIN_VALUE,
@@ -248,7 +249,7 @@ public class JacksonSourceTest {
                 .clone()
                 .clear()
                 .mergeFrom(new JacksonSource(new StringReader(sink.toString())));
-        assertEquals(msg, msg2);
+        Assert.assertEquals(msg, msg2);
     }
 
     private final JsonSink minimized = JsonSink.newInstance();

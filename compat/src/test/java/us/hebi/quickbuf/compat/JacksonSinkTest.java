@@ -20,6 +20,7 @@
 
 package us.hebi.quickbuf.compat;
 
+import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.ForeignEnum;
 import protos.test.quickbuf.TestAllTypes;
@@ -49,11 +50,11 @@ public class JacksonSinkTest {
 
         String json = JacksonSink.newStringWriter().setWriteEnumsAsInts(false).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
 
         json = JacksonSink.newStringWriter().setWriteEnumsAsInts(true).writeMessage(expected).toString();
         actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
     }
 
     @Test
@@ -122,7 +123,7 @@ public class JacksonSinkTest {
                 JacksonSink.newStringWriter().writeMessage(msg).toString());
 
         // pretty print
-        assertEquals("{\n" +
+        Assert.assertEquals("{\n" +
                 "  \"optionalNestedMessage\": {\n" +
                 "    \"bb\": 2\n" +
                 "  },\n" +
@@ -134,7 +135,7 @@ public class JacksonSinkTest {
     public void testEmptyMessage() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         assertEquals("{}", JacksonSink.newStringWriter().writeMessage(msg).toString());
-        assertEquals("{}", JsonSink.newPrettyInstance().writeMessage(msg).toString());
+        Assert.assertEquals("{}", JsonSink.newPrettyInstance().writeMessage(msg).toString());
     }
 
     @Test
@@ -242,7 +243,7 @@ public class JacksonSinkTest {
                 "    \"utf8\uD83D\uDCA9\"\n" +
                 "  ]\n" +
                 "}";
-        assertEquals(desired, msg.toString());
+        Assert.assertEquals(desired, msg.toString());
     }
 
     @Test
