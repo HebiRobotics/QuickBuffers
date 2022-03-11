@@ -848,8 +848,9 @@ public abstract class ProtoSource {
         } else if ((x ^= ((long) readRawByte() << 49)) < 0L) {
             return x ^ xorBits49L;
         } else {
-            // Note: this does not work for non-canonical varints where
-            // positive numbers have been artificially extended to 10 bytes.
+            // Note: the signed bit is always set, so this does not work for
+            // non-canonical varints where positive numbers have been artificially
+            // extended to 10 bytes.
             x ^= ((long) readRawByte() << 56) ^ xorBits56L;
             if (x < 0L) {
                 if (readRawByte() < 0) {
