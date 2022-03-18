@@ -21,8 +21,9 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.util.Arrays;
 
-import static us.hebi.quickbuf.IntChar.*;
+import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
 import static us.hebi.quickbuf.ProtoUtil.*;
 
 /**
@@ -30,6 +31,95 @@ import static us.hebi.quickbuf.ProtoUtil.*;
  * @since 17 Mär 2022
  */
 class JsonDecoding {
+
+    /**
+     * https://datatracker.ietf.org/doc/html/rfc7159
+     */
+    public static class IntChar {
+
+        public final static int INT_EOF = -1;
+        public final static int INT_TAB = '\t';
+        public final static int INT_LF = '\n';
+        public final static int INT_CR = '\r';
+        public final static int INT_SPACE = 0x0020;
+
+        // Markup
+        public final static int INT_LBRACKET = '[';
+        public final static int INT_RBRACKET = ']';
+        public final static int INT_LCURLY = '{';
+        public final static int INT_RCURLY = '}';
+        public final static int INT_QUOTE = '"';
+        public final static int INT_APOS = '\'';
+        public final static int INT_BACKSLASH = '\\';
+        public final static int INT_SLASH = '/';
+        public final static int INT_ASTERISK = '*';
+        public final static int INT_COLON = ':';
+        public final static int INT_COMMA = ',';
+        public final static int INT_HASH = '#';
+
+        // Number chars
+        public final static int INT_0 = '0';
+        public final static int INT_9 = '9';
+        public final static int INT_MINUS = '-';
+        public final static int INT_PLUS = '+';
+
+        public final static int INT_PERIOD = '.';
+        public final static int INT_e = 'e';
+        public final static int INT_E = 'E';
+
+        public final static int INT_t = 't';
+        public final static int INT_r = 'r';
+        public final static int INT_u = 'u';
+        public final static int INT_f = 'f';
+        public final static int INT_a = 'a';
+        public final static int INT_l = 'l';
+        public final static int INT_s = 's';
+
+        public final static int INT_n = 'n';
+
+
+        public static boolean isDigit(int ch) {
+            return ch >= INT_0 && ch <= INT_9;
+        }
+
+        public static boolean isWhitespace(int ch) {
+            return ch == INT_SPACE
+                    || ch == INT_LF
+                    || ch == INT_CR
+                    || ch == INT_TAB;
+        }
+
+        public static boolean isBreak(int ch) {
+            return breaks[ch];
+        }
+
+        private static final boolean[] breaks = new boolean[127];
+        final static int[] sHexValues = new int[256];
+        final static int[] TRUE_VALUE = {INT_t, INT_r, INT_u, INT_e};
+        final static int[] FALSE_VALUE = {INT_f, INT_a, INT_l, INT_s, INT_e};
+        final static int[] NULL_VALUE = {INT_n, INT_u, INT_l, INT_l};
+
+        static {
+            breaks[' '] = true;
+            breaks['\t'] = true;
+            breaks['\n'] = true;
+            breaks['\r'] = true;
+            breaks[','] = true;
+            breaks['}'] = true;
+            breaks[']'] = true;
+
+            Arrays.fill(sHexValues, -1);
+            for (int i = 0; i < 10; ++i) {
+                sHexValues['0' + i] = i;
+            }
+            for (int i = 0; i < 6; ++i) {
+                sHexValues['a' + i] = 10 + i;
+                sHexValues['A' + i] = 10 + i;
+            }
+        }
+
+    }
+
 
     static class StringDecoding {
 
@@ -92,7 +182,7 @@ class JsonDecoding {
                         // 2 byte
                         int d = source.readNotEOF();
                         if ((d & 0xC0) != 0x080) {
-                            throw new QsonException("Invalid UTF8 2 byte encoding");
+                            throw new InvalidJsonException("Invalid UTF8 2 byte encoding");
                         }
                         c = ((c & 0x1F) << 6) | (d & 0x3F);
                     } else if (tmp == 0xE0) {
@@ -100,29 +190,29 @@ class JsonDecoding {
                         c &= 0x0F;
                         int d = source.readNotEOF();
                         if ((d & 0xC0) != 0x080) {
-                            throw new QsonException("Invalid UTF8 3 byte encoding");
+                            throw new InvalidJsonException("Invalid UTF8 3 byte encoding");
                         }
                         c = (c << 6) | (d & 0x3F);
                         d = source.readNotEOF();
                         if ((d & 0xC0) != 0x080) {
-                            throw new QsonException("Invalid UTF8 3 byte encoding");
+                            throw new InvalidJsonException("Invalid UTF8 3 byte encoding");
                         }
                         c = (c << 6) | (d & 0x3F);
                     } else if (tmp == 0xF0) {
                         // 4 byte
                         int d = source.readNotEOF();
                         if ((d & 0xC0) != 0x080) {
-                            throw new QsonException("Invalid UTF8 4 byte encoding");
+                            throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
                         }
                         c = ((c & 0x07) << 6) | (d & 0x3F);
                         d = source.readNotEOF();
                         if ((d & 0xC0) != 0x080) {
-                            throw new QsonException("Invalid UTF8 4 byte encoding");
+                            throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
                         }
                         c = (c << 6) | (d & 0x3F);
                         d = source.readNotEOF();
                         if ((d & 0xC0) != 0x080) {
-                            throw new QsonException("Invalid UTF8 4 byte encoding");
+                            throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
                         }
                         c = ((c << 6) | (d & 0x3F)) - 0x10000;
                         result.append((char) (0xD800 | (c >> 10)));
@@ -135,7 +225,7 @@ class JsonDecoding {
             }
         }
 
-        static char escapedToRawChar(int escapedChar) {
+        static char escapedToRawChar(int escapedChar) throws InvalidJsonException {
             switch (escapedChar) {
                 case '\\':
                     return '\\';
@@ -152,7 +242,7 @@ class JsonDecoding {
                 case 'r':
                     return '\r';
                 default:
-                    throw new QsonException("Unknown character format in result: '" + (char) escapedChar + "'");
+                    throw new InvalidJsonException("Unknown character format in result: '" + (char) escapedChar + "'");
             }
         }
 
@@ -167,12 +257,12 @@ class JsonDecoding {
         static int readHexDigit(JsonSource source) throws IOException {
             try {
                 int value = source.readRawByte();
-                if (CharArrays.sHexValues[value] < 0) {
-                    throw new QsonException("expected a hex-digit, but found: '" + (char) value + "'");
+                if (sHexValues[value] < 0) {
+                    throw new InvalidJsonException("expected a hex-digit, but found: '" + (char) value + "'");
                 }
                 return value;
             } catch (ArrayIndexOutOfBoundsException oob) {
-                throw new QsonException("While parsing a json message, the input ended unexpectedly in the" +
+                throw new InvalidJsonException("While parsing a json message, the input ended unexpectedly in the" +
                         "middle of a field. This could mean that the input has been truncated.");
             }
         }
@@ -204,7 +294,7 @@ class JsonDecoding {
             return Double.parseDouble(str);
         }
 
-        static long readLong(byte[] buffer, int tokenStart, int tokenEnd) {
+        static long readLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
             boolean negative = false;
             int i = 0;
             int len = tokenEnd - tokenStart;
@@ -218,11 +308,11 @@ class JsonDecoding {
                         negative = true;
                         limit = -9223372036854775808L;
                     } else if (firstChar != INT_PLUS) {
-                        throw new QsonException("Illegal number format");
+                        throw InvalidJsonException.illegalNumberFormat();
                     }
 
                     if (len == 1) {
-                        throw new QsonException("Illegal number format");
+                        throw InvalidJsonException.illegalNumberFormat();
                     }
 
                     ++i;
@@ -235,12 +325,12 @@ class JsonDecoding {
                 for (result = 0L; i < len; result -= (long) digit) {
                     digit = (buffer[i++ + tokenStart] & 0xFF) - INT_0;
                     if (digit < 0 || result < multmin) {
-                        throw new QsonException("Illegal number format");
+                        throw InvalidJsonException.illegalNumberFormat();
                     }
 
                     result *= 10L;
                     if (result < limit + (long) digit) {
-                        throw new QsonException("Illegal number format");
+                        throw InvalidJsonException.illegalNumberFormat();
                     }
                 }
 

@@ -26,8 +26,6 @@ import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
 
 import java.io.IOException;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.*;
 

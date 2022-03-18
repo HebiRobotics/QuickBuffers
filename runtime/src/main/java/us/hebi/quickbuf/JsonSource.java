@@ -20,11 +20,9 @@
 
 package us.hebi.quickbuf;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
-import static us.hebi.quickbuf.IntChar.*;
+import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
 import static us.hebi.quickbuf.ProtoUtil.*;
 import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
 
@@ -38,14 +36,27 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
         int read() throws IOException;
     }
 
-    static JsonSource newInstance(byte[] bytes) {
-        final InputStream io = new ByteArrayInputStream(bytes);
-        return new JsonSource(new ByteSource() {
-            @Override
-            public int read() throws IOException {
-                return io.read();
+    static class ByteArraySource implements ByteSource {
+
+        ByteArraySource(byte[] bytes) {
+            this.bytes = bytes;
+        }
+
+        @Override
+        public int read() {
+            try {
+                return bytes[position++] & 0xFF;
+            } catch (ArrayIndexOutOfBoundsException oob) {
+                return -1;
             }
-        });
+        }
+
+        int position = 0;
+        final byte[] bytes;
+    }
+
+    public static JsonSource newInstance(byte[] bytes) {
+        return new JsonSource(new ByteArraySource(bytes));
     }
 
     // for testing
@@ -77,23 +88,18 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
     @Override
     public boolean nextBoolean() throws IOException {
         if (token == INT_t) {
-            expectNext('r');
-            expectNext('u');
-            expectNext('e');
+            checkExpected(TRUE_VALUE, "expected true");
             nextToken();
             return true;
         } else if (token == INT_f) {
-            expectNext('a');
-            expectNext('l');
-            expectNext('s');
-            expectNext('e');
+            checkExpected(FALSE_VALUE, "expected false");
             nextToken();
             return false;
         } else if (token == INT_n) {
             skipNull();
             return false;
         } else {
-            throw new IllegalArgumentException("Unsupported boolean value");
+            throw new InvalidJsonException("Unsupported boolean value");
         }
     }
 
@@ -109,7 +115,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
 
     @Override
     public void nextString(Utf8String store) throws IOException {
-        if (token == IntChar.INT_n) {
+        if (token == JsonDecoding.IntChar.INT_n) {
             skipNull();
             return;
         }
@@ -141,7 +147,6 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
             default:
                 token = readUntilBreak(buffer, token);
                 break;
-
         }
     }
 
@@ -182,10 +187,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
     }
 
     private void skipNull() throws IOException {
-        checkArgument(token == INT_n, "Expected null");
-        expectNext(INT_u);
-        expectNext(INT_l);
-        expectNext(INT_l);
+        checkExpected(NULL_VALUE, "expected null");
         token = nextToken();
     }
 
@@ -193,7 +195,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
     public boolean beginObject() throws IOException {
         // initialize on first call
         int c = token == INT_EOF ? nextToken() : token;
-        if (c == IntChar.INT_n) {
+        if (c == JsonDecoding.IntChar.INT_n) {
             skipNull();
             return false;
         } else if (c == INT_LCURLY) {
@@ -212,7 +214,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
 
     @Override
     protected boolean beginArray() throws IOException {
-        if (token == IntChar.INT_n) {
+        if (token == JsonDecoding.IntChar.INT_n) {
             skipNull();
             return false;
         }
@@ -265,7 +267,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
         do {
             buffer.add((byte) b);
             b = readNotEOF();
-        } while (!IntChar.isBreak(b));
+        } while (!JsonDecoding.IntChar.isBreak(b));
         return isWhitespace(b) ? nextToken() : b;
     }
 
@@ -314,7 +316,9 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
 
     int readNotEOF() throws IOException {
         int value = source.read();
-        checkState(value != INT_EOF, "ended prematurely");
+        if (value == INT_EOF) {
+            throw InvalidJsonException.truncatedMessage();
+        }
         return value;
     }
 
@@ -322,11 +326,11 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
         return source.read();
     }
 
-    void expectNext(int expected) throws IOException {
-        int actual = readRawByte();
-        if (actual != expected) {
-            checkState(actual != INT_EOF, "ended prematurely");
-            throw new QsonException("Expected '" + (char) expected + "', but found '" + (char) actual + "'");
+    void checkExpected(int[] expected, String error) throws IOException {
+        for (int i = 1; i < expected.length; i++) {
+            if (expected[i] != readNotEOF()) {
+                throw new InvalidJsonException(error);
+            }
         }
     }
 
@@ -355,6 +359,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
         public String toString() {
             return new String(buffer.array, 0, buffer.length, Charsets.ASCII);
         }
+
     };
 
 }
