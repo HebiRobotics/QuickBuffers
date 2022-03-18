@@ -38,25 +38,36 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
 
     static class ByteArraySource implements ByteSource {
 
-        ByteArraySource(byte[] bytes) {
+        ByteArraySource(byte[] bytes, int offset, int length) {
+            ProtoUtil.checkBounds(bytes, offset, length);
             this.bytes = bytes;
+            this.position = offset;
+            this.limit = offset + length;
         }
 
         @Override
         public int read() {
-            try {
-                return bytes[position++] & 0xFF;
-            } catch (ArrayIndexOutOfBoundsException oob) {
+            if (position == limit) {
                 return -1;
             }
+            return bytes[position++] & 0xFF;
         }
 
         int position = 0;
+        final int limit;
         final byte[] bytes;
     }
 
     public static JsonSource newInstance(byte[] bytes) {
-        return new JsonSource(new ByteArraySource(bytes));
+        return newInstance(bytes, 0, bytes.length);
+    }
+
+    public static JsonSource newInstance(byte[] bytes, int offset, int length) {
+        return new JsonSource(new ByteArraySource(bytes, offset, length));
+    }
+
+    public static JsonSource newInstance(RepeatedByte bytes) {
+        return newInstance(bytes.array, 0, bytes.length);
     }
 
     // for testing

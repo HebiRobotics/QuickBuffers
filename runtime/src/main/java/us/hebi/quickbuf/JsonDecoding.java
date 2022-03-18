@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,14 +27,17 @@ import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
 import static us.hebi.quickbuf.ProtoUtil.*;
 
 /**
+ * JSON spec: https://datatracker.ietf.org/doc/html/rfc7159
+ * <p>
+ * Initial implementation based on some code from QSON and JsonIter.
+ * Exception handling and number parsing etc. needs to be improved,
+ * but a basic version is working.
+ *
  * @author Florian Enner
  * @since 17 Mär 2022
  */
 class JsonDecoding {
 
-    /**
-     * https://datatracker.ietf.org/doc/html/rfc7159
-     */
     public static class IntChar {
 
         public final static int INT_EOF = -1;
@@ -136,15 +139,32 @@ class JsonDecoding {
                     // standard ascii or UTF8
                     result.add((byte) ch);
                 } else {
-                    // Remove JSON specific escaping
+                    // Convert JSON specific escaping to raw UTF8
                     int escapedChar = source.readNotEOF();
                     if (escapedChar == INT_u) {
-                        result.add((byte) '\\');
-                        result.add((byte) 'u');
-                        result.add((byte) readHexDigit(source));
-                        result.add((byte) readHexDigit(source));
-                        result.add((byte) readHexDigit(source));
-                        result.add((byte) readHexDigit(source));
+                        char c = readEscapedHexChar(source);
+                        if (c < 0x80) {
+                            result.add((byte) c);
+                        } else if (c < 0x800) {
+                            // 11 bits, two UTF-8 bytes
+                            result.add((byte) ((0xF << 6) | (c >>> 6)));
+                            result.add((byte) (0x80 | (0x3F & c)));
+                        } else if ((c < Character.MIN_SURROGATE || Character.MAX_SURROGATE < c)) {
+                            // Maximum single-char code point is 0xFFFF, 16 bits, three UTF-8 bytes
+                            result.add((byte) ((0xF << 5) | (c >>> 12)));
+                            result.add((byte) (0x80 | (0x3F & (c >>> 6))));
+                            result.add((byte) (0x80 | (0x3F & c)));
+                        } else {
+                            // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
+                            checkArgument(source.readNotEOF() == '\\', "expected surrogate pair");
+                            checkArgument(source.readNotEOF() == 'u', "expected surrogate pair");
+                            final char low = readEscapedHexChar(source);
+                            int codePoint = Character.toCodePoint(c, low);
+                            result.add((byte) ((0xF << 4) | (codePoint >>> 18)));
+                            result.add((byte) (0x80 | (0x3F & (codePoint >>> 12))));
+                            result.add((byte) (0x80 | (0x3F & (codePoint >>> 6))));
+                            result.add((byte) (0x80 | (0x3F & codePoint)));
+                        }
                     } else {
                         result.add((byte) escapedToRawChar(escapedChar));
                     }
@@ -163,9 +183,9 @@ class JsonDecoding {
 
                     // escaped char or unicode
                     int ch2 = source.readNotEOF();
-                    if (ch2 == INT_u)
+                    if (ch2 == INT_u) {
                         result.append(readEscapedHexChar(source));
-                    else {
+                    } else {
                         result.append(escapedToRawChar(ch2));
                     }
 
@@ -250,21 +270,16 @@ class JsonDecoding {
             return (char) (readHexDigit(source) << 12
                     | readHexDigit(source) << 8
                     | readHexDigit(source) << 4
-                    | readHexDigit(source)
-            );
+                    | readHexDigit(source));
         }
 
         static int readHexDigit(JsonSource source) throws IOException {
-            try {
-                int value = source.readRawByte();
-                if (sHexValues[value] < 0) {
-                    throw new InvalidJsonException("expected a hex-digit, but found: '" + (char) value + "'");
-                }
-                return value;
-            } catch (ArrayIndexOutOfBoundsException oob) {
-                throw new InvalidJsonException("While parsing a json message, the input ended unexpectedly in the" +
-                        "middle of a field. This could mean that the input has been truncated.");
+            int raw = source.readNotEOF();
+            int value = sHexValues[raw];
+            if (value < 0) {
+                throw new InvalidJsonException("expected a hex-digit, but found: '" + (char) raw + "'");
             }
+            return value;
         }
 
     }
