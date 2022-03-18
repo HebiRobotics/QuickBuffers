@@ -374,6 +374,6 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * JSON field name for serializing unknown bytes
      */
-    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes");
+    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes", "unknown_bytes");
 
 }

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,6 +51,8 @@ class RuntimeClasses {
 
     static final String unknownBytesField = "unknownBytes";
     static final String unknownBytesFieldName = "unknownBytesFieldName";
+    static final int unknownBytesFieldHash1 = unknownBytesField.hashCode();
+    static final int unknownBytesFieldHash2 = "unknown_bytes".hashCode();
 
     private static final ClassName RepeatedDouble = ClassName.get(API_PACKAGE, "RepeatedDouble");
     private static final ClassName RepeatedFloat = ClassName.get(API_PACKAGE, "RepeatedFloat");

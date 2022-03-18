@@ -90,6 +90,7 @@ public abstract class AbstractJsonSource<SubType extends AbstractJsonSource<SubT
      * Read a {@code bytes} field value from the source.
      */
     public void readBytes(RepeatedByte store) throws IOException {
+        store.clear();
         nextBase64(store);
     }
 
@@ -342,12 +343,11 @@ public abstract class AbstractJsonSource<SubType extends AbstractJsonSource<SubT
      */
     public void nextBase64(RepeatedByte store) throws IOException {
         try {
-            store.clear();
             nextString(tmpString);
             if (tmpString.hasString()) {
-                store.copyFrom(Base64.decodeFast(tmpString.getString()));
+                store.addAll(Base64.decodeFast(tmpString.getString()));
             } else {
-                store.copyFrom(Base64.decode(tmpString.bytes(), 0, tmpString.size()));
+                store.addAll(Base64.decode(tmpString.bytes(), 0, tmpString.size()));
             }
         } finally {
             tmpString.clear();

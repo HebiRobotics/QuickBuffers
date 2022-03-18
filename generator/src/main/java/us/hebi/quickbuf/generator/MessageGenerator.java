@@ -584,15 +584,29 @@ class MessageGenerator {
                 .addAnnotation(Override.class)
                 .addParameter(RuntimeClasses.JsonSink, "output", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
-                .addException(IOException.class)
-                .addStatement("output.beginObject()");
+                .addException(IOException.class);
+
+        // TODO: should we check for required field initialization? This may mess with toString()
+        boolean needsInitializationChecks = info.hasRequiredFieldsInHierarchy();
+        if (needsInitializationChecks) {
+            // Fail if any required bits are missing
+            insertFailOnMissingRequiredBits(writeTo);
+            writeTo.beginControlFlow("try");
+        }
+
+        writeTo.addStatement("output.beginObject()");
 
         // add every set field
-        for (FieldGenerator field : fields) {
-            writeTo.beginControlFlow("if ($L)", BitField.hasBit(field.getInfo().getBitIndex()));
-            field.generateJsonSerializationCode(writeTo);
-            writeTo.endControlFlow();
-        }
+        fields.forEach(f -> {
+            if (f.getInfo().isRequired()) {
+                // no need to check has state again
+                f.generateJsonSerializationCode(writeTo);
+            } else {
+                writeTo.beginControlFlow("if ($L)", f.getInfo().getHasBit());
+                f.generateJsonSerializationCode(writeTo);
+                writeTo.endControlFlow();
+            }
+        });
 
         // add unknown fields as base64
         if (info.isStoreUnknownFields()) {
@@ -603,6 +617,12 @@ class MessageGenerator {
         }
 
         writeTo.addStatement("output.endObject()");
+
+        if (needsInitializationChecks) {
+            writeTo.nextControlFlow("catch ($T nestedFail)", RuntimeClasses.UninitializedMessageException)
+                    .addStatement("throw rethrowFromParent(nestedFail)")
+                    .endControlFlow();
+        }
         type.addMethod(writeTo.build());
     }
 
@@ -696,6 +716,25 @@ class MessageGenerator {
                     .addStatement("input.endObject()")
                     .addStatement("return this")
                     .endControlFlow();
+        }
+
+        // add unknown bytes
+        if (info.isStoreUnknownFields()) {
+            mergeFrom
+                    .addCode("case $L:\n", RuntimeClasses.unknownBytesFieldHash1)
+                    .beginControlFlow("case $L:", RuntimeClasses.unknownBytesFieldHash2)
+                    .beginControlFlow("if (input.isAtField($T.$N))",
+                            RuntimeClasses.AbstractMessage, RuntimeClasses.unknownBytesFieldName)
+                    // TODO: this should actually be parsing the bytes in case the message definition is different
+                    .addStatement("input.nextBase64($N)", RuntimeClasses.unknownBytesField)
+                    .nextControlFlow("else")
+                    .addStatement("input.skipUnknownField()")
+                    .endControlFlow();
+            if (enableFallthroughOptimization) {
+                mergeFrom.addStatement("hash = input.nextFieldHashOrZero()");
+            }
+            mergeFrom.addStatement("break");
+            mergeFrom.endControlFlow();
         }
 
         // add default case
