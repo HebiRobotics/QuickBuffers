@@ -29,6 +29,7 @@ import org.openjdk.jmh.runner.options.VerboseMode;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
 import us.hebi.quickbuf.JsonSink;
+import us.hebi.quickbuf.JsonSource;
 import us.hebi.quickbuf.compat.GsonSource;
 import us.hebi.quickbuf.compat.JacksonSource;
 
@@ -53,20 +54,29 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
  * JsonSourceBenchmark.testJacksonCarDecode     thrpt   10  190,302 ± 3,499  ops/ms
  * JsonSourceBenchmark.testJacksonMarketDecode  thrpt   10  277,333 ± 4,390  ops/ms
  *
+ * === JDK 8 (with fallthrough)
+ * Benchmark                                     Mode  Cnt    Score    Error   Units
+ * JsonSourceBenchmark.testGsonCarDecode        thrpt   10  253,099 ± 23,003  ops/ms
+ * JsonSourceBenchmark.testGsonMarketDecode     thrpt   10  416,122 ±  8,009  ops/ms
+ * JsonSourceBenchmark.testJacksonCarDecode     thrpt   10  203,651 ± 10,489  ops/ms
+ * JsonSourceBenchmark.testJacksonMarketDecode  thrpt   10  312,991 ± 11,147  ops/ms
+ * JsonSourceBenchmark.testJsonCarDecode        thrpt   10  293,815 ± 14,114  ops/ms
+ * JsonSourceBenchmark.testJsonMarketDecode     thrpt   10  475,158 ± 27,611  ops/ms
+ *
  * @author Florian Enner
  * @since 01 Mär 2022
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(2)
-@Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 public class JsonSourceBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + JsonSourceBenchmark.class.getSimpleName() + ".*")
+                .include(".*" + JsonSourceBenchmark.class.getSimpleName() + ".*Json.*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();
@@ -95,6 +105,16 @@ public class JsonSourceBenchmark {
     private final Car carData = Car.newInstance();
     private final byte[] carBytes;
     private final String carString;
+
+    @Benchmark
+    public Object testJsonMarketDecode() throws IOException {
+        return marketData.clearQuick().mergeFrom(JsonSource.newInstance(marketBytes));
+    }
+
+    @Benchmark
+    public Object testJsonCarDecode() throws IOException {
+        return carData.clearQuick().mergeFrom(JsonSource.newInstance(carBytes));
+    }
 
     @Benchmark
     public Object testGsonMarketDecode() throws IOException {

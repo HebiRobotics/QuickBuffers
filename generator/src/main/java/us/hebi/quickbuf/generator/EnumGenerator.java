@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.squareup.javapoet.*;
 import us.hebi.quickbuf.generator.RequestInfo.EnumInfo;
 
 import javax.lang.model.element.Modifier;
+import java.util.function.IntConsumer;
 
 import static javax.lang.model.element.Modifier.*;
 
@@ -169,9 +170,51 @@ class EnumGenerator {
                 .addModifiers(PUBLIC, FINAL)
                 .returns(info.getTypeName())
                 .addParameter(CharSequence.class, "value", FINAL);
-        forName.addStatement("return $T.valueOf(value.toString())", info.getTypeName());
-        decoder.addMethod(forName.build());
 
+        int[] cases = info.getValues().stream()
+                .map(EnumValueDescriptorProto::getName)
+                .mapToInt(String::length)
+                .distinct()
+                .sorted().toArray();
+
+        IntConsumer createCaseIfs = len -> {
+            info.getValues().stream()
+                    .filter(value -> value.getName().length() == len)
+                    .forEach(value -> {
+                        forName.beginControlFlow("if ($T.isEqual($S, value))",
+                                        RuntimeClasses.ProtoUtil, value.getName())
+                                .addStatement("return $N", NamingUtil.filterKeyword(value.getName()))
+                                .endControlFlow();
+                    });
+        };
+
+        if (cases.length <= 3) {
+
+            // check length brackets
+            for (int len : cases) {
+                forName.beginControlFlow("if (value.length() == $L)", len);
+                createCaseIfs.accept(len);
+                forName.endControlFlow();
+            }
+
+        } else {
+
+            // switch lookup on length
+            forName.beginControlFlow("switch (value.length())");
+            for (int len : cases) {
+                forName.beginControlFlow("case $L:", len);
+                createCaseIfs.accept(len);
+                forName
+                        .addStatement("break")
+                        .endControlFlow();
+            }
+            forName.endControlFlow();
+
+        }
+
+        forName.addStatement("return null");
+
+        decoder.addMethod(forName.build());
         typeSpec.addType(decoder.build());
     }
 
