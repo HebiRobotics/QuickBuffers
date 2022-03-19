@@ -22,9 +22,7 @@ package us.hebi.quickbuf.compat;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
-import us.hebi.quickbuf.AbstractJsonSource;
-import us.hebi.quickbuf.ProtoEnum;
-import us.hebi.quickbuf.Utf8String;
+import us.hebi.quickbuf.*;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -32,7 +30,7 @@ import java.io.StringReader;
 
 /**
  * Implementation of a JsonSource using GSON.
- *
+ * <p>
  * Warning: this implementation has not been tested extensively against bad inputs.
  *
  * @author Florian Enner
@@ -64,27 +62,27 @@ public class GsonSource extends AbstractJsonSource<GsonSource> {
     }
 
     @Override
-    public double nextDouble() throws IOException {
+    public double readDouble() throws IOException {
         return reader.nextDouble();
     }
 
     @Override
-    public int nextInt() throws IOException {
+    public int readInt32() throws IOException {
         return reader.nextInt();
     }
 
     @Override
-    public long nextLong() throws IOException {
+    public long readInt64() throws IOException {
         return reader.nextLong();
     }
 
     @Override
-    public boolean nextBoolean() throws IOException {
+    public boolean readBool() throws IOException {
         return reader.nextBoolean();
     }
 
     @Override
-    public <T extends ProtoEnum<?>> T nextEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
+    public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
         if (tryReadNull()) {
             return null;
         } else if (reader.peek() == JsonToken.NUMBER) {
@@ -95,12 +93,27 @@ public class GsonSource extends AbstractJsonSource<GsonSource> {
     }
 
     @Override
-    public void nextString(Utf8String store) throws IOException {
+    public void readString(Utf8String store) throws IOException {
         if (tryReadNull()) {
             store.clear();
         } else {
             store.copyFrom(reader.nextString());
         }
+    }
+
+    @Override
+    public void readBytes(RepeatedByte store) throws IOException {
+        store.clear();
+        if (!tryReadNull()) {
+            decodeBase64(reader.nextString(), store);
+        }
+    }
+
+    @Override
+    public ProtoSource readBytesAsSource() throws IOException {
+        RepeatedByte store = RepeatedByte.newEmptyInstance();
+        decodeBase64(reader.nextString(), store);
+        return ProtoSource.newInstance(store);
     }
 
     @Override

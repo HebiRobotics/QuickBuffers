@@ -725,8 +725,7 @@ class MessageGenerator {
                     .beginControlFlow("case $L:", RuntimeClasses.unknownBytesFieldHash2)
                     .beginControlFlow("if (input.isAtField($T.$N))",
                             RuntimeClasses.AbstractMessage, RuntimeClasses.unknownBytesFieldName)
-                    // TODO: this should actually be parsing the bytes in case the message definition is different
-                    .addStatement("input.nextBase64($N)", RuntimeClasses.unknownBytesField)
+                    .addStatement("this.mergeFrom(input.readBytesAsSource())")
                     .nextControlFlow("else")
                     .addStatement("input.skipUnknownField()")
                     .endControlFlow();

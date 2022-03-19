@@ -80,24 +80,24 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
     }
 
     @Override
-    public double nextDouble() throws IOException {
+    public double readDouble() throws IOException {
         getValueAsBytes(buffer);
         return JsonDecoding.Numbers.readDouble(buffer.array, 0, buffer.length);
     }
 
     @Override
-    public int nextInt() throws IOException {
-        return (int) nextLong();
+    public int readInt32() throws IOException {
+        return (int) this.readInt64();
     }
 
     @Override
-    public long nextLong() throws IOException {
+    public long readInt64() throws IOException {
         getValueAsBytes(buffer);
         return JsonDecoding.Numbers.readLong(buffer.array, 0, buffer.length);
     }
 
     @Override
-    public boolean nextBoolean() throws IOException {
+    public boolean readBool() throws IOException {
         if (token == INT_t) {
             checkExpected(TRUE_VALUE, "expected true");
             nextToken();
@@ -115,7 +115,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
     }
 
     @Override
-    public <T extends ProtoEnum<?>> T nextEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
+    public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
         getValueAsBytes(buffer);
         if (JsonDecoding.Numbers.isInteger(buffer.array, 0, buffer.length)) {
             return converter.forNumber((int) JsonDecoding.Numbers.readLong(buffer.array, 0, buffer.length));
@@ -125,7 +125,7 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
     }
 
     @Override
-    public void nextString(Utf8String store) throws IOException {
+    public void readString(Utf8String store) throws IOException {
         if (token == JsonDecoding.IntChar.INT_n) {
             skipNull();
             return;
@@ -134,6 +134,19 @@ public class JsonSource extends AbstractJsonSource<JsonSource> {
         JsonDecoding.StringDecoding.readQuotedUtf8(this, buffer);
         store.copyFromUtf8(buffer.array, 0, buffer.length);
         token = nextToken();
+    }
+
+    @Override
+    public void readBytes(RepeatedByte store) throws IOException {
+        getValueAsBytes(buffer);
+        store.clear();
+        decodeBase64(buffer, store);
+    }
+
+    @Override
+    public ProtoSource readBytesAsSource() throws IOException {
+        getValueAsBytes(buffer);
+        return ProtoSource.newInstance(Base64.decode(buffer.array,0,buffer.length));
     }
 
     @Override

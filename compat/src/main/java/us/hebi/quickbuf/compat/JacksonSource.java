@@ -24,9 +24,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import us.hebi.quickbuf.AbstractJsonSource;
-import us.hebi.quickbuf.ProtoEnum;
-import us.hebi.quickbuf.Utf8String;
+import us.hebi.quickbuf.*;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -34,7 +32,7 @@ import java.io.StringReader;
 
 /**
  * Basic implementation of a JsonSource using GSON.
- *
+ * <p>
  * Warning: this implementation has not been tested extensively against bad inputs.
  *
  * @author Florian Enner
@@ -70,31 +68,31 @@ public class JacksonSource extends AbstractJsonSource<JacksonSource> {
     }
 
     @Override
-    public double nextDouble() throws IOException {
+    public double readDouble() throws IOException {
         next();
         return reader.getValueAsDouble();
     }
 
     @Override
-    public int nextInt() throws IOException {
+    public int readInt32() throws IOException {
         next();
         return reader.getValueAsInt();
     }
 
     @Override
-    public long nextLong() throws IOException {
+    public long readInt64() throws IOException {
         next();
         return reader.getValueAsLong();
     }
 
     @Override
-    public boolean nextBoolean() throws IOException {
+    public boolean readBool() throws IOException {
         next();
         return reader.getValueAsBoolean();
     }
 
     @Override
-    public <T extends ProtoEnum<?>> T nextEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
+    public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
         switch (next()) {
             case VALUE_NULL:
                 return null;
@@ -107,13 +105,29 @@ public class JacksonSource extends AbstractJsonSource<JacksonSource> {
     }
 
     @Override
-    public void nextString(Utf8String store) throws IOException {
+    public void readString(Utf8String store) throws IOException {
         if (next() == JsonToken.VALUE_NULL) {
             store.clear();
             return;
         } else {
             store.copyFrom(reader.getValueAsString());
         }
+    }
+
+    @Override
+    public void readBytes(RepeatedByte store) throws IOException {
+        store.clear();
+        if (next() != JsonToken.VALUE_NULL) {
+            store.copyFrom(reader.getBinaryValue());
+        }
+    }
+
+    @Override
+    public ProtoSource readBytesAsSource() throws IOException {
+        if (next() == JsonToken.VALUE_NULL) {
+            return ProtoSource.newArraySource();
+        }
+        return ProtoSource.newInstance(reader.getBinaryValue());
     }
 
     @Override
