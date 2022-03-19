@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 
 import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
@@ -38,7 +39,25 @@ import static us.hebi.quickbuf.ProtoUtil.*;
  */
 class JsonDecoding {
 
-    public static class IntChar {
+    static interface JsonLexer {
+        /**
+         * @return 0-255 or -1 if end of stream
+         */
+        int readRawByte() throws IOException;
+
+        /**
+         * @return 0-255, or exception if end of stream
+         */
+        int readByte() throws IOException;
+
+        /**
+         * @return next non-whitespace, or exception if end of stream
+         */
+        int readNextToken() throws IOException;
+
+    }
+
+    static class IntChar {
 
         public final static int INT_EOF = -1;
         public final static int INT_TAB = '\t';
@@ -129,10 +148,10 @@ class JsonDecoding {
         /**
          * current token needs to be at the beginning quote. Ends at the last quote read.
          */
-        static void readQuotedUtf8(JsonSource source, RepeatedByte result) throws IOException {
+        static void readQuotedUtf8(JsonLexer source, RepeatedByte result) throws IOException {
             result.clear();
             while (true) {
-                final int ch = source.readNotEOF();
+                final int ch = source.readByte();
                 if (ch == INT_QUOTE) {
                     return;
                 } else if (ch != INT_BACKSLASH) {
@@ -140,7 +159,7 @@ class JsonDecoding {
                     result.add((byte) ch);
                 } else {
                     // Convert JSON specific escaping to raw UTF8
-                    int escapedChar = source.readNotEOF();
+                    int escapedChar = source.readByte();
                     if (escapedChar == INT_u) {
                         char c = readEscapedHexChar(source);
                         if (c < 0x80) {
@@ -156,8 +175,8 @@ class JsonDecoding {
                             result.add((byte) (0x80 | (0x3F & c)));
                         } else {
                             // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
-                            checkArgument(source.readNotEOF() == '\\', "expected surrogate pair");
-                            checkArgument(source.readNotEOF() == 'u', "expected surrogate pair");
+                            checkArgument(source.readByte() == '\\', "expected surrogate pair");
+                            checkArgument(source.readByte() == 'u', "expected surrogate pair");
                             final char low = readEscapedHexChar(source);
                             int codePoint = Character.toCodePoint(c, low);
                             result.add((byte) ((0xF << 4) | (codePoint >>> 18)));
@@ -172,17 +191,17 @@ class JsonDecoding {
             }
         }
 
-        static void readQuotedUtf8(JsonSource source, StringBuilder result) throws IOException {
+        static void readQuotedUtf8(JsonLexer source, StringBuilder result) throws IOException {
             result.setLength(0);
             while (true) {
-                int c = source.readNotEOF();
+                int c = source.readByte();
                 if (c == INT_QUOTE) {
                     return;
 
                 } else if (c == INT_BACKSLASH) {
 
                     // escaped char or unicode
-                    int ch2 = source.readNotEOF();
+                    int ch2 = source.readByte();
                     if (ch2 == INT_u) {
                         result.append(readEscapedHexChar(source));
                     } else {
@@ -200,7 +219,7 @@ class JsonDecoding {
                     int tmp = c & 0xF0; // mask out top 4 bits to test for multibyte
                     if (tmp == 0xC0 || tmp == 0xD0) {
                         // 2 byte
-                        int d = source.readNotEOF();
+                        int d = source.readByte();
                         if ((d & 0xC0) != 0x080) {
                             throw new InvalidJsonException("Invalid UTF8 2 byte encoding");
                         }
@@ -208,29 +227,29 @@ class JsonDecoding {
                     } else if (tmp == 0xE0) {
                         // 3 byte
                         c &= 0x0F;
-                        int d = source.readNotEOF();
+                        int d = source.readByte();
                         if ((d & 0xC0) != 0x080) {
                             throw new InvalidJsonException("Invalid UTF8 3 byte encoding");
                         }
                         c = (c << 6) | (d & 0x3F);
-                        d = source.readNotEOF();
+                        d = source.readByte();
                         if ((d & 0xC0) != 0x080) {
                             throw new InvalidJsonException("Invalid UTF8 3 byte encoding");
                         }
                         c = (c << 6) | (d & 0x3F);
                     } else if (tmp == 0xF0) {
                         // 4 byte
-                        int d = source.readNotEOF();
+                        int d = source.readByte();
                         if ((d & 0xC0) != 0x080) {
                             throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
                         }
                         c = ((c & 0x07) << 6) | (d & 0x3F);
-                        d = source.readNotEOF();
+                        d = source.readByte();
                         if ((d & 0xC0) != 0x080) {
                             throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
                         }
                         c = (c << 6) | (d & 0x3F);
-                        d = source.readNotEOF();
+                        d = source.readByte();
                         if ((d & 0xC0) != 0x080) {
                             throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
                         }
@@ -266,15 +285,15 @@ class JsonDecoding {
             }
         }
 
-        static char readEscapedHexChar(JsonSource source) throws IOException {
+        static char readEscapedHexChar(JsonLexer source) throws IOException {
             return (char) (readHexDigit(source) << 12
                     | readHexDigit(source) << 8
                     | readHexDigit(source) << 4
                     | readHexDigit(source));
         }
 
-        static int readHexDigit(JsonSource source) throws IOException {
-            int raw = source.readNotEOF();
+        static int readHexDigit(JsonLexer source) throws IOException {
+            int raw = source.readByte();
             int value = sHexValues[raw];
             if (value < 0) {
                 throw new InvalidJsonException("expected a hex-digit, but found: '" + (char) raw + "'");

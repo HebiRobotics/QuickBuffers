@@ -21,8 +21,8 @@
 package us.hebi.quickbuf.compat;
 
 import com.google.gson.stream.JsonWriter;
-import us.hebi.quickbuf.AbstractJsonSink;
 import us.hebi.quickbuf.FieldName;
+import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.ProtoMessage;
 import us.hebi.quickbuf.Utf8String;
 
@@ -35,30 +35,43 @@ import java.io.StringWriter;
  * @author Florian Enner
  * @since 28 Nov 2019
  */
-public class GsonSink extends AbstractJsonSink<GsonSink> implements Closeable, Flushable {
+public class GsonSink extends JsonSink implements Closeable, Flushable {
 
     /**
-     * @return A reusable sink that writes to String and resets after calling toString()
+     * @return A reusable sink that writes to String
      */
     public static GsonSink newStringWriter() {
-        final StringWriter output = new StringWriter();
+        return newStringWriter(new StringWriter());
+    }
+
+    public static GsonSink newStringWriter(final StringWriter output) {
         return new GsonSink(new JsonWriter(output)) {
+
             @Override
-            public String toString() {
+            public CharSequence getChars() {
                 try {
                     flush();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                String string = output.getBuffer().toString();
-                output.getBuffer().setLength(0);
-                return string;
+                return output.getBuffer();
             }
+
+            @Override
+            public String toString() {
+                return getChars().toString();
+            }
+
         };
     }
 
     public GsonSink(JsonWriter writer) {
         this.writer = writer;
+    }
+
+    @Override
+    public JsonSink clear() {
+        throw new UnsupportedOperationException("GSON does not support reusing writers");
     }
 
     @Override
@@ -142,11 +155,6 @@ public class GsonSink extends AbstractJsonSink<GsonSink> implements Closeable, F
     @Override
     protected void endArray() throws IOException {
         writer.endArray();
-    }
-
-    @Override
-    protected GsonSink thisObj() {
-        return this;
     }
 
     @Override

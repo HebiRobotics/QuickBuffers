@@ -36,7 +36,7 @@ import java.io.StringReader;
  * @author Florian Enner
  * @since 07 Sep 2020
  */
-public class GsonSource extends AbstractJsonSource<GsonSource> {
+public class GsonSource extends JsonSource {
 
     public GsonSource(String string) {
         this(new StringReader(string));
@@ -56,8 +56,8 @@ public class GsonSource extends AbstractJsonSource<GsonSource> {
 
     final JsonReader reader;
 
-    @Override
-    protected GsonSource thisObj() {
+    public GsonSource setIgnoreUnknownFields(final boolean ignoreUnknownFields) {
+        super.setIgnoreUnknownFields(ignoreUnknownFields);
         return this;
     }
 

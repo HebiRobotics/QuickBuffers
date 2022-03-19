@@ -38,7 +38,7 @@ import java.io.StringReader;
  * @author Florian Enner
  * @since 26 Feb 2022
  */
-public class JacksonSource extends AbstractJsonSource<JacksonSource> {
+public class JacksonSource extends JsonSource {
 
     public JacksonSource(String string) throws IOException {
         this(new StringReader(string));
@@ -62,8 +62,8 @@ public class JacksonSource extends AbstractJsonSource<JacksonSource> {
 
     final JsonParser reader;
 
-    @Override
-    protected JacksonSource thisObj() {
+    public JacksonSource setIgnoreUnknownFields(final boolean ignoreUnknownFields) {
+        super.setIgnoreUnknownFields(ignoreUnknownFields);
         return this;
     }
 

@@ -60,8 +60,8 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
  * JsonSourceBenchmark.testGsonMarketDecode     thrpt   10  416,122 ±  8,009  ops/ms
  * JsonSourceBenchmark.testJacksonCarDecode     thrpt   10  203,651 ± 10,489  ops/ms
  * JsonSourceBenchmark.testJacksonMarketDecode  thrpt   10  312,991 ± 11,147  ops/ms
- * JsonSourceBenchmark.testJsonCarDecode        thrpt   10  293,815 ± 14,114  ops/ms
- * JsonSourceBenchmark.testJsonMarketDecode     thrpt   10  475,158 ± 27,611  ops/ms
+ * JsonSourceBenchmark.testJsonCarDecode        thrpt   10  311,085 ± 10,283  ops/ms
+ * JsonSourceBenchmark.testJsonMarketDecode     thrpt   10  484,539 ± 49,410  ops/ms
  *
  * @author Florian Enner
  * @since 01 Mär 2022
@@ -85,13 +85,13 @@ public class JsonSourceBenchmark {
     public JsonSourceBenchmark() {
         marketBytes = JsonSink.newInstance()
                 .setWriteEnumsAsInts(true)
-                .writeMessage(buildMarketData(marketData))
-                .getBuffer()
+                .writeMessageSilent(buildMarketData(marketData))
+                .getBytes()
                 .toArray();
         carBytes = JsonSink.newInstance()
                 .setWriteEnumsAsInts(true)
-                .writeMessage(buildCarData(carData))
-                .getBuffer()
+                .writeMessageSilent(buildCarData(carData))
+                .getBytes()
                 .toArray();
 
         marketString = new String(marketBytes, StandardCharsets.UTF_8);

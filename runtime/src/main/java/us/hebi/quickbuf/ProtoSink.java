@@ -217,8 +217,6 @@ public abstract class ProtoSink {
 
     /**
      * Clears internal state and removes any references to previous outputs.
-     *
-     * @return this
      */
     public abstract ProtoSink clear();
 

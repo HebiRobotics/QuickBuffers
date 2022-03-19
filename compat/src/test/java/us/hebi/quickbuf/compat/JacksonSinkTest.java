@@ -25,10 +25,7 @@ import org.junit.Test;
 import protos.test.quickbuf.ForeignEnum;
 import protos.test.quickbuf.TestAllTypes;
 import protos.test.quickbuf.external.ImportEnum;
-import us.hebi.quickbuf.CompatibilityTest;
-import us.hebi.quickbuf.FieldName;
-import us.hebi.quickbuf.JsonSink;
-import us.hebi.quickbuf.RepeatedFloat;
+import us.hebi.quickbuf.*;
 
 import java.io.IOException;
 import java.io.StringReader;

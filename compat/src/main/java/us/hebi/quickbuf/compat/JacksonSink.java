@@ -31,34 +31,47 @@ import java.io.StringWriter;
  * @author Florian Enner
  * @since 28 Nov 2019
  */
-public class JacksonSink extends AbstractJsonSink<JacksonSink> {
+public class JacksonSink extends JsonSink {
 
-    /**
-     * @return A reusable sink that writes to String and resets after calling toString()
-     */
     public static JacksonSink newStringWriter() {
+        return newStringWriter(new StringWriter());
+    }
+
+    public static JacksonSink newStringWriter(final StringWriter output) {
         try {
-            final StringWriter output = new StringWriter();
-            return new JacksonSink(new JsonFactory().createGenerator(output)) {
+            return new JacksonSink(Factory.INSTANCE.createGenerator(output)) {
                 @Override
-                public String toString() {
+                public CharSequence getChars() {
                     try {
                         flush();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-                    String string = output.getBuffer().toString();
-                    output.getBuffer().setLength(0);
-                    return string;
+                    return output.getBuffer();
                 }
+
+                @Override
+                public String toString() {
+                    return getChars().toString();
+                }
+
             };
         } catch (IOException e) {
-            throw new RuntimeException("IOException without I/O", e);
+            throw new AssertionError(e);
         }
     }
 
     public JacksonSink(JsonGenerator writer) {
         this.writer = writer;
+    }
+
+    static class Factory {
+        private static final JsonFactory INSTANCE = new JsonFactory();
+    }
+
+    @Override
+    public JsonSink clear() {
+        throw new UnsupportedOperationException("Jackson does not support reusing writers");
     }
 
     @Override
@@ -147,11 +160,6 @@ public class JacksonSink extends AbstractJsonSink<JacksonSink> {
     @Override
     protected void endArray() throws IOException {
         writer.writeEndArray();
-    }
-
-    @Override
-    protected JacksonSink thisObj() {
-        return this;
     }
 
     @Override

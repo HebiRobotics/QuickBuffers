@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -111,12 +111,12 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * Helper method to check if this message is initialized, i.e.,
      * if all required fields are set.
-     *
+     * <p>
      * Message content is not automatically checked after merging
      * new data. This method should be called manually as needed.
      *
-     * @throws InvalidProtocolBufferException if it is not initialized.
      * @return this
+     * @throws InvalidProtocolBufferException if it is not initialized.
      */
     public final MessageType checkInitialized() throws InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -194,11 +194,11 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      *
      * @param output json sink
      */
-    public void writeTo(final AbstractJsonSink output) throws IOException {
+    public void writeTo(final JsonSink output) throws IOException {
         throw new IllegalStateException("Generated message does not implement JSON output");
     }
 
-    public MessageType mergeFrom(final AbstractJsonSource input) throws IOException {
+    public MessageType mergeFrom(final JsonSource input) throws IOException {
         throw new IllegalStateException("Generated message does not implement JSON input");
     }
 
@@ -306,7 +306,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     @Override
     public String toString() {
         return JsonSink.newPrettyInstance()
-                .writeMessage(this)
+                .writeMessageSilent(this)
                 .toString();
     }
 
@@ -321,7 +321,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * @return the full path to all missing required fields in the message
      */
-    public List<String> getMissingFields(){
+    public List<String> getMissingFields() {
         List<String> results = new ArrayList<String>();
         getMissingFields("", results);
         return results;
@@ -352,7 +352,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     @SuppressWarnings("unchecked")
-    private MessageType getThis(){
+    private MessageType getThis() {
         return (MessageType) this;
     }
 

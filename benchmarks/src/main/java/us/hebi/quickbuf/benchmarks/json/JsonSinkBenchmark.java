@@ -20,8 +20,6 @@
 
 package us.hebi.quickbuf.benchmarks.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.google.gson.Gson;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -34,7 +32,6 @@ import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.compat.GsonSink;
 import us.hebi.quickbuf.compat.JacksonSink;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
@@ -44,21 +41,21 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
 /**
  * === JDK 8
  * Benchmark                                   Mode  Cnt     Score     Error   Units
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   260,005 ±  40,651  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   454,905 ±  64,111  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   385,079 ±   3,634  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   496,499 ±   2,560  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1413,708 ±  10,256  ops/ms
+ * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   242,325 ± 20,684  ops/ms
+ * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   455,089 ± 23,081  ops/ms
+ * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   404,916 ±  1,632  ops/ms
+ * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   553,937 ± 55,657  ops/ms
+ * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1472,689 ±  5,766  ops/ms
  * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3223,580 ±  76,672  ops/ms
- * <p>
+ *
  * === JDK17
  * Benchmark                                   Mode  Cnt     Score     Error   Units
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   244.408 ±   2.071  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   418.432 ±   3.404  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   327.974 ±   3.657  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   429.415 ±   6.475  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1376.977 ±  23.032  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3269.737 ±  45.623  ops/ms
+ * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   248,636 ±   9,060  ops/ms
+ * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   450,656 ±   3,676  ops/ms
+ * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   407,313 ±   4,580  ops/ms
+ * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   624,376 ±  23,840  ops/ms
+ * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1510,204 ±  13,852  ops/ms
+ * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3352,073 ± 370,167  ops/ms
  *
  * @author Florian Enner
  * @since 28 Nov 2019
@@ -82,61 +79,56 @@ public class JsonSinkBenchmark {
     final JsonSink jsonSink = JsonSink.newInstance().setWriteEnumsAsInts(true).reserve(2048);
     final MarketDataIncrementalRefreshTrades marketData = MarketDataIncrementalRefreshTrades.newInstance();
     final Car car = Car.newInstance();
-    static final Gson gson = new Gson();
-
-    private ByteArrayOutputStream encodeBuffer = new ByteArrayOutputStream();
-    JsonFactory jsonFactory = new JsonFactory();
+    private final StringWriter encodeString = new StringWriter();
 
     @Benchmark
-    public int testJsonMarketEncode() throws IOException {
+    public Object testJsonMarketEncode() throws IOException {
         return jsonSink.clear()
                 .writeMessage(buildMarketData(marketData))
-                .getBuffer()
-                .length();
+                .getBytes();
     }
 
     @Benchmark
-    public int testJsonCarEncode() throws IOException {
+    public Object testJsonCarEncode() throws IOException {
         return jsonSink.clear()
                 .writeMessage(buildCarData(car))
-                .getBuffer()
-                .length();
+                .getBytes();
     }
 
     @Benchmark
     public Object testGsonMarketEncode() throws IOException {
-        StringWriter string = new StringWriter();
-        new GsonSink(gson.newJsonWriter(string))
+        encodeString.getBuffer().setLength(0);
+        return GsonSink.newStringWriter(encodeString)
                 .setWriteEnumsAsInts(true)
-                .writeMessage(buildMarketData(marketData));
-        return string.getBuffer();
+                .writeMessage(buildMarketData(marketData))
+                .getChars();
     }
 
     @Benchmark
     public Object testGsonCarEncode() throws IOException {
-        StringWriter string = new StringWriter();
-        new GsonSink(gson.newJsonWriter(string))
+        encodeString.getBuffer().setLength(0);
+        return GsonSink.newStringWriter(encodeString)
                 .setWriteEnumsAsInts(true)
-                .writeMessage(buildCarData(car));
-        return string.getBuffer();
+                .writeMessage(buildCarData(car))
+                .getChars();
     }
 
     @Benchmark
     public Object testJacksonMarketEncode() throws IOException {
-        encodeBuffer.reset();
-        new JacksonSink(jsonFactory.createGenerator(encodeBuffer))
+        encodeString.getBuffer().setLength(0);
+        return JacksonSink.newStringWriter(encodeString)
                 .setWriteEnumsAsInts(true)
-                .writeMessage(buildMarketData(marketData));
-        return encodeBuffer.size();
+                .writeMessage(buildMarketData(marketData))
+                .getChars();
     }
 
     @Benchmark
     public Object testJacksonCarEncode() throws IOException {
-        encodeBuffer.reset();
-        new JacksonSink(jsonFactory.createGenerator(encodeBuffer))
+        encodeString.getBuffer().setLength(0);
+        return JacksonSink.newStringWriter(encodeString)
                 .setWriteEnumsAsInts(true)
-                .writeMessage(buildCarData(car));
-        return encodeBuffer.size();
+                .writeMessage(buildCarData(car))
+                .getChars();
     }
 
 }

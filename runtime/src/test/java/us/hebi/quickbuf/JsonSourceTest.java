@@ -162,7 +162,7 @@ public class JsonSourceTest {
     @Test
     public void testNullInput() throws Exception {
         String json = "{\"optionalNestedMessage\":null,\"repeatedString\":null,\"optionalForeignMessage\":{},\"repeatedBytes\":[null,null]}";
-        AbstractJsonSource source = JsonSource.newInstance(json);
+        JsonSource source = JsonSource.newInstance(json);
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
         assertTrue(msg.getOptionalNestedMessage().isEmpty());
         assertTrue(msg.hasRepeatedString());
@@ -192,7 +192,7 @@ public class JsonSourceTest {
                 "    2\n" +
                 "  ]\n" +
                 "}";
-        AbstractJsonSource source = JsonSource.newInstance(json);
+        JsonSource source = JsonSource.newInstance(json);
         TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
 
         Assert.assertArrayEquals(new double[]{

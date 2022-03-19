@@ -123,19 +123,19 @@ public class JsonBenchmark {
     @Benchmark
     public int writeBase64() throws IOException {
         jsonSink.clear().writeBytes(name, rndBytes);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeStringAsciiChars() throws IOException {
         jsonSink.clear().writeString(name, asciiChars);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeStringUtf8Chars() throws IOException {
         jsonSink.clear().writeString(name, utf8Chars);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
@@ -143,7 +143,7 @@ public class JsonBenchmark {
         asciiBytes.copyFrom(asciiChars);
         asciiBytes.size();
         jsonSink.clear().writeString(name, asciiBytes);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
@@ -151,43 +151,43 @@ public class JsonBenchmark {
         utf8Bytes.copyFrom(utf8Bytes);
         utf8Bytes.size();
         jsonSink.clear().writeString(name, utf8Bytes);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeStringAsciiEncoded() throws IOException {
         jsonSink.clear().writeString(name, asciiBytes);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeStringUtf8Encoded() throws IOException {
         jsonSink.clear().writeString(name, utf8Bytes);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeIntNumbers() throws IOException {
         jsonSink.clear().writeRepeatedInt32(name, rndInts);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeLongNumbers() throws IOException {
         jsonSink.clear().writeRepeatedInt64(name, rndLongs);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeFloatNumbers() throws IOException {
         jsonSink.clear().writeRepeatedFloat(name, rndFloats);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
     @Benchmark
     public int writeDoubleNumbers() throws IOException {
         jsonSink.clear().writeRepeatedDouble(name, rndDoubles);
-        return jsonSink.getBuffer().length();
+        return jsonSink.getBytes().length();
     }
 
 }
