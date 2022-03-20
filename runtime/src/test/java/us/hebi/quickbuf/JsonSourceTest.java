@@ -243,7 +243,7 @@ public class JsonSourceTest {
         ProtoMessage<?> msg2 = msg
                 .clone()
                 .clear()
-                .mergeFrom(JsonSource.newInstance(sink.toString()));
+                .mergeFrom(JsonSource.newInstance(sink.getBytes()));
         Assert.assertEquals(msg, msg2);
     }
 

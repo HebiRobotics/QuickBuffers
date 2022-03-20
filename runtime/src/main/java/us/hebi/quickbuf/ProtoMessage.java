@@ -263,11 +263,19 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
-     * Parse {@code data} as a message of this type and merge it with the message being built.
+     * Parse {@code input} as a message of this type and merge it with the message being built.
      */
     public static <T extends ProtoMessage> T mergeFrom(T msg, ProtoSource input) throws IOException {
         msg.mergeFrom(input);
         input.checkLastTagWas(0);
+        return msg;
+    }
+
+    /**
+     * Parse {@code input} as a message of this type and merge it with the message being built.
+     */
+    public static <T extends ProtoMessage> T mergeFrom(T msg, JsonSource input) throws IOException {
+        msg.mergeFrom(input);
         return msg;
     }
 

@@ -480,6 +480,14 @@ class MessageGenerator {
                 .returns(info.getTypeName())
                 .addStatement("return $T.mergeFrom(new $T(), input).checkInitialized()", RuntimeClasses.AbstractMessage, info.getTypeName())
                 .build());
+
+        type.addMethod(MethodSpec.methodBuilder("parseFrom")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addException(IOException.class)
+                .addParameter(RuntimeClasses.JsonSource, "input", Modifier.FINAL)
+                .returns(info.getTypeName())
+                .addStatement("return $T.mergeFrom(new $T(), input).checkInitialized()", RuntimeClasses.AbstractMessage, info.getTypeName())
+                .build());
     }
 
     private void generateIsInitialized(TypeSpec.Builder type) {
@@ -586,7 +594,7 @@ class MessageGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .addException(IOException.class);
 
-        // TODO: should we check for required field initialization? This may mess with toString()
+        // TODO: Is it ok to check for required fields here? This may mess with toString()
         boolean needsInitializationChecks = info.hasRequiredFieldsInHierarchy();
         if (needsInitializationChecks) {
             // Fail if any required bits are missing
@@ -643,7 +651,7 @@ class MessageGenerator {
         // Reads tag after case parser and checks if it can fall-through. In the ideal case if all fields are set
         // and the expected order matches the incoming data, the switch would only need to be executed once
         // for the first field.
-        // TODO: On Jackson/Gson sources this has negligible benefits. Deactivate for now to keep the code cleaner.
+        // TODO: The benefits seem negligible on non-optimized sources. Deactivate for now to keep the code cleaner.
         final boolean enableFallthroughOptimization = false; // info.getExpectedIncomingOrder() != ExpectedIncomingOrder.None;
         final List<FieldGenerator> sortedFields = fields; // getFieldSortedByExpectedIncomingOrder();
 
