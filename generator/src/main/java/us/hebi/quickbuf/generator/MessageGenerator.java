@@ -103,9 +103,7 @@ class MessageGenerator {
         generateMergeFrom(type);
         generateIsInitialized(type);
         generateWriteToJson(type);
-        if (info.getParentFile().getParentRequest().generateMergeFromJson()) {
-            generateMergeFromJson(type);
-        }
+        generateMergeFromJson(type);
         generateClone(type);
 
         // Utility methods

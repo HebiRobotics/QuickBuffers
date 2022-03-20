@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import protos.test.quickbuf.RepeatedPackables;
 import protos.test.quickbuf.TestAllTypes;
+import protos.test.quickbuf.UnittestRequired.SimpleMessage;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -127,6 +128,26 @@ public class UnsafeTest {
         testWriteByteBuffer(ProtoSink.newArraySink(), buffer);
         testReadByteBuffer(ProtoSource.newArraySource(), buffer);
         testReadByteBuffer(ProtoSource.newArraySource(), buffer.asReadOnlyBuffer());
+    }
+
+    @Test
+    public void testDirectExample() throws IOException {
+        // Create message
+        SimpleMessage msg = SimpleMessage.newInstance();
+        msg.setRequiredField(1);
+
+        // Write to direct buffer
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(msg.getSerializedSize());
+        ProtoSink directSink = ProtoSink.newDirectSink();
+        directSink.setOutput(directBuffer);
+        msg.writeTo(directSink);
+        directBuffer.limit(directSink.getTotalBytesWritten());
+
+        // Read from direct buffer
+        ProtoSource directSource = ProtoSource.newDirectSource();
+        directSource.setInput(directBuffer);
+        SimpleMessage msg2 = SimpleMessage.parseFrom(directSource);
+        assertEquals(msg, msg2);
     }
 
     @Test

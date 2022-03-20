@@ -76,7 +76,7 @@
                                     </pluginPath>
                                     <type>quickbuf</type>
                                     <outputOptions>
-                                        replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=false,json_gen_merge=true,input_order=quickbuf
+                                        replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=false,input_order=quickbuf
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>

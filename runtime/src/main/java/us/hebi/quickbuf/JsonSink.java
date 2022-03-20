@@ -20,6 +20,10 @@
 
 package us.hebi.quickbuf;
 
+import us.hebi.quickbuf.JsonEncoding.Base64Encoding;
+import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
+import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
+import us.hebi.quickbuf.JsonEncoding.StringEncoding;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.io.Closeable;
@@ -29,6 +33,8 @@ import java.util.Arrays;
 
 /**
  * Prints proto messages in a JSON compatible format
+ *
+ * TODO: fix removal of comma on top-level array?
  *
  * @author Florian Enner
  * @since 26 Oct 2019
@@ -435,7 +441,7 @@ public abstract class JsonSink implements Closeable, Flushable {
             tmpBytes = RepeatedByte.newEmptyInstance();
         }
         tmpBytes.clear();
-        JsonEncoding.Base64Encoding.writeQuotedBase64(value.array, value.length, tmpBytes); // "<content>"
+        Base64Encoding.writeQuotedBase64(value.array, value.length, tmpBytes); // "<content>"
         String str = new String(tmpBytes.array, 1, tmpBytes.length - 2, Charsets.ASCII); // <content>
         writeString(str);
     }
@@ -522,53 +528,53 @@ public abstract class JsonSink implements Closeable, Flushable {
 
         @Override
         protected void writeNumber(double value) {
-            JsonEncoding.NumberEncoding.writeDouble(value, output);
+            NumberEncoding.writeDouble(value, output);
             writeMore();
         }
 
         @Override
         protected void writeNumber(float value) {
-            JsonEncoding.NumberEncoding.writeFloat(value, output);
+            NumberEncoding.writeFloat(value, output);
             writeMore();
         }
 
         @Override
         protected void writeNumber(long value) {
-            JsonEncoding.NumberEncoding.writeLong(value, output);
+            NumberEncoding.writeLong(value, output);
             writeMore();
         }
 
         @Override
         protected void writeNumber(int value) {
-            JsonEncoding.NumberEncoding.writeInt(value, output);
+            NumberEncoding.writeInt(value, output);
             writeMore();
         }
 
         @Override
         protected void writeBoolean(boolean value) {
-            JsonEncoding.BooleanEncoding.writeBoolean(value, output);
+            BooleanEncoding.writeBoolean(value, output);
             writeMore();
         }
 
         @Override
         protected void writeString(Utf8String value) {
             if (value.hasBytes()) {
-                JsonEncoding.StringEncoding.writeQuotedUtf8(value, output);
+                StringEncoding.writeQuotedUtf8(value, output);
             } else {
-                JsonEncoding.StringEncoding.writeQuotedUtf8(value.getString(), output);
+                StringEncoding.writeQuotedUtf8(value.getString(), output);
             }
             writeMore();
         }
 
         @Override
         protected void writeString(CharSequence value) {
-            JsonEncoding.StringEncoding.writeQuotedUtf8(value, output);
+            StringEncoding.writeQuotedUtf8(value, output);
             writeMore();
         }
 
         @Override
         protected void writeBinary(RepeatedByte value) {
-            JsonEncoding.Base64Encoding.writeQuotedBase64(value.array, value.length, output);
+            Base64Encoding.writeQuotedBase64(value.array, value.length, output);
             writeMore();
         }
 
