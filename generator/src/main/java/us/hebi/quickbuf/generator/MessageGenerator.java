@@ -658,8 +658,8 @@ class MessageGenerator {
                     .beginControlFlow("while (true)")
                     .beginControlFlow("switch (hash)");
         } else {
-            mergeFrom.beginControlFlow("while (input.hasNext())")
-                    .beginControlFlow("switch (input.nextFieldHash())");
+            mergeFrom.beginControlFlow("while (!input.isAtEnd())")
+                    .beginControlFlow("switch (input.readFieldHash())");
         }
 
         // add case statements for every field
@@ -697,7 +697,7 @@ class MessageGenerator {
                 }
 
                 // Check if we can fall through
-                mergeFrom.addStatement("hash = input.nextFieldHashOrZero()");
+                mergeFrom.addStatement("hash = input.readFieldHashOrZero()");
                 if (nextHash1 == nextHash2) {
                     mergeFrom.beginControlFlow("if (hash != $L)", nextHash1)
                             .addStatement("break")
@@ -731,12 +731,12 @@ class MessageGenerator {
                     .beginControlFlow("case $L:", RuntimeClasses.unknownBytesFieldHash2)
                     .beginControlFlow("if (input.isAtField($T.$N))",
                             RuntimeClasses.AbstractMessage, RuntimeClasses.unknownBytesFieldName)
-                    .addStatement("this.mergeFrom(input.readBytesAsSource())")
+                    .addStatement("mergeFrom(input.readBytesAsSource())")
                     .nextControlFlow("else")
                     .addStatement("input.skipUnknownField()")
                     .endControlFlow();
             if (enableFallthroughOptimization) {
-                mergeFrom.addStatement("hash = input.nextFieldHashOrZero()");
+                mergeFrom.addStatement("hash = input.readFieldHashOrZero()");
             }
             mergeFrom.addStatement("break");
             mergeFrom.endControlFlow();
@@ -746,7 +746,7 @@ class MessageGenerator {
         mergeFrom.beginControlFlow("default:")
                 .addStatement("input.skipUnknownField()");
         if (enableFallthroughOptimization) {
-            mergeFrom.addStatement("hash = input.nextFieldHashOrZero()");
+            mergeFrom.addStatement("hash = input.readFieldHashOrZero()");
         }
         mergeFrom.addStatement("break")
                 .endControlFlow() // case

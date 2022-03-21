@@ -34,8 +34,6 @@ import java.util.Arrays;
 /**
  * Prints proto messages in a JSON compatible format
  *
- * TODO: fix removal of comma on top-level array?
- *
  * @author Florian Enner
  * @since 26 Oct 2019
  */
@@ -168,15 +166,40 @@ public abstract class JsonSink implements Closeable, Flushable {
      */
     public JsonSink writeMessageSilent(ProtoMessage<?> value) {
         try {
-            value.writeTo(this);
-            return this;
+            return writeMessage(value);
         } catch (IOException e) {
             throw new AssertionError("silent write should not have errors", e);
         }
     }
 
+    /**
+     * Convenience overload for writing to in-memory sinks that don't throw IOException
+     */
+    public JsonSink writeRepeatedMessageSilent(RepeatedMessage<?> value){
+        try {
+            return writeRepeatedMessage(value);
+        } catch (IOException e) {
+            throw new AssertionError("silent write should not have errors", e);
+        }
+    }
+
+    /**
+     * Writes a top level object {content}
+     */
     public JsonSink writeMessage(ProtoMessage<?> value) throws IOException {
         value.writeTo(this);
+        return this;
+    }
+
+    /**
+     * Writes a top-level array [content]
+     */
+    public JsonSink writeRepeatedMessage(RepeatedMessage<?> value) throws IOException {
+        beginArray();
+        for (int i = 0; i < value.length; i++) {
+            writeMessageValue(value.array[i]);
+        }
+        endArray();
         return this;
     }
 
@@ -507,12 +530,9 @@ public abstract class JsonSink implements Closeable, Flushable {
             return new String(output.array, 0, output.length, Charsets.UTF_8);
         }
 
-        public JsonSink writeMessage(ProtoMessage<?> value) {
-            try {
-                value.writeTo(this);
-            } catch (IOException e) {
-                throw new IllegalStateException("IOException while writing to memory", e);
-            }
+        public JsonSink writeRepeatedMessage(RepeatedMessage<?> value) throws IOException {
+            super.writeRepeatedMessage(value);
+            removeTrailingComma();
             return this;
         }
 

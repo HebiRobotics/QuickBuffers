@@ -219,18 +219,18 @@ public class JacksonSource extends JsonSource {
     }
 
     @Override
-    public boolean hasNext() throws IOException {
+    public boolean isAtEnd() throws IOException {
         switch (peek()) {
             case END_OBJECT:
             case END_ARRAY:
-                return false;
+                return true;
             default:
-                return !reader.isClosed();
+                return reader.isClosed();
         }
     }
 
     @Override
-    protected CharSequence nextName() throws IOException {
+    protected CharSequence readFieldName() throws IOException {
         if (next() != JsonToken.FIELD_NAME) {
             throw unexpectedTokenError("FIELD_NAME");
         }

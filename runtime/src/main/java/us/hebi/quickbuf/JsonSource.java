@@ -271,7 +271,7 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedDouble(final RepeatedDouble value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             value.add(readDouble());
         }
         endArray();
@@ -279,7 +279,7 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedInt64(final RepeatedLong value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             value.add(readInt64());
         }
         endArray();
@@ -287,7 +287,7 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedFloat(final RepeatedFloat value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             value.add(readFloat());
         }
         endArray();
@@ -295,7 +295,7 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedInt32(final RepeatedInt value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             value.add(readInt32());
         }
         endArray();
@@ -303,7 +303,7 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedMessage(final RepeatedMessage<?> value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             readMessage(value.next());
         }
         endArray();
@@ -311,7 +311,7 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedString(final RepeatedString value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             readString(value.next());
         }
         endArray();
@@ -319,7 +319,7 @@ public abstract class JsonSource implements Closeable {
 
     public <E extends ProtoEnum<?>> void readRepeatedEnum(final RepeatedEnum<E> value, final ProtoEnum.EnumConverter<E> converter) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             E val = readEnum(converter);
             value.addValue(val == null ? 0 : val.getNumber());
         }
@@ -328,7 +328,7 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedBool(final RepeatedBoolean value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             value.add(readBool());
         }
         endArray();
@@ -336,47 +336,48 @@ public abstract class JsonSource implements Closeable {
 
     public void readRepeatedBytes(final RepeatedBytes value) throws IOException {
         if (!beginArray()) return;
-        while (hasNext()) {
+        while (!isAtEnd()) {
             readBytes(value.next());
         }
         endArray();
     }
 
     /**
-     * Consumes the begin array token or null element.
-     *
-     * @return true if the begin array element was consumed, i.e., not null
+     * Consumes the begin array token or null element. Returns true
+     * if the begin array element was successfully consumed, i.e.,
+     * not null.
      */
-    protected abstract boolean beginArray() throws IOException;
+    public abstract boolean beginArray() throws IOException;
 
-    protected abstract void endArray() throws IOException;
+    public abstract void endArray() throws IOException;
 
     // ==================== Methods for Object Mapping ====================
 
     /**
-     * Consumes the begin element token or null element.
-     *
-     * @return true if the begin object element was consumed, i.e., not null
+     * Consumes the begin element token or null element. Returns true
+     * if the begin object element was successfully consumed, i.e.,
+     * not null.
      */
     public abstract boolean beginObject() throws IOException;
 
     public abstract void endObject() throws IOException;
 
     /**
-     * @return true if the current object or array has more elements
+     * Returns true if the source has reached the end of the input,
+     * or the end of an object or array.
      */
-    public abstract boolean hasNext() throws IOException;
+    public abstract boolean isAtEnd() throws IOException;
 
-    public final int nextFieldHash() throws IOException {
-        currentField = nextName();
+    public final int readFieldHash() throws IOException {
+        currentField = readFieldName();
         return ProtoUtil.hash32(currentField);
     }
 
     /**
      * @return next field hash or zero if hasNext() returns false
      */
-    public final int nextFieldHashOrZero() throws IOException {
-        return hasNext() ? nextFieldHash() : 0;
+    public final int readFieldHashOrZero() throws IOException {
+        return isAtEnd() ? 0 : readFieldHash();
     }
 
     public boolean isAtField(FieldName fieldName) {
@@ -387,7 +388,7 @@ public abstract class JsonSource implements Closeable {
     /**
      * @return a char sequence that does not get modified between subsequent calls to this method
      */
-    protected abstract CharSequence nextName() throws IOException;
+    protected abstract CharSequence readFieldName() throws IOException;
 
     CharSequence currentField = null;
 
@@ -591,11 +592,13 @@ public abstract class JsonSource implements Closeable {
         @Override
         public boolean beginObject() throws IOException {
             // initialize on first call
-            int c = token == INT_EOF ? readNextToken() : token;
-            if (c == JsonDecoding.IntChar.INT_n) {
+            if (token == INT_UNINITIALIZED) {
+                token = readNextToken();
+            }
+            if (token == JsonDecoding.IntChar.INT_n) {
                 skipNull();
                 return false;
-            } else if (c == INT_LCURLY) {
+            } else if (token == INT_LCURLY) {
                 token = readNextToken();
                 return true;
             } else {
@@ -610,7 +613,11 @@ public abstract class JsonSource implements Closeable {
         }
 
         @Override
-        protected boolean beginArray() throws IOException {
+        public boolean beginArray() throws IOException {
+            // in case we haven't read the first token yet
+            if (token == INT_UNINITIALIZED) {
+                token = readNextToken();
+            }
             if (token == JsonDecoding.IntChar.INT_n) {
                 skipNull();
                 return false;
@@ -627,16 +634,16 @@ public abstract class JsonSource implements Closeable {
         }
 
         @Override
-        public boolean hasNext() throws IOException {
+        public boolean isAtEnd() throws IOException {
             if (token == INT_COMMA) {
                 token = readNextToken();
-                return true;
+                return false;
             }
-            return token != INT_RCURLY && token != INT_RBRACKET && token != INT_EOF;
+            return token == INT_RCURLY || token == INT_RBRACKET || token == INT_EOF;
         }
 
         @Override
-        protected CharSequence nextName() throws IOException {
+        protected CharSequence readFieldName() throws IOException {
             checkArgument(token == INT_QUOTE, "Expected key quotes");
             JsonDecoding.StringDecoding.readQuotedUtf8(this, key);
             checkArgument(readNextToken() == INT_COLON, "Expected colon after key name");
@@ -709,7 +716,7 @@ public abstract class JsonSource implements Closeable {
             return token = ch;
         }
 
-        private int token = INT_EOF;
+        private int token = INT_UNINITIALIZED;
         private final RepeatedByte buffer = RepeatedByte.newEmptyInstance();
         private final StringBuilder key = new StringBuilder(16);
 

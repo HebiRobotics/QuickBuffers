@@ -245,6 +245,24 @@ public class JsonSinkTest {
     }
 
     @Test
+    public void testTopLevelArrayOutput() throws IOException {
+        RepeatedMessage<TestAllTypes> array = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        for (int i = 0; i < 5; i++) {
+            array.next().setOptionalInt32(i);
+        }
+
+        // Serialization
+        String desired = "[{\"optionalInt32\":0},{\"optionalInt32\":1},{\"optionalInt32\":2},{\"optionalInt32\":3},{\"optionalInt32\":4}]";
+        assertEquals(desired, JsonSink.newInstance().writeRepeatedMessage(array).toString());
+
+        // Deserialization
+        RepeatedMessage<TestAllTypes> actual = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        JsonSource.newInstance(desired).readRepeatedMessage(actual);
+        assertEquals(array, actual);
+
+    }
+
+    @Test
     public void testMiniOutputProtoNames() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
 

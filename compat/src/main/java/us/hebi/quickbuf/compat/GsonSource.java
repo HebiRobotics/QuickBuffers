@@ -154,12 +154,12 @@ public class GsonSource extends JsonSource {
     }
 
     @Override
-    public boolean hasNext() throws IOException {
-        return reader.hasNext();
+    public boolean isAtEnd() throws IOException {
+        return !reader.hasNext();
     }
 
     @Override
-    protected CharSequence nextName() throws IOException {
+    protected CharSequence readFieldName() throws IOException {
         return reader.nextName();
     }
 

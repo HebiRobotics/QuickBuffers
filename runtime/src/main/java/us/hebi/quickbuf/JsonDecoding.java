@@ -59,6 +59,7 @@ class JsonDecoding {
 
     static class IntChar {
 
+        public final static int INT_UNINITIALIZED = -2;
         public final static int INT_EOF = -1;
         public final static int INT_TAB = '\t';
         public final static int INT_LF = '\n';
