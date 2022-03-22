@@ -37,39 +37,14 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * === Quickbuf (JDK8 unsafe)
- * Benchmark                                     Mode  Cnt     Score     Error   Units
- * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2175.096 ±  39.897  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3940.677 ±  81.755  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   7647.549 ± 260.050  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  12695.215 ± 185.013  ops/ms
- *
- * === Quickbuf (JDK8 no unsafe)
- * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   1902.791 ± 101.543  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3608.368 ±  83.677  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   8368.567 ± 205.855  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  11791.775 ± 420.490  ops/ms
- *
- * == Quickbuf (JDK13 unsafe)
- * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2160.508 ±  95.135  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3648.551 ±  57.977  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   9361.098 ±  38.584  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  13176.648 ± 343.073  ops/ms
- *
- * == Quickbuf (JDK13 no unsafe)
- * SbeThroughputBenchmarkQuickbuf.testCarDecode     thrpt   10   2329.465 ±  90.888  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testCarEncode     thrpt   10   3410.025 ±  59.886  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketDecode  thrpt   10   9805.340 ± 138.477  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncode  thrpt   10  12319.570 ± 222.686  ops/ms
- *
- * === JSON (JDK8)
- * Benchmark                                         Mode  Cnt     Score    Error   Units
- * SbeThroughputBenchmarkRobo.testCarEncodeJson     thrpt   10  1423.760 ± 31.877  ops/ms
- * SbeThroughputBenchmarkRobo.testMarketEncodeJson  thrpt   10  3284.856 ± 72.124  ops/ms
- *
- * === JSON (JDK13)
- * SbeThroughputBenchmarkQuickbuf.testCarEncodeJson     thrpt   10   1599.151 ±   18.887  ops/ms
- * SbeThroughputBenchmarkQuickbuf.testMarketEncodeJson  thrpt   10   3690.897 ±   46.368  ops/ms
+ * === Quickbuf RC1 (JDK 17)
+ * Benchmark                                             Mode  Cnt      Score     Error   Units
+ * SbeThroughputBenchmarkQuickbuf.testCarDecode         thrpt   40   3362,213 ±  67,658  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncode         thrpt   40   3404,555 ±  31,683  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testCarEncodeFast     thrpt   40   3689,193 ±  68,648  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketDecode      thrpt   40   9201,885 ±  46,797  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncode      thrpt   40  12478,487 ± 120,646  ops/ms
+ * SbeThroughputBenchmarkQuickbuf.testMarketEncodeFast  thrpt   40  14332,532 ±  58,521  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019
@@ -84,7 +59,7 @@ public class SbeThroughputBenchmarkQuickbuf {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SbeThroughputBenchmarkQuickbuf.class.getSimpleName() + ".*(WriteOnly).*")
+                .include(".*" + SbeThroughputBenchmarkQuickbuf.class.getSimpleName() + ".*(Encode|Decode).*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

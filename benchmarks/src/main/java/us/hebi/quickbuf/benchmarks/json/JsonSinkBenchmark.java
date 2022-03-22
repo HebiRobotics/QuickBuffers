@@ -39,23 +39,15 @@ import java.util.concurrent.TimeUnit;
 import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuickbuf.*;
 
 /**
- * === JDK 8
+ * === Quickbuf RC1 (JDK 17)
  * Benchmark                                   Mode  Cnt     Score     Error   Units
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   242,325 ± 20,684  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   455,089 ± 23,081  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   404,916 ±  1,632  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   553,937 ± 55,657  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1472,689 ±  5,766  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3223,580 ±  76,672  ops/ms
+ * JsonSinkBenchmark.testGsonCarEncode        thrpt   20   252,798 ±   2,027  ops/ms
+ * JsonSinkBenchmark.testGsonMarketEncode     thrpt   20   439,188 ±   3,255  ops/ms
+ * JsonSinkBenchmark.testJacksonCarEncode     thrpt   20   396,907 ±   2,105  ops/ms
+ * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   20   621,604 ±   9,139  ops/ms
  *
- * === JDK17
- * Benchmark                                   Mode  Cnt     Score     Error   Units
- * JsonSinkBenchmark.testGsonCarEncode        thrpt   10   248,636 ±   9,060  ops/ms
- * JsonSinkBenchmark.testGsonMarketEncode     thrpt   10   450,656 ±   3,676  ops/ms
- * JsonSinkBenchmark.testJacksonCarEncode     thrpt   10   407,313 ±   4,580  ops/ms
- * JsonSinkBenchmark.testJacksonMarketEncode  thrpt   10   624,376 ±  23,840  ops/ms
- * JsonSinkBenchmark.testJsonCarEncode        thrpt   10  1510,204 ±  13,852  ops/ms
- * JsonSinkBenchmark.testJsonMarketEncode     thrpt   10  3352,073 ± 370,167  ops/ms
+ * JsonSinkBenchmark.testJsonCarEncode        thrpt   20  1435,850 ±  40,645  ops/ms
+ * JsonSinkBenchmark.testJsonMarketEncode     thrpt   20  3602,384 ± 142,406  ops/ms
  *
  * @author Florian Enner
  * @since 28 Nov 2019
@@ -63,8 +55,8 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(2)
-@Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 public class JsonSinkBenchmark {
 

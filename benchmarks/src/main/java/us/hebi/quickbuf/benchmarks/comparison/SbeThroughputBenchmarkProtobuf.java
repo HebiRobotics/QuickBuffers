@@ -39,12 +39,26 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
  * Throughput test. Comparable to
  * https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html
  *
- * === Protobuf-Java === (OpenJDK13)
+ * === Protobuf-Java 3.9.1 === (OpenJDK13)
  * Benchmark                                      Mode  Cnt     Score     Error   Units
  * SbeThroughputBenchmarkProtobuf.testCarDecode     thrpt   10  1270.720 ± 170.138  ops/ms
  * SbeThroughputBenchmarkProtobuf.testCarEncode     thrpt   10   984.541 ±  12.779  ops/ms
  * SbeThroughputBenchmarkProtobuf.testMarketDecode  thrpt   10  3305.841 ± 119.879  ops/ms
  * SbeThroughputBenchmarkProtobuf.testMarketEncode  thrpt   10  3700.373 ±  99.843  ops/ms
+ *
+ * === Protobuf-Java 3.19.4 === (JDK 17)
+ * Benchmark                                         Mode  Cnt     Score     Error   Units
+ * SbeThroughputBenchmarkProtobuf.testCarDecode     thrpt   40  1318,842 ±  56,300  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testCarEncode     thrpt   40  1207,362 ±  66,393  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketDecode  thrpt   40  3390,439 ± 287,391  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketEncode  thrpt   40  5957,485 ± 431,779  ops/ms
+ *
+ * === Protobuf-Javalite 3.19.4 === (JDK 17)
+ * Benchmark                                         Mode  Cnt     Score    Error   Units
+ * SbeThroughputBenchmarkProtobuf.testCarDecode     thrpt   10   974,071 ± 13,147  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testCarEncode     thrpt   10   508,148 ± 16,455  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketDecode  thrpt   10  1647,572 ± 48,817  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketEncode  thrpt   10   865,989 ± 44,991  ops/ms
  *
  * @author Florian Enner
  * @since 16 Oct 2019

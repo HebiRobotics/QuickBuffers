@@ -38,22 +38,20 @@ import java.util.concurrent.TimeUnit;
  * Serializes a single massive packed double array. Represents best case scenario.
  * Represents the last dataset in the Readme benchmarks.
  *
- * === QuickBuffers (Unsafe) ===
- * Benchmark                              Mode  Cnt    Score    Error  Units
- * PackedDoublesBenchmark.readQuick       avgt   10   7.061 ± 0.167  ms/op
- * PackedDoublesBenchmark.readWriteQuick  avgt   10  13.618 ± 0.337  ms/op
+ * === Quickbuf rc1 (JDK17)
+ * Benchmark                              Mode  Cnt   Score   Error  Units
+ * PackedDoublesBenchmark.readQuick       avgt   40   5,836 ± 0,067  ms/op
+ * PackedDoublesBenchmark.readWriteQuick  avgt   40  11,429 ± 0,151  ms/op
  *
- * === QuickBuffers (Safe) ===
- * PackedDoublesBenchmark.readQuick       avgt   10  29.202 ± 0.397  ms/op
- * PackedDoublesBenchmark.readWriteQuick  avgt   10  74.527 ± 1.353  ms/op
+ * === Protobuf-Java 3.19.4 (JDK17)
+ * Benchmark                              Mode  Cnt   Score   Error  Units
+ * PackedDoublesBenchmark.readProto       avgt   40  59,246 ± 0,777  ms/op
+ * PackedDoublesBenchmark.readWriteProto  avgt   40  99,932 ± 0,873  ms/op
  *
- * === Java (Some Unsafe) ===
- * PackedDoublesBenchmark.readProto       avgt   10  103.989 ± 37.389  ms/op
- * PackedDoublesBenchmark.readWriteProto  avgt   10  119.322 ± 15.138  ms/op
- *
- * === JavaLite (Some Unsafe) ===
- * PackedDoublesBenchmark.readProto       avgt   10   91.523 ± 42.055  ms/op --
- * PackedDoublesBenchmark.readWriteProto  avgt   10  112.942 ± 32.927  ms/op --
+ * === Protobuf-Javalite 3.19.4 (JDK17)
+ * Benchmark                              Mode  Cnt    Score   Error  Units
+ * PackedDoublesBenchmark.readProto       avgt   40   63,476 ± 1,040  ms/op
+ * PackedDoublesBenchmark.readWriteProto  avgt   40  102,466 ± 0,800  ms/op
  *
  * @author Florian Enner
  * @since 13 Oct 2019
@@ -61,8 +59,8 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(2)
-@Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 public class PackedDoublesBenchmark {
 

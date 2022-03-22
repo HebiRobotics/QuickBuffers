@@ -44,34 +44,28 @@ import java.util.concurrent.TimeUnit;
 /**
  * Generates messages with the same contents as the old benchmarks in Simple Binary Encoding (SBE)
  *
- * NUC8i7BEH / Windows / JDK8
+ * 3900x / Windows 10
  *
+ * === Quickbuf RC1 (JDK 17)
+ * Benchmark                                 Mode  Cnt   Score   Error  Units
+ * SbeBenchmark.carQuickRead                 avgt   20  23,323 ± 0,496  ms/op
+ * SbeBenchmark.carQuickReadWrite            avgt   20  42,149 ± 1,107  ms/op
+ * SbeBenchmark.marketQuickRead              avgt   20  18,001 ± 0,114  ms/op
+ * SbeBenchmark.marketQuickReadWrite         avgt   20  32,464 ± 0,846  ms/op
  *
- * === QuickBuffers (Unsafe) ===
- * Benchmark                                Mode  Cnt   Score    Error  Units
- * SbeBenchmark.carUnsafeQuickRead           avgt   10  30.661 ± 2.892  ms/op
- * SbeBenchmark.carUnsafeQuickReadReadWrite  avgt   10  47.498 ± 2.198  ms/op
- * SbeBenchmark.marketUnsafeQuickRead        avgt   10  21.946 ± 0.997  ms/op
- * SbeBenchmark.marketUnsafeQuickReadWrite   avgt   10  35.220 ± 1.000  ms/op
+ * === Protobuf-Java 3.19.4 (JDK 17)
+ * Benchmark                                 Mode  Cnt   Score   Error  Units
+ * SbeBenchmark.carProtoRead                 avgt   20  54,041 ± 2,763  ms/op
+ * SbeBenchmark.carProtoReadWrite            avgt   20  79,338 ± 2,707  ms/op
+ * SbeBenchmark.marketProtoRead              avgt   20  42,773 ± 2,016  ms/op
+ * SbeBenchmark.marketProtoReadWrite         avgt   20  73,791 ± 2,751  ms/op
  *
- * === QuickBuffers (Safe) ===
- * SbeBenchmark.carQuickRead          avgt   10  35.540 ± 2.008  ms/op
- * SbeBenchmark.carQuickReadWrite     avgt   10  55.914 ± 3.173  ms/op
- * SbeBenchmark.marketQuickRead       avgt   10  21.027 ± 0.871  ms/op
- * SbeBenchmark.marketQuickReadWrite  avgt   10  38.426 ± 0.743  ms/op
- *
- * === Protobuf-Java
- * Benchmark                          Mode  Cnt   Score    Error  Units
- * SbeBenchmark.carProtoRead          avgt   10  64.838 ±  6.028  ms/op -- 153 MB/s
- * SbeBenchmark.carProtoReadWrite     avgt   10  93.787 ±  2.824  ms/op -- 106 MB/s
- * SbeBenchmark.marketProtoRead       avgt   10  46.673 ±  6.769  ms/op -- 214 MB/s
- * SbeBenchmark.marketProtoReadWrite  avgt   10  88.855 ± 14.795  ms/op -- 112 MB/s
- *
- * === Protobuf-JavaLite
- * SbeBenchmark.carProtoRead                   avgt   10  147.068 ±  3.332  ms/op -- 68 MB/s
- * SbeBenchmark.carProtoReadWrite              avgt   10  247.656 ± 28.943  ms/op -- 40 MB/s
- * SbeBenchmark.marketProtoRead                avgt   10  154.648 ± 14.391  ms/op -- 64 MB/s
- * SbeBenchmark.marketProtoReadWrite           avgt   10  251.861 ±  7.509  ms/op -- 40 MB/s
+ * === Protobuf-Javalite 3.19.4 (JDK17)
+ * Benchmark                                 Mode  Cnt    Score   Error  Units
+ * SbeBenchmark.carProtoRead                 avgt   20  104,000 ± 3,800  ms/op
+ * SbeBenchmark.carProtoReadWrite            avgt   20  172,748 ± 4,172  ms/op
+ * SbeBenchmark.marketProtoRead              avgt   20  130,718 ± 2,707  ms/op
+ * SbeBenchmark.marketProtoReadWrite         avgt   20  220,967 ± 2,370  ms/op
  *
  * @author Florian Enner
  * @since 15 Oct 2019
@@ -86,7 +80,7 @@ public class SbeBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SbeBenchmark.class.getSimpleName() + ".*Unsafe.*")
+                .include(".*" + SbeBenchmark.class.getSimpleName() + ".*.*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();
@@ -116,8 +110,6 @@ public class SbeBenchmark {
     final Car carMsg = Car.newInstance();
     final ProtoSource source = ProtoSource.newArraySource();
     final ProtoSink sink = ProtoSink.newArraySink();
-    final ProtoSource unsafeSource = ProtoSource.newDirectSource();
-    final ProtoSink unsafeSink = ProtoSink.newArraySink();
 
     // ===================== DATASETS =====================
     final static int MAX_DATASET_SIZE = 10 * 1024 * 1024;
@@ -125,7 +117,7 @@ public class SbeBenchmark {
     final byte[] carDataMessages = multiplyToNumBytes(SbeThroughputBenchmarkQuickbuf.buildCarData(carMsg).toByteArray(), MAX_DATASET_SIZE);
     final byte[] output = new byte[MAX_DATASET_SIZE];
 
-    // ===================== UNSAFE OPTION DISABLED (e.g. Android) =====================
+    // ===================== QUICKBUFFERS =====================
     @Benchmark
     public int marketQuickRead() throws IOException {
         return readQuick(source.setInput(marketDataMessages), marketMsg);
@@ -144,27 +136,6 @@ public class SbeBenchmark {
     @Benchmark
     public int carQuickReadWrite() throws IOException {
         return readWriteQuick(source.setInput(carDataMessages), carMsg, sink.setOutput(output));
-    }
-
-    // ===================== UNSAFE OPTION ENABLED =====================
-    @Benchmark
-    public int marketUnsafeQuickRead() throws IOException {
-        return readQuick(unsafeSource.setInput(marketDataMessages), marketMsg);
-    }
-
-    @Benchmark
-    public int marketUnsafeQuickReadWrite() throws IOException {
-        return readWriteQuick(unsafeSource.setInput(marketDataMessages), marketMsg, unsafeSink.setOutput(output));
-    }
-
-    @Benchmark
-    public int carUnsafeQuickRead() throws IOException {
-        return readQuick(unsafeSource.setInput(carDataMessages), carMsg);
-    }
-
-    @Benchmark
-    public int carUnsafeQuickReadReadWrite() throws IOException {
-        return readWriteQuick(unsafeSource.setInput(carDataMessages), carMsg, unsafeSink.setOutput(output));
     }
 
     // ===================== STOCK PROTOBUF =====================
