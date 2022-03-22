@@ -175,7 +175,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     /**
      * Convenience overload for writing to in-memory sinks that don't throw IOException
      */
-    public JsonSink writeRepeatedMessageSilent(RepeatedMessage<?> value){
+    public JsonSink writeRepeatedMessageSilent(RepeatedMessage<?> value) {
         try {
             return writeRepeatedMessage(value);
         } catch (IOException e) {

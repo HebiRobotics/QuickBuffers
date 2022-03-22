@@ -1081,6 +1081,11 @@ public abstract class ProtoSource {
     public abstract int getTotalBytesRead();
 
     /**
+     * Rewinds the internal position to match the desired number of bytes read.
+     */
+    public abstract void rewindTo(int totalBytesRead);
+
+    /**
      * Read one byte from the input.
      *
      * @throws InvalidProtocolBufferException The end of the source or the current
@@ -1123,6 +1128,19 @@ public abstract class ProtoSource {
     }
 
     /**
+     * Reads a varint from the input one byte at a time, so that it does not read any bytes after the
+     * end of the varint. If you simply wrapped the stream in a StreamSource and used {@link
+     * #readRawVarint32()} then you may end up reading too many bytes.
+     */
+    public static int readRawVarint32(final InputStream input) throws IOException {
+        final int firstByte = input.read();
+        if (firstByte == -1) {
+            throw InvalidProtocolBufferException.truncatedMessage();
+        }
+        return readRawVarint32(firstByte, input);
+    }
+
+    /**
      * Like {@link #readRawVarint32(InputStream)}, but expects that the caller has already read one
      * byte. This allows the caller to determine if EOF has been reached before attempting to read.
      */
@@ -1155,20 +1173,6 @@ public abstract class ProtoSource {
             }
         }
         throw InvalidProtocolBufferException.malformedVarint();
-    }
-
-    /**
-     * Reads a varint from the input one byte at a time, so that it does not read any bytes after the
-     * end of the varint. If you simply wrapped the stream in a CodedInputStream and used {@link
-     * #readRawVarint32(InputStream)} then you would probably end up reading past the end of the
-     * varint since CodedInputStream buffers its input.
-     */
-    static int readRawVarint32(final InputStream input) throws IOException {
-        final int firstByte = input.read();
-        if (firstByte == -1) {
-            throw InvalidProtocolBufferException.truncatedMessage();
-        }
-        return readRawVarint32(firstByte, input);
     }
 
     static class StreamSource extends ProtoSource {
@@ -1216,6 +1220,11 @@ public abstract class ProtoSource {
         @Override
         public int getTotalBytesRead() {
             return position;
+        }
+
+        @Override
+        public void rewindTo(int totalBytesRead) {
+            throw new UnsupportedOperationException("Stream can't be rewound");
         }
 
         @Override
@@ -1306,6 +1315,11 @@ public abstract class ProtoSource {
         @Override
         public int getTotalBytesRead() {
             return buffer.position();
+        }
+
+        @Override
+        public void rewindTo(int totalBytesRead) {
+            buffer.position(totalBytesRead);
         }
 
         @Override

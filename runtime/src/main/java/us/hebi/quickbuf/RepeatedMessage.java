@@ -81,6 +81,23 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
         return true;
     }
 
+    /**
+     * Helper method to check whether all contained messages are
+     * initialized, i.e., if all required fields are set.
+     * <p>
+     * Message content is not automatically checked after merging
+     * new data. This method should be called manually as needed.
+     *
+     * @return this
+     * @throws InvalidProtocolBufferException if one or more messages are not initialized.
+     */
+    public RepeatedMessage<MessageType> checkInitialized() throws InvalidProtocolBufferException {
+        if (!isInitialized()) {
+            throw new UninitializedMessageException(this).asInvalidProtocolBufferException();
+        }
+        return this;
+    }
+
     @Override
     protected MessageType createEmpty() {
         return factory.create();

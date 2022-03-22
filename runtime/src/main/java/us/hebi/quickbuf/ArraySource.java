@@ -87,7 +87,11 @@ class ArraySource extends ProtoSource{
         return position - offset;
     }
 
-    protected void rewindToPosition(int position) {
+    @Override
+    public void rewindTo(int position) {
+        if (position < 0 || position > limit) {
+            throw new IllegalArgumentException("position out of bounds");
+        }
         this.position = offset + position;
     }
 
@@ -136,7 +140,7 @@ class ArraySource extends ProtoSource{
             skipField(tag);
             arrayLength++;
         }
-        rewindToPosition(startPos);
+        rewindTo(startPos);
         return arrayLength;
     }
 
@@ -159,7 +163,7 @@ class ArraySource extends ProtoSource{
             readRawVarint32();
             count++;
         }
-        rewindToPosition(position);
+        rewindTo(position);
         return count;
     }
 

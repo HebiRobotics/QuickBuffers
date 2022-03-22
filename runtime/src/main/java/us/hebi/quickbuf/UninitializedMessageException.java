@@ -20,6 +20,7 @@
 
 package us.hebi.quickbuf;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,6 +42,12 @@ public class UninitializedMessageException extends RuntimeException {
     public UninitializedMessageException(final ProtoMessage<?> message) {
         super("Message missing required fields");
         this.origin = message;
+    }
+
+    public UninitializedMessageException(final RepeatedMessage<?> messageArray) {
+        super("Message array missing required fields");
+        this.missingFields = new ArrayList<String>();
+        ProtoMessage.getMissingFields("", "", messageArray, missingFields);
     }
 
     public UninitializedMessageException(final List<String> missingFields) {

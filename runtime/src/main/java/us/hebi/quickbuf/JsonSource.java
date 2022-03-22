@@ -56,9 +56,22 @@ public abstract class JsonSource implements Closeable {
         return new InputStreamSource(inputStream);
     }
 
-    // for testing
-    static JsonSource newInstance(String string) {
+    public static JsonSource newInstance(String string) {
         return newInstance(string.getBytes(UTF_8));
+    }
+
+    /**
+     * Parses a root-level object of the given message type and checks for required field initialization
+     */
+    public <ProtoMsg extends ProtoMessage<ProtoMsg>> ProtoMsg parseMessage(MessageFactory<ProtoMsg> factory) throws IOException {
+        return readMessage(factory.create()).checkInitialized();
+    }
+
+    /**
+     * Parses a root-level array of the given message type and checks for required field initialization
+     */
+    public <ProtoMsg extends ProtoMessage<ProtoMsg>> RepeatedMessage<ProtoMsg> parseRepeatedMessage(MessageFactory<ProtoMsg> factory) throws IOException {
+        return readRepeatedMessage(RepeatedMessage.newEmptyInstance(factory)).checkInitialized();
     }
 
     // ==================== Ignoring unknown fields ====================
@@ -150,10 +163,11 @@ public abstract class JsonSource implements Closeable {
     public abstract ProtoSource readBytesAsSource() throws IOException;
 
     /**
-     * Read a nested message value from the source
+     * Reads a message value from the source and merges the contents into the provided message
      */
-    public void readMessage(final ProtoMessage<?> msg) throws IOException {
+    public <ProtoMsg extends ProtoMessage<ProtoMsg>> ProtoMsg readMessage(final ProtoMsg msg) throws IOException {
         msg.mergeFrom(this);
+        return msg;
     }
 
     /**
@@ -194,8 +208,8 @@ public abstract class JsonSource implements Closeable {
     /**
      * Read a {@code group} field value from the source.
      */
-    public void readGroup(final ProtoMessage<?> msg) throws IOException {
-        readMessage(msg);
+    public <ProtoMsg extends ProtoMessage<ProtoMsg>> ProtoMsg readGroup(final ProtoMsg msg) throws IOException {
+        return readMessage(msg);
     }
 
     /**
@@ -301,12 +315,13 @@ public abstract class JsonSource implements Closeable {
         endArray();
     }
 
-    public void readRepeatedMessage(final RepeatedMessage<?> value) throws IOException {
-        if (!beginArray()) return;
+    public <ProtoMsg extends ProtoMessage<ProtoMsg>> RepeatedMessage<ProtoMsg> readRepeatedMessage(final RepeatedMessage<ProtoMsg> value) throws IOException {
+        if (!beginArray()) return value;
         while (!isAtEnd()) {
             readMessage(value.next());
         }
         endArray();
+        return value;
     }
 
     public void readRepeatedString(final RepeatedString value) throws IOException {
