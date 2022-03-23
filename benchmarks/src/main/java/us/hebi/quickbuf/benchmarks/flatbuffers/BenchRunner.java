@@ -34,38 +34,47 @@ import java.util.concurrent.TimeUnit;
 /**
  * Message size: FlatBuffers 344, QuickBuffers: 228
  *
- * === FlatBuffers 1.11.0
- * Benchmark                                Mode  Cnt  Score   Error  Units
- * BenchRunner.flatDirectDecodeAndTraverse  avgt   10  0.234 ± 0.012  us/op
- * BenchRunner.flatDirectEncode             avgt   10  0.457 ± 0.031  us/op
- * BenchRunner.flatHeapDecodeAndTraverse    avgt   10  0.381 ± 0.144  us/op
- * BenchRunner.flatHeapEncode               avgt   10  0.626 ± 0.050  us/op
- *
- * === FlatBuffers 1.10.0
+ * === FlatBuffers 1.10.0 (JDK8)
  * Benchmark                                Mode  Cnt  Score   Error  Units
  * BenchRunner.flatDirectDecodeAndTraverse  avgt   10  0.321 ± 0.003  us/op
  * BenchRunner.flatDirectEncode             avgt   10  0.649 ± 0.006  us/op
  * BenchRunner.flatHeapDecodeAndTraverse    avgt   10  0.427 ± 0.008  us/op
  * BenchRunner.flatHeapEncode               avgt   10  0.821 ± 0.011  us/op
  *
- * === Unsafe Sink
- * BenchRunner.quickbufDecode             avgt   10  0.177 ± 0.008  us/op
- * BenchRunner.quickbufDecodeAndTraverse  avgt   10  0.302 ± 0.006  us/op
- * BenchRunner.quickbufEncode             avgt   10  0.221 ± 0.004  us/op
+ * === FlatBuffers 1.11.0 (JDK8)
+ * Benchmark                                Mode  Cnt  Score   Error  Units
+ * BenchRunner.flatDirectDecodeAndTraverse  avgt   10  0.234 ± 0.012  us/op
+ * BenchRunner.flatDirectEncode             avgt   10  0.457 ± 0.031  us/op
+ * BenchRunner.flatHeapDecodeAndTraverse    avgt   10  0.381 ± 0.144  us/op
+ * BenchRunner.flatHeapEncode               avgt   10  0.626 ± 0.050  us/op
  *
- * === Heap Sink
- * BenchRunner.quickbufDecode             avgt   10  0.213 ± 0.007  us/op
- * BenchRunner.quickbufDecodeAndTraverse  avgt   10  0.346 ± 0.008  us/op
- * BenchRunner.quickbufEncode             avgt   10  0.268 ± 0.002  us/op
+ * === FlatBuffers 2.0.0 (JDK17)
+ * Benchmark                                Mode  Cnt    Score    Error  Units
+ * BenchRunner.flatDirectDecodeAndTraverse  avgt   20  222,815 ±  7,716  ns/op
+ * BenchRunner.flatDirectEncode             avgt   20  467,350 ±  8,653  ns/op
+ * BenchRunner.flatHeapDecodeAndTraverse    avgt   20  210,689 ±  7,518  ns/op
+ * BenchRunner.flatHeapEncode               avgt   20  512,067 ± 25,371  ns/op
+ *
+ * === QuickBuffers rc1 (JDK17) - DirectSource
+ * Benchmark                              Mode  Cnt    Score    Error  Units
+ * BenchRunner.quickbufDecode             avgt   20  185,288 ±  2,578  ns/op
+ * BenchRunner.quickbufDecodeAndTraverse  avgt   20  216,498 ±  5,685  ns/op
+ * BenchRunner.quickbufEncode             avgt   20  264,051 ± 10,898  ns/op
+ *
+ * === QuickBuffers rc1 (JDK17) - ArraySource
+ * Benchmark                              Mode  Cnt    Score    Error  Units
+ * BenchRunner.quickbufDecode             avgt   20  166,178 ±  9,089  ns/op
+ * BenchRunner.quickbufDecodeAndTraverse  avgt   20  199,232 ± 15,365  ns/op
+ * BenchRunner.quickbufEncode             avgt   20  259,334 ± 28,094  ns/op
  *
  * @author Florian Enner
  * @since 23 Jan 2015
  */
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Fork(2)
-@Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@Fork(4)
+@Warmup(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 250, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 public class BenchRunner {
 

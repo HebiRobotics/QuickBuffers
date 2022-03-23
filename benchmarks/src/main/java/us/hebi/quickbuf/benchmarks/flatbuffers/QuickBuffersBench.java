@@ -92,7 +92,7 @@ public class QuickBuffersBench {
 
             sum += fooBar.getPostfix();
             sum += (long) fooBar.getRating();
-            sum += fooBar.getNameBytes().getChars(chars).length();
+            sum += fooBar.getNameBytes().size();
 
             Bar bar = fooBar.getSibling();
             sum += bar.getRatio();
@@ -111,15 +111,14 @@ public class QuickBuffersBench {
 
     }
 
-    final StringBuilder chars = new StringBuilder(32);
     final FooBarContainer encodeMsg = setData(FooBarContainer.newInstance());
 
     byte[] encodeBuffer = encodeMsg.toByteArray();
-    ProtoSink sink = ProtoSink.newArraySink().setOutput(encodeBuffer);
+    ProtoSink sink = ProtoSink.newDirectSink().setOutput(encodeBuffer);
 
     FooBarContainer decodeMsg = FooBarContainer.newInstance();
     byte[] decodeBuffer = encodeBuffer.clone();
-    ProtoSource source = ProtoSource.newArraySource().setInput(decodeBuffer);
+    ProtoSource source = ProtoSource.newDirectSource().setInput(decodeBuffer);
 
     private static int vecLen = 3;
     private static String location = "http://google.com/flatbuffers/";

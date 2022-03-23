@@ -6,6 +6,8 @@ Below is a comparison with Google's official bindings for a variety of datasets.
 
 The first benchmark was copied from [Small Binary Encoding's](https://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html) Car (140 byte) and MarketData (64 byte) throughput benchmarks. It tests manual creation of messages and encodes and decodes them from a byte array, which is similar to sending and receiving individual messages.
 
+Note that this test was done using the original SBE .proto definitions. Changing from varint to fixed-width types would improve the results by 30-50%. Additional inlining of small nested fields would result in more than 5x the original message throughput. You should be aware that there is a significant trade-off between wire size and encoding speed.
+
 <!-- car multiplier: 140 * 1000 / (1024*1024) = 0.1335 = -->
 <!-- market multiplier: 64 * 1000 / (1024*1024) = 0.061 = -->
 
@@ -14,9 +16,7 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 | Car Encode  | 3404 (454 MB/s) | 1207 (161 MB/s) |  2.8 
 | Car Decode  | 3362 (449 MB/s) | 1318 (176 MB/s) |  2.6  
 | Market Data Encode  | 12478 (761 MB/s) | 5957 (363 MB/s) |  2.1  
-| Market Data Decode  | 9201 (561 MB/s) | 3390 (207 MB/s) |  2.7  
-
-Note that this test was done using the original SBE .proto definitions. If the varint types are changed to a less expensive encoding, e.g., `fixed64/32` instead of `int64/32`, the results improve by 30-50%. By additionally inlining the small nested fields it'd result in more than 5x the original message throughput. Overall, be aware that there is a significant trade-off between wire size and encoding speed.
+| Market Data Decode  | 9201 (561 MB/s) | 3390 (207 MB/s) |  2.7
 
 We also compared the throughput of the built-in JSON encoding with the binary encoding of Protobuf-Java. At 559 byte (car) and 435 byte (market) the uncompressed binary sizes are of course significantly larger.
 
@@ -26,7 +26,7 @@ We also compared the throughput of the built-in JSON encoding with the binary en
 | Test [msg/ms] | QuickBuffers (JSON) | Protobuf-Java (Binary) | Ratio
 | :----------- | :-----------: | :-----------: | :-----------: |
 | Car Encode  | 1435 (765 MB/s) | 1207 |  1.2  
-| Market Data Encode  | 3602 (1.5 GB/s) | 5957 |  0.6 
+| Market Data Encode  | 3602 (1.5 GB/s) | 5957 |  0.6
 
 ## Benchmark 2 - File Streams
 
@@ -73,29 +73,24 @@ The benchmark code can be found in the `benchmarks` directory. The `Write` resul
    
 ## Benchmark 3 - FlatBuffers
 
-We also compared QuickBuffers against the Java bindings of Google's [FlatBuffers](https://google.github.io/flatbuffers/) project and ported its [official C++ benchmark](https://google.github.io/flatbuffers/flatbuffers_benchmarks.html).
+Lastly, we compared QuickBuffers against the Java bindings of Google's [FlatBuffers](https://google.github.io/flatbuffers/) project and ported its [official C++ benchmark](https://google.github.io/flatbuffers/flatbuffers_benchmarks.html). It is worth noting that the benchmark was setup to favor FlatBuffers by structuring the data as a worst case for Protobuf. It uses deep levels of nesting and encodes large numbers as 10 byte int64 varints. A flatter hierarchy with fixed size scalar types would speed things up considerably.
 
-First, it is worth noting that the benchmark was created with a strong bias for FlatBuffers. The data is setup as a worst case for Protobuf and uses deep levels of nesting and large int64 numbers that result in 10 byte varints. Using a flatter hierarchy and fixed size scalar types would speed it up considerably.
-
-**TODO: results are from JDK8. Need to be updated.**
-
-|  | QuickBuffers | FlatBuffers (v1.11.0) | FlatBuffers (v1.10.0) | Ratio`[1]`
-| :----------- | :-----------: | :-----------: | :-----------: | :-----------: |
-| **UnsafeSource / DirectByteBuffer [ns/op]**  
-| Decode             | 177 | 0 | 0 |  0.0 
-| Traverse           | 125 | 234 | 321 |  1.9
-| Encode             | 233 | 457 | 649 |  2.0
-| Encode + Decode + Traverse | 523 | 691 | 970 |  1.3
-| **ArraySource / HeapByteBuffer [ns/op]**  
-| Decode             | 213 | 0 | 0 |  0.0  
-| Traverse           | 133 | 381 | 427 |  2.9
-| Encode             | 268 | 626 | 821 |  2.3
-| Encode + Decode + Traverse | 614 | 1007 | 1248 |  1.6
+|  | QuickBuffers (rc1/jdk17) | FlatBuffers (2.0.0/jdk17) | FlatBuffers (1.11.0/jdk8) | FlatBuffers (1.10.0/jdk8) | Ratio
+| :----------- | :-----------: | :-----------: | :-----------: | :-----------: | :-----------: |
+| **DirectByteBuffer [ns/op]**  
+| Decode             | 185 | 0 |  0 | 0 |  0.0
+| Traverse           | 31 | 223 | 234 | 321 |  7.2
+| Decode + Traverse | 216 | 223 | 234 | 321 | 1.0
+| Encode             | 264 | 467 | 457 | 649 |  1.8
+| Encode + Decode + Traverse | 480 | 690 | 691 | 970 |  1.4
+| **HeapByteBuffer [ns/op]**  
+| Decode             | 166 | 0 | 0 | 0 |  0.0  
+| Traverse           | 33 | 211 | 381 | 427 |  6.4
+| Decode + Traverse | 199 | 211 | 381 | 427 | 1.1
+| Encode             | 259 | 512 | 626 | 821 |  2.0
+| Encode + Decode + Traverse | 458 | 723  | 1007 | 1248 |  1.6
 | **Other**  
-| Serialized Size   | 228 bytes | 344 bytes | 344 bytes |  1.5
-| Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 1
+| Serialized Size   | 228 bytes | 344 bytes | 344 bytes | 344 bytes |  1.5
+| Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 0 bytes | 1
 
-* `[1]` `FlatBuffers v1.11.0 / QuickBuffers`
-* `[2]` `Traverse = (Decode + Traverse) - Decode` (includes lazy utf8 parsing)
-
-Overall, while the official C++ benchmark shows tremendous performance benefits over Protobuf, the Java implementation has unfortunately been lagging behind a bit. Recent versions have seen some significant performance improvements, but encoding and traversing a `ByteBuffer` still results in significant overhead.
+Contrary to the official C++ benchmark that shows tremendous performance benefits over Protobuf, the `ByteBuffer` based Java implementation has significantly more overhead. Recent versions and JDK improvements have improved the performance, but the overhead is still enough to counter any benefits gained by removing the decoding step.
