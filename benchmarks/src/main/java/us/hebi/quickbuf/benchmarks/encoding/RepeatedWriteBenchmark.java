@@ -173,7 +173,7 @@ public class RepeatedWriteBenchmark {
     private int write(ProtoMessage msg) throws IOException {
         sink.reset();
         msg.writeTo(sink);
-        return sink.position();
+        return sink.getTotalBytesWritten();
     }
 
 }

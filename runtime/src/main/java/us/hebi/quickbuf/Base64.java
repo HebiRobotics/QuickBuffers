@@ -117,7 +117,7 @@ class Base64
      * little faster.
      * @return A BASE64 encoded array. Never <code>null</code>.
      */
-    public final static char[] encodeToChar(byte[] sArr, boolean lineSep)
+    public static char[] encodeToChar(byte[] sArr, boolean lineSep)
     {
         // Check special case
         int sLen = sArr != null ? sArr.length : 0;
@@ -169,7 +169,7 @@ class Base64
      * @return The decoded array of bytes. May be of length 0. Will be <code>null</code> if the legal characters
      * (including '=') isn't divideable by 4.  (I.e. definitely corrupted).
      */
-    public final static byte[] decode(char[] sArr)
+    public static byte[] decode(char[] sArr)
     {
         // Check special case
         int sLen = sArr != null ? sArr.length : 0;
@@ -226,7 +226,7 @@ class Base64
      * @param sArr The source array. Length 0 will return an empty array. <code>null</code> will throw an exception.
      * @return The decoded array of bytes. May be of length 0.
      */
-    public final static byte[] decodeFast(char[] sArr)
+    public static byte[] decodeFast(char[] sArr)
     {
         // Check special case
         int sLen = sArr.length;
@@ -293,7 +293,7 @@ class Base64
      * little faster.
      * @return A BASE64 encoded array. Never <code>null</code>.
      */
-    public final static byte[] encodeToByte(byte[] sArr, boolean lineSep)
+    public static byte[] encodeToByte(byte[] sArr, boolean lineSep)
     {
         return encodeToByte(sArr, 0, sArr != null ? sArr.length : 0, lineSep);
     }
@@ -307,7 +307,7 @@ class Base64
      * little faster.
      * @return A BASE64 encoded array. Never <code>null</code>.
      */
-    public final static byte[] encodeToByte(byte[] sArr, int sOff, int sLen, boolean lineSep)
+    public static byte[] encodeToByte(byte[] sArr, int sOff, int sLen, boolean lineSep)
     {
         // Check special case
         if (sArr == null || sLen == 0)
@@ -358,7 +358,7 @@ class Base64
      * @return The decoded array of bytes. May be of length 0. Will be <code>null</code> if the legal characters
      * (including '=') isn't divideable by 4. (I.e. definitely corrupted).
      */
-    public final static byte[] decode(byte[] sArr)
+    public static byte[] decode(byte[] sArr)
     {
         return decode(sArr, 0, sArr.length);
     }
@@ -371,7 +371,7 @@ class Base64
      * @return The decoded array of bytes. May be of length 0. Will be <code>null</code> if the legal characters
      * (including '=') isn't divideable by 4. (I.e. definitely corrupted).
      */
-    public final static byte[] decode(byte[] sArr, int sOff, int sLen)
+    public static byte[] decode(byte[] sArr, int sOff, int sLen)
     {
         // Count illegal characters (including '\r', '\n') to know what size the returned array will be,
         // so we don't have to reallocate & copy it later.
@@ -426,7 +426,7 @@ class Base64
      * @param sArr The source array. Length 0 will return an empty array. <code>null</code> will throw an exception.
      * @return The decoded array of bytes. May be of length 0.
      */
-    public final static byte[] decodeFast(byte[] sArr)
+    public static byte[] decodeFast(byte[] sArr)
     {
         // Check special case
         int sLen = sArr.length;
@@ -493,7 +493,7 @@ class Base64
      * little faster.
      * @return A BASE64 encoded array. Never <code>null</code>.
      */
-    public final static String encodeToString(byte[] sArr, boolean lineSep)
+    public static String encodeToString(byte[] sArr, boolean lineSep)
     {
         // Reuse char[] since we can't create a String incrementally anyway and StringBuffer/Builder would be slower.
         return new String(encodeToChar(sArr, lineSep));
@@ -507,7 +507,7 @@ class Base64
      * @return The decoded array of bytes. May be of length 0. Will be <code>null</code> if the legal characters
      * (including '=') isn't divideable by 4.  (I.e. definitely corrupted).
      */
-    public final static byte[] decode(String str)
+    public static byte[] decode(String str)
     {
         // Check special case
         int sLen = str != null ? str.length() : 0;
@@ -565,7 +565,7 @@ class Base64
      * @param s The source string. Length 0 will return an empty array. <code>null</code> will throw an exception.
      * @return The decoded array of bytes. May be of length 0.
      */
-    public final static byte[] decodeFast(String s)
+    public static byte[] decodeFast(String s)
     {
         // Check special case
         int sLen = s.length();

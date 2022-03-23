@@ -1,22 +1,23 @@
 # QuickBuffers - Fast Protocol Buffers without Allocations
 
-QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency and high throughput use cases. It can be used in zero-allocation environments and supports off-heap memory.
+QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency use cases in zero-allocation environments. The API follows Protobuf-Java where feasible to simplify migration.
 
-The main differences to Protobuf-Java are
+The main differences are
 
  * All parts of the API are mutable and reusable
- * A roughly 2x performance improvement in both encoding and decoding speed`[1]`
- * A JSON serializer that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
- * A [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) that was optimized for sequential memory access
+ * Substantial improvements to both encoding and decoding speed ([benchmarks](./benchmarks))
+ * No reflection API or any use of reflections. ProGuard obfuscation does not require configuration.
  * Significantly smaller code size than the `java` and `javalite` options
- * No reflection API or any use of reflections (no ProGuard config  needed)
+ * Built-in JSON serialization that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json) (experimental)
+ * Different [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) that optimizes for sequential memory access
+
+Partly supported features
+* `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
+* Unknown fields are retained as raw bytes and cannot be accessed as fields
 
  Unsupported Features
- * `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
- * `Extensions` and `Services` are currently not supported
- * Unknown fields are retained as raw bytes and cannot be accessed as fields
-
-`[1]` The performance benefits depend heavily on the use case and message format, but most common use cases should see a roughly 2x performance improvement in both encoding and decoding speed over `Protobuf-Java 3.9.1`. For more information see the [benchmarks](./benchmarks) section.
+ * `Extensions` 
+ * `Services`
 
 ## Runtime Library
 
@@ -26,16 +27,14 @@ You can find the latest release on Maven Central at the coordinates below. The r
 <dependency>
   <groupId>us.hebi.quickbuf</groupId>
   <artifactId>quickbuf-runtime</artifactId>
-  <version>1.0-alpha10</version>
+  <version>1.0-rc1</version>
 </dependency>
 ```
-
-Be aware that this library is currently still in a pre-release state, and that the public API should be considered a work-in-progress that may be subject to (likely minor) changes.
 
 <details>
 <summary>Building from Source</summary><p>
 
-The project can be built with `mvn package` using JDK8 through JDK11.
+The project can be built with `mvn package` using JDK8 through JDK17.
 
 Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
 
@@ -50,8 +49,8 @@ The code generator is setup as a `protoc` plugin that gets called by the officia
 <details>
 <summary>Manual Generation</summary><p>
 
-* Download an appropriate [protoc.exe](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.9.1`)
-* Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha10/protoc-gen-quickbuf-1.0-alpha10.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
+* Download an appropriate `protoc.exe` from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.19.4`)
+* Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc-gen-quickbuf-1.0-rc1.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
   * Running the plugin requires Java8 or higher to be installed
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
 * Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
@@ -81,7 +80,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                                      classpathref="maven.plugin.classpath"/>
 
                             <!-- Download plugin files -->
-                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-alpha10/protoc-gen-quickbuf-1.0-alpha10.zip"
+                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc-gen-quickbuf-1.0-rc1.zip"
                                  dest="${project.basedir}/protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
                             <unzip src="${project.basedir}/protoc-gen-quickbuf.zip" dest="${project.basedir}" overwrite="false"/>
 
@@ -144,7 +143,7 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
                         <goal>run</goal>
                     </goals>
                     <configuration>
-                        <protocVersion>3.9.1</protocVersion>
+                        <protocVersion>3.19.4</protocVersion>
 
                         <!-- plugin configuration, options, etc. -->
                         <outputTargets>
@@ -166,46 +165,25 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
 
 </p></details> 
 
-<details>
-<summary>Currently available options are</summary><p>
+Currently available options are
 
-* **indent** sets the indentation in generated files
-* **replace_package** allows replacing the Java package of the generated messages to avoid name collisions with messages generated by `--java_out`
-* **input_order** enables an optimization that improves decoding performance when parsing messages that were serialized in a known order
-  * `quickbuf` expects fields to arrive sorted by type and their ascending number (default)
-  * `number` expects fields to arrive sorted by only the ascending number (official implementations)
-  * `none` disables this optimization (not recommended)
-* **store_unknown_fields** stores unknown fields that it encounter during parsing. This allows messages to be passed on without losing information even if the schema is not fully known 
-  * unknown fields are stored in binary form, so individual fields cannot be accessed directly 
-  * unknown fields are ignored when comparing with `equals`
-* **enforce_has_checks** throws an exception when accessing fields that were not set
-* **json_use_proto_name** changes the serialized json field names to match the original proto definition (`my_field`) instead of the default lowerCamelCase (`myField`) or `json_name` override option. [Compatible parsers](https://developers.google.com/protocol-buffers/docs/proto3#json) should be able to parse both cases.
-* **json_gen_merge** generates `mergeFrom(json)` methods (experimental)
-* **java8_optional** creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher.
- 
-</p></details> 
-
-| Option | Value | 
-| :----------- | :----------- |
-| **indent** | **2**, 4, 8, tab |
-| **replace_package** | (pattern)&#124;replacement |
-| **input_order** | **quickbuf**, number, none | 
-| **store_unknown_fields** | **false**, true  |
-| **enforce_has_checks** | **false**, true  |                                     
-| **json_use_proto_name** | **false**, true  |                                     
-| **json_gen_merge** | **false**, true  |                                     
-| **java8_optional** | **false**, true  |                                     
+| Option | Value | Description |
+| :----------- | :----------- | :----------- |
+| **indent** | **2**, 4, 8, tab | sets the indentation in generated files |
+| **replace_package** | (pattern)&#124;replacement | replaces the Java package of the generated messages to avoid name collisions with messages generated by `--java_out`. |
+| **input_order** | **quickbuf**, number, none | improves decoding performance when parsing messages that were serialized in a known order. `number` matches protobuf-java, and `none` disables this optimization (not recommended). |
+| **store_unknown_fields** | **false**, true  | generates code to retain unknown fields that were encountered during parsing. This allows messages to be routed without losing information, even if the schema is not fully known. Unknown fields are stored in binary form and are ignored in equality checks. |
+| **enforce_has_checks** | **false**, true  | throws an exception when accessing fields that were not set |                               
+| **java8_optional** | **false**, true  |  creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher. |                               
 
 For example, 
 ```bash
 protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
 ``` 
 
-You can download protoc from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/).
+## Message Fields
 
-## Basic Usage
-
-Overall, we tried to keep the public API as close to Google's `Protobuf-Java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
+We tried to keep the public API as close to Google's `Protobuf-Java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
 
 All nested object types such as message or repeated fields have `getField()` and `getMutableField()` accessors. Both return the same internal storage object, but `getField()` should be considered read-only. Once a field is cleared, it should also no longer be modified.
 
@@ -296,7 +274,7 @@ public final class SimpleMessage {
     public Utf8String getOptionalStringBytes(); // internal representation -> treat as read-only
     public Utf8String getMutableOptionalStringBytes(); // internal representation -> may be modified until has state is cleared
 
-    private final StringBuilder optionalString = new StringBuilder(0);
+    private final Utf8String optionalString = Utf8String.newEmptyInstance();
 }
 ```
 
@@ -341,9 +319,9 @@ Note that repeated stores can currently only expand, but we may add something si
 
 </details>
 
-### Serialization
+### Reading and Writing Messages
 
-Messages can be read from a `ProtoSource` and written to a `ProtoSink`. At the moment we only support contiguous blocks of memory, i.e., `byte[]`.
+Messages can be read from a `ProtoSource` and written to a `ProtoSink`. The implementations are optimized for accessing contiguous blocks of memory such as `byte[]`, but there are (non-optimized) convenience wrappers for working with `InputStream`, `OutputStream`, and `ByteBuffer`.
 
 ```Java
 // Create data
@@ -368,13 +346,27 @@ Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so i
 <details>
 <summary>Off-Heap Addressing</summary><p>
 
-Depending on platform support, the implementation may make use of `sun.misc.Unsafe`. If you 
-are familiar with Unsafe, you may also request an UnsafeSource instance that will allow you to use off-heap addresses. Use with caution!
+Depending on platform support for `sun.misc.Unsafe`, the `DirectSource` and `DirectSink` implementations allow working with off-heap memory.
+
+Note that this is only intended for reducing unnecessary memory copies when working with direct NIO buffers. Contrary to popular belief, there are no performance benefits when using byte-wise actions of `Unsafe` over working with regular `byte[]` arrays. Many cases actually perform slightly slower.
 
 ```Java
-long address = /* DirectBuffer::address */;
-ProtoSource source = ProtoSource.newUnsafeInstance();
-source.setInput(null, address, length)
+// Create message
+SimpleMessage msg = SimpleMessage.newInstance();
+msg.setRequiredField(1);
+
+// Write to direct buffer
+ByteBuffer directBuffer = ByteBuffer.allocateDirect(msg.getSerializedSize());
+ProtoSink directSink = ProtoSink.newDirectSink();
+directSink.setOutput(directBuffer);
+msg.writeTo(directSink);
+directBuffer.limit(directSink.getTotalBytesWritten());
+
+// Read from direct buffer
+ProtoSource directSource = ProtoSource.newDirectSource();
+directSource.setInput(directBuffer);
+SimpleMessage msg2 = SimpleMessage.parseFrom(directSource);
+assertEquals(msg, msg2);
 ```
 
 </details>

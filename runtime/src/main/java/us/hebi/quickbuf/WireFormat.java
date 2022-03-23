@@ -77,10 +77,13 @@ final class WireFormat {
     static final int TAG_TYPE_BITS = 3;
     static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
 
-    static final int SIZEOF_FIXED_64 = 8;
-    static final int SIZEOF_FIXED_32 = 4;
-    static final int SIZEOF_FIXED_16 = 2;
-    static final int SIZEOF_FIXED_BOOL = 1;
+    static final int MIN_BOOL_SIZE = 1;
+    static final int FIXED_16_SIZE = 2;
+    static final int FIXED_32_SIZE = 4;
+    static final int FIXED_64_SIZE = 8;
+    static final int MAX_VARINT32_SIZE = 5;
+    static final int MAX_VARINT64_SIZE = 10;
+    static final int MAX_VARINT_SIZE = 10;
 
     /** Given a tag value, determines the wire type (the lower 3 bits). */
     static int getTagWireType(final int tag) {
@@ -95,6 +98,24 @@ final class WireFormat {
     /** Makes a tag value given a field number and wire type. */
     static int makeTag(final int fieldNumber, final int wireType) {
         return (fieldNumber << TAG_TYPE_BITS) | wireType;
+    }
+
+    /**
+     * Count of the number of fixed64 elements that fit within the size. The value
+     * is rounded up to match behavior and exceptions to match reading while
+     * getBytesUntilLimit() > 0.
+     */
+    static int roundedCount64(int length) {
+        return (length + 7)  / FIXED_64_SIZE;
+    }
+
+    /**
+     * Count of the number of fixed32 elements that fit within the size. The value
+     * is rounded up to match behavior and exceptions to match reading while
+     * getBytesUntilLimit() > 0.
+     */
+    static int roundedCount32(int length) {
+        return (length + 3)  / FIXED_32_SIZE;
     }
 
 }

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,12 +23,16 @@ package us.hebi.quickbuf;
 import org.junit.Test;
 import protos.test.quickbuf.RepeatedPackables;
 import protos.test.quickbuf.TestAllTypes;
-import protos.test.quickbuf.UnittestRequired;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
+import static protos.test.quickbuf.UnittestRequired.*;
 
 /**
  * @author Florian Enner
@@ -36,9 +40,91 @@ import static org.junit.Assert.*;
  */
 public class ProtoFailTests {
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = UninitializedMessageException.class)
     public void testMissingRequiredField() {
-        UnittestRequired.SimpleMessage.newInstance().toByteArray();
+        try {
+            SimpleMessage.newInstance().toByteArray();
+        } catch (UninitializedMessageException ex) {
+            assertEquals(1, ex.getMissingFields().size());
+            throw ex;
+        }
+    }
+
+    @Test(expected = UninitializedMessageException.class)
+    public void testMissingRequiredFieldAll() {
+        try {
+            TestAllTypesRequired.newInstance()
+                    .setRequiredNestedMessage(SimpleMessage.newInstance())
+                    .toByteArray();
+        } catch (UninitializedMessageException ex) {
+            List<String> missing = ex.getMissingFields();
+            // uncomment to generate copy paste values
+            /*for (String s : missing) {
+                System.out.println("\"" + s + "\",");
+            }*/
+            assertEquals(17, missing.size());
+            assertEquals(missing, Arrays.asList(
+                    "required_double",
+                    "required_fixed64",
+                    "required_sfixed64",
+                    "required_int64",
+                    "required_uint64",
+                    "required_sint64",
+                    "required_float",
+                    "required_fixed32",
+                    "required_sfixed32",
+                    "required_int32",
+                    "required_uint32",
+                    "required_sint32",
+                    "required_nested_enum",
+                    "required_bool",
+                    "required_nested_message.required_field",
+                    "required_bytes",
+                    "required_string"
+            ));
+            assertTrue(ex.getMessage().contains("required_float"));
+            assertTrue(ex.getMessage().contains("required_nested_message.required_field"));
+            throw ex;
+        }
+    }
+
+    @Test(expected = UninitializedMessageException.class)
+    public void testMissingRequiredNestedField() {
+        try {
+            NestedRequiredMessage.newInstance().toByteArray();
+        } catch (UninitializedMessageException ex) {
+            fail("root message has no required fields");
+        }
+        try {
+            NestedRequiredMessage.newInstance()
+                    .setOptionalSimpleMessage(SimpleMessage.newInstance())
+                    .toByteArray();
+        } catch (UninitializedMessageException ex) {
+            List<String> missing = ex.getMissingFields();
+            assertEquals(1, missing.size());
+            assertEquals(missing, Collections.singletonList("optional_simple_message.required_field"));
+            assertTrue(ex.getMessage().contains("optional_simple_message.required_field"));
+            throw ex;
+        }
+    }
+
+    @Test(expected = InvalidProtocolBufferException.class)
+    public void testCheckInitializedRequired() throws InvalidProtocolBufferException {
+        TestAllTypesRequired.newInstance().checkInitialized();
+    }
+
+    @Test
+    public void testCheckInitializedOptional() throws InvalidProtocolBufferException {
+        TestAllTypes.newInstance().checkInitialized();
+    }
+
+    @Test(expected = UninitializedMessageException.class)
+    public void testParseFromUninitialized() throws Throwable {
+        try {
+            SimpleMessage.parseFrom(new byte[0]);
+        } catch (InvalidProtocolBufferException e) {
+            throw e.getCause();
+        }
     }
 
     // --------------------------------------------------------------------------------------
@@ -126,7 +212,7 @@ public class ProtoFailTests {
     private void writeToTruncated(ProtoMessage msg) throws IOException {
         byte[] buffer = new byte[msg.getSerializedSize() - 1];
         // use unsafe to make sure that we aren't relying on normal array checks
-        ProtoSink output = ProtoSink.newUnsafeInstance().wrap(buffer);
+        ProtoSink output = ProtoSink.newDirectSink().setOutput(buffer);
         msg.writeTo(output);
     }
 
@@ -277,12 +363,85 @@ public class ProtoFailTests {
         readFromTruncated(msg);
     }
 
-    private void readFromTruncated(ProtoMessage msg) throws IOException {
+    private <T extends ProtoMessage> T readFromTruncated(T msg) throws IOException {
         byte[] data = msg.toByteArray();
-        ProtoSource input = ProtoSource.newUnsafeInstance().wrap(data, 0, data.length - 1);
+        ProtoSource input = ProtoSource.newDirectSource().setInput(data, 0, data.length - 1);
         msg.clear().mergeFrom(input);
+        return msg;
     }
 
     // --------------------------------------------------------------------------------------
+    static final int n = 10;
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationArray() throws IOException {
+        ProtoSource.newArraySource().setInput(new byte[n]).readRawBytes(new byte[0], 0, n);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationDirect() throws IOException {
+        ProtoSource.newDirectSource().setInput(new byte[n]).readRawBytes(new byte[0], 0, n);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationStream() throws IOException {
+        ProtoSource.newInstance(new ByteArrayInputStream(new byte[n])).readRawBytes(new byte[0], 0, n);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIntoTruncatedDestinationBuffer() throws IOException {
+        ProtoSource.newInstance(ByteBuffer.wrap(new byte[n])).readRawBytes(new byte[0], 0, n);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestination() throws IOException {
+        ProtoSource.newArraySource().setInput(new byte[n]).readRawBytes(null, 0, n);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestinationDirect() throws IOException {
+        ProtoSource.newDirectSource().setInput(new byte[n]).readRawBytes(null, 0, n);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestinationStream() throws IOException {
+        ProtoSource.newInstance(new ByteArrayInputStream(new byte[n])).readRawBytes(null, 0, n);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testReadIntoNullDestinationBuffer() throws IOException {
+        ProtoSource.newInstance(ByteBuffer.wrap(new byte[n])).readRawBytes(null, 0, n);
+    }
+
+    // --------------------------------------------------------------------------------------
+
+    @Test
+    public void testStreamLimitsExceeded() throws IOException {
+        byte[] bytes = CompatibilityTest.optionalPrimitives();
+        ProtoSource source = ProtoSource.newInstance(new ByteArrayInputStream(bytes));
+
+        try {
+            source.setSizeLimit(bytes.length - 1);
+            TestAllTypes.parseFrom(source);
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("size limit"));
+        }
+
+        assertEquals(bytes.length - 1, source.getTotalBytesRead());
+        source.resetSizeCounter();
+        assertEquals(0, source.getTotalBytesRead());
+
+        try {
+            source.setSizeLimit(bytes.length);
+            source.setInput(new ByteArrayInputStream(bytes));
+            source.pushLimit(bytes.length - 20);
+            TestAllTypes.parseFrom(source);
+            fail();
+        } catch (InvalidProtocolBufferException e) {
+            assertTrue(e.getMessage().contains("input ended unexpectedly"));
+        }
+
+    }
 
 }

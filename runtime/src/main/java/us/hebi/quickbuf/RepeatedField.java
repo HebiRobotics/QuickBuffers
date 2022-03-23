@@ -80,8 +80,15 @@ abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> im
         return (RepeatedType) this;
     }
 
-    public void clear() {
+    /**
+     * Sets the output length to zero and performs any
+     * necessary cleanup of the content. Does not release
+     * the internal buffer.
+     */
+    @SuppressWarnings("unchecked")
+    public RepeatedType clear() {
         length = 0;
+        return (RepeatedType) this;
     }
 
     protected final void checkIndex(int index) {

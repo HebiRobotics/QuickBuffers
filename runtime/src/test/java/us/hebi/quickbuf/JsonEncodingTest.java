@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,12 +22,16 @@ package us.hebi.quickbuf;
 
 import org.junit.Before;
 import org.junit.Test;
+import us.hebi.quickbuf.JsonDecoding.JsonLexer;
+import us.hebi.quickbuf.JsonDecoding.StringDecoding;
 import us.hebi.quickbuf.JsonEncoding.Base64Encoding;
 import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
 import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
+import us.hebi.quickbuf.JsonSource.ArraySource;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
+import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -61,8 +65,14 @@ public class JsonEncodingTest {
 
     @Test
     public void testStringEncoding() throws Exception {
+        // base ascii
         testString("ascii");
-        testString("\"\\\b\f\n\r\t\0\u0001\u007F", "\\\"\\\\\\b\\f\\n\\r\\t\\u0000\\u0001\\u007f");
+
+        // escaped ascii chars
+        testString("\"\\\b\f\n\r\t", "\\\"\\\\\\b\\f\\n\\r\\t");
+
+        // non-unicode escape chars
+        testString("\0\u0001\u007F", "\\u0000\\u0001\\u007f");
 
         // Some UTF-8 corner cases
         // https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
@@ -241,14 +251,36 @@ public class JsonEncodingTest {
         }
     }
 
-    private void testString(String expected) {
+    private void testString(String expected) throws IOException {
         testString(expected, expected);
     }
 
-    private void testString(String input, String expected) {
+    private void testString(String input, String expected) throws IOException {
         StringEncoding.writeQuotedUtf8(input, bytes.setLength(0));
-        String actual = getString();
-        assertEquals(expected, expected, actual.substring(1, actual.length() - 1));
+        int length = bytes.length;
+
+        {
+            // compare utf8 decoded
+            String actual = getString();
+            assertEquals(expected, expected, actual.substring(1, actual.length() - 1));
+        }
+
+        {
+            // compare post-replacement utf8 input
+            RepeatedByte utf8 = RepeatedByte.newEmptyInstance();
+            JsonLexer lexer = new ArraySource(bytes.array, 1, length - 1);
+            StringDecoding.readQuotedUtf8(lexer, utf8);
+            assertEquals(input, new String(utf8.array, 0, utf8.length, Charsets.UTF_8));
+        }
+
+        {
+            // compare fully decoded input
+            StringBuilder builder = new StringBuilder(length);
+            JsonLexer lexer = new ArraySource(bytes.array, 1, length - 1);
+            StringDecoding.readQuotedUtf8(lexer, builder);
+            assertEquals(input, builder.toString());
+        }
+
     }
 
     private String getString() {

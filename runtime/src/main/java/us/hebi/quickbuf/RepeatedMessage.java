@@ -32,8 +32,7 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
     }
 
     private RepeatedMessage(MessageFactory<MessageType> factory) {
-        if (factory == null) throw new NullPointerException();
-        this.factory = factory;
+        this.factory = ProtoUtil.checkNotNull(factory);
     }
 
     @Override
@@ -63,11 +62,12 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
         return (MessageType[]) new ProtoMessage[desiredSize];
     }
 
-    public final void clearQuick() {
+    public final RepeatedMessage<MessageType> clearQuick() {
         for (int i = 0; i < length; i++) {
             array[i].clearQuick();
         }
         length = 0;
+        return this;
     }
 
     /**
@@ -79,6 +79,23 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
                 return false;
         }
         return true;
+    }
+
+    /**
+     * Helper method to check whether all contained messages are
+     * initialized, i.e., if all required fields are set.
+     * <p>
+     * Message content is not automatically checked after merging
+     * new data. This method should be called manually as needed.
+     *
+     * @return this
+     * @throws InvalidProtocolBufferException if one or more messages are not initialized.
+     */
+    public RepeatedMessage<MessageType> checkInitialized() throws InvalidProtocolBufferException {
+        if (!isInitialized()) {
+            throw new UninitializedMessageException(this).asInvalidProtocolBufferException();
+        }
+        return this;
     }
 
     @Override

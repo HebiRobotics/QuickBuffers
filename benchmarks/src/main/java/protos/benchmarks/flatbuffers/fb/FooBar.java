@@ -29,27 +29,35 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class FooBar extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_0(); }
   public static FooBar getRootAsFooBar(ByteBuffer _bb) { return getRootAsFooBar(_bb, new FooBar()); }
   public static FooBar getRootAsFooBar(ByteBuffer _bb, FooBar obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public FooBar __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public Bar sibling() { return sibling(new Bar()); }
-  public Bar sibling(Bar obj) { int o = __offset(4); return o != 0 ? obj.__assign(o + bb_pos, bb) : null; }
+  public protos.benchmarks.flatbuffers.fb.Bar sibling() { return sibling(new protos.benchmarks.flatbuffers.fb.Bar()); }
+  public protos.benchmarks.flatbuffers.fb.Bar sibling(protos.benchmarks.flatbuffers.fb.Bar obj) { int o = __offset(4); return o != 0 ? obj.__assign(o + bb_pos, bb) : null; }
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
   public double rating() { int o = __offset(8); return o != 0 ? bb.getDouble(o + bb_pos) : 0.0; }
   public int postfix() { int o = __offset(10); return o != 0 ? bb.get(o + bb_pos) & 0xFF : 0; }
 
-  public static void startFooBar(FlatBufferBuilder builder) { builder.startObject(4); }
+  public static void startFooBar(FlatBufferBuilder builder) { builder.startTable(4); }
   public static void addSibling(FlatBufferBuilder builder, int siblingOffset) { builder.addStruct(0, siblingOffset, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addRating(FlatBufferBuilder builder, double rating) { builder.addDouble(2, rating, 0.0); }
   public static void addPostfix(FlatBufferBuilder builder, int postfix) { builder.addByte(3, (byte)postfix, (byte)0); }
   public static int endFooBar(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
+  }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public FooBar get(int j) { return get(new FooBar(), j); }
+    public FooBar get(FooBar obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

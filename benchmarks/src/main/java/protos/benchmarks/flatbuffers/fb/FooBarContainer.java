@@ -29,14 +29,17 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class FooBarContainer extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_0(); }
   public static FooBarContainer getRootAsFooBarContainer(ByteBuffer _bb) { return getRootAsFooBarContainer(_bb, new FooBarContainer()); }
   public static FooBarContainer getRootAsFooBarContainer(ByteBuffer _bb, FooBarContainer obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public FooBarContainer __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public FooBar list(int j) { return list(new FooBar(), j); }
-  public FooBar list(FooBar obj, int j) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public protos.benchmarks.flatbuffers.fb.FooBar list(int j) { return list(new protos.benchmarks.flatbuffers.fb.FooBar(), j); }
+  public protos.benchmarks.flatbuffers.fb.FooBar list(protos.benchmarks.flatbuffers.fb.FooBar obj, int j) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int listLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
+  public protos.benchmarks.flatbuffers.fb.FooBar.Vector listVector() { return listVector(new protos.benchmarks.flatbuffers.fb.FooBar.Vector()); }
+  public protos.benchmarks.flatbuffers.fb.FooBar.Vector listVector(protos.benchmarks.flatbuffers.fb.FooBar.Vector obj) { int o = __offset(4); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public boolean initialized() { int o = __offset(6); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
   public short fruit() { int o = __offset(8); return o != 0 ? bb.getShort(o + bb_pos) : 0; }
   public String location() { int o = __offset(10); return o != 0 ? __string(o + bb_pos) : null; }
@@ -48,7 +51,7 @@ public final class FooBarContainer extends Table {
       boolean initialized,
       short fruit,
       int locationOffset) {
-    builder.startObject(4);
+    builder.startTable(4);
     FooBarContainer.addLocation(builder, locationOffset);
     FooBarContainer.addList(builder, listOffset);
     FooBarContainer.addFruit(builder, fruit);
@@ -56,7 +59,7 @@ public final class FooBarContainer extends Table {
     return FooBarContainer.endFooBarContainer(builder);
   }
 
-  public static void startFooBarContainer(FlatBufferBuilder builder) { builder.startObject(4); }
+  public static void startFooBarContainer(FlatBufferBuilder builder) { builder.startTable(4); }
   public static void addList(FlatBufferBuilder builder, int listOffset) { builder.addOffset(0, listOffset, 0); }
   public static int createListVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startListVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
@@ -64,10 +67,17 @@ public final class FooBarContainer extends Table {
   public static void addFruit(FlatBufferBuilder builder, short fruit) { builder.addShort(2, fruit, 0); }
   public static void addLocation(FlatBufferBuilder builder, int locationOffset) { builder.addOffset(3, locationOffset, 0); }
   public static int endFooBarContainer(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
   }
   public static void finishFooBarContainerBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
   public static void finishSizePrefixedFooBarContainerBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public FooBarContainer get(int j) { return get(new FooBarContainer(), j); }
+    public FooBarContainer get(FooBarContainer obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+  }
 }
 

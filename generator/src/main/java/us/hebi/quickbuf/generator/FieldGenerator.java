@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -155,11 +155,8 @@ public class FieldGenerator {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
             method.addNamedCode("$field:N.equals(other.$field:N)", m);
 
-        } else if (typeName == TypeName.DOUBLE) {
-            method.addNamedCode("Double.doubleToLongBits($field:N) == Double.doubleToLongBits(other.$field:N)", m);
-
-        } else if (typeName == TypeName.FLOAT) {
-            method.addNamedCode("Float.floatToIntBits($field:N) == Float.floatToIntBits(other.$field:N)", m);
+        } else if (typeName == TypeName.DOUBLE || typeName == TypeName.FLOAT) {
+            method.addNamedCode("$protoUtil:T.isEqual($field:N, other.$field:N)", m);
 
         } else if (info.isPrimitive() || info.isEnum()) {
             method.addNamedCode("$field:N == other.$field:N", m);
@@ -169,31 +166,16 @@ public class FieldGenerator {
         }
     }
 
-    protected void generateMergingCode(MethodSpec.Builder method) {
+    /**
+     * @return true if the tag needs to be read
+     */
+    protected boolean generateMergingCode(MethodSpec.Builder method) {
         if (info.isRepeated()) {
             method
                     .addCode(clearOtherOneOfs)
-                    .addStatement("int nextTagPosition")
-                    .addNamedCode("do {$>\n" +
-                            "// look ahead for more items so we resize only once\n" +
-                            "if ($field:N.remainingCapacity() == 0) {$>\n" +
-                            "int count = $protoSource:T.getRepeatedFieldArrayLength(input, $tag:L);\n" +
-                            "$field:N.reserve(count);\n" +
-                            "$<}\n", m)
-                    .addCode(code(block -> {
-                        if (info.isPrimitive()) {
-                            block.addNamed("$field:N.add(input.read$capitalizedType:L());\n", m);
-                        } else if (info.isEnum()) {
-                            block.addNamed("$field:N.addValue(input.read$capitalizedType:L());\n", m);
-                        } else {
-                            block.addNamed("input.read$capitalizedType:L($field:N.next()$secondArgs:L);\n", m);
-                        }
-                    }))
-                    .addNamedCode("" +
-                            "nextTagPosition = input.getPosition();\n" +
-                            "$<} while (input.readTag() == $tag:L);\n" +
-                            "input.rewindToPosition(nextTagPosition);\n", m)
+                    .addNamedCode("tag = input.readRepeated$capitalizedType:L($field:N, tag);\n", m)
                     .addStatement(named("$setHas:L"));
+            return false; // tag is already read, so don't read again
 
         } else if (info.isString() || info.isMessageOrGroup() || info.isBytes()) {
             method
@@ -215,9 +197,14 @@ public class FieldGenerator {
                     .addStatement(named("$field:N = value"))
                     .addStatement(named("$setHas:L"));
 
+            // TODO:
+            //  Google's Protobuf recently selectively ignores repeated enum values. However,
+            //  that seems odd given that re-serialization with unknown fields can result in a
+            //  different order. I don't think this is desired behavior? This is technically also
+            //  true when serializing an optional enum field twice via a delta update.
             if (info.getParentTypeInfo().isStoreUnknownFields()) {
                 method.nextControlFlow("else")
-                        .addStatement("input.copyBytesSinceMark($N)", RuntimeClasses.unknownBytesField);
+                        .addStatement("input.skipEnum(tag, value, $N)", RuntimeClasses.unknownBytesField);
             }
 
             method.endControlFlow();
@@ -225,52 +212,24 @@ public class FieldGenerator {
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
+        return true;
     }
 
-    protected void generateMergingCodeFromPacked(MethodSpec.Builder method) {
-        if (info.isFixedWidth()) {
-
-            // For fixed width types we can copy the raw memory
-            method.addCode(clearOtherOneOfs);
-            method.addStatement(named("input.readPacked$capitalizedType:L($field:N)"));
-            method.addStatement(named("$setHas:L"));
-
-        } else if (info.isPrimitive() || info.isEnum()) {
-
-            // We don't know how many items there actually are, so we need to
-            // look-ahead once we run out of space in the backing store.
-            method
-                    .addCode(clearOtherOneOfs)
-                    .addStatement("final int length = input.readRawVarint32()")
-                    .addStatement("final int limit = input.pushLimit(length)")
-                    .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
-
-                    // Defer count-checks until we run out of capacity
-                    .addComment("look ahead for more items so we resize only once")
-                    .beginControlFlow("if ($N.remainingCapacity() == 0)", info.getFieldName())
-                    .addStatement("final int position = input.getPosition()")
-                    .addStatement("int count = 0")
-                    .beginControlFlow("while (input.getBytesUntilLimit() > 0)")
-                    .addStatement(named("input.read$capitalizedType:L()"))
-                    .addStatement("count++")
-                    .endControlFlow()
-                    .addStatement("input.rewindToPosition(position)")
-                    .addStatement(named("$field:N.reserve(count)"))
-                    .endControlFlow()
-
-                    // Add data
-                    .addStatement(named(info.isPrimitive() ?
-                            "$field:N.add(input.read$capitalizedType:L())" :
-                            "$field:N.addValue(input.read$capitalizedType:L())"))
-                    .endControlFlow()
-
-                    .addStatement("input.popLimit(limit)")
-                    .addStatement(named("$setHas:L"));
-
-        } else {
-            // Only primitives and enums can be packed
-            throw new IllegalStateException("unhandled field: " + info.getDescriptor());
+    /**
+     * @return true if the tag needs to be read
+     */
+    protected boolean generateMergingCodeFromPacked(MethodSpec.Builder method) {
+        if (!info.isPackable()) {
+            throw new IllegalStateException("not a packable type: " + info.getDescriptor());
         }
+        method.addCode(clearOtherOneOfs);
+        if (info.isFixedWidth()) {
+            method.addStatement(named("input.readPacked$capitalizedType:L($field:N)"));
+        } else {
+            method.addStatement(named("input.readPacked$capitalizedType:L($field:N, tag)"));
+        }
+        method.addStatement(named("$setHas:L"));
+        return true;
     }
 
     protected void generateSerializationCode(MethodSpec.Builder method) {
@@ -278,35 +237,29 @@ public class FieldGenerator {
         if (info.isPacked()) {
             m.put("writePackedTagToOutput", generateWriteVarint32(getInfo().getPackedTag()));
         }
+        m.put("writeEndGroupTagToOutput", !info.isGroup() ? "" :
+                generateWriteVarint32(getInfo().getEndGroupTag()));
 
-        if (info.isPacked() && info.isFixedWidth()) {
+        if (info.isPacked()) {
             method.addNamedCode("" +
                     "$writePackedTagToOutput:L" +
                     "output.writePacked$capitalizedType:LNoTag($field:N);\n", m);
-
-        } else if (info.isPacked()) {
-            method.addNamedCode("" +
-                    "int dataSize = 0;\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n" +
-                    "$writePackedTagToOutput:L" +
-                    "output.writeRawVarint32(dataSize);\n" +
-                    "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
-                    "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n", m);
 
         } else if (info.isRepeated()) {
             method.addNamedCode("" +
                     "for (int i = 0; i < $field:N.length(); i++) {$>\n" +
                     "$writeTagToOutput:L" +
                     "output.write$capitalizedType:LNoTag($field:N.$getRepeatedIndex_i:L);\n" +
+                    "$writeEndGroupTagToOutput:L" +
                     "$<}\n", m);
 
         } else {
             // unroll varint tag loop
-            method.addNamedCode("$writeTagToOutput:L", m);
-            method.addStatement(named("output.write$capitalizedType:LNoTag($field:N)")); // non-repeated
+            method.addNamedCode("" + // non-repeated
+                    "$writeTagToOutput:L" +
+                    "output.write$capitalizedType:LNoTag($field:N);\n" +
+                    "$writeEndGroupTagToOutput:L", m
+            );
         }
     }
 
@@ -355,28 +308,19 @@ public class FieldGenerator {
         if (info.isFixedWidth() && info.isPacked()) {
             method.addNamedCode("" +
                     "final int dataSize = $fixedWidth:L * $field:N.length();\n" +
-                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "size += $bytesPerTag:L + $protoSink:T.computeDelimitedSize(dataSize);\n", m);
 
         } else if (info.isFixedWidth() && info.isRepeated()) { // non packed
             method.addStatement(named("size += ($bytesPerTag:L + $fixedWidth:L) * $field:N.length()"));
 
         } else if (info.isPacked()) {
             method.addNamedCode("" +
-                    "int dataSize = 0;\n" +
-                    "final int length = $field:N.length();\n" +
-                    "for (int i = 0; i < length; i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n" +
-                    "size += $bytesPerTag:L + dataSize + $protoSink:T.computeRawVarint32Size(dataSize);\n", m);
+                    "final int dataSize = $protoSink:T.computeRepeated$capitalizedType:LSizeNoTag($field:N);\n" +
+                    "size += $bytesPerTag:L + $protoSink:T.computeDelimitedSize(dataSize);\n", m);
 
         } else if (info.isRepeated()) { // non packed
             method.addNamedCode("" +
-                    "int dataSize = 0;\n" +
-                    "final int length = $field:N.length();\n" +
-                    "for (int i = 0; i < length; i++) {$>\n" +
-                    "dataSize += $protoSink:T.compute$capitalizedType:LSizeNoTag($field:N.$getRepeatedIndex_i:L);\n" +
-                    "$<}\n" +
-                    "size += ($bytesPerTag:L * length) + dataSize;\n", m);
+                    "size += ($bytesPerTag:L * $field:N.length()) + $protoSink:T.computeRepeated$capitalizedType:LSizeNoTag($field:N);\n", m);
 
         } else if (info.isFixedWidth()) {
             method.addStatement("size += $L", (info.getBytesPerTag() + info.getFixedWidth())); // non-repeated
@@ -413,16 +357,16 @@ public class FieldGenerator {
             method.addStatement(named("$field:N = input.read$capitalizedType:L()"));
             method.addStatement(named("$setHas:L"));
         } else if (info.isEnum()) {
-            // TODO: filter out unknown values
-            method.addStatement(named("final $type:T value = input.read$capitalizedType:L($type:T.converter())"))
+            method.addStatement(named("final $protoEnum:T value = input.read$capitalizedType:L($type:T.converter())"))
                     .beginControlFlow("if (value != null)")
                     .addStatement(named("$field:N = value.getNumber()"))
                     .addStatement(named("$setHas:L"))
+                    .nextControlFlow("else")
+                    .addStatement("input.skipUnknownEnumValue()")
                     .endControlFlow();
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
-
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
@@ -711,6 +655,7 @@ public class FieldGenerator {
         m.put("protoSource", RuntimeClasses.ProtoSource);
         m.put("protoSink", RuntimeClasses.ProtoSink);
         m.put("protoUtil", RuntimeClasses.ProtoUtil);
+        m.put("protoEnum", RuntimeClasses.ProtoEnum);
     }
 
     protected final RequestInfo.FieldInfo info;

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,14 +42,17 @@ class RuntimeClasses {
     static final ClassName Utf8Decoder = ClassName.get(API_PACKAGE,"Utf8Decoder");
     static final ClassName BytesType = ClassName.get(API_PACKAGE, "RepeatedByte");
     static final ClassName InvalidProtocolBufferException = ClassName.get(API_PACKAGE, "InvalidProtocolBufferException");
-    static final ClassName JsonSink = ClassName.get(API_PACKAGE, "AbstractJsonSink");
-    static final ClassName JsonSource = ClassName.get(API_PACKAGE, "AbstractJsonSource");
+    static final ClassName UninitializedMessageException = ClassName.get(API_PACKAGE, "UninitializedMessageException");
+    static final ClassName JsonSink = ClassName.get(API_PACKAGE, "JsonSink");
+    static final ClassName JsonSource = ClassName.get(API_PACKAGE, "JsonSource");
     static final ClassName FieldName = ClassName.get(API_PACKAGE, "FieldName");
     static final ClassName ProtoEnum = ClassName.get(API_PACKAGE, "ProtoEnum");
     static final ClassName EnumConverter = ProtoEnum.nestedClass("EnumConverter");
 
     static final String unknownBytesField = "unknownBytes";
     static final String unknownBytesFieldName = "unknownBytesFieldName";
+    static final int unknownBytesFieldHash1 = unknownBytesField.hashCode();
+    static final int unknownBytesFieldHash2 = "unknown_bytes".hashCode();
 
     private static final ClassName RepeatedDouble = ClassName.get(API_PACKAGE, "RepeatedDouble");
     private static final ClassName RepeatedFloat = ClassName.get(API_PACKAGE, "RepeatedFloat");

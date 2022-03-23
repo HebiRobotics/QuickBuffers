@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -140,20 +140,12 @@ public class RequestInfo {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("store_unknown_fields", "false"));
     }
 
-    public boolean getJsonUseProtoName() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("json_use_proto_name", "false"));
-    }
-
     public boolean getEnforceHasChecks() {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("enforce_has_checks", "false"));
     }
 
     public boolean generateTryGetAccessors() {
         return Boolean.parseBoolean(generatorParameters.getOrDefault("java8_optional", "false"));
-    }
-
-    public boolean generateMergeFromJson() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("json_gen_merge", "false"));
     }
 
     private final CodeGeneratorRequest descriptor;
@@ -284,6 +276,10 @@ public class RequestInfo {
 
         }
 
+        public boolean hasRequiredFieldsInHierarchy() {
+            return getParentFile().getParentRequest().getTypeRegistry().hasRequiredFieldsInHierarchy(typeName);
+        }
+
         private final DescriptorProtos.DescriptorProto descriptor;
         private final int fieldCount;
         private final List<FieldInfo> fields = new ArrayList<>();
@@ -328,7 +324,8 @@ public class RequestInfo {
             clearName = "clear" + upperName;
             isPrimitive = FieldUtil.isPrimitive(descriptor.getType());
             tag = FieldUtil.makeTag(descriptor);
-            bytesPerTag = FieldUtil.computeRawVarint32Size(tag);
+            bytesPerTag = FieldUtil.computeRawVarint32Size(tag) +
+                    (!isGroup() ? 0 : FieldUtil.computeRawVarint32Size(getEndGroupTag()));
             packedTag = FieldUtil.makePackedTag(descriptor);
             number = descriptor.getNumber();
             fieldName = NamingUtil.filterKeyword(lowerName);
@@ -378,6 +375,10 @@ public class RequestInfo {
                     return isRepeated() ? ArrayTypeName.of(TypeName.BYTE) : TypeName.BYTE;
             }
             return getTypeName();
+        }
+
+        public int getEndGroupTag() {
+            return FieldUtil.makeGroupEndTag(tag);
         }
 
         public boolean isGroup() {
@@ -444,6 +445,11 @@ public class RequestInfo {
             return getParentFile().getParentRequest().getTypeRegistry().resolveJavaTypeFromProto(descriptor);
         }
 
+        public boolean isMessageOrGroupWithRequiredFieldsInHierarchy() {
+            // Lazy because type registry is not constructed at creation time
+            return isMessageOrGroup() && getParentFile().getParentRequest().getTypeRegistry().hasRequiredFieldsInHierarchy(getTypeName());
+        }
+
         public TypeName getStoreType() {
             if (isRepeated())
                 return getRepeatedStoreType();
@@ -479,16 +485,14 @@ public class RequestInfo {
             return type;
         }
 
-        // Used for serialization
-        public String getPrimaryJsonName() {
-            return parentFile.getParentRequest().getJsonUseProtoName() ?
-                    descriptor.getName() : descriptor.getJsonName();
+        // Used for JSON serialization (camelCase)
+        public String getJsonName() {
+            return descriptor.getJsonName();
         }
 
-        // Parsing should support both
-        public String getSecondaryJsonName() {
-            return !parentFile.getParentRequest().getJsonUseProtoName() ?
-                    descriptor.getName() : descriptor.getJsonName();
+        // Original field name (under_score). Optional for JSON serialization. Parsers should support both.
+        public String getProtoFieldName() {
+            return descriptor.getName();
         }
 
         public String getClearOtherOneOfName() {

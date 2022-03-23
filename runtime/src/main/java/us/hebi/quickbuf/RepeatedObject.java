@@ -128,11 +128,11 @@ abstract class RepeatedObject<SubType extends RepeatedObject<SubType, STORE, IN,
     }
 
     @Override
-    public final void clear() {
+    public final SubType clear() {
         for (int i = 0; i < length; i++) {
             clearIndex0(i);
         }
-        length = 0;
+        return super.clear();
     }
 
     @Override

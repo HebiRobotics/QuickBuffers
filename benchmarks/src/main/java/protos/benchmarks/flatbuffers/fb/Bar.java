@@ -29,11 +29,11 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class Bar extends Struct {
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public Bar __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public Foo parent() { return parent(new Foo()); }
-  public Foo parent(Foo obj) { return obj.__assign(bb_pos + 0, bb); }
+  public protos.benchmarks.flatbuffers.fb.Foo parent() { return parent(new protos.benchmarks.flatbuffers.fb.Foo()); }
+  public protos.benchmarks.flatbuffers.fb.Foo parent(protos.benchmarks.flatbuffers.fb.Foo obj) { return obj.__assign(bb_pos + 0, bb); }
   public int time() { return bb.getInt(bb_pos + 16); }
   public float ratio() { return bb.getFloat(bb_pos + 20); }
   public int size() { return bb.getShort(bb_pos + 24) & 0xFFFF; }
@@ -51,6 +51,13 @@ public final class Bar extends Struct {
     builder.putShort(parent_count);
     builder.putLong(parent_id);
     return builder.offset();
+  }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public Bar get(int j) { return get(new Bar(), j); }
+    public Bar get(Bar obj, int j) {  return obj.__assign(__element(j), bb); }
   }
 }
 

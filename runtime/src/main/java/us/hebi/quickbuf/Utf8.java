@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,8 @@
  */
 
 package us.hebi.quickbuf;
+
+import java.io.IOException;
 
 import static java.lang.Character.*;
 import static us.hebi.quickbuf.UnsafeAccess.*;
@@ -218,6 +220,45 @@ class Utf8 {
             }
         }
         return (int) (j - baseOffset);
+    }
+
+    static void encodeSink(final CharSequence sequence, final ProtoSink sink) throws IOException {
+        final int utf16Length = sequence.length();
+        int i = 0;
+        // Designed to take advantage of
+        // https://wikis.oracle.com/display/HotSpotInternals/RangeCheckElimination
+        for (char c; i < utf16Length && (c = sequence.charAt(i)) < 0x80; i++) {
+            sink.writeRawByte(c);
+        }
+        if (i == utf16Length) {
+            return;
+        }
+        for (char c; i < utf16Length; i++) {
+            c = sequence.charAt(i);
+            if (c < 0x80) {
+                sink.writeRawByte((byte) c);
+            } else if (c < 0x800) { // 11 bits, two UTF-8 bytes
+                sink.writeRawByte((byte) ((0xF << 6) | (c >>> 6)));
+                sink.writeRawByte((byte) (0x80 | (0x3F & c)));
+            } else if ((c < Character.MIN_SURROGATE || Character.MAX_SURROGATE < c)) {
+                // Maximum single-char code point is 0xFFFF, 16 bits, three UTF-8 bytes
+                sink.writeRawByte((byte) ((0xF << 5) | (c >>> 12)));
+                sink.writeRawByte((byte) (0x80 | (0x3F & (c >>> 6))));
+                sink.writeRawByte((byte) (0x80 | (0x3F & c)));
+            } else {
+                // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
+                final char low;
+                if (i + 1 == sequence.length()
+                        || !Character.isSurrogatePair(c, (low = sequence.charAt(++i)))) {
+                    throw new IllegalArgumentException("Unpaired surrogate at index " + (i - 1));
+                }
+                int codePoint = Character.toCodePoint(c, low);
+                sink.writeRawByte((byte) ((0xF << 4) | (codePoint >>> 18)));
+                sink.writeRawByte((byte) (0x80 | (0x3F & (codePoint >>> 12))));
+                sink.writeRawByte((byte) (0x80 | (0x3F & (codePoint >>> 6))));
+                sink.writeRawByte((byte) (0x80 | (0x3F & codePoint)));
+            }
+        }
     }
 
     static void decodeArray(byte[] bytes, int index, int size, StringBuilder result) {
