@@ -1,22 +1,23 @@
 # QuickBuffers - Fast Protocol Buffers without Allocations
 
-QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency and high throughput use cases. It can be used in zero-allocation environments and supports off-heap memory.
+QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) that has been developed for low latency use cases in zero-allocation environments. The API follows Protobuf-Java where feasible to simplify migration.
 
-The main differences to Protobuf-Java are
+The main differences are
 
  * All parts of the API are mutable and reusable
- * A roughly 2x performance improvement in both encoding and decoding speed`[1]`
- * JSON serialization that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json) (experimental)
- * A [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) that results in sequential memory access
+ * Substantial improvements to both encoding and decoding speed ([benchmarks](./benchmarks))
+ * No reflection API or any use of reflections. ProGuard obfuscation does not require configuration.
  * Significantly smaller code size than the `java` and `javalite` options
- * No reflection API or any use of reflections (no ProGuard config  needed)
+ * Built-in JSON serialization that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json) (experimental)
+ * Different [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) that optimizes for sequential memory access
+
+Partly supported features
+* `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
+* Unknown fields are retained as raw bytes and cannot be accessed as fields
 
  Unsupported Features
- * `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
- * `Extensions` and `Services` are currently not supported
- * Unknown fields are retained as raw bytes and cannot be accessed as fields
-
-`[1]` The performance benefits depend heavily on the use case and message format, but most common use cases should see a roughly 2x performance improvement in both encoding and decoding speed over `Protobuf-Java 3.9.1`. For more information see the [benchmarks](./benchmarks) section.
+ * `Extensions` 
+ * `Services`
 
 ## Runtime Library
 
@@ -29,8 +30,6 @@ You can find the latest release on Maven Central at the coordinates below. The r
   <version>1.0-rc1</version>
 </dependency>
 ```
-
-Be aware that this library is currently still in a pre-release state, and that the public API should be considered a work-in-progress that may be subject to (likely minor) changes.
 
 <details>
 <summary>Building from Source</summary><p>
@@ -182,9 +181,9 @@ For example,
 protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
 ``` 
 
-## Basic Usage
+## Message Fields
 
-Overall, we tried to keep the public API as close to Google's `Protobuf-Java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
+We tried to keep the public API as close to Google's `Protobuf-Java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
 
 All nested object types such as message or repeated fields have `getField()` and `getMutableField()` accessors. Both return the same internal storage object, but `getField()` should be considered read-only. Once a field is cleared, it should also no longer be modified.
 
@@ -320,9 +319,9 @@ Note that repeated stores can currently only expand, but we may add something si
 
 </details>
 
-### Serialization
+### Reading and Writing Messages
 
-Messages can be read from a `ProtoSource` and written to a `ProtoSink`. The implementations are optimized for accessing contiguous blocks of memory such as `byte[]`, but there are (comparatively slow) convenience wrappers for working with `InputStream`, `OutputStream`, and `ByteBuffer`.
+Messages can be read from a `ProtoSource` and written to a `ProtoSink`. The implementations are optimized for accessing contiguous blocks of memory such as `byte[]`, but there are (non-optimized) convenience wrappers for working with `InputStream`, `OutputStream`, and `ByteBuffer`.
 
 ```Java
 // Create data
