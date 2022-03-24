@@ -5,19 +5,19 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://
 The main differences are
 
  * All parts of the API are mutable and reusable
+ * Nested types are allocated eagerly
  * Substantial improvements to both encoding and decoding speed ([benchmarks](./benchmarks))
  * No reflection API or any use of reflections. ProGuard obfuscation does not require configuration.
  * Significantly smaller code size than the `java` and `javalite` options
  * Built-in JSON serialization that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json) (experimental)
  * Different [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) that optimizes for sequential memory access
 
-Partly supported features
-* `Maps` can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility)
-* Unknown fields are retained as raw bytes and cannot be accessed as fields
+Unsupported Features
+* `Maps` (can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto#backwards))
+* `Extensions` 
+* `Services`
 
- Unsupported Features
- * `Extensions` 
- * `Services`
+The unsupported features could be added, but we've never had an internal use case for them.
 
 ## Runtime Library
 
@@ -49,7 +49,7 @@ The code generator is setup as a `protoc` plugin that gets called by the officia
 <details>
 <summary>Manual Generation</summary><p>
 
-* Download an appropriate `protoc.exe` from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.19.4`)
+* Download an appropriate `protoc` executable from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.19.4`)
 * Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc-gen-quickbuf-1.0-rc1.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
   * Running the plugin requires Java8 or higher to be installed
   * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
@@ -81,8 +81,8 @@ The configuration below downloads the QuickBuffers generator plugin, puts it on 
 
                             <!-- Download plugin files -->
                             <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc-gen-quickbuf-1.0-rc1.zip"
-                                 dest="${project.basedir}/protoc-gen-quickbuf.zip" skipexisting="true" verbose="on"/>
-                            <unzip src="${project.basedir}/protoc-gen-quickbuf.zip" dest="${project.basedir}" overwrite="false"/>
+                                 dest="${project.basedir}/protoc-gen-quickbuf-1.0-rc1.zip" skipexisting="true" verbose="on"/>
+                            <unzip src="${project.basedir}/protoc-gen-quickbuf-1.0-rc1.zip" dest="${project.basedir}" overwrite="true"/>
 
                             <!--
                             The executing directory does not end up on the $PATH on Linux, so we need to use the
@@ -181,14 +181,13 @@ For example,
 protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
 ``` 
 
-## Message Fields
+## Generated Fields
 
 We tried to keep the public API as close to Google's `Protobuf-Java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
 
 All nested object types such as message or repeated fields have `getField()` and `getMutableField()` accessors. Both return the same internal storage object, but `getField()` should be considered read-only. Once a field is cleared, it should also no longer be modified.
 
-<details>
-<summary>Primitive Fields</summary><p>
+### Primitive Fields
 
 All primitive values generate the same accessors and behavior as Protobuf-Java's `Builder` classes
 
@@ -211,12 +210,9 @@ public final class SimpleMessage {
 }
 ```
 
-</p></details> 
+### Message Fields
 
-<details>
-<summary>Message Fields</summary><p>
-
-Nested message types are `final` and allocated during construction time. Setting the field copies the internal data, but does not change the reference, so the best way to set nested message content is by directly accessing the internal store with `getMutableNestedMessage()`.
+Nested message types are `final` and allocated during construction time. The recommended way to set nested message content is by accessing the internal store with `getMutableNestedMessage()`. Setting content using `setNestedMessage(NestedMessage.newInstance())` copies the data, but does not change the internal reference.
 
 ```proto
 // .proto
@@ -250,10 +246,8 @@ RootMessage msg = RootMessage.newInstance();
 msg.getMutableNestedMessage().setPrimitiveValue(0);
 ```
 
-</p></details> 
 
-<details>
-<summary>String Fields</summary><p>
+### String Fields
 
 `String` types are internally stored as `Utf8String` that are lazily parsed and can be set with `CharSequence`. Since Java `String` objects are immutable, there are additional access methods to allow for decoding characters into a reusable `StringBuilder` instance, as well as for using a custom `Utf8Decoder` that can implement interning.
 
@@ -280,17 +274,13 @@ public final class SimpleMessage {
 
 ```Java
 // Get characters
-SimpleMessage msg = SimpleMessage.newInstance()
-    .setOptionalString("my-text");
+SimpleMessage msg = SimpleMessage.newInstance().setOptionalString("my-text");
 
 StringBuilder chars = new StringBuilder();
 msg.getOptionalStringBytes().getChars(chars); // chars now contains "my-text"
 ```
 
-</p></details> 
-
-<details>
-<summary>Repeated Fields</summary><p>
+### Repeated Fields
 
 Repeated scalar fields work mostly the same as String fields, but the internal `array()` can be accessed directly if needed. Repeated messages and object types provide a `next()` method that adds one element and provides a mutable reference to it.
 
@@ -315,13 +305,11 @@ public final class SimpleMessage {
 }
 ```
 
-Note that repeated stores can currently only expand, but we may add something similar to `StringBuilder::trimToSize` to get rid of unneeded memory (`TODO`).
-
-</details>
-
-### Reading and Writing Messages
+## Reading and Writing Messages
 
 Messages can be read from a `ProtoSource` and written to a `ProtoSink`. The implementations are optimized for accessing contiguous blocks of memory such as `byte[]`, but there are (non-optimized) convenience wrappers for working with `InputStream`, `OutputStream`, and `ByteBuffer`.
+
+`ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
 
 ```Java
 // Create data
@@ -338,17 +326,15 @@ assertArrayEquals(msg.toByteArray(), buffer);
 
 // Read from byte array into an existing message
 ProtoSource source = ProtoSource.newInstance(buffer);
-assertEquals(msg, RootMessage().newInstance.mergeFrom(source));
+assertEquals(msg, RootMessage.newInstance().mergeFrom(source));
 ```
-
-Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
 
 <details>
 <summary>Off-Heap Addressing</summary><p>
 
-Depending on platform support for `sun.misc.Unsafe`, the `DirectSource` and `DirectSink` implementations allow working with off-heap memory.
+Depending on platform support for `sun.misc.Unsafe`, the `DirectSource` and `DirectSink` implementations allow working with off-heap memory. This is intended for reducing unnecessary memory copies when working with direct NIO buffers. Performance-wise there is no benefit compared to working with heap arrays.
 
-Note that this is only intended for reducing unnecessary memory copies when working with direct NIO buffers. Contrary to popular belief, there are no performance benefits when using byte-wise actions of `Unsafe` over working with regular `byte[]` arrays. Many cases actually perform slightly slower.
+State changes of `DirectSource / DirectSink` do not modify the `ByteBuffer` state, so positions and limits need to be updated manually if needed.
 
 ```Java
 // Create message

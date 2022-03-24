@@ -93,4 +93,4 @@ Lastly, we compared QuickBuffers against the Java bindings of Google's [FlatBuff
 | Serialized Size   | 228 bytes | 344 bytes | 344 bytes | 344 bytes |  1.5
 | Transient memory allocated during decode   | 0 bytes | 0 bytes | 0 bytes | 0 bytes | 1
 
-Contrary to the official C++ benchmark that shows tremendous performance benefits over Protobuf, the `ByteBuffer` based Java implementation has significantly more overhead. Recent versions and JDK improvements have improved the performance, but the overhead is still enough to counter any benefits gained by removing the decoding step.
+Contrary to the official C++ benchmark that shows tremendous performance benefits over Protobuf, the `ByteBuffer` based Java implementation has significantly more overhead. Recent versions and JDK improvements have improved the performance, but the overhead is still enough to counter any benefits gained by removing the decoding step. However, it is definitely worth exploring for use cases that only need to access a subset of the data.
