@@ -30,6 +30,7 @@ import protos.benchmarks.real_logic.quickbuf.Examples;
 import protos.benchmarks.real_logic.quickbuf.Examples.Car;
 import protos.benchmarks.real_logic.quickbuf.Fix;
 import protos.benchmarks.real_logic.quickbuf.Fix.MarketDataIncrementalRefreshTrades;
+import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
 
@@ -76,6 +77,7 @@ public class SbeThroughputBenchmarkQuickbuf {
 
     final MarketDataIncrementalRefreshTrades marketDataFast = buildMarketData(MarketDataIncrementalRefreshTrades.newInstance());
     final Car carFast = buildCarData(Car.newInstance());
+    final JsonSink jsonSink = JsonSink.newInstance().setPrettyPrinting(false);
 
     {
         // pre-compute size so we can copy the cached size in copyFrom
@@ -167,6 +169,16 @@ public class SbeThroughputBenchmarkQuickbuf {
     public Object testCarDecode() throws IOException {
         source.setInput(carDecodeBuffer);
         return car.clearQuick().mergeFrom(source);
+    }
+
+    @Benchmark
+    public Object testMarketEncodeJson() throws IOException {
+        return jsonSink.writeMessage(buildMarketData(marketData)).getBytes();
+    }
+
+    @Benchmark
+    public Object testCarEncodeJson() throws IOException {
+        return jsonSink.writeMessage(buildCarData(car)).getBytes();
     }
 
     public static MarketDataIncrementalRefreshTrades buildMarketData(MarketDataIncrementalRefreshTrades marketData) {
