@@ -114,6 +114,11 @@
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java-util</artifactId>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-javalite</artifactId>
                 <version>${protoc.version}</version>
             </dependency>

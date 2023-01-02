@@ -21,6 +21,7 @@
 package us.hebi.quickbuf.benchmarks.comparison;
 
 import com.google.protobuf.CodedOutputStream;
+import com.google.protobuf.util.JsonFormat;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -84,6 +85,7 @@ public class SbeThroughputBenchmarkProtobuf {
     final Examples.Car.Builder car = Examples.Car.newBuilder();
     final byte[] carDecodeBuffer = buildCarData(car).toByteArray();
     final byte[] encodeBuffer = new byte[Math.max(marketDecodeBuffer.length, carDecodeBuffer.length)];
+    final JsonFormat.Printer jsonPrinter = JsonFormat.printer().omittingInsignificantWhitespace();
 
     @Benchmark
     public int testMarketEncode() throws IOException {
@@ -107,6 +109,16 @@ public class SbeThroughputBenchmarkProtobuf {
     @Benchmark
     public Object testCarDecode() throws IOException {
         return Examples.Car.parseFrom(carDecodeBuffer);
+    }
+
+    @Benchmark
+    public Object testMarketEncodeJson() throws IOException {
+        return jsonPrinter.print(buildMarketData(marketData));
+    }
+
+    @Benchmark
+    public Object testCarEncodeJson() throws IOException {
+        return jsonPrinter.print(buildCarData(car));
     }
 
     /**

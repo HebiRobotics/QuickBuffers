@@ -18,15 +18,15 @@ Note that this test was done using the original SBE .proto definitions. Changing
 | Market Data Encode  | 12478 (761 MB/s) | 5957 (363 MB/s) |  2.1  
 | Market Data Decode  | 9201 (561 MB/s) | 3390 (207 MB/s) |  2.7
 
-We also compared the throughput of the built-in JSON encoding with the binary encoding of Protobuf-Java. At 559 byte (car) and 435 byte (market) the uncompressed binary sizes are of course significantly larger.
+We also compared the throughput of the built-in JSON encoding with Protobuf-Java's JsonFormat Printer. At 559 byte (car) and 435 byte (market) the uncompressed binary sizes are of course significantly larger.
 
 <!-- car mutliplier: 559 * 1000 / (1024*1024) = 0.5331 = -->
 <!-- market multiplier: 435 * 1000 / (1024*1024) = 0.415 = -->
 
-| Test [msg/ms] | QuickBuffers (JSON) | Protobuf-Java (Binary) | Ratio
-| :----------- | :-----------: | :-----------: | :-----------: |
-| Car Encode  | 1435 (765 MB/s) | 1207 |  1.2  
-| Market Data Encode  | 3602 (1.5 GB/s) | 5957 |  0.6
+| Test [msg/ms] | QuickBuffers (JsonSink) | Protobuf-Java (JsonFormat) | Ratio
+| :----------- |:-----------------------:|:--------------------------:| :-----------: |
+| Car Encode  |     1435 (765 MB/s)     |       116 (62 MB/s)        |  12.3  
+| Market Data Encode  |     3602 (1.5 GB/s)     |       162 (67 MB/s)        |  22.2
 
 ## Benchmark 2 - File Streams
 
