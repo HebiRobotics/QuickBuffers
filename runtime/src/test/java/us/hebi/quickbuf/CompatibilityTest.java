@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.util.JsonFormat;
 import org.junit.Test;
 import protos.test.protobuf.ForeignEnum;
 import protos.test.protobuf.ForeignMessage;
@@ -236,6 +237,200 @@ public class CompatibilityTest {
                 .build()
                 .toByteArray();
     }
+
+    @Test
+    public void testProtobufJavaJsonParser() throws IOException {
+        TestAllTypes.Builder msg = TestAllTypes.newBuilder();
+        JsonFormat.parser().merge(JSON_MANUAL_INPUT, msg.clear());
+
+        JsonFormat.parser().merge(JSON_EMPTY, msg.clear());
+        assertEquals(0, msg.getGetSerializedSize());
+
+        JsonFormat.parser().merge(JSON_OBJECT_TYPES_NULL, msg.clear());
+        assertEquals(0, msg.getGetSerializedSize());
+
+        JsonFormat.parser().merge(JSON_ALL_TYPES_NULL, msg.clear());
+        assertEquals(0, msg.getGetSerializedSize());
+
+        JsonFormat.parser().merge(JSON_SPECIAL_NUMBERS, msg.clear());
+
+        testError(JSON_REPEATED_BYTES_NULL_VALUE, "Repeated field elements cannot be null in field: quickbuf_unittest.TestAllTypes.repeated_bytes");
+        testError(JSON_REPEATED_MSG_NULL_VALUE, "Repeated field elements cannot be null in field: quickbuf_unittest.TestAllTypes.repeated_foreign_message");
+        testError(JSON_NULL, "Expect message object but got: null");
+        testError(JSON_LIST_EMPTY, "Expect message object but got: []");
+        testError(JSON_BAD_BOOLEAN, "Invalid bool value: \"fals\"");
+        testError(JSON_UNKNOWN_FIELD, "Cannot find field: unknownField in message quickbuf_unittest.TestAllTypes");
+        testError(JSON_UNKNOWN_FIELD_NULL, "Cannot find field: unknownField in message quickbuf_unittest.TestAllTypes");
+
+    }
+
+    private void testError(String input, String error) {
+        try {
+            JsonFormat.parser().merge(input, TestAllTypes.newBuilder());
+            fail("expected error: " + error);
+        } catch (IOException ioe) {
+            assertEquals(error, ioe.getMessage());
+        }
+    }
+
+    public static String JSON_MANUAL_INPUT = "{\n" +
+            "  \"optionalDouble\": 100,\n" +
+            "  \"optionalFixed64\": 103,\n" +
+            "  \"optionalSfixed64\": 105,\n" +
+            "  \"optionalInt64\": 109,\n" +
+            "  \"optionalUint64\": 111,\n" +
+            "  \"optionalSint64\": 107,\n" +
+            "  \"optionalFloat\": 101,\n" +
+            "  \"optionalFixed32\": 102,\n" +
+            "  \"optionalSfixed32\": 104,\n" +
+            "  \"optionalInt32\": 108,\n" +
+            "  \"optionalUint32\": 110,\n" +
+            "  \"optionalSint32\": 106,\n" +
+            "  \"optionalNestedEnum\": \"FOO\",\n" +
+            "  \"optionalForeignEnum\": \"FOREIGN_BAR\",\n" +
+            "  \"optionalImportEnum\": \"IMPORT_BAZ\",\n" +
+            "  \"optionalBool\": true,\n" +
+            "  \"optionalNestedMessage\": {\n" +
+            "    \"bb\": 2\n" +
+            "  },\n" +
+            "  \"optionalForeignMessage\": {\n" +
+            "    \"c\": 3\n" +
+            "  },\n" +
+            "  \"optionalImportMessage\": {},\n" +
+            "  \"optionalBytes\": \"dXRmOPCfkqk=\",\n" +
+            "  \"defaultBytes\": \"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\n" +
+            "  \"optionalString\": \"optionalString\\\\escape\\t\\b\\n\\funi\uD83D\uDCA9\",\n" +
+            "  \"optionalCord\": \"hello!\",\n" +
+            "  \"repeatedDouble\": [\n" +
+            "    \"NaN\",\n" +
+            "    \"-Infinity\",\n" +
+            "    0,\n" +
+            "    -28.3\n" +
+            "  ],\n" +
+            "  \"repeatedFloat\": [],\n" +
+            "  \"repeatedInt32\": [\n" +
+            "    -2,\n" +
+            "    -1,\n" +
+            "    0,\n" +
+            "    1,\n" +
+            "    2,\n" +
+            "    3,\n" +
+            "    4,\n" +
+            "    5\n" +
+            "  ],\n" +
+            "  \"repeatedPackedInt32\": [\n" +
+            "    -1,\n" +
+            "    0,\n" +
+            "    1,\n" +
+            "    2,\n" +
+            "    3,\n" +
+            "    4,\n" +
+            "    5\n" +
+            "  ],\n" +
+            "  \"repeatedForeignMessage\": [\n" +
+            "    {\n" +
+            "      \"c\": 0\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"c\": 1\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"c\": 2\n" +
+            "    },\n" +
+            "    {},\n" +
+            "    {}\n" +
+            "  ],\n" +
+            "  \"repeatedBytes\": [\n" +
+            "    \"YXNjaWk=\",\n" +
+            "    \"dXRmOPCfkqk=\",\n" +
+            "    \"YXNjaWk=\",\n" +
+            "    \"dXRmOPCfkqk=\",\n" +
+            "    \"\"\n" +
+            "  ],\n" +
+            "  \"repeatedString\": [\n" +
+            "    \"hello\",\n" +
+            "    \"world\",\n" +
+            "    \"ascii\",\n" +
+            "    \"utf8\uD83D\uDCA9\"\n" +
+            "  ]\n" +
+            "}";
+
+    public static final String JSON_OBJECT_TYPES_NULL = "{\"optionalNestedMessage\":null,\"repeatedString\":null,\"optionalForeignMessage\":{},\"repeatedBytes\":null}";
+
+    public static final String JSON_ALL_TYPES_NULL = "{\n" +
+            "  \"optionalDouble\": null,\n" +
+            "  \"optionalFixed64\": null,\n" +
+            "  \"optionalSfixed64\": null,\n" +
+            "  \"optionalInt64\": null,\n" +
+            "  \"optionalUint64\": null,\n" +
+            "  \"optionalSint64\": null,\n" +
+            "  \"optionalFloat\": null,\n" +
+            "  \"optionalFixed32\": null,\n" +
+            "  \"optionalSfixed32\": null,\n" +
+            "  \"optionalInt32\": null,\n" +
+            "  \"optionalUint32\": null,\n" +
+            "  \"optionalSint32\": null,\n" +
+            "  \"optionalNestedEnum\": null,\n" +
+            "  \"optionalForeignEnum\": null,\n" +
+            "  \"optionalImportEnum\": null,\n" +
+            "  \"optionalBool\": null,\n" +
+            "  \"optionalNestedMessage\": null,\n" +
+            "  \"optionalForeignMessage\": null,\n" +
+            "  \"optionalImportMessage\": null,\n" +
+            "  \"optionalBytes\": null,\n" +
+            "  \"defaultBytes\": null,\n" +
+            "  \"optionalString\": null,\n" +
+            "  \"optionalCord\": null,\n" +
+            "  \"repeatedDouble\": null,\n" +
+            "  \"repeatedFloat\": null,\n" +
+            "  \"repeatedInt32\": null,\n" +
+            "  \"repeatedPackedInt32\": null,\n" +
+            "  \"repeatedForeignMessage\": null,\n" +
+            "  \"repeatedBytes\": null,\n" +
+            "  \"repeatedString\": null\n" +
+            "}";
+
+    public static String JSON_NULL = "null";
+
+    public static String JSON_EMPTY = "{}";
+
+    public static String JSON_LIST_EMPTY = "[]";
+
+    public static String JSON_BAD_BOOLEAN = "{\"optionalBool\": fals}";
+    public static String JSON_UNKNOWN_FIELD = "{\"unknownField\": false}";
+    public static String JSON_UNKNOWN_FIELD_NULL = "{\"unknownField\": null}";
+
+    public static String JSON_REPEATED_BYTES_NULL_VALUE = "{\"repeatedBytes\": [null,null]}";
+
+    public static String JSON_REPEATED_MSG_NULL_VALUE = "{\"repeatedForeignMessage\": [null,null]}";
+
+    public static final String JSON_SPECIAL_NUMBERS = "{\n" +
+            "  \"repeated_double\": [\n" +
+            "    \"NaN\",\n" +
+            "    \"-Infinity\",\n" +
+            "    0,\n" +
+            "    -28.3,\n" +
+            "    3E6,\n" +
+            "    -0,\n" +
+            "    17E-3,\n" +
+            "    Infinity\n" +
+            "  ],\n" +
+            "  \"repeated_int32\": [\n" +
+            "    \"0\",\n" +
+            "    \"2147483647\",\n" +
+            "    -2147483648,\n" +
+            "    0,\n" +
+            "    1,\n" +
+            "    2\n" +
+            "  ]\n" +
+            "}";
+
+    public static final String JSON_ROOT_LIST = "[" +
+            JSON_EMPTY + ",\n" +
+            JSON_SPECIAL_NUMBERS + ",\n" +
+            JSON_MANUAL_INPUT +
+            "]";
+
 
 }
 

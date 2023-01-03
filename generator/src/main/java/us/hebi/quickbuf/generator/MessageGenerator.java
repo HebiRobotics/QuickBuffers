@@ -677,11 +677,13 @@ class MessageGenerator {
             mergeFrom.beginControlFlow("case $L:", hash2)
                     .beginControlFlow("if (input.isAtField($N.$N))",
                             info.getFieldNamesClass().simpleName(),
-                            field.getInfo().getFieldName());
+                            field.getInfo().getFieldName())
+                            .beginControlFlow("if (!input.trySkipNullValue())");
             field.generateJsonDeserializationCode(mergeFrom);
 
             // Unknown field -> skip
-            mergeFrom.nextControlFlow("else")
+            mergeFrom.endControlFlow()
+                    .nextControlFlow("else")
                     .addStatement("input.skipUnknownField()")
                     .endControlFlow();
 
