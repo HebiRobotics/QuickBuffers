@@ -66,7 +66,7 @@ public class GsonSourceTest extends JsonSourceTest {
         } catch (IOException ioe) {
             assertEquals(error, ioe.getMessage());
         } catch (IllegalStateException stateEx) {
-            // TODO: should we wrap IllegalStateException?
+            // TODO: wrap IllegalStateException?
             assertEquals(error, stateEx.getMessage());
         }
     }
