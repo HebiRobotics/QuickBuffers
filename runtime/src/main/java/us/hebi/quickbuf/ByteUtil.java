@@ -657,7 +657,7 @@ final class ByteUtil {
      */
     static ProtoSink setRawOutput(ProtoSink wrapper, ByteBuffer buffer) {
         checkArgument(!buffer.isReadOnly(), "ByteBuffer is read only");
-        checkArgument(wrapper instanceof ArraySink, "Expected ArraySource");
+        checkArgument(wrapper instanceof ArraySink, "Expected ArraySink");
 
         if (buffer.hasArray()) {
 
@@ -671,7 +671,7 @@ final class ByteUtil {
 
             // direct buffer
             checkArgument(BufferAccess.isAvailable(), "Accessors for direct buffers are not available");
-            checkArgument(wrapper instanceof ArraySink.DirectArraySink, "Expected DirectArraySource");
+            checkArgument(wrapper instanceof ArraySink.DirectArraySink, "Expected DirectArraySink");
             long offset = BufferAccess.address(buffer) + buffer.position();
             int length = buffer.remaining();
             wrapper.setOutput(null, offset, length);
