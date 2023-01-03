@@ -25,6 +25,7 @@ import us.hebi.quickbuf.JsonDecoding.JsonLexer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
 import static us.hebi.quickbuf.ProtoUtil.*;
@@ -95,14 +96,14 @@ public abstract class JsonSource implements Closeable {
 
     public void skipUnknownField() throws IOException {
         if (!ignoreUnknownFields) {
-            throw new IllegalArgumentException("Encountered unknown field: " + currentField);
+            throw new InvalidJsonException("Encountered unknown field: '" + currentField + "'");
         }
         skipValue();
     }
 
     public void skipUnknownEnumValue() throws IOException {
         if (!ignoreUnknownFields) {
-            throw new IllegalArgumentException("Encountered unknown enum value on field: " + currentField);
+            throw new InvalidJsonException("Encountered unknown enum value on field: '" + currentField + "'");
         }
     }
 
@@ -284,7 +285,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedDouble(final RepeatedDouble value) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             value.add(readDouble());
         }
@@ -292,7 +293,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedInt64(final RepeatedLong value) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             value.add(readInt64());
         }
@@ -300,7 +301,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedFloat(final RepeatedFloat value) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             value.add(readFloat());
         }
@@ -308,7 +309,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedInt32(final RepeatedInt value) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             value.add(readInt32());
         }
@@ -316,7 +317,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public <ProtoMsg extends ProtoMessage<ProtoMsg>> RepeatedMessage<ProtoMsg> readRepeatedMessage(final RepeatedMessage<ProtoMsg> value) throws IOException {
-        if (!beginArray()) return value;
+        beginArray();
         while (!isAtEnd()) {
             readMessage(value.next());
         }
@@ -325,7 +326,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedString(final RepeatedString value) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             readString(value.next());
         }
@@ -333,7 +334,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public <E extends ProtoEnum<?>> void readRepeatedEnum(final RepeatedEnum<E> value, final ProtoEnum.EnumConverter<E> converter) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             E val = readEnum(converter);
             value.addValue(val == null ? 0 : val.getNumber());
@@ -342,7 +343,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedBool(final RepeatedBoolean value) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             value.add(readBool());
         }
@@ -350,28 +351,23 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedBytes(final RepeatedBytes value) throws IOException {
-        if (!beginArray()) return;
+        beginArray();
         while (!isAtEnd()) {
             readBytes(value.next());
         }
         endArray();
     }
 
-    /**
-     * Consumes the begin array token or null element. Returns true
-     * if the begin array element was successfully consumed, i.e.,
-     * not null.
-     */
-    public abstract boolean beginArray() throws IOException;
+    public abstract void beginArray() throws IOException;
 
     public abstract void endArray() throws IOException;
 
     // ==================== Methods for Object Mapping ====================
 
     /**
-     * Consumes the begin element token or null element. Returns true
-     * if the begin object element was successfully consumed, i.e.,
-     * not null.
+     * Consumes the begin object token. Fails if it encounters anything else.
+     *
+     * @return always true. Not void for backwards compatibility reasons.
      */
     public abstract boolean beginObject() throws IOException;
 
@@ -382,6 +378,16 @@ public abstract class JsonSource implements Closeable {
      * or the end of an object or array.
      */
     public abstract boolean isAtEnd() throws IOException;
+
+    public boolean trySkipNullValue() throws IOException {
+        if (isAtNull()) {
+            skipValue();
+            return true;
+        }
+        return false;
+    }
+
+    protected abstract boolean isAtNull() throws IOException;
 
     public final int readFieldHash() throws IOException {
         currentField = readFieldName();
@@ -395,9 +401,13 @@ public abstract class JsonSource implements Closeable {
         return isAtEnd() ? 0 : readFieldHash();
     }
 
+    /**
+     * @param fieldName expected field
+     * @return true if the next value is for the expected field and not null
+     */
     public boolean isAtField(FieldName fieldName) {
-        return ProtoUtil.isEqual(fieldName.getJsonName(), currentField) ||
-                ProtoUtil.isEqual(fieldName.getProtoName(), currentField);
+        return (ProtoUtil.isEqual(fieldName.getJsonName(), currentField) ||
+                ProtoUtil.isEqual(fieldName.getProtoName(), currentField));
     }
 
     /**
@@ -488,15 +498,12 @@ public abstract class JsonSource implements Closeable {
         @Override
         public boolean readBool() throws IOException {
             if (token == INT_t) {
-                checkExpected(TRUE_VALUE, "expected true");
+                readExpectedBytes(TRUE_VALUE);
                 readNextToken();
                 return true;
             } else if (token == INT_f) {
-                checkExpected(FALSE_VALUE, "expected false");
+                readExpectedBytes(FALSE_VALUE);
                 readNextToken();
-                return false;
-            } else if (token == INT_n) {
-                skipNull();
                 return false;
             } else {
                 throw new InvalidJsonException("Unsupported boolean value");
@@ -515,11 +522,8 @@ public abstract class JsonSource implements Closeable {
 
         @Override
         public void readString(Utf8String store) throws IOException {
-            if (token == JsonDecoding.IntChar.INT_n) {
-                skipNull();
-                return;
-            }
-            checkArgument(token == INT_QUOTE, "Expected quotes");
+            checkNotAtNull();
+            checkCurrentToken(INT_QUOTE);
             JsonDecoding.StringDecoding.readQuotedUtf8(this, buffer);
             store.copyFromUtf8(buffer.array, 0, buffer.length);
             token = readNextToken();
@@ -542,7 +546,7 @@ public abstract class JsonSource implements Closeable {
         public void skipValue() throws IOException {
             switch (token) {
                 case INT_n:
-                    skipNull();
+                    readExpectedBytes(NULL_VALUE);
                     token = readNextToken();
                     break;
                 case INT_QUOTE:
@@ -564,7 +568,7 @@ public abstract class JsonSource implements Closeable {
         }
 
         private void skipArray() throws IOException {
-            checkArgument(token == INT_LBRACKET, "Skipping non-array");
+            checkCurrentToken(INT_LBRACKET);
             int level = 1;
             while (level != 0) {
                 switch (readNextToken()) {
@@ -582,7 +586,7 @@ public abstract class JsonSource implements Closeable {
         }
 
         private void skipObject() throws IOException {
-            checkArgument(token == INT_LCURLY, "Skipping non-object");
+            checkCurrentToken(INT_LCURLY);
             int level = 1;
             while (level != 0) {
                 switch (readNextToken()) {
@@ -599,52 +603,36 @@ public abstract class JsonSource implements Closeable {
             }
         }
 
-        private void skipNull() throws IOException {
-            checkExpected(NULL_VALUE, "expected null");
-            token = readNextToken();
-        }
-
         @Override
         public boolean beginObject() throws IOException {
             // initialize on first call
             if (token == INT_UNINITIALIZED) {
                 token = readNextToken();
             }
-            if (token == JsonDecoding.IntChar.INT_n) {
-                skipNull();
-                return false;
-            } else if (token == INT_LCURLY) {
-                token = readNextToken();
-                return true;
-            } else {
-                throw new InvalidProtocolBufferException("Expected null or begin object");
-            }
-        }
-
-        @Override
-        public void endObject() throws IOException {
-            checkArgument(token == INT_RCURLY, "Expected '}'");
-            token = readNextToken();
-        }
-
-        @Override
-        public boolean beginArray() throws IOException {
-            // in case we haven't read the first token yet
-            if (token == INT_UNINITIALIZED) {
-                token = readNextToken();
-            }
-            if (token == JsonDecoding.IntChar.INT_n) {
-                skipNull();
-                return false;
-            }
-            checkArgument(token == INT_LBRACKET, "Expected '['");
+            checkCurrentToken(INT_LCURLY);
             token = readNextToken();
             return true;
         }
 
         @Override
+        public void endObject() throws IOException {
+            checkCurrentToken(INT_RCURLY);
+            token = readNextToken();
+        }
+
+        @Override
+        public void beginArray() throws IOException {
+            // in case we haven't read the first token yet
+            if (token == INT_UNINITIALIZED) {
+                token = readNextToken();
+            }
+            checkCurrentToken(INT_LBRACKET);
+            token = readNextToken();
+        }
+
+        @Override
         public void endArray() throws IOException {
-            checkArgument(token == INT_RBRACKET, "Expected ']'");
+            checkCurrentToken(INT_RBRACKET);
             token = readNextToken();
         }
 
@@ -658,15 +646,21 @@ public abstract class JsonSource implements Closeable {
         }
 
         @Override
+        protected boolean isAtNull() {
+            return token == INT_n;
+        }
+
+        @Override
         protected CharSequence readFieldName() throws IOException {
-            checkArgument(token == INT_QUOTE, "Expected key quotes");
+            checkJson(token == INT_QUOTE, "Expected key quotes");
             JsonDecoding.StringDecoding.readQuotedUtf8(this, key);
-            checkArgument(readNextToken() == INT_COLON, "Expected colon after key name");
+            checkJson(readNextToken() == INT_COLON, "Expected colon after key name");
             readNextToken();
             return key;
         }
 
         private void getValueAsBytes(RepeatedByte buffer) throws IOException {
+            checkNotAtNull();
             if (token == INT_QUOTE) {
                 readStringBytes(buffer);
                 token = readNextToken();
@@ -688,6 +682,7 @@ public abstract class JsonSource implements Closeable {
         }
 
         private void readStringBytes(RepeatedByte buffer) throws IOException {
+            checkNotAtNull();
             buffer.clear();
             for (int ch = readByte(); ch != INT_QUOTE; ch = readByte()) {
                 buffer.add((byte) ch);
@@ -705,12 +700,50 @@ public abstract class JsonSource implements Closeable {
             }
         }
 
-        void checkExpected(int[] expected, String error) throws IOException {
+        protected static void checkJson(boolean condition, String error) throws InvalidJsonException {
+            if (!condition) {
+                throw new InvalidJsonException(error);
+            }
+        }
+
+        protected void checkNotAtNull() throws InvalidJsonException {
+            if (isAtNull()) {
+                String atField = (currentField == null ? "" : " for field '" + currentField + "'");
+                throw new InvalidJsonException("Expected non-null value" + atField);
+            }
+        }
+
+        protected void checkExpected(boolean condition, String expected, String actual) throws InvalidJsonException {
+            if (!condition) {
+                String atField = (currentField == null ? "" : " for field '" + currentField + "'");
+                throw new InvalidJsonException("Expected '" + expected + "' but got '" + actual + "'" + atField);
+            }
+        }
+
+        protected void checkCurrentToken(int expectedToken) throws InvalidJsonException {
+            if (expectedToken != token) {
+                String atField = (currentField == null ? "" : " for field '" + currentField + "'");
+                throw new InvalidJsonException("Expected '" + ((char) expectedToken) + "' but got '" + ((char) token) + "'" + atField);
+            }
+        }
+
+        protected void readExpectedBytes(int[] expected) throws IOException {
             for (int i = 1; i < expected.length; i++) {
-                if (expected[i] != readByte()) {
-                    throw new InvalidJsonException(error);
+                int ch = readByte();
+                if (expected[i] != ch) {
+                    int[] actual = Arrays.copyOfRange(expected, 0, i + 1);
+                    actual[i] = ch;
+                    checkExpected(false, toCharString(expected), toCharString(actual));
                 }
             }
+        }
+
+        private String toCharString(int... bytes) {
+            StringBuilder chars = new StringBuilder(bytes.length);
+            for (int b : bytes) {
+                chars.append((char) b);
+            }
+            return chars.toString();
         }
 
         @Override

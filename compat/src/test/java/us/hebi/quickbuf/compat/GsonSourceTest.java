@@ -20,11 +20,11 @@
 
 package us.hebi.quickbuf.compat;
 
-import org.junit.Assert;
 import org.junit.Test;
-import protos.test.quickbuf.ForeignMessage;
-import protos.test.quickbuf.TestAllTypes;
-import us.hebi.quickbuf.*;
+import us.hebi.quickbuf.CompatibilityTest;
+import us.hebi.quickbuf.JsonSink;
+import us.hebi.quickbuf.JsonSource;
+import us.hebi.quickbuf.JsonSourceTest;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -35,223 +35,40 @@ import static org.junit.Assert.*;
  * @author Florian Enner
  * @since 07 Sep 2020
  */
-public class GsonSourceTest {
+public class GsonSourceTest extends JsonSourceTest {
 
     @Test
-    public void testReadJsonSink() throws IOException {
-        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
-        TestAllTypes actual = TestAllTypes.newInstance();
-
-        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
-        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        Assert.assertEquals(expected, actual);
-
-        json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        Assert.assertEquals(expected, actual);
-
-        json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(new GsonSource(new StringReader(json)));
-        Assert.assertEquals(expected, actual);
+    public void testBadInputs() {
+        testError(CompatibilityTest.JSON_NULL, "Expected BEGIN_OBJECT but was NULL at line 1 column 5 path $");
+        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected BEGIN_OBJECT but was BEGIN_ARRAY at line 1 column 2 path $");
+        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected a string but was NULL at line 1 column 24 path $.repeatedBytes[0]");
+        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected BEGIN_OBJECT but was NULL at line 1 column 33 path $.repeatedForeignMessage[0]");
+        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected a boolean but was STRING at line 1 column 18 path $.optionalBool");
+        testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
+        testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
     }
 
-    @Test
-    public void testSkipping() throws Exception {
-        TestAllTypes expected = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
-        String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
-        ForeignMessage wrongMsg = ForeignMessage.newInstance();
+    @Override
+    protected JsonSource newJsonSource(String json) {
+        return new GsonSource(json);
+    }
 
-        // Ignore unknown fields
-        wrongMsg.clear().mergeFrom(new GsonSource(json).setIgnoreUnknownFields(true));
+    @Override
+    protected JsonSource newJsonSource(JsonSink sink) {
+        return new GsonSource(new StringReader(sink.toString()));
+    }
 
-        // Expect a failure
+    @Override
+    protected void testError(String input, String error) {
         try {
-            wrongMsg.mergeFrom(new GsonSource(json).setIgnoreUnknownFields(false));
-            fail("expected to fail on unknown fields");
-        } catch (IllegalArgumentException e) {
-        }
-
-    }
-
-    @Test
-    public void testManualInput() throws Exception {
-        final String json = "{\n" +
-                "  \"optionalDouble\": 100,\n" +
-                "  \"optionalFixed64\": 103,\n" +
-                "  \"optionalSfixed64\": 105,\n" +
-                "  \"optionalInt64\": 109,\n" +
-                "  \"optionalUint64\": 111,\n" +
-                "  \"optionalSint64\": 107,\n" +
-                "  \"optionalFloat\": 101,\n" +
-                "  \"optionalFixed32\": 102,\n" +
-                "  \"optionalSfixed32\": 104,\n" +
-                "  \"optionalInt32\": 108,\n" +
-                "  \"optionalUint32\": 110,\n" +
-                "  \"optionalSint32\": 106,\n" +
-                "  \"optionalNestedEnum\": \"FOO\",\n" +
-                "  \"optionalForeignEnum\": \"FOREIGN_BAR\",\n" +
-                "  \"optionalImportEnum\": \"IMPORT_BAZ\",\n" +
-                "  \"optionalBool\": true,\n" +
-                "  \"optionalNestedMessage\": {\n" +
-                "    \"bb\": 2\n" +
-                "  },\n" +
-                "  \"optionalForeignMessage\": {\n" +
-                "    \"c\": 3\n" +
-                "  },\n" +
-                "  \"optionalImportMessage\": {},\n" +
-                "  \"optionalBytes\": \"dXRmOPCfkqk=\",\n" +
-                "  \"defaultBytes\": \"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\n" +
-                "  \"optionalString\": \"optionalString\uD83D\uDCA9\",\n" +
-                "  \"optionalCord\": \"hello!\",\n" +
-                "  \"repeatedDouble\": [\n" +
-                "    \"NaN\",\n" +
-                "    \"-Infinity\",\n" +
-                "    0,\n" +
-                "    -28.3\n" +
-                "  ],\n" +
-                "  \"repeatedFloat\": [],\n" +
-                "  \"repeatedInt32\": [\n" +
-                "    -2,\n" +
-                "    -1,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2,\n" +
-                "    3,\n" +
-                "    4,\n" +
-                "    5\n" +
-                "  ],\n" +
-                "  \"repeatedPackedInt32\": [\n" +
-                "    -1,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2,\n" +
-                "    3,\n" +
-                "    4,\n" +
-                "    5\n" +
-                "  ],\n" +
-                "  \"repeatedForeignMessage\": [\n" +
-                "    {\n" +
-                "      \"c\": 0\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"c\": 1\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"c\": 2\n" +
-                "    },\n" +
-                "    {},\n" +
-                "    {}\n" +
-                "  ],\n" +
-                "  \"repeatedBytes\": [\n" +
-                "    \"YXNjaWk=\",\n" +
-                "    \"dXRmOPCfkqk=\",\n" +
-                "    \"YXNjaWk=\",\n" +
-                "    \"dXRmOPCfkqk=\",\n" +
-                "    \"\"\n" +
-                "  ],\n" +
-                "  \"repeatedString\": [\n" +
-                "    \"hello\",\n" +
-                "    \"world\",\n" +
-                "    \"ascii\",\n" +
-                "    \"utf8\uD83D\uDCA9\"\n" +
-                "  ]\n" +
-                "}";
-
-        JsonSource source = new GsonSource(new StringReader(json));
-        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
-        Assert.assertEquals(json, msg.toString());
-    }
-
-    @Test
-    public void testNullInput() throws Exception {
-        String json = "{\"optionalNestedMessage\":null,\"repeatedString\":null,\"optionalForeignMessage\":{},\"repeatedBytes\":[null,null]}";
-        JsonSource source = new GsonSource(new StringReader(json));
-        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
-        assertTrue(msg.getOptionalNestedMessage().isEmpty());
-        assertTrue(msg.hasRepeatedString());
-        Assert.assertEquals(0, msg.getRepeatedString().length());
-        Assert.assertEquals(2, msg.getRepeatedBytes().length());
-    }
-
-    @Test
-    public void testSpecialNumbers() throws Exception {
-        String json = "{\n" +
-                "  \"repeated_double\": [\n" +
-                "    \"NaN\",\n" +
-                "    \"-Infinity\",\n" +
-                "    0,\n" +
-                "    -28.3,\n" +
-                "    3E6,\n" +
-                "    -0,\n" +
-                "    17E-3,\n" +
-                "    Infinity\n" +
-                "  ],\n" +
-                "  \"repeated_int32\": [\n" +
-                "    \"0\",\n" +
-                "    \"2147483647\",\n" +
-                "    -2147483648,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2\n" +
-                "  ]\n" +
-                "}";
-        JsonSource source = new GsonSource(new StringReader(json));
-        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
-
-        Assert.assertArrayEquals(new double[]{
-                Double.NaN,
-                Double.NEGATIVE_INFINITY,
-                0,
-                -28.3,
-                3E6,
-                -0,
-                17E-3,
-                Double.POSITIVE_INFINITY}, msg.getRepeatedDouble().toArray(), 0);
-
-        Assert.assertArrayEquals(new int[]{
-                0,
-                Integer.MAX_VALUE,
-                Integer.MIN_VALUE,
-                0,
-                1,
-                2}, msg.getRepeatedInt32().toArray());
-
-    }
-
-    @Test
-    public void testAllMessages() throws Exception {
-        for (byte[] bytes : CompatibilityTest.getAllMessages()) {
-            testRoundTrip(TestAllTypes.parseFrom(bytes));
+            parseJson(input);
+            fail("expected error: " + error);
+        } catch (IOException ioe) {
+            assertEquals(error, ioe.getMessage());
+        } catch (IllegalStateException stateEx) {
+            // TODO: should we wrap IllegalStateException?
+            assertEquals(error, stateEx.getMessage());
         }
     }
-
-    @Test
-    public void testCombinedMessage() throws Exception {
-        testRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage()));
-    }
-
-    @Test
-    public void testEnums() throws Exception {
-        testRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.optionalEnums()));
-        testRoundTrip(TestAllTypes.parseFrom(CompatibilityTest.repeatedEnums()));
-    }
-
-    private void testRoundTrip(ProtoMessage<?> msg) throws Exception {
-        testRoundTrip(msg, minimized);
-        testRoundTrip(msg, pretty);
-    }
-
-    private void testRoundTrip(ProtoMessage<?> msg, JsonSink sink) throws Exception {
-        msg.writeTo(sink.clear());
-        ProtoMessage<?> msg2 = msg
-                .clone()
-                .clear()
-                .mergeFrom(new GsonSource(new StringReader(sink.toString())));
-        Assert.assertEquals(msg, msg2);
-    }
-
-    private final JsonSink minimized = JsonSink.newInstance();
-    private final JsonSink pretty = JsonSink.newPrettyInstance();
-
 
 }

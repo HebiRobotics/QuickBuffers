@@ -41,15 +41,15 @@ public class JsonSourceTest {
         TestAllTypes actual = TestAllTypes.newInstance();
 
         String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
-        actual.clear().mergeFrom(JsonSource.newInstance(json));
+        actual.clear().mergeFrom(newJsonSource(json));
         Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(JsonSource.newInstance(json));
+        actual.clear().mergeFrom(newJsonSource(json));
         Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(JsonSource.newInstance(json));
+        actual.clear().mergeFrom(newJsonSource(json));
         Assert.assertEquals(expected, actual);
     }
 
@@ -60,140 +60,50 @@ public class JsonSourceTest {
         ForeignMessage wrongMsg = ForeignMessage.newInstance();
 
         // Ignore unknown fields
-        wrongMsg.clear().mergeFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(true));
+        wrongMsg.clear().mergeFrom(newJsonSource(json).setIgnoreUnknownFields(true));
 
         // Expect a failure
         try {
-            wrongMsg.mergeFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(false));
+            wrongMsg.mergeFrom(newJsonSource(json).setIgnoreUnknownFields(false));
             fail("expected to fail on unknown fields");
-        } catch (IllegalArgumentException e) {
+        } catch (IOException e) {
+            assertEquals("Encountered unknown field: 'optionalDouble'", e.getMessage());
         }
 
     }
 
     @Test
     public void testManualInput() throws Exception {
-        final String json = "{\n" +
-                "  \"optionalDouble\": 100,\n" +
-                "  \"optionalFixed64\": 103,\n" +
-                "  \"optionalSfixed64\": 105,\n" +
-                "  \"optionalInt64\": 109,\n" +
-                "  \"optionalUint64\": 111,\n" +
-                "  \"optionalSint64\": 107,\n" +
-                "  \"optionalFloat\": 101,\n" +
-                "  \"optionalFixed32\": 102,\n" +
-                "  \"optionalSfixed32\": 104,\n" +
-                "  \"optionalInt32\": 108,\n" +
-                "  \"optionalUint32\": 110,\n" +
-                "  \"optionalSint32\": 106,\n" +
-                "  \"optionalNestedEnum\": \"FOO\",\n" +
-                "  \"optionalForeignEnum\": \"FOREIGN_BAR\",\n" +
-                "  \"optionalImportEnum\": \"IMPORT_BAZ\",\n" +
-                "  \"optionalBool\": true,\n" +
-                "  \"optionalNestedMessage\": {\n" +
-                "    \"bb\": 2\n" +
-                "  },\n" +
-                "  \"optionalForeignMessage\": {\n" +
-                "    \"c\": 3\n" +
-                "  },\n" +
-                "  \"optionalImportMessage\": {},\n" +
-                "  \"optionalBytes\": \"dXRmOPCfkqk=\",\n" +
-                "  \"defaultBytes\": \"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\n" +
-                "  \"optionalString\": \"optionalString\\\\escape\\t\\b\\n\\funi\uD83D\uDCA9\",\n" +
-                "  \"optionalCord\": \"hello!\",\n" +
-                "  \"repeatedDouble\": [\n" +
-                "    \"NaN\",\n" +
-                "    \"-Infinity\",\n" +
-                "    0,\n" +
-                "    -28.3\n" +
-                "  ],\n" +
-                "  \"repeatedFloat\": [],\n" +
-                "  \"repeatedInt32\": [\n" +
-                "    -2,\n" +
-                "    -1,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2,\n" +
-                "    3,\n" +
-                "    4,\n" +
-                "    5\n" +
-                "  ],\n" +
-                "  \"repeatedPackedInt32\": [\n" +
-                "    -1,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2,\n" +
-                "    3,\n" +
-                "    4,\n" +
-                "    5\n" +
-                "  ],\n" +
-                "  \"repeatedForeignMessage\": [\n" +
-                "    {\n" +
-                "      \"c\": 0\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"c\": 1\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"c\": 2\n" +
-                "    },\n" +
-                "    {},\n" +
-                "    {}\n" +
-                "  ],\n" +
-                "  \"repeatedBytes\": [\n" +
-                "    \"YXNjaWk=\",\n" +
-                "    \"dXRmOPCfkqk=\",\n" +
-                "    \"YXNjaWk=\",\n" +
-                "    \"dXRmOPCfkqk=\",\n" +
-                "    \"\"\n" +
-                "  ],\n" +
-                "  \"repeatedString\": [\n" +
-                "    \"hello\",\n" +
-                "    \"world\",\n" +
-                "    \"ascii\",\n" +
-                "    \"utf8\uD83D\uDCA9\"\n" +
-                "  ]\n" +
-                "}";
-
-        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(JsonSource.newInstance(json));
-        Assert.assertEquals(json, msg.toString());
+        TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
+        assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());
     }
 
     @Test
-    public void testNullInput() throws Exception {
-        String json = "{\"optionalNestedMessage\":null,\"repeatedString\":null,\"optionalForeignMessage\":{},\"repeatedBytes\":[null,null]}";
-        JsonSource source = JsonSource.newInstance(json);
-        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
+    public void testEmptyInput() throws Exception {
+        TestAllTypes msg = parseJson(CompatibilityTest.JSON_EMPTY);
+        assertEquals(CompatibilityTest.JSON_EMPTY, msg.toString());
+        assertTrue(msg.isEmpty());
+    }
+
+    @Test
+    public void testObjectsNullInput() throws Exception {
+        TestAllTypes msg = parseJson(CompatibilityTest.JSON_OBJECT_TYPES_NULL);
+        assertTrue(msg.hasOptionalForeignMessage());
         assertTrue(msg.getOptionalNestedMessage().isEmpty());
-        assertTrue(msg.hasRepeatedString());
+        assertFalse(msg.hasRepeatedString());
         Assert.assertEquals(0, msg.getRepeatedString().length());
-        Assert.assertEquals(2, msg.getRepeatedBytes().length());
+        Assert.assertEquals(0, msg.getRepeatedBytes().length());
+    }
+
+    @Test
+    public void testAllTypesNullInput() throws Exception {
+        TestAllTypes msg = parseJson(CompatibilityTest.JSON_ALL_TYPES_NULL);
+        assertTrue(msg.isEmpty());
     }
 
     @Test
     public void testSpecialNumbers() throws Exception {
-        String json = "{\n" +
-                "  \"repeated_double\": [\n" +
-                "    \"NaN\",\n" +
-                "    \"-Infinity\",\n" +
-                "    0,\n" +
-                "    -28.3,\n" +
-                "    3E6,\n" +
-                "    -0,\n" +
-                "    17E-3,\n" +
-                "    Infinity\n" +
-                "  ],\n" +
-                "  \"repeated_int32\": [\n" +
-                "    \"0\",\n" +
-                "    \"2147483647\",\n" +
-                "    -2147483648,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2\n" +
-                "  ]\n" +
-                "}";
-        JsonSource source = JsonSource.newInstance(json);
-        TestAllTypes msg = TestAllTypes.newInstance().mergeFrom(source);
+        TestAllTypes msg = parseJson(CompatibilityTest.JSON_SPECIAL_NUMBERS);
 
         Assert.assertArrayEquals(new double[]{
                 Double.NaN,
@@ -213,6 +123,24 @@ public class JsonSourceTest {
                 1,
                 2}, msg.getRepeatedInt32().toArray());
 
+    }
+
+    @Test
+    public void testBadInputs() {
+        testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n'");
+        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '['");
+        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes'");
+        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' for field 'repeatedForeignMessage'");
+        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' for field 'optionalBool'");
+        testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
+        testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
+    }
+
+    @Test
+    public void testParseRootList() throws Exception {
+        RepeatedMessage<TestAllTypes> list = newJsonSource(CompatibilityTest.JSON_ROOT_LIST)
+                .parseRepeatedMessage(TestAllTypes.getFactory());
+        assertEquals(3, list.length());
     }
 
     @Test
@@ -243,8 +171,31 @@ public class JsonSourceTest {
         ProtoMessage<?> msg2 = msg
                 .clone()
                 .clear()
-                .mergeFrom(JsonSource.newInstance(sink.getBytes()));
+                .mergeFrom(newJsonSource(sink));
         Assert.assertEquals(msg, msg2);
+    }
+
+    protected TestAllTypes parseJson(String json) throws IOException {
+        return TestAllTypes.parseFrom(newJsonSource(json));
+    }
+
+    protected JsonSource newJsonSource(String json) throws IOException {
+        return JsonSource.newInstance(json);
+    }
+
+    protected JsonSource newJsonSource(JsonSink sink) throws IOException {
+        return JsonSource.newInstance(sink.getBytes());
+    }
+
+    protected void testError(String input, String error) {
+        try {
+            parseJson(input);
+            fail("expected error: " + error);
+        } catch (IOException ioe) {
+            if (error != null) {
+                assertEquals(error, ioe.getMessage());
+            }
+        }
     }
 
     private final JsonSink minimized = JsonSink.newInstance();
