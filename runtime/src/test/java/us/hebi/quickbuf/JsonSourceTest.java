@@ -41,15 +41,15 @@ public class JsonSourceTest {
         TestAllTypes actual = TestAllTypes.newInstance();
 
         String json = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(expected).toString();
-        actual.clear().mergeFrom(JsonSource.newInstance(json));
+        actual.clear().mergeFrom(newJsonSource(json));
         Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(JsonSource.newInstance(json));
+        actual.clear().mergeFrom(newJsonSource(json));
         Assert.assertEquals(expected, actual);
 
         json = JsonSink.newInstance().setPreserveProtoFieldNames(true).writeMessage(expected).toString();
-        actual.clear().mergeFrom(JsonSource.newInstance(json));
+        actual.clear().mergeFrom(newJsonSource(json));
         Assert.assertEquals(expected, actual);
     }
 
@@ -60,11 +60,11 @@ public class JsonSourceTest {
         ForeignMessage wrongMsg = ForeignMessage.newInstance();
 
         // Ignore unknown fields
-        wrongMsg.clear().mergeFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(true));
+        wrongMsg.clear().mergeFrom(newJsonSource(json).setIgnoreUnknownFields(true));
 
         // Expect a failure
         try {
-            wrongMsg.mergeFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(false));
+            wrongMsg.mergeFrom(newJsonSource(json).setIgnoreUnknownFields(false));
             fail("expected to fail on unknown fields");
         } catch (IOException e) {
             assertEquals("Encountered unknown field: 'optionalDouble'", e.getMessage());
@@ -126,7 +126,7 @@ public class JsonSourceTest {
     }
 
     @Test
-    public void testBadInputs() throws Exception {
+    public void testBadInputs() {
         testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n'");
         testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '['");
         testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes'");
@@ -138,7 +138,7 @@ public class JsonSourceTest {
 
     @Test
     public void testParseRootList() throws Exception {
-        RepeatedMessage<TestAllTypes> list = JsonSource.newInstance(CompatibilityTest.JSON_ROOT_LIST)
+        RepeatedMessage<TestAllTypes> list = newJsonSource(CompatibilityTest.JSON_ROOT_LIST)
                 .parseRepeatedMessage(TestAllTypes.getFactory());
         assertEquals(3, list.length());
     }
@@ -171,15 +171,23 @@ public class JsonSourceTest {
         ProtoMessage<?> msg2 = msg
                 .clone()
                 .clear()
-                .mergeFrom(JsonSource.newInstance(sink.getBytes()));
+                .mergeFrom(newJsonSource(sink));
         Assert.assertEquals(msg, msg2);
     }
 
-    private TestAllTypes parseJson(String json) throws IOException {
-        return TestAllTypes.parseFrom(JsonSource.newInstance(json));
+    protected TestAllTypes parseJson(String json) throws IOException {
+        return TestAllTypes.parseFrom(newJsonSource(json));
     }
 
-    private void testError(String input, String error) {
+    protected JsonSource newJsonSource(String json) throws IOException {
+        return JsonSource.newInstance(json);
+    }
+
+    protected JsonSource newJsonSource(JsonSink sink) throws IOException {
+        return JsonSource.newInstance(sink.getBytes());
+    }
+
+    protected void testError(String input, String error) {
         try {
             parseJson(input);
             fail("expected error: " + error);

@@ -106,20 +106,14 @@ public class JacksonSource extends JsonSource {
 
     @Override
     public void readString(Utf8String store) throws IOException {
-        if (next() == JsonToken.VALUE_NULL) {
-            store.clear();
-            return;
-        } else {
-            store.copyFrom(reader.getValueAsString());
-        }
+        next();
+        store.copyFrom(reader.getValueAsString());
     }
 
     @Override
     public void readBytes(RepeatedByte store) throws IOException {
-        store.clear();
-        if (next() != JsonToken.VALUE_NULL) {
-            store.copyFrom(reader.getBinaryValue());
-        }
+        next();
+        store.copyFrom(reader.getBinaryValue());
     }
 
     @Override
@@ -176,64 +170,41 @@ public class JacksonSource extends JsonSource {
 
     @Override
     public boolean beginObject() throws IOException {
-        switch (peek()) {
-            case VALUE_NULL:
-                next();
-                return false;
-            case START_OBJECT:
-                next();
-                return true;
-            default:
-                throw unexpectedTokenError("START_OBJECT");
-        }
+        readExpectedToken(JsonToken.START_OBJECT);
+        return true;
     }
 
     @Override
     public void endObject() throws IOException {
-        if (peek() != JsonToken.END_OBJECT) {
-            throw unexpectedTokenError("END_OBJECT");
-        }
-        next();
+        readExpectedToken(JsonToken.END_OBJECT);
     }
 
     @Override
-    public boolean beginArray() throws IOException {
-        switch (peek()) {
-            case VALUE_NULL:
-                next();
-                return false;
-            case START_ARRAY:
-                next();
-                return true;
-            default:
-                throw unexpectedTokenError("START_ARRAY");
-        }
+    public void beginArray() throws IOException {
+        readExpectedToken(JsonToken.START_ARRAY);
     }
 
     @Override
     public void endArray() throws IOException {
-        if (peek() != JsonToken.END_ARRAY) {
-            throw unexpectedTokenError("END_ARRAY");
-        }
-        next();
+        readExpectedToken(JsonToken.END_ARRAY);
     }
 
     @Override
     public boolean isAtEnd() throws IOException {
-        switch (peek()) {
-            case END_OBJECT:
-            case END_ARRAY:
-                return true;
-            default:
-                return reader.isClosed();
-        }
+        JsonToken token = peek();
+        return token == JsonToken.END_OBJECT ||
+                token == JsonToken.END_ARRAY ||
+                reader.isClosed();
+    }
+
+    @Override
+    protected boolean isAtNull() throws IOException {
+        return peek() == JsonToken.VALUE_NULL;
     }
 
     @Override
     protected CharSequence readFieldName() throws IOException {
-        if (next() != JsonToken.FIELD_NAME) {
-            throw unexpectedTokenError("FIELD_NAME");
-        }
+        readExpectedToken(JsonToken.FIELD_NAME);
         return reader.getCurrentName();
     }
 
@@ -254,8 +225,14 @@ public class JacksonSource extends JsonSource {
         return peekToken != null ? peekToken : (peekToken = reader.nextToken());
     }
 
-    private IOException unexpectedTokenError(String expectedToken) {
-        return new JsonParseException(reader, "Expected " + expectedToken + " but was "
+    private void readExpectedToken(JsonToken token) throws IOException {
+        if (next() != token) {
+            throw unexpectedTokenError(token);
+        }
+    }
+
+    private IOException unexpectedTokenError(JsonToken expectedToken) {
+        return new JsonParseException(reader, "Expected " + expectedToken.asString() + " but was "
                 + reader.getCurrentToken(), reader.currentTokenLocation());
     }
 

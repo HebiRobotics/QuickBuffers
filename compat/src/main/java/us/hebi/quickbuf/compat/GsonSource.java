@@ -83,9 +83,7 @@ public class GsonSource extends JsonSource {
 
     @Override
     public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
-        if (tryReadNull()) {
-            return null;
-        } else if (reader.peek() == JsonToken.NUMBER) {
+        if (reader.peek() == JsonToken.NUMBER) {
             return converter.forNumber(reader.nextInt());
         } else {
             return converter.forName(reader.nextString());
@@ -94,19 +92,12 @@ public class GsonSource extends JsonSource {
 
     @Override
     public void readString(Utf8String store) throws IOException {
-        if (tryReadNull()) {
-            store.clear();
-        } else {
-            store.copyFrom(reader.nextString());
-        }
+        store.copyFrom(reader.nextString());
     }
 
     @Override
     public void readBytes(RepeatedByte store) throws IOException {
-        store.clear();
-        if (!tryReadNull()) {
-            decodeBase64(reader.nextString(), store);
-        }
+        decodeBase64(reader.nextString(), store.clear());
     }
 
     @Override
@@ -123,7 +114,6 @@ public class GsonSource extends JsonSource {
 
     @Override
     public boolean beginObject() throws IOException {
-        if (tryReadNull()) return false;
         reader.beginObject();
         return true;
     }
@@ -134,18 +124,8 @@ public class GsonSource extends JsonSource {
     }
 
     @Override
-    public boolean beginArray() throws IOException {
-        if (tryReadNull()) return false;
+    public void beginArray() throws IOException {
         reader.beginArray();
-        return true;
-    }
-
-    private boolean tryReadNull() throws IOException {
-        if (reader.peek() == JsonToken.NULL) {
-            reader.nextNull();
-            return true;
-        }
-        return false;
     }
 
     @Override
@@ -156,6 +136,11 @@ public class GsonSource extends JsonSource {
     @Override
     public boolean isAtEnd() throws IOException {
         return !reader.hasNext();
+    }
+
+    @Override
+    protected boolean isAtNull() throws IOException {
+        return reader.peek() == JsonToken.NULL;
     }
 
     @Override
