@@ -240,19 +240,22 @@ public class CompatibilityTest {
 
     @Test
     public void testProtobufJavaJsonParser() throws IOException {
-        TestAllTypes.Builder msg = TestAllTypes.newBuilder();
-        JsonFormat.parser().merge(JSON_MANUAL_INPUT, msg.clear());
+        TestAllTypes msg;
 
-        JsonFormat.parser().merge(JSON_EMPTY, msg.clear());
-        assertEquals(0, msg.getGetSerializedSize());
+        msg = parseJson(JSON_MANUAL_INPUT);
+        assertEquals(591, msg.getSerializedSize());
 
-        JsonFormat.parser().merge(JSON_OBJECT_TYPES_NULL, msg.clear());
-        assertEquals(0, msg.getGetSerializedSize());
+        msg = parseJson(JSON_EMPTY);
+        assertEquals(0, msg.getSerializedSize());
 
-        JsonFormat.parser().merge(JSON_ALL_TYPES_NULL, msg.clear());
-        assertEquals(0, msg.getGetSerializedSize());
+        msg = parseJson(JSON_OBJECT_TYPES_NULL);
+        assertEquals(3, msg.getSerializedSize());
 
-        JsonFormat.parser().merge(JSON_SPECIAL_NUMBERS, msg.clear());
+        msg = parseJson(JSON_ALL_TYPES_NULL);
+        assertEquals(0, msg.getSerializedSize());
+
+        msg = parseJson(JSON_SPECIAL_NUMBERS);
+        assertEquals(111, msg.getSerializedSize());
 
         testError(JSON_REPEATED_BYTES_NULL_VALUE, "Repeated field elements cannot be null in field: quickbuf_unittest.TestAllTypes.repeated_bytes");
         testError(JSON_REPEATED_MSG_NULL_VALUE, "Repeated field elements cannot be null in field: quickbuf_unittest.TestAllTypes.repeated_foreign_message");
@@ -262,6 +265,16 @@ public class CompatibilityTest {
         testError(JSON_UNKNOWN_FIELD, "Cannot find field: unknownField in message quickbuf_unittest.TestAllTypes");
         testError(JSON_UNKNOWN_FIELD_NULL, "Cannot find field: unknownField in message quickbuf_unittest.TestAllTypes");
 
+    }
+
+    private static TestAllTypes parseJson(String input) {
+        try {
+            TestAllTypes.Builder builder = TestAllTypes.newBuilder();
+            JsonFormat.parser().merge(input, builder);
+            return builder.build();
+        } catch (Throwable e) {
+            throw new IllegalArgumentException(input, e);
+        }
     }
 
     private void testError(String input, String error) {
