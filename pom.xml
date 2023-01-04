@@ -7,7 +7,7 @@
     <groupId>us.hebi.quickbuf</groupId>
     <artifactId>quickbuf-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <name>QuickBuffers</name>
     <url>https://github.com/HebiRobotics/QuickBuffers</url>
@@ -277,7 +277,7 @@
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.8</version>
+                    <version>1.6.13</version>
                     <extensions>true</extensions>
                     <configuration>
                         <serverId>ossrh</serverId>
