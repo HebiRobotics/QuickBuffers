@@ -25,6 +25,7 @@
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
+        <graalvm.tools.version>0.9.19</graalvm.tools.version>
     </properties>
 
     <dependencies>
@@ -228,6 +229,42 @@
             <properties>
                 <protoc.os>osx</protoc.os>
             </properties>
+        </profile>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${graalvm.tools.version}</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <skip>false</skip>
+                            <skipNativeTests>true</skipNativeTests> <!-- TODO: change to junit platform >5.8 -->
+                            <useArgFile>false</useArgFile>
+                            <verbose>true</verbose>
+                            <imageName>protoc-gen-quickbuf</imageName>
+                            <fallback>false</fallback>
+                            <classpath> <!-- use shaded jar -->
+                                <param>${project.build.directory}/${finalName}.jar</param>
+                            </classpath>
+                            <buildArgs combine.children="append">
+                                <!-- TODO: statically compile executable? -->
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

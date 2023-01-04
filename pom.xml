@@ -89,6 +89,7 @@
         <license.licenseName>apache_v2</license.licenseName>
         <license.addJavaLicenseAfterPackage>false</license.addJavaLicenseAfterPackage>
         <license.trimHeaderLine>true</license.trimHeaderLine>
+        <license.excludes>**/*.json,**/*.xml</license.excludes>
 
         <!-- For now, disable 'missing' warnings about undocumented @param and @throws -->
         <doclint>html,syntax,accessibility,reference</doclint>
@@ -183,7 +184,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
-                    <version>1.16</version>
+                    <version>2.0.0</version>
                     <executions>
                         <execution>
                             <id>first</id>
