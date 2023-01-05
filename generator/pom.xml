@@ -22,6 +22,8 @@
         <protoc.pluginDir>${project.basedir}/../parser/target</protoc.pluginDir>
         <protoc.pluginFile>${protoc.pluginDir}/protoc-gen-request${protoc.pluginExt}</protoc.pluginFile>
         <protoc.outputDir>${project.build.directory}/test-classes/us/hebi/quickbuf/generator</protoc.outputDir>
+        <native.extension>.exe</native.extension>
+        <native.staticArg>--static</native.staticArg>
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
@@ -206,6 +208,7 @@
             </activation>
             <properties>
                 <protoc.os>windows</protoc.os>
+                <native.extension><!-- added automatically --></native.extension>
             </properties>
         </profile>
         <profile>
@@ -228,6 +231,18 @@
             </activation>
             <properties>
                 <protoc.os>osx</protoc.os>
+                <native.staticArg>--verbose</native.staticArg> <!-- unsupported on osx -->
+            </properties>
+        </profile>
+        <profile>
+            <id>arch-aarch64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <protoc.arch>aarch_64</protoc.arch>
             </properties>
         </profile>
         <profile>
@@ -252,14 +267,14 @@
                             <skip>false</skip>
                             <skipNativeTests>true</skipNativeTests> <!-- TODO: change to junit platform >5.8 -->
                             <useArgFile>false</useArgFile>
-                            <verbose>true</verbose>
-                            <imageName>protoc-gen-quickbuf</imageName>
-                            <fallback>false</fallback>
-                            <classpath> <!-- use shaded jar -->
+                            <imageName>${finalName}-${protoc.os}-${protoc.arch}${native.extension}</imageName>
+                            <classpath>
                                 <param>${project.build.directory}/${finalName}.jar</param>
                             </classpath>
-                            <buildArgs combine.children="append">
-                                <!-- TODO: statically compile executable? -->
+                            <buildArgs>
+                                <arg>--no-fallback</arg>
+                                <arg>--verbose</arg>
+                                <arg>${native.staticArg}</arg>
                             </buildArgs>
                         </configuration>
                     </plugin>

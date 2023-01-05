@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>quickbuf-parent</artifactId>
+        <groupId>us.hebi.quickbuf</groupId>
+        <version>1.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>protoc-gen-quickbuf</artifactId>
+    <packaging>pom</packaging>
+
+    <properties>
+        <license.skip>true</license.skip>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/bin/</directory>
+                                    <includes>${finalName}-*.exe</includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-windows-x86_64.exe</file>
+                                    <classifier>windows-x86_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-linux-x86_64.exe</file>
+                                    <classifier>linux-x86_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-osx-x86_64.exe</file>
+                                    <classifier>osx-x86_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-osx-aarch_64.exe</file>
+                                    <classifier>osx-aarch_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

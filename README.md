@@ -31,141 +31,54 @@ You can find the latest release on Maven Central at the coordinates below. The r
 </dependency>
 ```
 
-<details>
-<summary>Building from Source</summary><p>
-
-The project can be built with `mvn package` using JDK8 through JDK17.
-
-Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
-
-For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work. `mvn clean package --projects generator,runtime -am` omits building the benchmarks.
-
-</p></details> 
-
 ## Generating Messages
 
 The code generator is setup as a `protoc` plugin that gets called by the official protobuf compiler. You can either generate the message sources manually, or use build system plugins to generate the sources automatically each time.
 
-<details>
-<summary>Manual Generation</summary><p>
+**Manual Generation**
 
-* Download an appropriate `protoc` executable from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and add the directory to the `$PATH` (tested with `protoc-3.7.0` through `protoc-3.19.4`)
-* Download [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0.0/protoc-gen-quickbuf-1.0.0.zip) and extract the files into the same directory or somewhere else on the `$PATH`.
-  * Running the plugin requires Java8 or higher to be installed
-  * Protoc does have an option to define a plugin path, but it does not seem to work with the wrapper scripts
-* Call `protoc` with `--quickbuf_out=<options>:./path/to/generate`
+* Download an appropriate `protoc` executable from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/)
 
-</p></details>
+* Download an appropriate [protoc plugin](https://github.com/HebiRobotics/QuickBuffers/releases/latest)
+  * `java`: The scripts need to be on the `$PATH` (requires java8 or higher)
+  * `.zip`: The executable needs to be on `$PATH`
+  * `.exe`: The executable path needs to be specified with `--plugin=protoc-gen-quickbuf=${pathToExe}`
+* Call `protoc` with `--quickbuf_out=<options>:./path/to/output`
 
-<details>
-<summary>Maven Configuration</summary><p>
+**Maven Integration**
 
-The configuration below downloads the QuickBuffers generator plugin, puts it on the correct path, and executes protoc using the `protoc-jar-maven-plugin`. The default settings assume that the proto files are located in `src/main/protobuf`.
+The configuration below downloads uses the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin) to download protoc, an appropriate QuickBuffers generator plugin, and sets up the appropriate paths. The default settings assume that the proto files are located in `src/main/protobuf`.
 
-```XML
-<build>
-    <plugins>
+```xml
+<!-- Downloads protoc w/ plugin and generates messages -->
+<plugin>  
+  <groupId>com.github.os72</groupId>
+  <artifactId>protoc-jar-maven-plugin</artifactId>
+  <version>3.11.4</version>
+  <executions>
+    <execution>
+      <phase>generate-sources</phase>
+      <goals>
+        <goal>run</goal>
+      </goals>
+      <configuration>
+        <protocVersion>3.19.6</protocVersion>
 
-       <!-- Downloads QuickBuffers generator plugin -->
-        <plugin>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <version>1.8</version>
-            <executions>
-                <execution>
-                    <id>download-quickbuf-plugin</id>
-                    <phase>generate-sources</phase>
-                    <configuration>
-                        <tasks>
-                            <taskdef resource="net/sf/antcontrib/antcontrib.properties"
-                                     classpathref="maven.plugin.classpath"/>
+        <outputTargets>
+          <outputTarget>
+            <type>quickbuf</type>
+            <pluginArtifact>us.hebi.quickbuf:protoc-gen-quickbuf:1.0.0</pluginArtifact>
+            <outputOptions>indent=4,java8_optional=true</outputOptions>
+          </outputTarget>
+        </outputTargets>
 
-                            <!-- Download plugin files -->
-                            <get src="https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0.0/protoc-gen-quickbuf-1.0.0.zip"
-                                 dest="${project.basedir}/protoc-gen-quickbuf-1.0.0.zip" skipexisting="true" verbose="on"/>
-                            <unzip src="${project.basedir}/protoc-gen-quickbuf-1.0.0.zip" dest="${project.basedir}" overwrite="true"/>
-
-                            <!--
-                            The executing directory does not end up on the $PATH on Linux, so we need to use the
-                            pluginPath protoc option. Unfortunately, this requires us to specify the (full) absolute
-                            path to the OS-dependent executable. Typically this would be done via OS-specific Maven
-                            Profiles, but that would ruin the copy & paste experience and require changes in multiple
-                            sections of the pom file. As a workaround, we can select the correct file and give it a
-                            common name that we can use in the plugin path. Unfortunately, after some tests we found
-                            that Windows only accepts .exe and .bat files, and .exe does not work with scripts.
-                            Thus, the file needs to have a .bat extension.
-                             -->
-                            <if>
-                                <os family="windows"/>
-                                <then>
-                                    <copy file="${project.basedir}\protoc-gen-quickbuf.bat"
-                                          tofile="${project.basedir}\protoc-gen-quickbuf-plugin.bat"/>
-                                </then>
-                                <else>
-                                    <copy file="${project.basedir}/protoc-gen-quickbuf"
-                                          tofile="${project.basedir}/protoc-gen-quickbuf-plugin.bat"/>
-
-                                    <!-- Unzip does not preserve permissions, so we need to fix the executable bits -->
-                                    <chmod perm="775" file="${project.basedir}/protoc-gen-quickbuf"/>
-                                    <chmod perm="775" file="${project.basedir}/protoc-gen-quickbuf-plugin.bat"/>
-                                </else>
-                            </if>
-                        </tasks>
-                    </configuration>
-                    <goals>
-                        <goal>run</goal>
-                    </goals>
-                </execution>
-            </executions>
-            <dependencies>
-                <dependency>
-                    <groupId>ant-contrib</groupId>
-                    <artifactId>ant-contrib</artifactId>
-                    <version>1.0b3</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>ant</groupId>
-                            <artifactId>ant</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-            </dependencies>
-        </plugin>
-
-        <!-- Calls protoc.exe and generate messages -->
-        <plugin>
-            <groupId>com.github.os72</groupId>
-            <artifactId>protoc-jar-maven-plugin</artifactId>
-            <version>3.8.0</version>
-            <executions>
-                <execution>
-                    <phase>generate-sources</phase>
-                    <goals>
-                        <goal>run</goal>
-                    </goals>
-                    <configuration>
-                        <protocVersion>3.19.4</protocVersion>
-
-                        <!-- plugin configuration, options, etc. -->
-                        <outputTargets>
-                            <outputTarget>
-                                <pluginPath>${project.basedir}/protoc-gen-quickbuf-plugin.bat</pluginPath>
-                                <type>quickbuf</type>
-                                <outputOptions>store_unknown_fields=false</outputOptions>
-                            </outputTarget>
-                        </outputTargets>
-
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
-
-    </plugins>
-</build>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
 ```
 
-</p></details> 
-
-Currently available options are
+**Currently available options are**
 
 | Option | Value | Description |
 | :----------- | :----------- | :----------- |
@@ -373,6 +286,15 @@ Unfortunately, we currently have no way of knowing an appropriate initial size f
 Be aware that this prevents the definition of cycles in the message definitions.
 
 -->
+
+## Building from Source
+
+The project can be built with `mvn package` using JDK8 through JDK19+.
+
+Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
+
+For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work. `mvn clean package --projects generator,runtime -am` omits building the benchmarks.
+
 
 ## Why Protobuf v2 instead of the newer v3?
 
