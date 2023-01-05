@@ -1,0 +1,41 @@
+name: Native Plugin
+
+on:
+  push:
+    branches: [ release/native-gen ]
+  workflow_dispatch:
+    inputs:
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, windows-2019, macos-11]
+
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v3
+    - uses: graalvm/setup-graalvm@v1
+      with:
+        version: 'latest'
+        java-version: '17'
+        components: 'native-image'
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Print versions
+      run: |
+        echo "GRAALVM_HOME: $GRAALVM_HOME"
+        echo "JAVA_HOME: $JAVA_HOME"
+        java --version
+        gu --version
+        native-image --version
+
+    - name: Build native image
+      run: mvn package -Pnative --projects generator -am
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: proto-gen-quickbuf
+        path: generator/target/*.exe
