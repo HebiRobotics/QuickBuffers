@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,6 +50,14 @@ public class CompilerPlugin {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
+        if (args.length > 0) {
+            System.out.println("This protobuf plugin should be called by protoc. Example:\n\n" +
+                    "    1) protoc --plugin=protoc-gen-quickbuf=${executable} --quickbuf_out=store_unknown_fields=true:. type.proto\n" +
+                    "    2) protoc --quickbuf_out=store_unknown_fields=true:. type.proto\n\n" +
+                    "Note that if you are calling this plugin from the PATH (2), the executable\n" +
+                    "file or wrapper script needs to be called \"protoc-gen-quickbuf\".");
+            return;
+        }
         handleRequest(System.in).writeTo(System.out);
     }
 
