@@ -20,22 +20,19 @@ jobs:
       with:
         version: 'latest'
         java-version: '17'
+        set-java-home: 'true'
         components: 'native-image'
+        cache: 'maven'
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Print versions
+    - name: Build native image
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        java --version
-        gu --version
-        native-image --version
-
-    - name: Build native image
-      run: mvn package -Pnative --projects generator -am
+        mvn package -Pnative --projects generator -am
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: proto-gen-quickbuf
+        name: protoc-gen-quickbuf
         path: generator/target/*.exe
