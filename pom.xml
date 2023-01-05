@@ -89,7 +89,7 @@
         <license.licenseName>apache_v2</license.licenseName>
         <license.addJavaLicenseAfterPackage>false</license.addJavaLicenseAfterPackage>
         <license.trimHeaderLine>true</license.trimHeaderLine>
-        <license.excludes>**/*.json,**/*.xml</license.excludes>
+        <license.excludes>**/*.json,**/*.xml,**/*.sh,**/*.bat</license.excludes>
 
         <!-- For now, disable 'missing' warnings about undocumented @param and @throws -->
         <doclint>html,syntax,accessibility,reference</doclint>
