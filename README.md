@@ -7,7 +7,7 @@ The main highlights are
  * **Allocation-free** in steady state. All parts of the API are mutable and reusable. Nested types are allocated eagerly
  * **No reflection** use anywhere. GraalVM native-images and ProGuard obfuscation are supported out of the box
  * **Faster** encoding and decoding [speed](./benchmarks)
- * **Smaller** code size than `protobuf-javalite`
+ * **Smaller** code size than protobuf-javalite
  * **Built-in JSON** marshalling compliant with the [Proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
  * **Improved order** for optimized [sequential memory access](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order)
  * **Optional accessors** as an opt-in feature (java8)
@@ -16,7 +16,23 @@ QuickBuffers implements the [proto2 specification](https://developers.google.com
 
 ## Getting started
 
-In order to use QuickBuffers you need to generate messages and add the corresponding runtime dependency. The message generator `protoc-gen-quickbuf` is set up as a plugin for the protocol buffers compiler `protoc`. The easiest way to generate messages is to use the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin).
+In order to use QuickBuffers you need to generate messages and add the corresponding runtime dependency. The runtime can be found at the Maven coordinates below.
+
+```xml
+<properties>
+  <quickbuf.version>1.0.0</quickbuf.version>
+</properties>
+```
+
+```XML
+<dependency>
+  <groupId>us.hebi.quickbuf</groupId>
+  <artifactId>quickbuf-runtime</artifactId>
+  <version>${quickbuf.version}</version>
+</dependency>
+```
+
+The message generator `protoc-gen-quickbuf` is set up as a plugin for the protocol buffers compiler `protoc`. The easiest way to generate messages is to use the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin).
 
 ```xml
 <!-- Downloads protoc w/ plugin and generates messages -->
@@ -37,7 +53,7 @@ In order to use QuickBuffers you need to generate messages and add the correspon
         <outputTargets>
           <outputTarget>
             <type>quickbuf</type>
-            <pluginArtifact>us.hebi.quickbuf:protoc-gen-quickbuf:1.0.0</pluginArtifact>
+            <pluginArtifact>us.hebi.quickbuf:protoc-gen-quickbuf:${quickbuf.version}</pluginArtifact>
             <outputOptions>indent=4,java8_optional=true</outputOptions>
           </outputTarget>
         </outputTargets>
@@ -46,16 +62,6 @@ In order to use QuickBuffers you need to generate messages and add the correspon
     </execution>
   </executions>
 </plugin>
-```
-
-The runtime dependency can be found on Maven Central at the coordinates below.
-
-```XML
-<dependency>
-  <groupId>us.hebi.quickbuf</groupId>
-  <artifactId>quickbuf-runtime</artifactId>
-  <version>1.0.0</version>
-</dependency>
 ```
 
 The generator features several options that can be supplied as a comma-separated list. The default values are marked bold.
@@ -71,7 +77,7 @@ The generator features several options that can be supplied as a comma-separated
 
 ## Manual generation
 
-Alternatively, you can also execute `protoc` manually using the following steps
+Alternatively, you can also manually execute `protoc` using the following steps
 
 * Download the [protoc executable](https://repo1.maven.org/maven2/com/google/protobuf/protoc/)
 * Download the [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/latest) protoc plugin
