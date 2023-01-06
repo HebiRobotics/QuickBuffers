@@ -1,56 +1,26 @@
 # QuickBuffers - Fast Protocol Buffers without Allocations
 
-QuickBuffers is a Java implementation of [Google's Protocol Buffers v2](https://developers.google.com/protocol-buffers) ([why not v3?](#why-protobuf-v2-instead-of-the-newer-v3)) that has been developed for low latency use cases in zero-allocation environments. The API follows Protobuf-Java where feasible to simplify migration.
+QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://developers.google.com/protocol-buffers/) that has been developed for low latency use cases in zero-allocation environments. The API follows Protobuf-Java where feasible to simplify migration.
 
-The main differences are
+The main highlights are
 
- * All parts of the API are mutable and reusable
- * Nested types are allocated eagerly
- * Substantial improvements to both encoding and decoding speed ([benchmarks](./benchmarks))
- * No reflection API or any use of reflections. ProGuard obfuscation does not require configuration.
- * Significantly smaller code size than the `java` and `javalite` options
- * Built-in JSON serialization that matches the [Proto3 JSON Mapping](https://developers.google.com/protocol-buffers/docs/proto3#json) (experimental)
- * Different [serialization order](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order) that optimizes for sequential memory access
+ * **Allocation-free** in steady state. All parts of the API are mutable and reusable. Nested types are allocated eagerly
+ * **No reflection** use anywhere. GraalVM native-images and ProGuard obfuscation are supported out of the box
+ * **Faster** encoding and decoding [speed](./benchmarks)
+ * **Smaller** code size than `protobuf-javalite`
+ * **Built-in JSON** marshalling compliant with the [Proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
+ * **Improved order** for optimized [sequential memory access](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order)
+ * **Optional accessors** as an opt-in feature (java8)
 
-Unsupported Features
-* `Maps` (can be used with a [workaround](https://developers.google.com/protocol-buffers/docs/proto#backwards))
-* `Extensions` 
-* `Services`
+QuickBuffers implements the [proto2 specification](https://developers.google.com/protocol-buffers/docs/proto) and is compatible with all java versions from 6 through 20. So far we chose not to support proto3 because of some [design decisions](#why-protobuf-v2-instead-of-the-newer-v3) that make it unusable for us, but both versions are binary compatible and can work together. QuickBuffers supports all features except for [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) and [Services](https://developers.google.com/protocol-buffers/docs/proto#services). [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are not directly supported, but can be used with this [workaround](https://developers.google.com/protocol-buffers/docs/proto#backwards).
 
-The unsupported features could be added, but we've never had an internal use case for them.
+## Getting started
 
-## Runtime Library
-
-You can find the latest release on Maven Central at the coordinates below. The runtime is compatible with Java 6 and higher.
-
-```XML
-<dependency>
-  <groupId>us.hebi.quickbuf</groupId>
-  <artifactId>quickbuf-runtime</artifactId>
-  <version>1.0.0</version>
-</dependency>
-```
-
-## Generating Messages
-
-The code generator is setup as a `protoc` plugin that gets called by the official protobuf compiler. You can either generate the message sources manually, or use build system plugins to generate the sources automatically each time.
-
-**Manual Generation**
-
-* Download an appropriate `protoc` executable from [Maven Central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/)
-
-* Download an appropriate [protoc plugin](https://github.com/HebiRobotics/QuickBuffers/releases/latest)
-  * `java`: The scripts need to be on the `$PATH` (requires java8 or higher)
-  * `.zip`: The executable needs to be on `$PATH`
-  * `.exe`: The executable path needs to be specified with `--plugin=protoc-gen-quickbuf=${pathToExe}`
-* Call `protoc` with `--quickbuf_out=<options>:./path/to/output`
-
-**Maven Integration**
-
-The configuration below downloads uses the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin) to download protoc, an appropriate QuickBuffers generator plugin, and sets up the appropriate paths. The default settings assume that the proto files are located in `src/main/protobuf`.
+In order to use QuickBuffers you need to generate messages and add the corresponding runtime dependency. The message generator `protoc-gen-quickbuf` is set up as a plugin for the protocol buffers compiler `protoc`. The easiest way to generate messages is to use the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin).
 
 ```xml
 <!-- Downloads protoc w/ plugin and generates messages -->
+<!-- Default settings expect .proto files to be in src/main/protobuf -->
 <plugin>  
   <groupId>com.github.os72</groupId>
   <artifactId>protoc-jar-maven-plugin</artifactId>
@@ -78,7 +48,17 @@ The configuration below downloads uses the [protoc-jar-maven-plugin](https://git
 </plugin>
 ```
 
-**Currently available options are**
+The runtime dependency can be found on Maven Central at the coordinates below.
+
+```XML
+<dependency>
+  <groupId>us.hebi.quickbuf</groupId>
+  <artifactId>quickbuf-runtime</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
+The generator features several options that can be supplied as a comma-separated list. The default values are marked bold.
 
 | Option | Value | Description |
 | :----------- | :----------- | :----------- |
@@ -89,18 +69,84 @@ The configuration below downloads uses the [protoc-jar-maven-plugin](https://git
 | **enforce_has_checks** | **false**, true  | throws an exception when accessing fields that were not set |                               
 | **java8_optional** | **false**, true  |  creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher. |                               
 
+## Manual generation
+
+Alternatively, you can also execute `protoc` manually using the following steps
+
+* Download the [protoc executable](https://repo1.maven.org/maven2/com/google/protobuf/protoc/)
+* Download the [protoc-gen-quickbuf](https://github.com/HebiRobotics/QuickBuffers/releases/latest) protoc plugin
+  * `.zip`: a platform specific executable that needs to be on the `$PATH`
+  * `.exe`: a platform specific executable that needs to be specified with `--plugin=protoc-gen-quickbuf=${pathToExe}`
+  * `java`: cross platform wrapper scripts that need to be on the `$PATH` (requires a Java 8 or higher runtime)
+* Run `protoc` with `--quickbuf_out=<options>:./path/to/output`
+
 For example, 
 ```bash
 protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
 ``` 
 
-## Generated Fields
+## Reading and writing messages
 
-We tried to keep the public API as close to Google's `Protobuf-Java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
+We tried to keep the public API as close to Google's `protobuf-java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
+
+Messages can be read from a `ProtoSource` and written to a `ProtoSink`. `newInstance` instantiates optimized implementations for accessing contiguous blocks of memory such as `byte[]` and `ByteBuffer`. Reads and writes do not modify the `ByteBuffer` state, so positions and limits need to be manually if needed. Additionally, there are also (non-optimized) convenience wrappers for `InputStream`, `OutputStream`, and `ByteBuffer`. The internal state can be reset with the `setInput` and `setOutput` methods.
+
+`ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
+
+```Java
+// Create data
+RootMessage msg = RootMessage.newInstance()
+    .setPrimitiveValue(2);
+
+// Serialize into existing byte array
+byte[] buffer = new byte[msg.getSerializedSize()];
+ProtoSink sink = ProtoSink.newInstance(buffer);
+msg.writeTo(sink);
+
+// Serialize to byte array using helper method
+assertArrayEquals(msg.toByteArray(), buffer);
+
+// Read from byte array into an existing message
+ProtoSource source = ProtoSource.newInstance(buffer);
+assertEquals(msg, RootMessage.newInstance().mergeFrom(source));
+```
+
+**Direct Source/Sink**
+
+Depending on platform support for `sun.misc.Unsafe`, the `DirectSource` and `DirectSink` implementations allow working with off-heap memory. This is intended for reducing unnecessary memory copies when working with direct NIO buffers. Serialization-wise there is no performance benefit compared to working with heap arrays.
+
+```Java
+// Create message
+SimpleMessage msg = SimpleMessage.newInstance();
+msg.setRequiredField(1);
+
+// Write to direct buffer
+ByteBuffer directBuffer = ByteBuffer.allocateDirect(msg.getSerializedSize());
+ProtoSink directSink = ProtoSink.newDirectSink();
+directSink.setOutput(directBuffer);
+msg.writeTo(directSink);
+directBuffer.limit(directSink.getTotalBytesWritten());
+
+// Read from direct buffer
+ProtoSource directSource = ProtoSource.newDirectSource();
+directSource.setInput(directBuffer);
+SimpleMessage msg2 = SimpleMessage.parseFrom(directSource);
+assertEquals(msg, msg2);
+```
+
+## Building from source
+
+The project can be built with `mvn package` using jdk 8 through jdk 20.
+
+`mvn clean package --projects generator,runtime -am` omits building the benchmarks.
+
+Note that the `package` goal is always required, and that `mvn clean test` is not enough to work. This limitation stems from the fact that protobuf compiler plugins get executed by `protoc` and exchange information via protobuf messages on `std::in` and `std::out`. Using `std::in` makes it comparatively easy to get the schema information, but it becomes quite difficult to setup unit tests and debug plugins during development. To enable standard tests, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded during testing and development of the actual generator plugin. This makes the `generator` module dependent on the packaged output of the `parser` module.
+
+## Generated accessors for different types
 
 All nested object types such as message or repeated fields have `getField()` and `getMutableField()` accessors. Both return the same internal storage object, but `getField()` should be considered read-only. Once a field is cleared, it should also no longer be modified.
 
-### Primitive Fields
+### Primitive fields
 
 All primitive values generate the same accessors and behavior as Protobuf-Java's `Builder` classes
 
@@ -123,7 +169,7 @@ public final class SimpleMessage {
 }
 ```
 
-### Message Fields
+### Message fields
 
 Nested message types are `final` and allocated during construction time. The recommended way to set nested message content is by accessing the internal store with `getMutableNestedMessage()`. Setting content using `setNestedMessage(NestedMessage.newInstance())` copies the data, but does not change the internal reference.
 
@@ -160,7 +206,7 @@ msg.getMutableNestedMessage().setPrimitiveValue(0);
 ```
 
 
-### String Fields
+### String fields
 
 `String` types are internally stored as `Utf8String` that are lazily parsed and can be set with `CharSequence`. Since Java `String` objects are immutable, there are additional access methods to allow for decoding characters into a reusable `StringBuilder` instance, as well as for using a custom `Utf8Decoder` that can implement interning.
 
@@ -193,7 +239,7 @@ StringBuilder chars = new StringBuilder();
 msg.getOptionalStringBytes().getChars(chars); // chars now contains "my-text"
 ```
 
-### Repeated Fields
+### Repeated fields
 
 Repeated scalar fields work mostly the same as String fields, but the internal `array()` can be accessed directly if needed. Repeated messages and object types provide a `next()` method that adds one element and provides a mutable reference to it.
 
@@ -218,60 +264,8 @@ public final class SimpleMessage {
 }
 ```
 
-## Reading and Writing Messages
-
-Messages can be read from a `ProtoSource` and written to a `ProtoSink`. The implementations are optimized for accessing contiguous blocks of memory such as `byte[]`, but there are (non-optimized) convenience wrappers for working with `InputStream`, `OutputStream`, and `ByteBuffer`.
-
-`ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization.
-
-```Java
-// Create data
-RootMessage msg = RootMessage.newInstance()
-    .setPrimitiveValue(2);
-
-// Serialize into existing byte array
-byte[] buffer = new byte[msg.getSerializedSize()];
-ProtoSink sink = ProtoSink.newInstance(buffer);
-msg.writeTo(sink);
-
-// Serialize to byte array using helper method
-assertArrayEquals(msg.toByteArray(), buffer);
-
-// Read from byte array into an existing message
-ProtoSource source = ProtoSource.newInstance(buffer);
-assertEquals(msg, RootMessage.newInstance().mergeFrom(source));
-```
-
-<details>
-<summary>Off-Heap Addressing</summary><p>
-
-Depending on platform support for `sun.misc.Unsafe`, the `DirectSource` and `DirectSink` implementations allow working with off-heap memory. This is intended for reducing unnecessary memory copies when working with direct NIO buffers. Performance-wise there is no benefit compared to working with heap arrays.
-
-State changes of `DirectSource / DirectSink` do not modify the `ByteBuffer` state, so positions and limits need to be updated manually if needed.
-
-```Java
-// Create message
-SimpleMessage msg = SimpleMessage.newInstance();
-msg.setRequiredField(1);
-
-// Write to direct buffer
-ByteBuffer directBuffer = ByteBuffer.allocateDirect(msg.getSerializedSize());
-ProtoSink directSink = ProtoSink.newDirectSink();
-directSink.setOutput(directBuffer);
-msg.writeTo(directSink);
-directBuffer.limit(directSink.getTotalBytesWritten());
-
-// Read from direct buffer
-ProtoSource directSource = ProtoSource.newDirectSource();
-directSource.setInput(directBuffer);
-SimpleMessage msg2 = SimpleMessage.parseFrom(directSource);
-assertEquals(msg, msg2);
-```
-
-</details>
-
 <!-- 
-## More Information
+## More information
 
 ### Mutability
 
@@ -286,15 +280,6 @@ Unfortunately, we currently have no way of knowing an appropriate initial size f
 Be aware that this prevents the definition of cycles in the message definitions.
 
 -->
-
-## Building from Source
-
-The project can be built with `mvn package` using JDK8 through JDK19+.
-
-Note that protoc plugins get started by the `protoc` executable and exchange information via protobuf messages on `std::in` and `std::out`. While this makes it fairly simple to get the schema information, it makes it quite difficult to setup unit tests and debug plugins during development. To work around this, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded in unit tests during development of the actual generator plugin.
-
-For this reason the `generator` modules requires the packaged output of the `parser` module, so you always need to run the `package` goal. `mvn clean test` will not work. `mvn clean package --projects generator,runtime -am` omits building the benchmarks.
-
 
 ## Why Protobuf v2 instead of the newer v3?
 
