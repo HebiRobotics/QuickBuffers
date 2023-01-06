@@ -91,6 +91,13 @@ For example,
 protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
 ``` 
 
+Note that downloading the macOS binary from a browser may add a quarantine flag that prevents it from executing. The following commands can fix it
+
+```bash
+sudo xattr -r -d com.apple.quarantine protoc-gen-quickbuf
+sudo chmod +x protoc-gen-quickbuf
+```
+
 ## Reading and writing messages
 
 We tried to keep the public API as close to Google's `protobuf-java` as possible, so most use cases should require very few changes. The main difference is that there are no builders, and that all message contents are mutable.
@@ -139,6 +146,57 @@ directSource.setInput(directBuffer);
 SimpleMessage msg2 = SimpleMessage.parseFrom(directSource);
 assertEquals(msg, msg2);
 ```
+
+**JSON Source/Sink**
+
+ProtoMessages also support reading from and writing to JSON as specified in the [proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json).
+
+```protobuf
+// .proto definition
+message JsonMessage {
+  optional int32 id = 1;
+  optional bytes base64_bytes= 2;
+  optional string text = 3;
+}
+```
+
+```Java
+// Java code
+JsonMessage msg = JsonMessage.newInstance()
+    .setId(3)
+    .addAllBase64Bytes(new byte[]{0,27,28,31,-3})
+    .setText("👍 QuickBuffers \uD83D\uDC4D");
+```
+
+All messages implement a toString method that writes the contents in prettified json. Calling `System.out.println(msg)` prints:
+
+```text
+{
+  "id": 3,
+  "base64Bytes": "ABscH/0=",
+  "text": "👍 QuickBuffers 👍"
+}
+```
+
+More fine grained control is exposed via the `JsonSink` and `JsonSource` interfaces
+
+```Java
+JsonSink sink = JsonSink.newInstance()
+    .setPrettyPrinting(false)
+    .setWriteEnumsAsInts(false)
+    .setPreserveProtoFieldNames(false);
+
+// use ProtoMessage::writeTo or JsonSink::writeMessage to serialize the contents
+msg.writeTo(sink.clear());
+RepeatedByte bytes = sink.getBytes();
+
+// use ProtoMessage::parseFrom or JsonSource::parseMessage to parse the contents
+JsonMessage parsed = JsonSource.newInstance(bytes)
+    .setIgnoreUnknownFields(true)
+    .parseMessage(JsonMessage.getFactory());
+```
+
+Note that the json serialization has not been tested as much as the binary serialization. We have been using it in production and are not aware of any bugs, but we also added alternative GSON and Jackson based implementations for cases that require something more battle tested (e.g. obscure floating point edge cases). The alternative wrappers be found in the `quickbuf-compat` artifact.
 
 ## Building from source
 
@@ -289,7 +347,7 @@ Be aware that this prevents the definition of cycles in the message definitions.
 
 ## Why Protobuf v2 instead of the newer v3?
 
-Both proto2 and proto3 use the same wire format, so the messages are binary compatible and only differ in semantics. Unfortunately, many of the changes introduced in proto3 turned out to be major design flaws, and they ended up adding several workarounds to revert to the original proto2 semantics. Google has stated that they will keep supporting both versions indefinitely, so we recommend sticking with proto2. For comparison, the main changes were
+Both proto2 and proto3 use the same wire format, so the messages are binary compatible and only differ in semantics. Unfortunately, several of the changes introduced in proto3 turned out to be major design flaws, and the protobuf team ended up adding several workarounds to revert to the original proto2 semantics. Google has stated that they will keep supporting both versions indefinitely, so we recommend sticking with proto2. For comparison, the main changes were
 
 * No field presence
 
