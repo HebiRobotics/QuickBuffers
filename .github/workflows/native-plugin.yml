@@ -49,7 +49,7 @@ jobs:
     - name: Build aarch64 image
       run: |
         export JAVA_HOME=${GRAALVM_HOME}
-        mvn package -Pnative --projects generator -am -DskipTests
+        mvn clean package -Pnative --projects generator -am
       
     - name: Upload aarch64 build
       uses: actions/upload-artifact@v3
