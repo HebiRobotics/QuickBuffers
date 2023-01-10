@@ -7,11 +7,12 @@ on:
     inputs:
 
 jobs:
-  package:
+  build-x86_64:
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-11]
 
+    timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     steps:
@@ -25,14 +26,55 @@ jobs:
         cache: 'maven'
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build native image
+    - name: Build x86_64 image
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
         mvn package -Pnative --projects generator -am
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+    - name: Upload x86_64 build
+      uses: actions/upload-artifact@v3
       with:
-        name: protoc-gen-quickbuf
+        name: native-images
         path: generator/target/*.exe
+        retention-days: 10
+        
+  conveyor-site:
+    needs: build-x86_64
+    runs-on: [self-hosted, macos-aarch64]
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build aarch64 image
+      run: |
+        export JAVA_HOME=${GRAALVM_HOME}
+        mvn clean package -Pnative --projects generator -am
+      
+    - name: Upload aarch64 build
+      uses: actions/upload-artifact@v3
+      with:
+        name: native-images
+        path: generator/target/*.exe
+        retention-days: 10
+    
+    - name: Download native builds
+      uses: actions/download-artifact@v3
+      with:
+        name: native-images
+        path: generator/native-release/bin/
+        
+    - name: Conveyor site
+      working-directory: ./generator/native-release
+      run: |
+        chmod +x bin/*.exe
+        conveyor make site
+      
+    - name: Upload site
+      uses: actions/upload-artifact@v3
+      with:
+        name: conveyor-site
+        path: generator/native-release/output/*
+        retention-days: 10
+      
+    
