@@ -7,11 +7,12 @@ on:
     inputs:
 
 jobs:
-  package:
+  native-images:
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-11, macos-aarch64]
 
+    timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     steps:
@@ -32,7 +33,34 @@ jobs:
         mvn package -Pnative --projects generator -am
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
-        name: protoc-gen-quickbuf
+        name: native-images
         path: generator/target/*.exe
+        retention-days: 10
+        
+  conveyor:
+    needs: native-images
+    runs-on: [self-hosted, macos-aarch64]
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: native-images
+        path: generator/native-release/bin/
+        
+    - name: Conveyor site
+      working-directory: ./generator/native-release
+      run: conveyor make site
+      
+    - name: Upload site
+      uses: actions/upload-artifact@v3
+      with:
+        name: conveyor-site
+        path: generator/native-release/output/*
+        retention-days: 10
+      
+    
