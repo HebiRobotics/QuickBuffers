@@ -1,11 +1,10 @@
-# QuickBuffers - Fast Protocol Buffers without Allocations
-
-
+<!-- 
 <p align="center">
-  <img src="https://hebirobotics.github.io/QuickBuffers/icon.png" alt="QuickBuffers icon">
+  <img src="https://hebirobotics.github.io/QuickBuffers/icon.png"  alt="QuickBuffers icon">
 </p>
+-->
 
-[//]: # (![HdrHistogramVisualizer]&#40;https://hebirobotics.github.io/QuickBuffers/icon.png?&#41;)
+# QuickBuffers - Fast Protocol Buffers without Allocations
 
 QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://developers.google.com/protocol-buffers/) that has been developed for low latency use cases in zero-allocation environments. The API follows Protobuf-Java where feasible to simplify migration.
 
@@ -83,24 +82,24 @@ The generator features several options that can be supplied as a comma-separated
 | **enforce_has_checks** | **false**, true  | throws an exception when accessing fields that were not set |                               
 | **java8_optional** | **false**, true  |  creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher. |                               
 
-## Manual generation
+## Manual installation
 
-Alternatively, you can also manually execute `protoc` with the `quickbuf` plugin. The plugin can be installed as a package or as a standalone executable.
+Alternatively, you can also manually execute `protoc` with the `quickbuf` plugin. The plugin can be installed as a package or run as a standalone executable.
 
-**Plugin installation**
+**Package installation**
 
-The easiest option is to go to the [download](https://hebirobotics.github.io/QuickBuffers/download.html) site and install the appropriate package. The `protoc-gen-quickbuf` executable is automatically added to the path. There are also commandline installation options that work well for CI.
+The easiest option is to go to the [download](https://hebirobotics.github.io/QuickBuffers/download.html) site and install the appropriate package. The `protoc-gen-quickbuf` executable is automatically added to the path. There are also commandline installation options that work well on CI.
 
-**Standalone plugin**
+For unsupported platforms you can download the Java wrapper scripts in `protoc-gen-quickbuf-${version}.zip` and place them on the path. This requires a Java 8 or higher runtime.
 
-Download the [Releases](https://github.com/HebiRobotics/QuickBuffers/releases) section and download the `protoc-gen-quickbuf-${version}-${arch}.exe` for your system. The plugin path needs to be manually specified by adding the `--plugin-protoc-gen-quickbuf=${pathToExe}` parameter. Depending on your system you may also need to set the executable bit and remove quarantine flags (macOS).
+**Standalone executable**
+
+If you prefer a standalone executable, you can go to the [Releases](https://github.com/HebiRobotics/QuickBuffers/releases) section and download the `protoc-gen-quickbuf-${version}-${arch}.exe` for your system. The plugin path needs to be manually specified by adding the `--plugin-protoc-gen-quickbuf=${pathToExe}` parameter. Depending on your system you may also need to set the executable bit and remove quarantine flags (macOS).
 
 ```bash
 sudo xattr -r -d com.apple.quarantine protoc-gen-quickbuf
 sudo chmod +x protoc-gen-quickbuf
 ```
-
-For unsupported platforms you can download the Java wrapper scripts in `protoc-gen-quickbuf-${version}.zip` and place them on the path. This requires a Java 8 or higher runtime.
 
 **Run protoc**
 
@@ -112,7 +111,7 @@ protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_fi
 
 ## Reading and writing messages
 
-We tried to keep the public API as close to Google's `protobuf-java` as possible, so most use cases should require very few changes. The Java related file options are all supported and behave the same way (`java_package`, `java_outer_classname`, `java_multiple_files`, `java_generate_equals_and_hash`).
+We tried to keep the public API as close to Google's `protobuf-java` as possible, so most use cases should require very few changes. The Java related file options are all supported and behave the same way<!--(`java_package`, `java_outer_classname`, `java_multiple_files`, `java_generate_equals_and_hash`)-->.
 
 ```protobuf
 // .proto definition
@@ -132,7 +131,7 @@ message Person {
 }
 ```
 
-The main difference is that there are no extra builder classes and that all message contents are mutable. This comes at the cost of thread-safety, so contents need to be cloned or copied with `ProtoMessage::copyFrom` before being passed to another thread.
+The main difference is that there are no extra builder classes and that all message contents are mutable. The `getMutable()` accessors set the has flag and provide access to the nested references.
 
 ```Java
 // Use fluent-style to set values
@@ -161,7 +160,7 @@ RootMessage result = RootMessage.parseFrom(buffer);
 assertEquals(result, msg);
 ```
 
-Their internal state can be reset with the `setInput` and `setOutput` methods. Note that `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization if there were any changes.
+The internal state can be reset with the `setInput` and `setOutput` methods. `ProtoMessage::getSerializedSize` sets an internally cached size, so it should always be called before serialization if there were any changes.
 
 ```Java
  // Reusable objects
@@ -184,9 +183,11 @@ ProtoSink.newInstance(new ByteArrayOutputStream());
 ProtoSource.newInstance(new ByteArrayInputStream(bytes));
 ```
 
+Keep in mind that mutability comes at the cost of thread-safety, so contents should be cloned with `ProtoMessage::clone` or copied with `ProtoMessage::copyFrom` before being passed to another thread.
+
 **Direct Source/Sink**
 
-Depending on platform support for `sun.misc.Unsafe`, the `DirectSource` and `DirectSink` implementations allow working with off-heap memory. This is intended for reducing unnecessary memory copies when working with direct NIO buffers. Note that besides not needing to copy data, there is no performance benefit compared to working with heap arrays.
+Depending on platform support for `sun.misc.Unsafe`, the `DirectSource` and `DirectSink` implementations allow working with off-heap memory. This is intended for reducing unnecessary memory copies when working with direct NIO buffers. Besides not needing to copy data, there is no performance benefit compared to working with heap arrays.
 
 ```Java
 // Write to direct buffer
