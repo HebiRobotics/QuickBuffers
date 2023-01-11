@@ -124,6 +124,7 @@ class TypeRegistry {
         }
 
         if (!hasRequiredMap.containsKey(type)) {
+            hasRequiredMap.put(type, null);
             boolean hasRequired = false;
             MessageInfo info = messageMap.get(type);
             for (RequestInfo.FieldInfo field : info.getFields()) {
@@ -135,7 +136,11 @@ class TypeRegistry {
             hasRequiredMap.put(type, hasRequired);
             return hasRequired;
         }
-        return hasRequiredMap.get(type);
+        Boolean hasRequired = hasRequiredMap.get(type);
+        if (hasRequired == null) {
+            throw new GeneratorException("Detected recursive message definition in '" + type + "'. This is not compatible with eagerly allocated types.");
+        }
+        return hasRequired;
 
     }
 
