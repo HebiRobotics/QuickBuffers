@@ -22,6 +22,7 @@ package us.hebi.quickbuf.parser;
 
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
+import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse.Feature;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,6 +58,10 @@ public class ParserPlugin {
 
     public static CodeGeneratorResponse handleRequest(CodeGeneratorRequest request) throws IOException {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
+
+        // Signal proto3 optional support bit
+        // see https://github.com/protocolbuffers/protobuf/blob/f75fd051d68136ce366c464cea4f3074158cd141/docs/implementing_proto3_presence.md#signaling-that-your-code-generator-supports-proto3-optional
+        response.setSupportedFeatures(Feature.FEATURE_PROTO3_OPTIONAL_VALUE);
 
         // Figure out file name
         Map<String, String> parameters = ParserUtil.getGeneratorParameters(request);

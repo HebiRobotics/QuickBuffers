@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,6 +57,34 @@ public class CompilerPluginTest {
     @Test
     public void testRepeatedPackablesRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getRepeatedPackablesRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test
+    public void testUnsupportedMapTest() {
+        // Generates a valid repeated<Entry> list instead
+        CodeGeneratorRequest request = TestRequestLoader.getUnsupportedMapRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test
+    public void testUnsupportedExtensionTest() {
+        // Can be safely ignored as there is just no API for it
+        CodeGeneratorRequest request = TestRequestLoader.getUnsupportedExtensionRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test(expected = GeneratorException.class)
+    public void testUnsupportedRecursionTest() {
+        // Fails generation due to the required field lookup, and at runtime due to eager allocation
+        CodeGeneratorRequest request = TestRequestLoader.getUnsupportedRecursionRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test
+    public void testUnsupportedProto3Test() {
+        // Things are semi-compatible, so we don't need to fail
+        CodeGeneratorRequest request = TestRequestLoader.getUnsupportedProto3Request();
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 

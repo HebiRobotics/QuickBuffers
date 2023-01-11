@@ -1,0 +1,19 @@
+// Adapted from Google's javanano unit tests
+
+syntax = "proto2";
+package quickbuf_unsupported;
+
+option java_package = "protos.test.protobuf.unsupported";
+option java_outer_classname = "Map";
+option java_multiple_files = false;
+
+message TestMap {
+
+  map<string, NestedMessage> string_to_message_map = 1;
+  map<int32, double> int_to_double_map = 2;
+
+}
+
+message NestedMessage {
+  optional int32 value = 1;
+}

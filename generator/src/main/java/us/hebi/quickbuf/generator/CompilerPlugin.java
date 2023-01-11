@@ -22,6 +22,7 @@ package us.hebi.quickbuf.generator;
 
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
+import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse.Feature;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import us.hebi.quickbuf.generator.RequestInfo.FileInfo;
@@ -74,6 +75,10 @@ public class CompilerPlugin {
     static CodeGeneratorResponse handleRequest(CodeGeneratorRequest requestProto) {
         CodeGeneratorResponse.Builder response = CodeGeneratorResponse.newBuilder();
         RequestInfo request = RequestInfo.withTypeRegistry(requestProto);
+
+        // Signal support for proto3 optionals. They behave the same as proto2
+        // optionals, so that feature is actually supported.
+        response.setSupportedFeatures(Feature.FEATURE_PROTO3_OPTIONAL_VALUE);
 
         for (FileInfo file : request.getFiles()) {
 

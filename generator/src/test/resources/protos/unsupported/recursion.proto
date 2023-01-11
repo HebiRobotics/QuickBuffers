@@ -1,0 +1,20 @@
+// Adapted from Google's javanano unit tests
+
+syntax = "proto2";
+package quickbuf_unsupported;
+
+option java_package = "protos.test.protobuf.unsupported";
+option java_outer_classname = "Recursion";
+option java_multiple_files = false;
+
+message MainMessage {
+  optional NestedMessage nested = 1;
+}
+
+message NestedMessage {
+  optional InnerNestedMessage inner = 1;
+}
+
+message InnerNestedMessage {
+  optional MainMessage main = 1;
+}

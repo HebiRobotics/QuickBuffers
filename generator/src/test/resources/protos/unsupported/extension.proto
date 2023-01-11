@@ -1,0 +1,22 @@
+// Adapted from Google's javanano unit tests
+
+syntax = "proto2";
+package quickbuf_unsupported;
+
+option java_package = "protos.test.protobuf.unsupported";
+option java_outer_classname = "Extension";
+option java_multiple_files = false;
+
+message MainMessage {
+  optional int32 value = 1;
+  extensions  100 to 199;
+}
+
+message ExtendingMessage {
+  optional int32 value = 1;
+}
+
+extend quickbuf_unsupported.MainMessage {
+  optional int32 extended_value = 100;
+  optional ExtendingMessage extended_message = 101;
+}

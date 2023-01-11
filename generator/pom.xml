@@ -28,6 +28,7 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
         <graalvm.tools.version>0.9.19</graalvm.tools.version>
+        <proto.dir.unsupported>${project.basedir}/src/test/resources/protos/unsupported</proto.dir.unsupported>
     </properties>
 
     <dependencies>
@@ -107,6 +108,30 @@
                                     <arg value="--request_out=request_file=repeatedPackables.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=unsupported_extension.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/extension.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=unsupported_map.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/map.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=unsupported_recursion.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/recursion.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=unsupported_proto3.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/proto3.proto"/>
                                 </exec>
                             </tasks>
                             <testSourceRoot>target/generated-test-sources</testSourceRoot>

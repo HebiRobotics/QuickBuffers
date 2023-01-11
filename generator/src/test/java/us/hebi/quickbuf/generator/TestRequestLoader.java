@@ -40,6 +40,10 @@ public class TestRequestLoader {
         getImportRequest();
         getAllTypesRequest();
         getRepeatedPackablesRequest();
+        getUnsupportedMapRequest();
+        getUnsupportedExtensionRequest();
+        getUnsupportedRecursionRequest();
+        getUnsupportedProto3Request();
     }
 
     public static CodeGeneratorRequest getRequiredRequest() {
@@ -56,6 +60,22 @@ public class TestRequestLoader {
 
     public static CodeGeneratorRequest getRepeatedPackablesRequest() {
         return getRequest("repeatedPackables");
+    }
+
+    public static CodeGeneratorRequest getUnsupportedMapRequest() {
+        return getRequest("unsupported_map");
+    }
+
+    public static CodeGeneratorRequest getUnsupportedExtensionRequest() {
+        return getRequest("unsupported_extension");
+    }
+
+    public static CodeGeneratorRequest getUnsupportedRecursionRequest() {
+        return getRequest("unsupported_recursion");
+    }
+
+    public static CodeGeneratorRequest getUnsupportedProto3Request() {
+        return getRequest("unsupported_proto3");
     }
 
     private static CodeGeneratorRequest getRequest(String name) {

@@ -89,6 +89,7 @@ class MessageGenerator {
 
         // OneOf Accessors
         info.getOneOfs().stream()
+                .filter(info -> !info.isSynthetic())
                 .map(OneOfGenerator::new)
                 .forEach(oneOf -> oneOf.generateMemberMethods(type));
 

@@ -1,0 +1,25 @@
+// Adapted from Google's javanano unit tests
+
+syntax = "proto3";
+package quickbuf_unsupported;
+
+option java_package = "protos.test.protobuf.unsupported";
+option java_outer_classname = "Proto3";
+option java_multiple_files = false;
+
+message RootMessage3 {
+  int32 optional3_field = 1;
+  optional int32 optional2_field = 2;
+  repeated int32 repeated_field = 3;
+  repeated NestedMessage3 repeated_message = 4;
+
+  oneof oneof_value_field {
+    float oneof_float_value = 5;
+    double oneof_double_value = 6;
+  }
+
+}
+
+message NestedMessage3 {
+  optional float value = 1;
+}

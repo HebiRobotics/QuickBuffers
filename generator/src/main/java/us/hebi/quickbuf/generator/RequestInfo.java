@@ -267,13 +267,29 @@ public class RequestInfo {
                     .map(desc -> new EnumInfo(parentFile, typeId, typeName, true, desc))
                     .collect(Collectors.toList());
 
-            int oneOfIndex = 0;
-            for (OneofDescriptorProto desc : descriptor.getOneofDeclList()) {
-                oneOfs.add(new OneOfInfo(parentFile, this, typeName, desc, oneOfIndex++));
+            int oneOfCount = descriptor.getOneofDeclCount();
+            Set<Integer> syntheticIndices = getSyntheticOneOfIndices();
+            for (int i = 0; i < oneOfCount; i++) {
+                oneOfs.add(new OneOfInfo(parentFile, this, typeName,
+                        descriptor.getOneofDecl(i), syntheticIndices.contains(i), i));
             }
 
             numBitFields = BitField.getNumberOfFields(fields.size());
 
+        }
+
+        private Set<Integer> getSyntheticOneOfIndices(){
+            // Filter synthetic OneOfs for single-fields (proto3 explicit optionals)
+            // see https://github.com/protocolbuffers/protobuf/blob/d36a64116f19ce59acf3af49e66cadef4c2fb2df/src/google/protobuf/descriptor.proto#L219-L240
+            // TODO: implement https://github.com/protocolbuffers/protobuf/blob/f75fd051d68136ce366c464cea4f3074158cd141/docs/implementing_proto3_presence.md#api-changes
+            Set<Integer> syntheticIndices = new HashSet<>();
+            descriptor.getFieldList().stream()
+                    .filter(FieldDescriptorProto::hasProto3Optional)
+                    .filter(FieldDescriptorProto::getProto3Optional)
+                    .filter(FieldDescriptorProto::hasOneofIndex)
+                    .mapToInt(FieldDescriptorProto::getOneofIndex)
+                    .forEach(syntheticIndices::add);
+            return syntheticIndices;
         }
 
         public boolean hasRequiredFieldsInHierarchy() {
@@ -576,12 +592,13 @@ public class RequestInfo {
 
     @Value
     public static class OneOfInfo {
-        OneOfInfo(FileInfo parentFile, MessageInfo parentTypeInfo, ClassName parentType, OneofDescriptorProto descriptor, int oneOfIndex) {
+        OneOfInfo(FileInfo parentFile, MessageInfo parentTypeInfo, ClassName parentType, OneofDescriptorProto descriptor, boolean synthetic, int oneOfIndex) {
             this.parentFile = parentFile;
             this.parentTypeInfo = parentTypeInfo;
             this.parentType = parentType;
             this.descriptor = descriptor;
             this.oneOfIndex = oneOfIndex;
+            this.synthetic = synthetic;
 
             upperName = NamingUtil.toUpperCamel(descriptor.getName());
             hazzerName = "has" + upperName;
@@ -601,6 +618,7 @@ public class RequestInfo {
         private final ClassName parentType;
         private final OneofDescriptorProto descriptor;
         private final int oneOfIndex;
+        private final boolean synthetic;
         private final String upperName;
         private final String hazzerName;
         private final String clearName;

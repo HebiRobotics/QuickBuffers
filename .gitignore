@@ -15,4 +15,4 @@ protoc-3.9.0-win64/
 .protoc/
 *.iml
 generator/native-release/bin/
-generator/native-release/output/protoc-gen-quickbuf-1.0.0.x64.msix
+generator/native-release/output/
