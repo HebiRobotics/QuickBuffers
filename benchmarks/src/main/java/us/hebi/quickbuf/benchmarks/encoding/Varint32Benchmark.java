@@ -55,6 +55,20 @@ import java.util.concurrent.TimeUnit;
  * VarintBenchmark.writeVarint32Loop            avgt   10  3.412 ± 0.096  us/op
  * VarintBenchmark.writeVarint32Switch          avgt   10  2.557 ± 0.153  us/op
  *
+ * === all 1 byte
+ * Benchmark                                      Mode  Cnt  Score   Error  Units
+ * Varint32Benchmark.computeVarint32Bits          avgt   10  0,680 ± 0,182  us/op
+ * Varint32Benchmark.computeVarint32LeadingZeros  avgt   10  0,454 ± 0,006  us/op
+ * Varint32Benchmark.computeVarint32Nano          avgt   10  0,111 ± 0,001  us/op
+ * Varint32Benchmark.computeVarint32_zlc_lookup   avgt   10  0,189 ± 0,001  us/op
+ *
+ * == production distribution
+ * Benchmark                                      Mode  Cnt  Score   Error  Units
+ * Varint32Benchmark.computeVarint32Bits          avgt   10  0,253 ± 0,003  us/op
+ * Varint32Benchmark.computeVarint32LeadingZeros  avgt   10  0,447 ± 0,002  us/op
+ * Varint32Benchmark.computeVarint32Nano          avgt   10  0,168 ± 0,019  us/op
+ * Varint32Benchmark.computeVarint32_zlc_lookup   avgt   10  0,191 ± 0,004  us/op
+ *
  * @author Florian Enner
  * @since 12 Sep 2014
  */
@@ -81,10 +95,18 @@ public class Varint32Benchmark {
     public void setup() {
         Random random = new Random(System.nanoTime());
         for (int i = 0; i < values.length; i++) {
-            values[i] = Math.abs(random.nextInt()) % 128; // all 1 byte varint (best case)
+//            values[i] = Math.abs(random.nextInt()) % 128; // all 1 byte varint (best case)
 //            values[i] = random.nextInt(); // 50% negative (worst case)
 //            values[i] = random.nextDouble() < 0.50 ? Math.abs(random.nextInt()) : random.nextInt(); // 25% negative
+//            values[i] = 1 << random.nextInt(10); // random long bit distribution
+            values[i] = withProductionDistribution(random);
         }
+    }
+
+    private int withProductionDistribution(Random random) {
+        float rnd = random.nextFloat() * 100f;
+        if(rnd < 94.8) return 1; // 1 byte
+        /*if(rnd<100)*/return 1 << 7; // 2 bytes
     }
 
     public static int writeRawVarint32Nano(int value, byte[] output) {
@@ -189,6 +211,18 @@ public class Varint32Benchmark {
         return ((32 - Integer.numberOfLeadingZeros(value)) + 6) / 7;
     }
 
+    static class Varint32 {
+        static int sizeOf(int value) {
+            return SIZE[Integer.numberOfLeadingZeros(value)];
+        }
+        static final int[] SIZE = new int[33];
+        static {
+            for (int i = 0; i <= 32; i++) {
+                SIZE[i] = 1 + (31 - i) / 7;
+            }
+        }
+    }
+
     @Benchmark
     public int computeVarint32Nano() {
         int size = 0;
@@ -203,6 +237,15 @@ public class Varint32Benchmark {
         int size = 0;
         for (int i = 0; i < values.length; i++) {
             size += computeRawVarint32SizeLeadingZeros(values[i]);
+        }
+        return size;
+    }
+
+    @Benchmark
+    public int computeVarint32_zlc_lookup() {
+        int size = 0;
+        for (int i = 0; i < values.length; i++) {
+            size += Varint32.sizeOf(values[i]);
         }
         return size;
     }

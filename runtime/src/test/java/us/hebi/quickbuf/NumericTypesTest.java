@@ -87,6 +87,8 @@ public class NumericTypesTest {
         testVarint64(~0L << 35);
         testVarint64(~0L << 42);
         testVarint64(~0L << 49);
+        testVarint64(~0L << 56);
+        testVarint64(~0L << 63);
         for (int i = 1; i < n; i++) {
             testVarint64(rnd.nextLong() % (long) Math.pow(n, 6));
         }

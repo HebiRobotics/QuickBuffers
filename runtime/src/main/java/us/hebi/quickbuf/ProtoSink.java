@@ -1160,27 +1160,19 @@ public abstract class ProtoSink {
 
     /** Compute the number of bytes that would be needed to encode a varint. */
     public static int computeRawVarint64Size(long value) {
-        // handle two popular special cases up front ...
-        if ((value & (~0L << 7)) == 0L) {
-            return 1;
+        return Varint64.sizeOf(value);
+    }
+
+    static class Varint64 {
+        static int sizeOf(long value) {
+            return SIZE[Long.numberOfLeadingZeros(value)];
         }
-        if (value < 0L) {
-            return 10;
+        static final int[] SIZE = new int[65];
+        static {
+            for (int i = 0; i <= 64; i++) {
+                SIZE[i] = 1 + (63 - i) / 7;
+            }
         }
-        // ... leaving us with 8 remaining, which we can divide and conquer
-        int n = 2;
-        if ((value & (~0L << 35)) != 0L) {
-            n += 4;
-            value >>>= 28;
-        }
-        if ((value & (~0L << 21)) != 0L) {
-            n += 2;
-            value >>>= 14;
-        }
-        if ((value & (~0L << 14)) != 0L) {
-            n += 1;
-        }
-        return n;
     }
 
     /** write a negative {@code int32} that must be sign-extended to 10 bytes */

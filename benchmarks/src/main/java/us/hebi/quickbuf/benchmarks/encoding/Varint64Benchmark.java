@@ -92,6 +92,16 @@ import java.util.concurrent.TimeUnit;
  * Varint64Benchmark.writeUInt64         thrpt   20  280,490 ± 11,318  ops/ms
  * Varint64Benchmark.writeUInt64As32     thrpt   20  284,050 ±  4,707  ops/ms
  *
+ * (production distribution)
+ * Benchmark                                           Mode  Cnt     Score     Error   Units
+ * Varint64Benchmark.computeRawVarInt64Size_branches  thrpt   20  1323,027 ±  32,910  ops/ms
+ * Varint64Benchmark.computeRawVarInt64Size_clz       thrpt   20  5164,235 ± 173,749  ops/ms
+ * Varint64Benchmark.writeExtendedInt64               thrpt   20   201,497 ±  0,658  ops/ms
+ * Varint64Benchmark.writeInt64                       thrpt   20   357,049 ±  9,361  ops/ms
+ * Varint64Benchmark.writeInt64_counted               thrpt   20   293,787 ±  6,596  ops/ms
+ * Varint64Benchmark.writeUInt64                      thrpt   20   395,856 ± 11,377  ops/ms
+ * Varint64Benchmark.writeUInt64As32                  thrpt   20   450,396 ±  5,713  ops/ms
+ *
  * @author Florian Enner
  * @since 12 Sep 2014
  */
@@ -122,11 +132,26 @@ public class Varint64Benchmark {
         for (int i = 0; i < values.length; i++) {
 //            values[i] = Math.abs(random.nextInt()) % 128; // all 1 byte varint (best case)
 //            values[i] = random.nextInt(); // 50% negative (worst case)
-//             values[i] = random.nextDouble() < 0.50 ? Math.abs(random.nextInt()) : random.nextInt(); // 25% negative
+//            values[i] = random.nextDouble() < 0.50 ? Math.abs(random.nextInt()) : random.nextInt(); // 25% negative
 //            values[i] = 1 << random.nextInt(32); // random int bit distribution
 //            values[i] = 1 << random.nextInt(21); // random 1-3 byte varints
-            values[i] = 1L << random.nextInt(64); // random long bit distribution
+//            values[i] = 1L << random.nextInt(64); // random long bit distribution
+            values[i] = withProductionDistribution(random);
         }
+    }
+
+    private long withProductionDistribution(Random random) {
+        float rnd = random.nextFloat() * 100f;
+        if(rnd < 43.88) return 1L; // 1 byte
+        if(rnd < 52.04) return 1L << 7; // 2 bytes
+        //if(rnd < 52.04) return 1L << 14; // 3 bytes
+        //if(rnd < 52.04) return 1L << 21; // 4 bytes
+        if(rnd < 64.29) return 1L << 28; // 5 byte
+        if(rnd < 78.57) return 1L << 35; // 6 byte
+        if(rnd < 92.88) return 1L << 42; // 7 byte
+        /*if(rnd < 100)*/ return 1L << 49; // 8 byte
+        //if(rnd < 100) return 1L << 56; // 9 byte
+        //if(rnd < 100) return 1L << 63; // 10 byte
     }
 
     private void writeUInt32NoTag(int value) throws IOException {
@@ -192,6 +217,15 @@ public class Varint64Benchmark {
         } else {
             writeRawExtendedVarint64(value);
         }
+    }
+
+    private void writeInt64NoTag_counted(long value) throws IOException {
+        final int numBytes = Varint64.sizeOf(value);
+        for (int i = 1; i < numBytes; i++) {
+            writeRawByte((byte) ((value & 0x7F) | 0x80));
+            value >>>= 7;
+        }
+        writeRawByte((byte) value);
     }
 
     private void writeRawExtendedVarint64(long value) throws IOException {
@@ -309,6 +343,15 @@ public class Varint64Benchmark {
     }
 
     @Benchmark
+    public int writeInt64_counted() throws IOException {
+        sink.reset();
+        for (int i = 0; i < values.length; i++) {
+            writeInt64NoTag_counted(values[i]);
+        }
+        return sink.getTotalBytesWritten();
+    }
+
+    @Benchmark
     public int writeUInt64As32() throws IOException {
         sink.reset();
         for (int i = 0; i < values.length; i++) {
@@ -324,6 +367,62 @@ public class Varint64Benchmark {
             writeRawExtendedVarint64(values[i]);
         }
         return sink.getTotalBytesWritten();
+    }
+
+    @Benchmark
+    public int computeRawVarInt64Size_branches() {
+        int sum = 0;
+        for (int i = 0; i < values.length; i++) {
+            sum += computeRawVarint64Size(values[i]);
+        }
+        return sum;
+    }
+
+    @Benchmark
+    public int computeRawVarInt64Size_clz() {
+        int sum = 0;
+        for (int i = 0; i < values.length; i++) {
+            sum += Varint64.sizeOf(values[i]);
+        }
+        return sum;
+    }
+
+    // Current implementation in Protobuf
+    public static int computeRawVarint64Size(long value) {
+        // handle two popular special cases up front ...
+        if ((value & (~0L << 7)) == 0L) {
+            return 1;
+        }
+        if (value < 0L) {
+            return 10;
+        }
+        // ... leaving us with 8 remaining, which we can divide and conquer
+        int n = 2;
+        if ((value & (~0L << 35)) != 0L) {
+            n += 4;
+            value >>>= 28;
+        }
+        if ((value & (~0L << 21)) != 0L) {
+            n += 2;
+            value >>>= 14;
+        }
+        if ((value & (~0L << 14)) != 0L) {
+            n += 1;
+        }
+        return n;
+    }
+
+    // Faster in all cases except when the data is entirely 1 byte. For random distribution this is 5x faster.
+    static class Varint64 {
+        static int sizeOf(long value) {
+            return SIZE[Long.numberOfLeadingZeros(value)];
+        }
+        static final int[] SIZE = new int[65];
+        static {
+            for (int i = 0; i <= 64; i++) {
+                SIZE[i] = 1 + (63 - i) / 7;
+            }
+        }
     }
 
 }
