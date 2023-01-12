@@ -1,6 +1,6 @@
 # QuickBuffers - Benchmarks
   
-Below is a comparison with Google's official bindings for a variety of datasets. The performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run on OpenJDK 17 using JMH on an AMD Ryzen 9 3900x. The protobuf-java benchmarks used version `3.19.4`.
+Below is a comparison with Google's official bindings for a variety of datasets. The performance depends a lot on the specific data format and content, so the results may not be representative for your use case. All tests were run on OpenJDK 17 using JMH on an AMD Ryzen 9 3900x. The protobuf-java benchmarks used version `3.21.12`.
 
 ## Benchmark 1 - SBE dataset
 
@@ -10,11 +10,11 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 <!-- market multiplier: 64 * 1000 / (1024*1024) = 0.061 = -->
 
 | Protobuf Binary | Size [bytes] | QuickBuffers [msg/s] | Protobuf-Java [msg/s] | Ratio
-| :----------- | -----------: | -----------: | -----------: | -----------: |
-| Car Encode | 140 | 3.40M (454 MB/s) | 1.21M (161 MB/s) |  2.8 
-| Car Decode | 140 | 3.36M (449 MB/s) | 1.32M (176 MB/s) |  2.6  
-| Market Data Encode | 64 | 12.48M (761 MB/s) | 5.96M (363 MB/s) |  2.1  
-| Market Data Decode | 64 | 9.20M (561 MB/s) | 3.39M (207 MB/s) |  2.7
+| :----------- | -----------: | -----------: |----------------------:| -----------: |
+| Car Encode | 140 | 3.40M (454 MB/s) |      1.25M (167 MB/s) |  2.7 
+| Car Decode | 140 | 3.36M (449 MB/s) |       1.1M (145 MB/s) |  3.1  
+| Market Data Encode | 64 | 12.48M (761 MB/s) |      5.62M (342 MB/s) |  2.2  
+| Market Data Decode | 64 | 9.20M (561 MB/s) |      2.46M (150 MB/s) |  3.7
 
 We also compared the throughput of the built-in JSON encoding with Protobuf-Java's JsonFormat Printer.
 
@@ -32,26 +32,26 @@ Note that this test was done using the original SBE .proto definitions, which us
 
 We also ran benchmarks for reading and writing streams of delimited protobuf messages with varying contents, which is similar to reading sequentially from a log file. All datasets were loaded into memory and decoded from a byte array. This benchmark does not trigger lazy-parsing of strings, so it is primarily indicative of forwarding use cases. This is a best case scenario for Protobuf as it omits all the overhead related to building the objects.
 
-| Dataset | Content | Size [bytes] | QuickBuffers [ms/msg] |  Java [ms/msg] | JavaLite [ms/msg] | Ratio
-| :-----------: | :----------- | -----------: | -----------: | -----------: | -----------: | -----------: |
+| Dataset | Content         | Size [bytes] | QuickBuffers [ms/msg] |     Java [ms/msg] |         Ratio 
+| :-----------: |:----------------| -----------: |----------------------:|------------------:|--------------:|
 | **Read**   |  
-| 1 | scalars | 220 | 118 ms (773 MB/s) |   265 ms (344 MB/s)  | 523 ms (174 MB/s) | 2.2
-| 2 | scalars/strings | 650 |  67 ms (892 MB/s) |  148 ms (404 MB/s)  | 313 ms (191 MB/s) | 2.2
-| 3 | car data | 140 |  23 ms (456 MB/s) |  54 ms (194 MB/s)  | 104 ms (101 MB/s) | 2.4
-| 4 | market data | 64 |  18 ms (583 MB/s) | 43 ms (244 MB/s)  | 131 ms ( 80 MB/s) | 2.4
-| 5 | packed doubles | 64M |  5.8 ms (11.6 GB/s) |   59 ms ( 1.1 GB/s)  | 63 ms ( 1.0 GB/s) | 10.2
-|  **Write**  | |
-| 1 | scalars | 220 |  89 ms ( 1.0 GB/s)  |  123 ms (742 MB/s)  | 535 ms (171 MB/s)  | 1.4
-| 2 | scalars/strings | 650 |  49 ms ( 1.2 GB/s)  |  77 ms (776 MB/s)  | 253 ms (236 MB/s) | 1.6
-| 3 | car data | 140 |  19 ms (552 MB/s) |  25 ms (419 MB/s)  | 69 ms (152 MB/s) | 1.3
-| 4 | market data | 64 |  14 ms (749 MB/s) |  31 ms (338 MB/s)  | 90 ms (117 MB/s) | 2.2
-| 5 | packed doubles | 64M |  6.6 ms (10.1 GB/s)  | 41 ms ( 1.6 GB/s)  | 39 ms ( 1.7 GB/s) | 6.2
+| 1 | scalars    | 220 |     118 ms (773 MB/s) | 432 ms (211 MB/s) |           3.7 
+| 2 | scalars/strings | 650 |      67 ms (892 MB/s) | 225 ms (266 MB/s) |           3.4 
+| 3 | car data        | 140 |      23 ms (456 MB/s) |  70 ms (150 MB/s) |           3.0 
+| 4 | market data     | 64 |      18 ms (583 MB/s) |  68 ms (154 MB/s) |           3.8 
+| 5 | packed doubles  | 64M |    5.8 ms (11.6 GB/s) | 68 ms ( 1.0 GB/s) |          11.6 
+|  **Write**  |                 |
+| 1 | scalars         | 220 |     89 ms ( 1.0 GB/s) | 137 ms (666 MB/s) |           1.5 
+| 2 | scalars/strings | 650 |     49 ms ( 1.2 GB/s) |  75 ms (797 MB/s) |           1.5 
+| 3 | car data        | 140 |      19 ms (552 MB/s) |  23 ms (466 MB/s) |           1.2 
+| 4 | market data     | 64 |      14 ms (749 MB/s) |  20 ms (524 MB/s) |            1.4 
+| 5 | packed doubles  | 64M |    5.6 ms (12.0 GB/s) | 40 ms ( 1.7 GB/s) |           7.1 
 | **Read + Write**   | 
-| 1 | scalars | 220 |  207 ms (441 MB/s) |  388ms (235 MB/s)  | 1058 ms (86 MB/s) | 1.9
-| 2 | scalars/strings | 650 |  116 ms (515 MB/s) |  225 ms (266 MB/s)  | 566 ms (106 MB/s) | 1.9
-| 3 | car data | 140 |  42 ms (250 MB/s) |  79 ms (133 MB/s)  | 173 ms (61 MB/s) | 1.9
-| 4 | market data | 64 |  32 ms (328 MB/s) |  74 ms (142 MB/s)  | 221 ms (47 MB/s) | 2.3
-| 5 | packed doubles | 64M |  11.4 ms ( 5.9 GB/s) |  100 ms (671 MB/s)  | 102 ms (658 MB/s) | 8.8
+| 1 | scalars         | 220 |     207 ms (441 MB/s) |  569ms (160 MB/s) |           2.7 
+| 2 | scalars/strings | 650 |     116 ms (515 MB/s) | 300 ms (199 MB/s) |           2.6 
+| 3 | car data        | 140 |      42 ms (250 MB/s) |  93 ms (113 MB/s) |           2.2
+| 4 | market data     | 64 |      32 ms (328 MB/s) |  88 ms (119 MB/s) |           2.8 
+| 5 | packed doubles  | 64M |   11.4 ms ( 5.9 GB/s) | 108 ms (621 MB/s) |           9.5 
 
 <!-- | 3  | ms (  MB/s) | ms (  MB/s)  | ms (  MB/s) | 0 -->
 

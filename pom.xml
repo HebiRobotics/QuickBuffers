@@ -77,7 +77,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <maven.compiler.testSource>8</maven.compiler.testSource>
         <maven.compiler.testTarget>8</maven.compiler.testTarget>
-        <protoc.version>3.19.6</protoc.version>
+        <protoc.version>3.21.12</protoc.version>
         <proto.dir>${project.basedir}/../runtime/src/test/resources/protos</proto.dir>
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
 

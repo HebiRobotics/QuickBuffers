@@ -55,7 +55,7 @@ The message generator `protoc-gen-quickbuf` is set up as a plugin for the protoc
         <goal>run</goal>
       </goals>
       <configuration>
-        <protocVersion>3.19.6</protocVersion>
+        <protocVersion>3.21.12</protocVersion>
 
         <outputTargets>
           <outputTarget>

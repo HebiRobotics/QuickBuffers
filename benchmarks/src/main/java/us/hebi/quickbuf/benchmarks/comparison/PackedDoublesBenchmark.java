@@ -43,10 +43,10 @@ import java.util.concurrent.TimeUnit;
  * PackedDoublesBenchmark.readQuick       avgt   40   5,836 ± 0,067  ms/op
  * PackedDoublesBenchmark.readWriteQuick  avgt   40  11,429 ± 0,151  ms/op
  *
- * === Protobuf-Java 3.19.4 (JDK17)
- * Benchmark                              Mode  Cnt   Score   Error  Units
- * PackedDoublesBenchmark.readProto       avgt   40  59,246 ± 0,777  ms/op
- * PackedDoublesBenchmark.readWriteProto  avgt   40  99,932 ± 0,873  ms/op
+ * === Protobuf-Java 3.21.12 (jdk17)
+ * Benchmark                              Mode  Cnt    Score   Error  Units
+ * PackedDoublesBenchmark.readProto       avgt   10   68,347 ± 2,500  ms/op
+ * PackedDoublesBenchmark.readWriteProto  avgt   10  108,304 ± 2,519  ms/op
  *
  * === Protobuf-Javalite 3.19.4 (JDK17)
  * Benchmark                              Mode  Cnt    Score   Error  Units

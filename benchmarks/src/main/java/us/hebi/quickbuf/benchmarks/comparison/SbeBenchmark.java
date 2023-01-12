@@ -53,19 +53,20 @@ import java.util.concurrent.TimeUnit;
  * SbeBenchmark.marketQuickRead              avgt   20  18,001 ± 0,114  ms/op
  * SbeBenchmark.marketQuickReadWrite         avgt   20  32,464 ± 0,846  ms/op
  *
- * === Protobuf-Java 3.19.4 (JDK 17)
- * Benchmark                                 Mode  Cnt   Score   Error  Units
- * SbeBenchmark.carProtoRead                 avgt   20  54,041 ± 2,763  ms/op
- * SbeBenchmark.carProtoReadWrite            avgt   20  79,338 ± 2,707  ms/op
- * SbeBenchmark.marketProtoRead              avgt   20  42,773 ± 2,016  ms/op
- * SbeBenchmark.marketProtoReadWrite         avgt   20  73,791 ± 2,751  ms/op
- *
  * === Protobuf-Javalite 3.19.4 (JDK17)
  * Benchmark                                 Mode  Cnt    Score   Error  Units
  * SbeBenchmark.carProtoRead                 avgt   20  104,000 ± 3,800  ms/op
  * SbeBenchmark.carProtoReadWrite            avgt   20  172,748 ± 4,172  ms/op
  * SbeBenchmark.marketProtoRead              avgt   20  130,718 ± 2,707  ms/op
  * SbeBenchmark.marketProtoReadWrite         avgt   20  220,967 ± 2,370  ms/op
+ *
+ * === Protobuf-Java 3.21.12 (JDK 17)
+ * Benchmark                          Mode  Cnt   Score   Error  Units
+ * SbeBenchmark.carProtoRead          avgt   10  70,148 ± 2,433  ms/op
+ * SbeBenchmark.carProtoReadWrite     avgt   10  92,534 ± 2,620  ms/op
+ * SbeBenchmark.marketProtoRead       avgt   10  68,177 ± 2,500  ms/op
+ * SbeBenchmark.marketProtoReadWrite  avgt   10  87,948 ± 1,069  ms/op
+ *
  *
  * @author Florian Enner
  * @since 15 Oct 2019
@@ -80,7 +81,7 @@ public class SbeBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + SbeBenchmark.class.getSimpleName() + ".*.*")
+                .include(".*" + SbeBenchmark.class.getSimpleName() + ".*Proto.*")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

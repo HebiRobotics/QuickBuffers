@@ -1,6 +1,8 @@
 ## Why Protobuf v2 instead of the newer v3?
 
-Both proto2 and proto3 use the same wire format, so the messages are binary compatible and only differ in semantics. Unfortunately, several of the changes introduced in proto3 turned out to be major design flaws, and the protobuf team ended up adding several workarounds to revert to the original proto2 semantics. Google has stated that they will keep supporting both versions indefinitely, so we recommend sticking with proto2. For comparison, the main changes were
+Both proto2 and proto3 use the same wire format, so the messages are binary compatible and only differ in semantics. Unfortunately, there were some major issues with the initial proto3 design, and the protobuf team ended up adding several workarounds that reproduce the proto2 semantics. They have stated that they will keep supporting both versions indefinitely, so we recommend sticking with proto2 whenever possible. Even Google's internal protobuf communication is [96% based on proto2](https://dl.acm.org/doi/pdf/10.1145/3466752.3480051).
+
+For comparison, the main changes were
 
 * No field presence
 

@@ -61,6 +61,15 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
  * SbeThroughputBenchmarkProtobuf.testMarketDecode  thrpt   10  1647,572 ± 48,817  ops/ms
  * SbeThroughputBenchmarkProtobuf.testMarketEncode  thrpt   10   865,989 ± 44,991  ops/ms
  *
+ * === 3.21.12 (jdk17)
+ * Benchmark                                             Mode  Cnt     Score    Error   Units
+ * SbeThroughputBenchmarkProtobuf.testCarDecode         thrpt   40  1084,291 ± 21,937  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testCarEncode         thrpt   40  1253,567 ± 16,536  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testCarEncodeJson     thrpt   40   118,779 ±  0,911  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketDecode      thrpt   40  2463,075 ± 49,001  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketEncode      thrpt   40  5621,251 ± 79,980  ops/ms
+ * SbeThroughputBenchmarkProtobuf.testMarketEncodeJson  thrpt   40   164,999 ±  1,903  ops/ms
+ *
  * @author Florian Enner
  * @since 16 Oct 2019
  */
