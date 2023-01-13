@@ -596,48 +596,53 @@ class JsonEncoding {
 
         private static int writeFirstDigits(final byte[] buf, int pos, final int number) {
             final int v = THREE_DIGITS[number];
-            final int numDigits = v >>> NUM_DIGITS;
-            switch (numDigits) {
-                case 3:
-                    buf[pos++] = (byte) (v >>> DIGIT_X00);
-                case 2:
-                    buf[pos++] = (byte) (v >>> DIGIT_0X0);
+            switch (v >>> NUM_DIGITS) {
                 case 1:
                     buf[pos] = (byte) (v >>> DIGIT_00X);
+                    return 1;
+                case 2:
+                    ByteUtil.writeLittleEndian16(buf, pos, (short) (v >>> DIGIT_0X0));
+                    return 2;
+                case 3:
+                    ByteUtil.writeLittleEndian32(buf, pos, v);
+                    return 3;
             }
-            return numDigits;
+            throw new AssertionError("invalid number");
         }
 
         private static int writeFinalDigits(final byte[] buf, int pos, final int number) {
             final int v = THREE_DIGITS[number];
-            final int numDigits = (v >>> NUM_FINAL_DIGITS) & 0xF;
-            switch (numDigits) {
-                case 3:
-                    buf[pos + 2] = (byte) (v >>> DIGIT_00X);
-                case 2:
-                    buf[pos + 1] = (byte) (v >>> DIGIT_0X0);
+            switch ((v >>> NUM_FINAL_DIGITS) & NUM_DIGITS_MASK) {
                 case 1:
-                    buf[pos/**/] = (byte) (v >>> DIGIT_X00);
+                    buf[pos] = (byte) (v);
+                    return 1;
+                case 2:
+                    ByteUtil.writeLittleEndian16(buf, pos, (short) (v));
+                    return 2;
+                case 3:
+                    ByteUtil.writeLittleEndian32(buf, pos, v);
+                    return 3;
             }
-            return numDigits;
+            throw new AssertionError("invalid number");
         }
 
         private static int writeThreeDigits(final byte[] buf, final int pos, final int number) {
-            final int v = THREE_DIGITS[number];
-            buf[pos/**/] = (byte) (v >>> DIGIT_X00);
-            buf[pos + 1] = (byte) (v >>> DIGIT_0X0);
-            buf[pos + 2] = (byte) (v >>> DIGIT_00X);
+            // Write 4 bytes at once and ignore the last one
+            ByteUtil.writeLittleEndian32(buf, pos, THREE_DIGITS[number]);
             return 3;
         }
 
         // Lookup table that packs three character digits and size information
-        // into an int. This way we can write three characters at once.
+        // into an int. This way we can write up to three characters at once. It
+        // is arranged in little endian order so the 3 digit case can be optimized
+        // into a single 4 byte write.
         private static final int[] THREE_DIGITS = new int[1000];
-        private static final int DIGIT_00X = 0;
+        private static final int DIGIT_00X = 16;
         private static final int DIGIT_0X0 = 8;
-        private static final int DIGIT_X00 = 16;
+        private static final int DIGIT_X00 = 0;
         private static final int NUM_DIGITS = 28;
         private static final int NUM_FINAL_DIGITS = 24;
+        private static final int NUM_DIGITS_MASK = 0x3;
 
         static {
             for (int i = 0; i < 1000; i++) {
@@ -676,8 +681,9 @@ class JsonEncoding {
         // Maximum representation size in characters. Fixed double values get
         // stored in a long that contains the pre and post comma digits, so
         // the total number of digits can't be larger than a long with comma.
-        private static final int MAX_INT_SIZE = MIN_INT.length;
-        private static final int MAX_LONG_SIZE = MIN_LONG.length;
+        // We add +1 because 3 digits may be written as 4 bytes.
+        private static final int MAX_INT_SIZE = MIN_INT.length + 1;
+        private static final int MAX_LONG_SIZE = MIN_LONG.length + 1;
         private static final int MAX_FIXED_DOUBLE_SIZE = MAX_LONG_SIZE + 1;
 
     }

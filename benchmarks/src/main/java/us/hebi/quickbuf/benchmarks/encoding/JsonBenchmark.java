@@ -33,23 +33,19 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
- * === JDK8 ===
- * Benchmark                         Mode  Cnt    Score   Error  Units
- * JsonBenchmark.writeBase64         avgt   10  255.828 ± 2.703  us/op
- * JsonBenchmark.writeDoubleNumbers  avgt   10   22.074 ± 0.553  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10   17.536 ± 0.324  us/op
- * JsonBenchmark.writeIntNumbers     avgt   10   10.845 ± 0.240  us/op
- * JsonBenchmark.writeLongNumbers    avgt   10   16.440 ± 0.339  us/op
- * JsonBenchmark.writeStringAscii    avgt   10    0.738 ± 0.011  us/op
- * JsonBenchmark.writeStringUtf8     avgt   10    1.826 ± 0.029  us/op
- *
- * Benchmark                              Mode  Cnt  Score   Error  Units
- * JsonBenchmark.writeStringAsciiBytes    avgt   10  0,985 ± 0,008  us/op
- * JsonBenchmark.writeStringAsciiChars    avgt   10  0,767 ± 0,022  us/op
- * JsonBenchmark.writeStringAsciiEncoded  avgt   10  0,420 ± 0,006  us/op
- * JsonBenchmark.writeStringUtf8Bytes     avgt   10  0,442 ± 0,005  us/op
- * JsonBenchmark.writeStringUtf8Chars     avgt   10  2,307 ± 0,047  us/op
- * JsonBenchmark.writeStringUtf8Encoded   avgt   10  0,418 ± 0,009  us/op
+ * === JDK17
+ * Benchmark                              Mode  Cnt    Score   Error  Units
+ * JsonBenchmark.writeBase64              avgt   10  187,572 ± 3,836  us/op
+ * JsonBenchmark.writeDoubleNumbers       avgt   10   17,491 ± 0,447  us/op
+ * JsonBenchmark.writeFloatNumbers        avgt   10   12,641 ± 1,209  us/op
+ * JsonBenchmark.writeIntNumbers          avgt   10    7,365 ± 0,505  us/op
+ * JsonBenchmark.writeLongNumbers         avgt   10   10,928 ± 0,345  us/op
+ * JsonBenchmark.writeStringAsciiBytes    avgt   10    0,724 ± 0,005  us/op
+ * JsonBenchmark.writeStringAsciiChars    avgt   10    0,606 ± 0,019  us/op
+ * JsonBenchmark.writeStringAsciiEncoded  avgt   10    0,389 ± 0,003  us/op
+ * JsonBenchmark.writeStringUtf8Bytes     avgt   10    0,397 ± 0,005  us/op
+ * JsonBenchmark.writeStringUtf8Chars     avgt   10    3,015 ± 0,026  us/op
+ * JsonBenchmark.writeStringUtf8Encoded   avgt   10    0,384 ± 0,003  us/op
  *
  * @author Florian Enner
  * @since 13 Nov 2019
@@ -101,13 +97,22 @@ public class JsonBenchmark {
         rndBytes.setLength(256 * 1024);
         rnd.nextBytes(rndBytes.array());
         for (int i = 0; i < rndInts.length(); i++) {
-            rndInts.array()[i] = rnd.nextInt();
-            rndLongs.array()[i] = rnd.nextLong();
+            rndInts.array()[i] = (int) randomDigitLong(7);
+            rndLongs.array()[i] = randomDigitLong(18);
             rndFloats.array()[i] = roundFloat(rnd.nextFloat() * (byte) rnd.nextInt());
             rndDoubles.array()[i] = roundDouble(rnd.nextDouble() * (byte) rnd.nextInt());
         }
         asciiBytes.size();
         utf8Bytes.size();
+    }
+
+    private long randomDigitLong(int maxDigits) {
+        int numDigits = rnd.nextInt(maxDigits + 1);
+        long value = 0;
+        for (int i = 0; i < numDigits; i++) {
+            value = value * 10 + rnd.nextInt(10);
+        }
+        return value;
     }
 
     private static float roundFloat(float value) {

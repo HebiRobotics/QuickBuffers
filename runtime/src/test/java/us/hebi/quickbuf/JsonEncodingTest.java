@@ -98,16 +98,36 @@ public class JsonEncodingTest {
     }
 
     @Test
+    public void testIntDigits() throws Exception {
+        int value = 0;
+        for (int i = 0; i <= 10; i++) {
+            value = value * 10 + i % 10;
+            testInt(value);
+            testInt(-value);
+        }
+    }
+
+    @Test
     public void testLongEncoding() throws Exception {
         long testVal = 1;
-        for (int i = 0; i < n; i++) {
-            testLong(1 << (i / 100));
+        for (long i = 0; i < n; i++) {
+            testLong(1L << (i / 100));
             testLong(i << (i / 100));
             testLong(rnd.nextLong());
         }
         testLong(Long.MIN_VALUE);
         testLong(Long.MAX_VALUE);
         testLong(0);
+    }
+
+    @Test
+    public void testLongDigits() throws Exception {
+        long value = 0;
+        for (int i = 0; i <= 19; i++) {
+            value = value * 10 + i % 10;
+            testLong(value);
+            testLong(-value);
+        }
     }
 
     @Test
