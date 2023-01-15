@@ -258,6 +258,14 @@ JsonMessage result = JsonSource.newInstance(bytes)
     .parseMessage(JsonMessage.getFactory());
 ```
 
+Parts can be combined to convert an incoming protobuf stream to outgoing json and vice-versa
+
+```java
+msg.clearQuick()
+    .mergeFrom(protoSource.setInput(input))
+    .writeTo(jsonSink.clear());
+```
+
 Note that the json serialization has not been tested as much as the binary serialization. We have been using it in production and are not aware of any bugs, but we also added alternative GSON and Jackson based implementations for cases that require something more battle tested (e.g. obscure floating point edge cases). The alternative wrappers be found in the `quickbuf-compat` artifact.
 
 ## Building from source

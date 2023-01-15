@@ -17,9 +17,16 @@ The first benchmark was copied from [Small Binary Encoding's](https://mechanical
 | Protobuf Encode | Size [bytes] | QuickBuffers [msg/s] | Protobuf-Java [msg/s] | Ratio
 | :----------- | -----------: | -----------: |----------------------:| -----------: |
 | Car Encode | 140 | 3.40M (454 MB/s) |      1.25M (167 MB/s) |  2.7 
-| Market Data Encode | 64 | 12.48M (761 MB/s) |      5.62M (342 MB/s) |  2.2  
+| Market Data Encode | 64 | 12.48M (761 MB/s) |      5.62M (342 MB/s) |  2.2
 
-We also compared the throughput of the built-in JSON encoding with Protobuf-Java's JsonFormat Printer.
+Note that the throughput is heavily dependent on the chosen data types. Changing numerical types from varints to fixed-width types can often significantly increase throughput at the cost of a larger message size.
+
+| fixed-width types  | Size [bytes] | QuickBuffers [msg/s] | Protobuf-Java [msg/s] | Ratio
+|:-------------------|-------------:|---------------------:|----------------------:| -----------: |
+| Market Data Decode |           84 |          20M (+120%) |           4.8M (+95%) |  4.2 
+| Market Data Encode |           84 |          17M ( +36%) |           7.2M (+28%) |  2.4
+
+We also benchmarked the built-in JSON encoding with Protobuf-Java's JsonFormat Printer. This is comparing generated code against a reflective approach, so a big speedup is to be expected.
 
 <!-- car mutliplier: 559 * 1000 / (1024*1024) = 0.5331 = -->
 <!-- market multiplier: 435 * 1000 / (1024*1024) = 0.415 = -->
@@ -28,8 +35,6 @@ We also compared the throughput of the built-in JSON encoding with Protobuf-Java
 | :----------- |-----------------------: |-----------------------:|--------------------------:| -----------: |
 | Car Encode  | 559 |     1.44M (765 MB/s)     |       0.12M (62 MB/s)        |  12.3  
 | Market Data Encode | 435 |     3.60M ( 1.5 GB/s)     |       0.16M (67 MB/s)        |  22.2
-
-Note that this test was done using the original SBE .proto definitions, which uses many slow varint types and features a large amount of hierarchy for small nested fields. Switching to fixed-width types improves the results by 30-50%, and flattening the hierarchy can result in more than 5x the stated message throughput. The message design has a significant impact on the encoding speed and wire size.
 
 ## Benchmark 2 - File streams
 
