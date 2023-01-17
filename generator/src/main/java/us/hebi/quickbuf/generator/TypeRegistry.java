@@ -123,28 +123,56 @@ class TypeRegistry {
             throw new IllegalStateException("Not a message or group type: " + type);
         }
 
+        // Lazily compute for each message
         if (!hasRequiredMap.containsKey(type)) {
-            hasRequiredMap.put(type, null);
+            hasRequiredMap.put(type, RequiredType.Processing);
             boolean hasRequired = false;
             MessageInfo info = messageMap.get(type);
             for (RequestInfo.FieldInfo field : info.getFields()) {
-                if (field.isRequired() || (field.isMessageOrGroup() && hasRequiredFieldsInHierarchy(field.getTypeName()))) {
+                if (isRequiredFieldOrNeedsToBeChecked(type, field)) {
                     hasRequired = true;
-                    break;
                 }
             }
-            hasRequiredMap.put(type, hasRequired);
+            hasRequiredMap.put(type, hasRequired ? RequiredType.Required : RequiredType.Optional);
             return hasRequired;
         }
-        Boolean hasRequired = hasRequiredMap.get(type);
-        if (hasRequired == null) {
-            throw new GeneratorException("Detected recursive message definition in '" + type + "'. This is not compatible with eagerly allocated types.");
-        }
-        return hasRequired;
 
+        // Return cached result
+        RequiredType result = hasRequiredMap.get(type);
+        checkState(result != RequiredType.Processing, "Processing required fields did not finish");
+        return result == RequiredType.Required;
+    }
+
+    private boolean isRequiredFieldOrNeedsToBeChecked(TypeName type, RequestInfo.FieldInfo field) {
+        // Always check message types for recursion to avoid surprises at runtime
+        if (field.isMessageOrGroup()) {
+            RequiredType result = hasRequiredMap.get(field.getTypeName());
+            if (result == RequiredType.Processing) {
+                // This state is only possible while processing nested messages, so
+                // users won't see it. If any fields turn out to be required, the user
+                // call still returns true
+                if (!(field.getParentTypeInfo().isFieldAllocationLazy())) {
+                    String msg = String.format("Detected recursive message definition in '%s' field '%s'. This is not " +
+                                    "compatible with eager allocation. You need to specify lazy allocation instead.",
+                            type, field.getProtoFieldName());
+                    throw new GeneratorException(msg);
+                }
+            } else if (result == RequiredType.Required || field.isRequired())
+                return true;
+            else if (result == null) {
+                return hasRequiredFieldsInHierarchy(field.getTypeName());
+            }
+        }
+        return field.isRequired();
+    }
+
+    enum RequiredType {
+        Required,
+        Optional,
+        Processing
     }
 
     final Map<TypeName, MessageInfo> messageMap = new HashMap<>();
-    final Map<TypeName, Boolean> hasRequiredMap = new HashMap<>();
+    final Map<TypeName, RequiredType> hasRequiredMap = new HashMap<>();
 
 }

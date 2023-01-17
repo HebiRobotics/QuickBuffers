@@ -38,7 +38,8 @@ public class TestRequestLoader {
     public void testAllAvailable() {
         getRequiredRequest();
         getImportRequest();
-        getAllTypesRequest();
+        getAllTypesEagerRequest();
+        getAllTypesLazyRequest();
         getRepeatedPackablesRequest();
         getUnsupportedMapRequest();
         getUnsupportedExtensionRequest();
@@ -54,8 +55,12 @@ public class TestRequestLoader {
         return getRequest("import");
     }
 
-    public static CodeGeneratorRequest getAllTypesRequest() {
-        return getRequest("allTypes");
+    public static CodeGeneratorRequest getAllTypesEagerRequest() {
+        return getRequest("allTypes_eager");
+    }
+
+    public static CodeGeneratorRequest getAllTypesLazyRequest() {
+        return getRequest("allTypes_lazy");
     }
 
     public static CodeGeneratorRequest getRepeatedPackablesRequest() {
@@ -72,6 +77,10 @@ public class TestRequestLoader {
 
     public static CodeGeneratorRequest getUnsupportedRecursionRequest() {
         return getRequest("unsupported_recursion");
+    }
+
+    public static CodeGeneratorRequest getLazyRecursionRequest() {
+        return getRequest("lazy_recursion");
     }
 
     public static CodeGeneratorRequest getUnsupportedProto3Request() {

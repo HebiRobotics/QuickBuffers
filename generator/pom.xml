@@ -98,7 +98,14 @@
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
-                                    <arg value="--request_out=request_file=allTypes.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:${protoc.outputDir}"/>
+                                    <arg value="--request_out=request_file=allTypes_eager.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true,allocation=eager:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/namespaces.proto"/>
+                                    <arg value="${proto.dir}/unittest_all_types.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=allTypes_lazy.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true,allocation=lazy:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>
@@ -129,7 +136,13 @@
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
-                                    <arg value="--request_out=request_file=unsupported_proto3.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--request_out=request_file=lazy_recursion.request,replace_package=(protobuf)=quickbuf,allocation=lazy:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/recursion.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=unsupported_proto3.request,replace_package=(protobuf)=quickbuf,allocation=lazy:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir.unsupported}/"/>
                                     <arg value="${proto.dir.unsupported}/proto3.proto"/>
                                 </exec>

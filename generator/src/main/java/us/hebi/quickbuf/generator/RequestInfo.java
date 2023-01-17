@@ -132,6 +132,22 @@ public class RequestInfo {
         throw new GeneratorException("Expected input_order quickbuf,number,random. Found: " + order);
     }
 
+    enum AllocationStrategy {
+        Lazy,
+        Eager
+    }
+
+    public AllocationStrategy getAllocationStrategy() {
+        String value = generatorParameters.getOrDefault("allocation", "eager");
+        switch (value.toLowerCase()) {
+            case "eager":
+                return AllocationStrategy.Eager;
+            case "lazy":
+                return AllocationStrategy.Lazy;
+        }
+        throw new GeneratorException("'allocation' parameter expects 'eager' or 'lazy'. Found: " + value);
+    }
+
     public boolean shouldEnumUseArrayLookup(int highestNumber) {
         return highestNumber < 50; // parameter?
     }
@@ -234,6 +250,7 @@ public class RequestInfo {
             this.fieldCount = descriptor.getFieldCount();
             this.storeUnknownFields = parentFile.getParentRequest().getStoreUnknownFields();
             this.expectedIncomingOrder = getParentFile().getParentRequest().getExpectedIncomingOrder();
+            this.isFieldAllocationLazy = getParentFile().getParentRequest().getAllocationStrategy() == AllocationStrategy.Lazy;
             this.enforceHasChecks = getParentFile().getParentRequest().getEnforceHasChecks();
 
             // Sort fields by serialization order such that they are accessed in a
@@ -303,6 +320,7 @@ public class RequestInfo {
         private final List<EnumInfo> nestedEnums;
         private final List<OneOfInfo> oneOfs = new ArrayList<>();
         private final ExpectedIncomingOrder expectedIncomingOrder;
+        private final boolean isFieldAllocationLazy;
         private final boolean storeUnknownFields;
         private final int numBitFields;
         private final boolean enforceHasChecks;
@@ -391,6 +409,14 @@ public class RequestInfo {
                     return isRepeated() ? ArrayTypeName.of(TypeName.BYTE) : TypeName.BYTE;
             }
             return getTypeName();
+        }
+
+        public boolean isAllocatedLazy() {
+            // currently only supported for nested messages
+            return getParentTypeInfo().isFieldAllocationLazy()
+                    && !isRequired()
+                    && !isRepeated()
+                    && isMessageOrGroup();
         }
 
         public int getEndGroupTag() {

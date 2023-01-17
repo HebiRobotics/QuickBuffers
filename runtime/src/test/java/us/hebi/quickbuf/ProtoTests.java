@@ -20,8 +20,11 @@
 
 package us.hebi.quickbuf;
 
+import com.google.quickbuf.Struct;
+import com.google.quickbuf.Value;
 import org.junit.Test;
 import protos.test.quickbuf.*;
+import protos.test.quickbuf.LazyTypes.LazyMessage;
 import protos.test.quickbuf.TestAllTypes.NestedEnum;
 import protos.test.quickbuf.UnittestFieldOrder.MessageWithMultibyteNumbers;
 import protos.test.quickbuf.UnittestRequired.TestAllTypesRequired;
@@ -697,6 +700,125 @@ public class ProtoTests {
             fail();
         }
         assertArrayEquals(outData, inData);
+    }
+
+    @Test
+    public void testLazyInitialization() throws IOException {
+        assertNotNull(Value.newInstance().getMutableListValue());
+        assertNotNull(Value.newInstance().getMutableStringValueBytes());
+        assertNotNull(Value.newInstance().getMutableStructValue());
+        assertNotNull(Value.newInstance().getMutableListValue());
+
+        Struct struct = Struct.newInstance();
+
+        // Singular (getMutable)
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalStringBytes());
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalBytes());
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalGroup());
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalNestedMessage());
+
+        // Repeated (getMutable)
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedInt32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedInt64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedUint32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedUint64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedSint32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedSint64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedFixed32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedFixed64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedFloat());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedDouble());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedBool());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedString());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedBytes());
+
+        // Initialize everything
+        LazyMessage msg = LazyMessage.newInstance();
+        msg.setOptionalString("test");
+        msg.addAllOptionalBytes(new byte[20]);
+        msg.setOptionalGroup(LazyMessage.OptionalGroup.newInstance().setA(2));
+        msg.setOptionalNestedMessage(LazyMessage.NestedMessage.newInstance().setRecursiveMessage(LazyMessage.newInstance()));
+        msg.getMutableRepeatedInt32().add(1);
+        msg.getMutableRepeatedInt64().add(2);
+        msg.getMutableRepeatedUint32().add(3);
+        msg.getMutableRepeatedUint64().add(4);
+        msg.getMutableRepeatedSint32().add(5);
+        msg.getMutableRepeatedSint64().add(6);
+        msg.getMutableRepeatedFixed32().add(7);
+        msg.getMutableRepeatedFixed64().add(8);
+        msg.getMutableRepeatedFloat().add(9);
+        msg.getMutableRepeatedDouble().add(10);
+        msg.getMutableRepeatedBool().add(true);
+        msg.getMutableRepeatedString().add("string");
+        msg.getMutableRepeatedBytes().add(new byte[20]);
+
+        // Check initialization of required fields in lazy nested messages
+        assertTrue(msg.isInitialized());
+        msg.getMutableRepeatedNestedMessage().next();
+        assertFalse(msg.isInitialized());
+        msg.getRepeatedNestedMessage().get(0).getMutableRecursiveMessage();
+        assertTrue(msg.isInitialized());
+
+        // Copy in various ways
+        LazyMessage copy = msg.clone();
+        copy.copyFrom(LazyMessage.newInstance());
+        LazyMessage.newInstance().copyFrom(copy);
+        LazyMessage.newInstance().copyFrom(msg);
+
+        // Clear various states
+        msg.clone().clear().clear();
+        copy.clear().clone().clear();
+        msg.clone().clearQuick();
+        copy.clearQuick().clone().clearQuick();
+
+        // Individual clears
+        LazyMessage empty = LazyMessage.newInstance();
+        assertTrue(empty.isEmpty());
+        empty.clearOptionalString();
+        empty.clearOptionalBytes();
+        empty.clearOptionalGroup();
+        empty.clearOptionalNestedMessage();
+        empty.clearRepeatedInt32();
+        empty.clearRepeatedInt64();
+        empty.clearRepeatedUint32();
+        empty.clearRepeatedUint64();
+        empty.clearRepeatedSint32();
+        empty.clearRepeatedSint64();
+        empty.clearRepeatedFixed32();
+        empty.clearRepeatedFixed64();
+        empty.clearRepeatedFloat();
+        empty.clearRepeatedDouble();
+        empty.clearRepeatedBool();
+        empty.clearRepeatedString();
+        empty.clearRepeatedBytes();
+        assertTrue(empty.isEmpty());
+
+        empty.copyFrom(msg);
+        assertFalse(empty.isEmpty());
+        empty.clearOptionalString();
+        empty.clearOptionalBytes();
+        empty.clearOptionalGroup();
+        empty.clearOptionalNestedMessage();
+        empty.clearRepeatedInt32();
+        empty.clearRepeatedInt64();
+        empty.clearRepeatedUint32();
+        empty.clearRepeatedUint64();
+        empty.clearRepeatedSint32();
+        empty.clearRepeatedSint64();
+        empty.clearRepeatedFixed32();
+        empty.clearRepeatedFixed64();
+        empty.clearRepeatedFloat();
+        empty.clearRepeatedDouble();
+        empty.clearRepeatedBool();
+        empty.clearRepeatedString();
+        empty.clearRepeatedBytes();
+        assertTrue(empty.isEmpty());
+
+        // merge
+        copy.mergeFrom(msg).mergeFrom(msg);
+        empty = LazyMessage.newInstance().mergeFrom(copy);
+        assertFalse(empty.isEmpty());
+
     }
 
 }

@@ -49,8 +49,14 @@ public class CompilerPluginTest {
     }
 
     @Test
-    public void testAllTypesRequest() {
-        CodeGeneratorRequest request = TestRequestLoader.getAllTypesRequest();
+    public void testAllTypesEagerRequest() {
+        CodeGeneratorRequest request = TestRequestLoader.getAllTypesEagerRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test
+    public void testAllTypesLazyRequest() {
+        CodeGeneratorRequest request = TestRequestLoader.getAllTypesLazyRequest();
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 
@@ -76,8 +82,14 @@ public class CompilerPluginTest {
 
     @Test(expected = GeneratorException.class)
     public void testUnsupportedRecursionTest() {
-        // Fails generation due to the required field lookup, and at runtime due to eager allocation
+        // Fails at runtime due to eager allocation
         CodeGeneratorRequest request = TestRequestLoader.getUnsupportedRecursionRequest();
+        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+    }
+
+    @Test
+    public void testLazyRecursionTest() {
+        CodeGeneratorRequest request = TestRequestLoader.getLazyRecursionRequest();
         CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
     }
 
@@ -91,7 +103,7 @@ public class CompilerPluginTest {
     @Test
     @Ignore("manual debugging info")
     public void printRequestPackages() throws IOException {
-        CodeGeneratorRequest request = TestRequestLoader.getAllTypesRequest();
+        CodeGeneratorRequest request = TestRequestLoader.getAllTypesEagerRequest();
         RequestInfo info = RequestInfo.withoutTypeMap(request);
 
         System.out.println("Files to generate\n");
