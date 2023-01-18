@@ -24,6 +24,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
 import lombok.ToString;
+import us.hebi.quickbuf.generator.PluginOptions.AllocationStrategy;
 import us.hebi.quickbuf.generator.RequestInfo.FileInfo;
 import us.hebi.quickbuf.generator.RequestInfo.MessageInfo;
 import us.hebi.quickbuf.generator.RequestInfo.TypeInfo;
@@ -151,7 +152,7 @@ class TypeRegistry {
                 // This state is only possible while processing nested messages, so
                 // users won't see it. If any fields turn out to be required, the user
                 // call still returns true
-                if (!(field.getParentTypeInfo().isFieldAllocationLazy())) {
+                if (field.getPluginOptions().getAllocationStrategy() == AllocationStrategy.Eager) {
                     String msg = String.format("Detected recursive message definition in '%s' field '%s'. This is not " +
                                     "compatible with eager allocation. You need to specify lazy allocation instead.",
                             type, field.getProtoFieldName());

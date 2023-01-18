@@ -60,7 +60,7 @@ public class FieldGenerator {
                 field.addModifiers(Modifier.FINAL).initializer(named("$storeType:T.newInstance($defaultField:N)"));
             }
         } else if (info.isMessageOrGroup()) {
-            if (info.isAllocatedLazy()) {
+            if (info.isLazyAllocationEnabled()) {
                 field.initializer("null");
             } else {
                 field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
@@ -127,7 +127,7 @@ public class FieldGenerator {
 
     protected void generateCopyFromCode(MethodSpec.Builder method) {
         if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
-            if (info.isAllocatedLazy()) {
+            if (info.isLazyAllocationEnabled()) {
                 method.addCode(named("" +
                         "if (other.$hasMethod:N()) {$>\n" +
                         "$setMethod:L(other.$field:N);\n" +
@@ -206,12 +206,13 @@ public class FieldGenerator {
                     .addStatement(named("$field:N = value"))
                     .addStatement(named("$setHas:L"));
 
-            // TODO:
-            //  Google's Protobuf recently selectively ignores repeated enum values. However,
-            //  that seems odd given that re-serialization with unknown fields can result in a
-            //  different order. I don't think this is desired behavior? This is technically also
-            //  true when serializing an optional enum field twice via a delta update.
-            if (info.getParentTypeInfo().isStoreUnknownFields()) {
+            // NOTE:
+            //  Google's Protobuf-Java selectively moves repeated enum values that it does not know.
+            //  This is problematic when going through a routing node as it may change the order of the
+            //  data by sorting it as known values followed by unknown values. Even though this is
+            //  the specified behavior, I don't think that this is desired and would rather have users
+            //  deal with potential null values.
+            if (info.isStoreUnknownFieldsEnabled()) {
                 method.nextControlFlow("else")
                         .addStatement("input.skipEnum(tag, value, $N)", RuntimeClasses.unknownBytesField);
             }
@@ -385,7 +386,7 @@ public class FieldGenerator {
         if (info.isEnum()) {
             generateExtraEnumAccessors(type);
         }
-        if (info.getParentFile().getParentRequest().generateTryGetAccessors()) {
+        if (info.isTryGetAccessorEnabled()) {
             generateTryGetMethod(type);
         }
         generateSetMethods(type);
@@ -607,7 +608,7 @@ public class FieldGenerator {
 
     private CodeBlock lazyGuarded(String condition, String named) {
         CodeBlock.Builder block = CodeBlock.builder();
-        if (info.isAllocatedLazy()) {
+        if (info.isLazyAllocationEnabled()) {
             block.addNamed("" +
                     "if (" + condition + ") {$>\n" +
                     named + ";\n" +
@@ -628,7 +629,7 @@ public class FieldGenerator {
     }
 
     private CodeBlock generateEnforceHasCheck() {
-        if (!info.getParentTypeInfo().isEnforceHasChecks())
+        if (!info.isEnforceHasCheckEnabled())
             return EMPTY_BLOCK;
 
         return CodeBlock.builder()
@@ -688,7 +689,7 @@ public class FieldGenerator {
         // Common configuration-dependent code blocks
         clearOtherOneOfs = generateClearOtherOneOfs();
         enforceHasCheck = generateEnforceHasCheck();
-        if (info.isAllocatedLazy()) {
+        if (info.isLazyAllocationEnabled()) {
             ensureFieldNotNull = lazyGuarded("$field:N == null", "$field:N = $storeType:T.newInstance()");
         } else {
             ensureFieldNotNull = EMPTY_BLOCK;

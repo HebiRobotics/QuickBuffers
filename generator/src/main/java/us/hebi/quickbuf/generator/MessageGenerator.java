@@ -21,7 +21,7 @@
 package us.hebi.quickbuf.generator;
 
 import com.squareup.javapoet.*;
-import us.hebi.quickbuf.generator.RequestInfo.ExpectedIncomingOrder;
+import us.hebi.quickbuf.generator.PluginOptions.ExpectedIncomingOrder;
 import us.hebi.quickbuf.generator.RequestInfo.FieldInfo;
 import us.hebi.quickbuf.generator.RequestInfo.MessageInfo;
 
@@ -123,7 +123,7 @@ class MessageGenerator {
     }
 
     private void generateUnknownByteMembers(TypeSpec.Builder type) {
-        if (!info.isStoreUnknownFields()) {
+        if (!info.isStoreUnknownFieldsEnabled()) {
             return;
         }
         type.addField(FieldSpec.builder(RuntimeClasses.BytesType, "unknownBytes")
@@ -174,7 +174,7 @@ class MessageGenerator {
             fields.forEach(field -> field.generateClearQuickCode(clear));
         }
 
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             clear.addStatement(named("$unknownBytes:N.clear()"));
         }
 
@@ -286,7 +286,7 @@ class MessageGenerator {
                 .endControlFlow();
 
         // default case -> skip field
-        CodeBlock ifSkipField = info.isStoreUnknownFields() ?
+        CodeBlock ifSkipField = info.isStoreUnknownFieldsEnabled() ?
                 named("if (!input.skipField(tag, $unknownBytes:N))") :
                 named("if (!input.skipField(tag))");
 
@@ -346,7 +346,7 @@ class MessageGenerator {
                 writeTo.endControlFlow();
             }
         });
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
                     .addStatement(named("output.writeRawBytes($unknownBytes:N.array(), 0, $unknownBytes:N.length())"))
@@ -387,7 +387,7 @@ class MessageGenerator {
                 computeSerializedSize.endControlFlow();
             }
         });
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             computeSerializedSize.addStatement(named("size += $unknownBytes:N.length()"));
         }
         computeSerializedSize.addStatement("return size");
@@ -419,7 +419,7 @@ class MessageGenerator {
             copyFrom.endControlFlow();
         }
 
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             copyFrom.addStatement(named("$unknownBytes:N.copyFrom(other.$unknownBytes:N)"));
         }
         copyFrom.addStatement("return this");
@@ -444,7 +444,7 @@ class MessageGenerator {
             mergeFrom.endControlFlow();
         });
 
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             mergeFrom.beginControlFlow("$L", named("if (other.$unknownBytes:N.length() > 0)"))
                     .addStatement(named("$unknownBytes:N.addAll(other.$unknownBytes:N)"))
                     .endControlFlow();
@@ -616,7 +616,7 @@ class MessageGenerator {
         });
 
         // add unknown fields as base64
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
                     .addStatement(named("output.writeBytes($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
@@ -728,7 +728,7 @@ class MessageGenerator {
         }
 
         // add unknown bytes
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             mergeFrom
                     .addCode("case $L:\n", RuntimeClasses.unknownBytesFieldHash1)
                     .beginControlFlow("case $L:", RuntimeClasses.unknownBytesFieldHash2)

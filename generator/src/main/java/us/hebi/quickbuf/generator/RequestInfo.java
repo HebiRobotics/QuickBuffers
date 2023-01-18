@@ -31,7 +31,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
-import us.hebi.quickbuf.parser.ParserUtil;
+import us.hebi.quickbuf.generator.PluginOptions.AllocationStrategy;
+import us.hebi.quickbuf.generator.PluginOptions.ExpectedIncomingOrder;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -61,111 +62,18 @@ public class RequestInfo {
 
     private RequestInfo(CodeGeneratorRequest descriptor) {
         this.descriptor = descriptor;
-        this.generatorParameters = ParserUtil.parseGeneratorParameters(descriptor.getParameter());
+        this.pluginOptions = new PluginOptions(descriptor);
         this.files = descriptor.getProtoFileList().stream()
                 .map(desc -> new FileInfo(this, desc))
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * replace_package=pattern=replacement
-     *
-     * @param javaPackage
-     * @return
-     */
-    public String applyJavaPackageReplace(String javaPackage) {
-        String replaceOption = generatorParameters.get("replace_package");
-        if (replaceOption == null)
-            return javaPackage;
-
-        String[] parts = replaceOption.split("=");
-        if (parts.length != 2)
-            throw new GeneratorException("'replace_package' expects 'pattern=replacement'. Found: '" + replaceOption + "'");
-
-        return javaPackage.replaceAll(parts[0], parts[1]);
-    }
-
-    public String getIndentString() {
-        String indent = generatorParameters.getOrDefault("indent", "2");
-        switch (indent) {
-            case "8":
-                return "        ";
-            case "4":
-                return "    ";
-            case "2":
-                return "  ";
-            case "tab":
-                return "\t";
-        }
-        throw new GeneratorException("Expected 2,4,8,tab. Found: " + indent);
-    }
-
-    enum ExpectedIncomingOrder {
-        Quickbuf, // parsing messages from Quickbuf
-        AscendingNumber, // parsing messages from official protobuf bindings
-        None; // parsing messages from unknown sources
-
-        @Override
-        public String toString() {
-            switch (this) {
-                case Quickbuf:
-                    return "QuickBuffers";
-                case AscendingNumber:
-                    return "Sorted by Field Numbers";
-                default:
-                    return name();
-            }
-        }
-    }
-
-    public ExpectedIncomingOrder getExpectedIncomingOrder() {
-        String order = generatorParameters.getOrDefault("input_order", "quickbuf");
-        switch (order.toLowerCase()) {
-            case "quickbuf":
-                return ExpectedIncomingOrder.Quickbuf;
-            case "number":
-                return ExpectedIncomingOrder.AscendingNumber;
-            case "random":
-            case "none":
-                return ExpectedIncomingOrder.None;
-        }
-        throw new GeneratorException("Expected input_order quickbuf,number,random. Found: " + order);
-    }
-
-    enum AllocationStrategy {
-        Lazy,
-        Eager
-    }
-
-    public AllocationStrategy getAllocationStrategy() {
-        String value = generatorParameters.getOrDefault("allocation", "eager");
-        switch (value.toLowerCase()) {
-            case "eager":
-                return AllocationStrategy.Eager;
-            case "lazy":
-                return AllocationStrategy.Lazy;
-        }
-        throw new GeneratorException("'allocation' parameter expects 'eager' or 'lazy'. Found: " + value);
     }
 
     public boolean shouldEnumUseArrayLookup(int highestNumber) {
         return highestNumber < 50; // parameter?
     }
 
-    public boolean getStoreUnknownFields() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("store_unknown_fields", "false"));
-    }
-
-    public boolean getEnforceHasChecks() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("enforce_has_checks", "false"));
-    }
-
-    public boolean generateTryGetAccessors() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("java8_optional", "false"));
-    }
-
     private final CodeGeneratorRequest descriptor;
-    private final Map<String, String> generatorParameters;
+    private final PluginOptions pluginOptions;
     private final List<FileInfo> files;
     private final TypeRegistry typeRegistry = TypeRegistry.empty();
 
@@ -179,8 +87,10 @@ public class RequestInfo {
             fileName = descriptor.getName();
             protoPackage = NamingUtil.getProtoPackage(descriptor);
 
-            javaPackage = getParentRequest().applyJavaPackageReplace(
-                    NamingUtil.getJavaPackage(descriptor));
+            javaPackage = getParentRequest()
+                    .getPluginOptions()
+                    .getReplacePackageFunction()
+                    .apply(NamingUtil.getJavaPackage(descriptor));
 
             outerClassName = ClassName.get(javaPackage, NamingUtil.getJavaOuterClassname(descriptor));
 
@@ -248,10 +158,11 @@ public class RequestInfo {
             super(parentFile, parentTypeId, parentType, isNested, descriptor.getName());
             this.descriptor = descriptor;
             this.fieldCount = descriptor.getFieldCount();
-            this.storeUnknownFields = parentFile.getParentRequest().getStoreUnknownFields();
-            this.expectedIncomingOrder = getParentFile().getParentRequest().getExpectedIncomingOrder();
-            this.isFieldAllocationLazy = getParentFile().getParentRequest().getAllocationStrategy() == AllocationStrategy.Lazy;
-            this.enforceHasChecks = getParentFile().getParentRequest().getEnforceHasChecks();
+
+            PluginOptions options = parentFile.getParentRequest().getPluginOptions();
+            this.expectedIncomingOrder = options.getExpectedIncomingOrder();
+            this.storeUnknownFieldsEnabled = options.isStoreUnknownFieldsEnabled();
+            this.enforceHasChecksEnabled = options.isEnforceHasChecksEnabled();
 
             // Sort fields by serialization order such that they are accessed in a
             // sequential access pattern.
@@ -295,7 +206,7 @@ public class RequestInfo {
 
         }
 
-        private Set<Integer> getSyntheticOneOfIndices(){
+        private Set<Integer> getSyntheticOneOfIndices() {
             // Filter synthetic OneOfs for single-fields (proto3 explicit optionals)
             // see https://github.com/protocolbuffers/protobuf/blob/d36a64116f19ce59acf3af49e66cadef4c2fb2df/src/google/protobuf/descriptor.proto#L219-L240
             // TODO: implement https://github.com/protocolbuffers/protobuf/blob/f75fd051d68136ce366c464cea4f3074158cd141/docs/implementing_proto3_presence.md#api-changes
@@ -320,10 +231,9 @@ public class RequestInfo {
         private final List<EnumInfo> nestedEnums;
         private final List<OneOfInfo> oneOfs = new ArrayList<>();
         private final ExpectedIncomingOrder expectedIncomingOrder;
-        private final boolean isFieldAllocationLazy;
-        private final boolean storeUnknownFields;
+        private final boolean storeUnknownFieldsEnabled;
         private final int numBitFields;
-        private final boolean enforceHasChecks;
+        private final boolean enforceHasChecksEnabled;
 
     }
 
@@ -336,6 +246,7 @@ public class RequestInfo {
             this.parentType = parentType;
             this.descriptor = descriptor;
             this.bitIndex = bitIndex;
+            this.storeUnknownFieldsEnabled = parentTypeInfo.isStoreUnknownFieldsEnabled();
 
             hasBit = BitField.hasBit(bitIndex);
             setBit = BitField.setBit(bitIndex);
@@ -411,12 +322,52 @@ public class RequestInfo {
             return getTypeName();
         }
 
-        public boolean isAllocatedLazy() {
-            // currently only supported for nested messages
-            return getParentTypeInfo().isFieldAllocationLazy()
+        public boolean isLazyAllocationEnabled() {
+            // currently only supported for nested types
+            return getPluginOptions().getAllocationStrategy() == AllocationStrategy.Lazy
                     && !isRequired()
                     && !isRepeated()
                     && isMessageOrGroup();
+        }
+
+        public boolean isEnforceHasCheckEnabled() {
+            return getPluginOptions().isEnforceHasChecksEnabled();
+        }
+
+        public boolean isTryGetAccessorEnabled() {
+            return getPluginOptions().isTryGetAccessorsEnabled();
+        }
+
+        public boolean isPresenceEnabled() {
+            // Checks whether field presence is enabled for this field. See
+            // https://github.com/protocolbuffers/protobuf/blob/main/docs/implementing_proto3_presence.md
+            String syntax = getParentTypeInfo().getParentFile().getDescriptor().getSyntax();
+            switch (syntax) {
+                case "proto3":
+                    // proto3 initially did not have field presence for primitives. This eventually
+                    // turned out to be a mistake, but they couldn't change the default behavior anymore
+                    // and added explicit support for opting in to proto2-like field presence. IMO presence
+                    // should always be the default, but if we ever officially support proto3, disabling
+                    // field presence should:
+                    //
+                    // * not generate a has method
+                    // * not modify bit fields
+                    // * serialize and compute size when the field value is not zero
+                    //
+                    // Note that the code is completely compatible as is. The only difference is that a
+                    // zero value may end up being serialized, and that a has method may not return true
+                    // if the received value was an omitted zero.
+                    return (descriptor.hasProto3Optional() && descriptor.getProto3Optional())
+                            || isMessageOrGroup() || isRepeated();
+                default:
+                case "proto2":
+                    // In proto2 everything uses presence by default
+                    return true;
+            }
+        }
+
+        public PluginOptions getPluginOptions() {
+            return getParentFile().getParentRequest().getPluginOptions();
         }
 
         public int getEndGroupTag() {
@@ -574,6 +525,7 @@ public class RequestInfo {
         private final String setBit;
         private final String clearBit;
         private final boolean isPrimitive;
+        private final boolean storeUnknownFieldsEnabled;
         private final List<AnnotationSpec> methodAnnotations;
         String fieldName;
         String lowerName;
