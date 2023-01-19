@@ -18,7 +18,9 @@ The main highlights are
  * **Improved order** for optimized [sequential memory access](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order)
  * **Optional accessors** as an opt-in feature (java8)
 
-QuickBuffers implements the [proto2 specification](https://developers.google.com/protocol-buffers/docs/proto) and is compatible with all java versions from 6 through 20. So far we chose not to support proto3 because of some [design decisions](proto3.md) that make it unusable for us, but both versions are binary compatible and can work together. QuickBuffers supports all features except for [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) and [Services](https://developers.google.com/protocol-buffers/docs/proto#services). [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are not directly supported, but they generate a matching [repeated field](https://developers.google.com/protocol-buffers/docs/proto#backwards) instead.
+QuickBuffers implements the [proto2 specification](https://developers.google.com/protocol-buffers/docs/proto) and is compatible with all java versions from 6 through 20. So far we chose not to support proto3 because of some [design decisions](proto3.md) that make it unusable for us, but both versions are binary compatible and can work together. 
+
+QuickBuffers supports all features except for [Services](https://developers.google.com/protocol-buffers/docs/proto#services) and special casings of well-known proto3 types. [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are not directly supported, but they generate a matching [repeated field](https://developers.google.com/protocol-buffers/docs/proto#backwards). Support for [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) is experimental.
 
 ## Getting started
 
@@ -81,6 +83,7 @@ The generator features several options that can be supplied as a comma-separated
 | **store_unknown_fields** | **false**, true            | generates code to retain unknown fields that were encountered during parsing. This allows messages to be routed without losing information, even if the schema is not fully known. Unknown fields are stored in binary form and are ignored in equality checks. |
 | **enforce_has_checks**   | **false**, true            | throws an exception when accessing fields that were not set                                                                                                                                                                                                     |                          
 | **allocation**           | **eager**, lazy            | changes the allocation strategy for nested types. `eager` allocates up-front and results in fewer runtime-allocations, but it may be wasteful and prohibits recursive type declarations. `lazy` waits until the field is actually needed.                       |
+| **extensions**           | **disabled**, embedded     | `embedded` (experimental) adds extension fields from the same generator request directly to the extended message. Note that this requires both classes to get loaded in a single call (with imports) rather than individually.                                  |
 | **java8_optional**       | **false**, true            | creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher.                                                                                                    |                               
 
 ## Manual installation

@@ -45,6 +45,7 @@ class PluginOptions {
         expectedIncomingOrder = ExpectedIncomingOrder.parseFromString(map.getOrDefault("input_order", "quickbuf"));
         storeUnknownFieldsEnabled = parseBoolean(map.getOrDefault("store_unknown_fields", "false"));
         allocationStrategy = AllocationStrategy.parseFromString(map.getOrDefault("allocation", "eager"));
+        extensionSupport = ExtensionSupport.parseFromString(map.getOrDefault("extensions", "disabled"));
         enforceHasChecksEnabled = parseBoolean(map.getOrDefault("enforce_has_checks", "false"));
         tryGetAccessorsEnabled = parseBoolean(map.getOrDefault("java8_optional", "false"));
     }
@@ -96,6 +97,21 @@ class PluginOptions {
 
     }
 
+    enum ExtensionSupport {
+        Disabled, Embedded;
+
+        static ExtensionSupport parseFromString(String string) {
+            switch (string.toLowerCase()) {
+                case "embedded":
+                    return Embedded;
+                case "disabled":
+                    return Disabled;
+            }
+            throw new GeneratorException("'extensions' parameter accepts ['disabled', 'embedded']. Found: " + string);
+        }
+
+    }
+
     private static String parseIndentString(String indent) {
         switch (indent) {
             case "8":
@@ -131,6 +147,7 @@ class PluginOptions {
 
     final ExpectedIncomingOrder expectedIncomingOrder;
     final AllocationStrategy allocationStrategy;
+    final ExtensionSupport extensionSupport;
     final String indentString;
     final boolean storeUnknownFieldsEnabled;
     final boolean enforceHasChecksEnabled;

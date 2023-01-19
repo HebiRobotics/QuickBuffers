@@ -33,6 +33,7 @@ import lombok.ToString;
 import lombok.Value;
 import us.hebi.quickbuf.generator.PluginOptions.AllocationStrategy;
 import us.hebi.quickbuf.generator.PluginOptions.ExpectedIncomingOrder;
+import us.hebi.quickbuf.generator.PluginOptions.ExtensionSupport;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,6 +64,9 @@ public class RequestInfo {
     private RequestInfo(CodeGeneratorRequest descriptor) {
         this.descriptor = descriptor;
         this.pluginOptions = new PluginOptions(descriptor);
+        if (pluginOptions.getExtensionSupport() != ExtensionSupport.Disabled) {
+            extensionRegistry.registerAllExtensions(descriptor);
+        }
         this.files = descriptor.getProtoFileList().stream()
                 .map(desc -> new FileInfo(this, desc))
                 .collect(Collectors.toList());
@@ -76,6 +80,7 @@ public class RequestInfo {
     private final PluginOptions pluginOptions;
     private final List<FileInfo> files;
     private final TypeRegistry typeRegistry = TypeRegistry.empty();
+    private final ExtensionRegistry extensionRegistry = new ExtensionRegistry();
 
     @Value
     public static class FileInfo {
@@ -164,9 +169,22 @@ public class RequestInfo {
             this.storeUnknownFieldsEnabled = options.isStoreUnknownFieldsEnabled();
             this.enforceHasChecksEnabled = options.isEnforceHasChecksEnabled();
 
+            // Extensions in embedded mode: treat extension fields the same as normal
+            // fields and embed them directly into the message.
+            List<FieldDescriptorProto> fieldList = descriptor.getFieldList();
+            RequestInfo request = getParentFile().getParentRequest();
+            if (request.getPluginOptions().getExtensionSupport() == ExtensionSupport.Embedded) {
+                List<FieldDescriptorProto> extensions = request.getExtensionRegistry()
+                        .getExtensionFields(getTypeId());
+                if(!extensions.isEmpty()) {
+                    fieldList = new ArrayList<>(fieldList);
+                    fieldList.addAll(extensions);
+                }
+            }
+
             // Sort fields by serialization order such that they are accessed in a
             // sequential access pattern.
-            List<FieldDescriptorProto> sortedFields = descriptor.getFieldList().stream()
+            List<FieldDescriptorProto> sortedFields = fieldList.stream()
                     .sorted(FieldUtil.MemoryLayoutSorter)
                     .collect(Collectors.toList());
 
@@ -600,6 +618,37 @@ public class RequestInfo {
         private final String upperName;
         private final String hazzerName;
         private final String clearName;
+
+    }
+
+    static class ExtensionRegistry {
+
+        List<FieldDescriptorProto> getExtensionFields(String protoTypeName) {
+            return Optional.ofNullable(extensionMap.get(protoTypeName))
+                    .orElse(Collections.emptyList());
+        }
+
+        void registerAllExtensions(CodeGeneratorRequest request) {
+            request.getProtoFileList().forEach(file -> {
+                addExtensions(file.getExtensionList());
+                file.getMessageTypeList().forEach(this::addNestedExtensions);
+            });
+        }
+
+        private void addNestedExtensions(DescriptorProtos.DescriptorProto descriptor) {
+            addExtensions(descriptor.getExtensionList());
+            descriptor.getNestedTypeList().forEach(this::addNestedExtensions);
+        }
+
+        private void addExtensions(List<FieldDescriptorProto> extensions) {
+            if (extensions.isEmpty()) return;
+            for (FieldDescriptorProto extension : extensions) {
+                extensionMap.computeIfAbsent(extension.getExtendee(), clazz -> new ArrayList<>()).add(extension);
+            }
+        }
+
+        // extendee string -> descriptor
+        private final Map<String, List<FieldDescriptorProto>> extensionMap = new HashMap<>();
 
     }
 
