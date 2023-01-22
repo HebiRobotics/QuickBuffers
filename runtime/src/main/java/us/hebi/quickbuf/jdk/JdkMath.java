@@ -17,27 +17,18 @@
  * limitations under the License.
  * #L%
  */
-package us.hebi.quickbuf.schubfach;
+package us.hebi.quickbuf.jdk;
 
 /**
- * This class does a static forwarding to intrinsified Math
- * utilities in Java9 when available, and to a fallback
- * version when not.
- * <p>
- * This works by compiling the API against a dummy source with
- * the same methods that is java 6 compliant. The dummy source
- * and class file then get replaced after compilation with a
- * different version that was compiled with a newer jdk and a
- * java 6 target.
- * <p>
- * The result is similar to creating a multi-release (MR) jar,
- * but is better supported by tooling and bytecode analyzers for
- * obfuscation or native images.
+ * This class dispatches calls to built-in Java methods
+ * when available, and runs a fallback version when not.
+ * It allows us to make use of newer features without
+ * breaking backwards compatibility with oder runtimes.
  *
  * @author Florian Enner
  * @since 14 Jan 2023
  */
-public class Math9 {
+public class JdkMath {
 
     /**
      * Returns as a {@code long} the most significant 64 bits of the 128-bit
@@ -49,6 +40,9 @@ public class Math9 {
      * @since 9
      */
     public static long multiplyHigh(long x, long y) {
+        if (HAS_MULTIPLY_HIGH) {
+            return JdkMethods.multiplyHigh(x, y);
+        }
         if (x < 0 || y < 0) {
             // Use technique from section 8-2 of Henry S. Warren, Jr.,
             // Hacker's Delight (2nd ed.) (Addison Wesley, 2013), 173-174.
@@ -76,11 +70,15 @@ public class Math9 {
         }
     }
 
-    /**
-     * @return true if the running jdk has the required methods
-     */
-    public static boolean isAvailable() {
-        throw new IllegalStateException("Using dummy class file");
+    private static boolean hasMultiplyHigh0() {
+        try {
+            JdkMethods.multiplyHigh(0, 0);
+            return true;
+        } catch (NoSuchMethodError oldRuntime) {
+            return false;
+        }
     }
+
+    static final boolean HAS_MULTIPLY_HIGH = hasMultiplyHigh0();
 
 }

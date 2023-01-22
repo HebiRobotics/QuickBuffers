@@ -45,7 +45,7 @@ import java.io.IOException;
 
 import static java.lang.Double.*;
 import static java.lang.Long.*;
-import static us.hebi.quickbuf.schubfach.Math9.multiplyHigh;
+import static us.hebi.quickbuf.jdk.JdkMath.multiplyHigh;
 import static us.hebi.quickbuf.schubfach.MathUtils.*;
 
 /**

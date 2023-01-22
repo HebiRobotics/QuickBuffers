@@ -62,7 +62,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <excludes>
-                        <exclude>**/us/hebi/quickbuf/schubfach/Math9.java</exclude>
+                        <exclude>**/us/hebi/quickbuf/jdk/JdkMethods.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -80,7 +80,7 @@
                         </goals>
                         <configuration>
                             <tasks>
-                                <copy file="src/java9/Math9.class" tofile="${project.build.outputDirectory}/us/hebi/quickbuf/schubfach/Math9.class" overwrite="true" />
+                                <copy file="src/java9/JdkMethods.class" tofile="${project.build.outputDirectory}/us/hebi/quickbuf/jdk/JdkMethods.class" overwrite="true" />
                             </tasks>
                         </configuration>
                     </execution>

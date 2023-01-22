@@ -21,6 +21,7 @@ package us.hebi.quickbuf.schubfach;
 
 import org.junit.Test;
 import us.hebi.quickbuf.ProtoUtil;
+import us.hebi.quickbuf.jdk.JdkMath;
 
 import java.util.Random;
 
@@ -31,18 +32,6 @@ import static org.junit.Assert.*;
  * @since 14 Jän 2023
  */
 public class SchubfachTest {
-
-    @Test
-    public void testReplacedClassFile() {
-        // The dummy class file throws an error, so it gets
-        // replaced, but we should also check that it's the
-        // correct result.
-        if (Math9.isAvailable()) {
-            // System.out.println("found jdk >=9");
-        } else {
-            // System.out.println("found jdk <9");
-        }
-    }
 
     @Test
     public void testDoubleToString() {

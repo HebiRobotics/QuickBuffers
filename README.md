@@ -11,7 +11,7 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://dev
 The main highlights are
 
  * **Allocation-free** in steady state. All parts of the API are mutable and reusable. Nested types can be allocated eagerly
- * **No reflection** use anywhere. GraalVM native-images and ProGuard obfuscation are supported out of the box
+ * **No reflection** use anywhere. GraalVM native-images and ProGuard [obfuscation](#proguard-obfuscation) are supported out of the box
  * **Faster** encoding and decoding [speed](./benchmarks)
  * **Smaller** code size than protobuf-javalite
  * **Built-in JSON** marshalling compliant with the [Proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
@@ -418,3 +418,11 @@ Unfortunately, we currently have no way of knowing an appropriate initial size f
 Be aware that this prevents the definition of cycles in the message definitions.
 
 -->
+
+## Proguard obfuscation
+
+There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file.
+
+```text
+-dontwarn us.hebi.quickbuf.jdk.JdkMethods
+```
