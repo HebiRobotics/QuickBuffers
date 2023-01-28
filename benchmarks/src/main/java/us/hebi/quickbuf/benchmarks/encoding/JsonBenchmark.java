@@ -47,6 +47,16 @@ import java.util.concurrent.TimeUnit;
  * JsonBenchmark.writeStringUtf8Chars     avgt   10    3,015 ± 0,026  us/op
  * JsonBenchmark.writeStringUtf8Encoded   avgt   10    0,384 ± 0,003  us/op
  *
+ * == JDK 17 (original Schubfach)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  72,453 ± 0,937  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  45,494 ± 0,315  us/op
+ *
+ * == JDK 17 (fixed floating point)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  17,468 ± 0,406  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  13,166 ± 0,239  us/op
+ *
  * @author Florian Enner
  * @since 13 Nov 2019
  */

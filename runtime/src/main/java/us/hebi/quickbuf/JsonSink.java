@@ -25,6 +25,8 @@ import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
 import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
+import us.hebi.quickbuf.schubfach.DoubleToDecimal;
+import us.hebi.quickbuf.schubfach.FloatToDecimal;
 
 import java.io.Closeable;
 import java.io.Flushable;
@@ -548,13 +550,21 @@ public abstract class JsonSink implements Closeable, Flushable {
 
         @Override
         protected void writeNumber(double value) {
-            NumberEncoding.writeDouble(value, output);
+            if (ENABLE_SCHUBFACH) {
+                DoubleToDecimal.appendJsonTo(value, output);
+            } else {
+                NumberEncoding.writeDouble(value, output);
+            }
             writeMore();
         }
 
         @Override
         protected void writeNumber(float value) {
-            NumberEncoding.writeFloat(value, output);
+            if (ENABLE_SCHUBFACH) {
+                FloatToDecimal.appendJsonTo(value, output);
+            } else {
+                NumberEncoding.writeFloat(value, output);
+            }
             writeMore();
         }
 
@@ -701,6 +711,8 @@ public abstract class JsonSink implements Closeable, Flushable {
         private boolean isEmptyObjectOrArray = false;
 
         private static final int SPACES_PER_LEVEL = 2;
+
+        private static final boolean ENABLE_SCHUBFACH = !Boolean.getBoolean("quickbuf.disable_schubfach");
 
     }
 }

@@ -812,6 +812,7 @@ public class ProtoTests {
         empty.clearRepeatedBool();
         empty.clearRepeatedString();
         empty.clearRepeatedBytes();
+        empty.clearRepeatedNestedMessage();
         assertTrue(empty.isEmpty());
 
         // merge

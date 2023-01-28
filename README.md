@@ -11,7 +11,7 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://dev
 The main highlights are
 
  * **Allocation-free** in steady state. All parts of the API are mutable and reusable. Nested types can be allocated eagerly
- * **No reflection** use anywhere. GraalVM native-images and ProGuard obfuscation are supported out of the box
+ * **No reflection** use anywhere. GraalVM native-images and ProGuard [obfuscation](#proguard-obfuscation) are supported out of the box
  * **Faster** encoding and decoding [speed](./benchmarks)
  * **Smaller** code size than protobuf-javalite
  * **Built-in JSON** marshalling compliant with the [Proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
@@ -270,7 +270,7 @@ msg.clearQuick()
     .writeTo(jsonSink.clear());
 ```
 
-Note that the json serialization has not been tested as much as the binary serialization. We have been using it in production and are not aware of any bugs, but we also added alternative GSON and Jackson based implementations for cases that require something more battle tested (e.g. obscure floating point edge cases). The alternative wrappers be found in the `quickbuf-compat` artifact.
+The default implementation encodes the minimal representation accepted by the protobuf spec, i.e., floating point numbers do not append a trailing zero, and long integers are encoded without quotes. Examples for alternative implementations based on GSON and Jackson are in the `quickbuf-compat` artifact.
 
 ## Building from source
 
@@ -418,3 +418,11 @@ Unfortunately, we currently have no way of knowing an appropriate initial size f
 Be aware that this prevents the definition of cycles in the message definitions.
 
 -->
+
+## Proguard obfuscation
+
+There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file.
+
+```text
+-dontwarn us.hebi.quickbuf.jdk.JdkMethods
+```
