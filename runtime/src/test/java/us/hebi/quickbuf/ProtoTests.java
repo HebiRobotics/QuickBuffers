@@ -822,4 +822,27 @@ public class ProtoTests {
 
     }
 
+    @Test
+    public void testRecursionLimit() throws IOException {
+        LazyMessage msg = LazyMessage.newInstance();
+        LazyMessage nested = msg;
+        for (int i = 0; i < 33; i++) { // above default limit 64
+            nested = nested.getMutableOptionalNestedMessage().getMutableRecursiveMessage();
+        }
+        byte[] lotsOfNestedMessages = msg.toByteArray();
+
+
+        try {
+            ProtoSource source = ProtoSource.newInstance(lotsOfNestedMessages);
+            LazyMessage.parseFrom(source);
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("limit"));
+        }
+
+        ProtoSource source = ProtoSource.newInstance(lotsOfNestedMessages);
+        assertEquals(64, source.setRecursionLimit(66));
+        assertEquals(msg, LazyMessage.parseFrom(source));
+
+    }
+
 }
