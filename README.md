@@ -426,3 +426,7 @@ There are no reflections, so none of the fields need to be preserved or special 
 ```text
 -dontwarn us.hebi.quickbuf.jdk.JdkMethods
 ```
+
+## Acknowledgements
+
+Many internals and large parts of the generated API are based on [Protobuf-Java](https://github.com/protocolbuffers/protobuf). The encoding of floating point numbers during JSON serialization is based on [Schubfach](https://github.com/c4f7fcce9cb06515/Schubfach/) [[Giu2020](https://drive.google.com/open?id=1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN)].
