@@ -41,6 +41,8 @@
 
 package us.hebi.quickbuf.schubfach;
 
+import us.hebi.quickbuf.RepeatedByte;
+
 import java.io.IOException;
 
 import static java.lang.Float.*;
@@ -279,6 +281,34 @@ final public class FloatToDecimal {
     public static Appendable appendTo(float v, Appendable app)
             throws IOException {
         return threadLocalInstance().appendDecimalTo(v, app);
+    }
+
+    /**
+     * Appends the JSON rendering of the {@code v} to {@code output}.
+     *
+     * <p> Normal numbers are written directly. Special values are
+     * written as quoted strings.
+     *
+     * @param v      the {@code double} whose rendering is appended.
+     * @param output the {@link RepeatedByte} to append to.
+     */
+    public static RepeatedByte appendJsonTo(float v, RepeatedByte output) {
+        // Note: we already have a buffer to write to, so the thread local
+        // should be removed. The number extraction could be done more
+        // efficiently as well, but initially the focus is on memory
+        // allocations rather than raw performance of JSON writes.
+        return threadLocalInstance().appendJsonDecimalTo(v, output);
+    }
+
+    private RepeatedByte appendJsonDecimalTo(float v, RepeatedByte output) {
+        switch (toDecimal(v)) {
+            case NON_SPECIAL: return JsonMapping.writeNumberTo(bytes, index, output);
+            case PLUS_ZERO: return output.addAll(JsonMapping.PLUS_ZERO);
+            case MINUS_ZERO: return output.addAll(JsonMapping.MINUS_ZERO);
+            case PLUS_INF: return output.addAll(JsonMapping.PLUS_INF);
+            case MINUS_INF: return output.addAll(JsonMapping.MINUS_INF);
+            default: return output.addAll(JsonMapping.NAN);
+        }
     }
 
     private static FloatToDecimal threadLocalInstance() {
