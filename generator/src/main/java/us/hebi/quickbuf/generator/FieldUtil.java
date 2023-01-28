@@ -197,7 +197,9 @@ class FieldUtil {
         } else if (descriptor.getOptions().hasPacked()) {
             options = " [packed = " + descriptor.getOptions().getPacked() + "]";
         }
-        return definition + options + ";";
+
+        String line = definition + options + ";";
+        return !descriptor.hasExtendee() ? line : "extend {\n  " + line + "\n}";
     }
 
     private static int getWireType(FieldDescriptorProto.Type type) {

@@ -16,5 +16,5 @@ message NestedMessage {
 }
 
 message InnerNestedMessage {
-  optional MainMessage main = 1;
+  required MainMessage main = 1;
 }

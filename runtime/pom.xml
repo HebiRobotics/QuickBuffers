@@ -56,10 +56,36 @@
                 </executions>
             </plugin>
 
-            <!-- Copy RepeatedFloat implementation to other types. Use float because it's unlikely to collide -->
+            <!-- Don't compile sources that we replace with a pre-compiled class file -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/us/hebi/quickbuf/jdk/JdkMethods.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
+
+                    <!-- Replace Java9+ sources with pre-compiled class files -->
+                    <execution>
+                        <id>add-java9-classes</id>
+                        <phase>generate-resources</phase> <!-- after 'compile' -->
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <copy file="src/java9/JdkMethods.class" tofile="${project.build.outputDirectory}/us/hebi/quickbuf/jdk/JdkMethods.class" overwrite="true" />
+                            </tasks>
+                        </configuration>
+                    </execution>
+
+                    <!-- Copy RepeatedFloat implementation to other types. Use float because it's unlikely to collide -->
                     <execution>
                         <id>generate-repeated-primitives</id>
                         <phase>generate-sources</phase>
@@ -123,6 +149,7 @@
                 <version>3.8.0</version>
                 <executions>
                     <execution>
+                        <id>generate-eager-protos</id>
                         <phase>generate-test-sources</phase>
                         <goals>
                             <goal>run</goal>
@@ -141,7 +168,8 @@
                                     <!-- Linux finds absolute file, Windows finds it via executing PATH -->
                                     <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
-                                    <outputOptions>replace_package=(protos.test.protobuf)=protos.test.quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=false,input_order=quickbuf
+                                    <outputOptions>
+                                        replace_package=(protobuf)=quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=false,input_order=quickbuf,allocation=eager
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>
@@ -152,6 +180,33 @@
                                     <addSources>test</addSources>
                                 </outputTarget>
 
+                            </outputTargets>
+
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-lazy-protos</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <protocVersion>${protoc.version}</protocVersion>
+
+                            <inputDirectories>
+                                <include>${proto.dir}/../lazy/</include>
+                            </inputDirectories>
+
+                            <outputTargets>
+                                <!-- Generate sources with lazy option -->
+                                <outputTarget>
+                                    <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
+                                    <type>quickbuf</type>
+                                    <outputOptions>
+                                        replace_package=(protobuf)=quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=true,allocation=lazy,extensions=embedded
+                                    </outputOptions>
+                                    <addSources>test</addSources>
+                                </outputTarget>
                             </outputTargets>
 
                         </configuration>
@@ -167,6 +222,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <!-- It's hard to add the real replaced java file because the source-plugin
+                requires things to be added as sources that then would also get compiled -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

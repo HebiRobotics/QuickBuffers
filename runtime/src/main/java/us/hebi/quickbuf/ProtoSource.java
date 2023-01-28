@@ -740,9 +740,13 @@ public abstract class ProtoSource {
 
     /** Read a {@code group} field value from the source. */
     public void readGroup(final ProtoMessage<?> msg, final int fieldNumber) throws IOException {
-        // Note: recursive messages are impossible, so we don't need to check for limits
+        if (recursionDepth >= recursionLimit) {
+            throw InvalidProtocolBufferException.recursionLimitExceeded();
+        }
+        ++recursionDepth;
         msg.mergeFrom(this);
         checkLastTagWas(WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
+        --recursionDepth;
     }
 
     /** Read a repeated {@code message} field value from the source. */
@@ -756,11 +760,15 @@ public abstract class ProtoSource {
     }
 
     public void readMessage(final ProtoMessage<?> msg) throws IOException {
-        // Note: recursive messages are impossible, so we don't need to check for limits
         final int length = readLength();
+        if (recursionDepth >= recursionLimit) {
+            throw InvalidProtocolBufferException.recursionLimitExceeded();
+        }
         final int oldLimit = pushLimit(length);
+        ++recursionDepth;
         msg.mergeFrom(this);
         checkLastTagWas(0);
+        --recursionDepth;
         popLimit(oldLimit);
     }
 
@@ -940,6 +948,11 @@ public abstract class ProtoSource {
 
     private int lastTag;
 
+    /** See setRecursionLimit() */
+    protected int recursionDepth;
+    protected int recursionLimit = DEFAULT_RECURSION_LIMIT;
+    private static final int DEFAULT_RECURSION_LIMIT = 64;
+
     /** The absolute position of the end of the current message. */
     protected int currentLimit = NO_LIMIT;
     protected static final int NO_LIMIT = Integer.MAX_VALUE;
@@ -949,6 +962,8 @@ public abstract class ProtoSource {
 
     protected ProtoSource resetInternalState() {
         lastTag = 0;
+        recursionDepth = 0;
+        recursionLimit = DEFAULT_RECURSION_LIMIT;
         currentLimit = NO_LIMIT;
         return this;
     }
@@ -957,17 +972,19 @@ public abstract class ProtoSource {
     }
 
     /**
-     * Set the maximum message recursion depth. Due to pre-allocating
-     * all memory, it is impossible for recursive messages to appear.
-     * This method exists for compatibility with Protobuf code, and
-     * as a reminder to re-implement it if we ever support recursive
-     * messages.
+     * Set the maximum message recursion depth. In order to prevent malicious
+     * messages from causing stack overflows, {@code ProtoSource} limits
+     * how deeply messages may be nested.  The default limit is 64.
      *
-     * @return old limit
+     * @return the old limit.
      */
-    @Deprecated
     public int setRecursionLimit(final int limit) {
-        return 64;
+        if (limit < 0) {
+            throw new IllegalArgumentException("Recursion limit cannot be negative: " + limit);
+        }
+        final int oldLimit = recursionLimit;
+        recursionLimit = limit;
+        return oldLimit;
     }
 
     /**
