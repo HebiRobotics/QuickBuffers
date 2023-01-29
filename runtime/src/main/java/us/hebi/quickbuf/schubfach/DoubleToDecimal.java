@@ -41,12 +41,9 @@
 
 package us.hebi.quickbuf.schubfach;
 
-import us.hebi.quickbuf.RepeatedByte;
-
 import java.io.IOException;
 
 import static java.lang.Double.*;
-import static java.lang.Long.*;
 import static us.hebi.quickbuf.jdk.JdkMath.multiplyHigh;
 import static us.hebi.quickbuf.schubfach.MathUtils.*;
 
@@ -114,18 +111,18 @@ final public class DoubleToDecimal {
     // Used for left-to-tight digit extraction.
     private static final int MASK_28 = (1 << 28) - 1;
 
-    private static final int NON_SPECIAL = 0;
-    private static final int PLUS_ZERO = 1;
-    private static final int MINUS_ZERO = 2;
-    private static final int PLUS_INF = 3;
-    private static final int MINUS_INF = 4;
-    private static final int NAN = 5;
+    public static final int NON_SPECIAL = 0;
+    public static final int PLUS_ZERO = 1;
+    public static final int MINUS_ZERO = 2;
+    public static final int PLUS_INF = 3;
+    public static final int MINUS_INF = 4;
+    public static final int NAN = 5;
 
     // For thread-safety, each thread gets its own instance of this class.
-    private static final ThreadLocal<DoubleToDecimal> threadLocal = new ThreadLocal<DoubleToDecimal>() {
+    private static final ThreadLocal<DefaultDoubleEncoder> threadLocal = new ThreadLocal<DefaultDoubleEncoder>() {
         @Override
-        protected DoubleToDecimal initialValue() {
-            return new DoubleToDecimal();
+        protected DefaultDoubleEncoder initialValue() {
+            return new DefaultDoubleEncoder();
         }
     };
 
@@ -136,16 +133,7 @@ final public class DoubleToDecimal {
         -d.ddddddddddddddddE-eee    H + 7 characters
     where there are H digits d
      */
-    public final int MAX_CHARS = H + 7;
-
-    // Numerical results are created here...
-    private final byte[] bytes = new byte[MAX_CHARS];
-
-    // ... and copied here in appendTo()
-    private final char[] chars = new char[MAX_CHARS];
-
-    // Index into bytes of rightmost valid character.
-    private int index;
+    public static final int MAX_CHARS = H + 7;
 
     private DoubleToDecimal() {
     }
@@ -278,88 +266,27 @@ final public class DoubleToDecimal {
      * @param app the {@link Appendable} to append to.
      * @throws IOException If an I/O error occurs
      */
-    public static Appendable appendTo(double v, Appendable app)
-            throws IOException {
+    public static Appendable appendTo(double v, Appendable app) throws IOException {
         return threadLocalInstance().appendDecimalTo(v, app);
     }
 
-    /**
-     * Appends the JSON rendering of the {@code v} to {@code output}.
-     *
-     * <p> Normal numbers are written directly. Special values are
-     * written as quoted strings.
-     *
-     * @param v      the {@code double} whose rendering is appended.
-     * @param output the {@link RepeatedByte} to append to.
-     */
-    public static RepeatedByte appendJsonTo(double v, RepeatedByte output) {
-        // Note: we already have a buffer to write to, so the thread local
-        // should be removed. The number extraction could be done more
-        // efficiently as well, but initially the focus is on memory
-        // allocations rather than raw performance of JSON writes.
-        return threadLocalInstance().appendJsonDecimalTo(v, output);
-    }
-
-    private RepeatedByte appendJsonDecimalTo(double v, RepeatedByte output) {
-        switch (toDecimal(v)) {
-            case NON_SPECIAL: return JsonMapping.writeNumberTo(bytes, index, output);
-            case PLUS_ZERO: return output.addAll(JsonMapping.PLUS_ZERO);
-            case MINUS_ZERO: return output.addAll(JsonMapping.MINUS_ZERO);
-            case PLUS_INF: return output.addAll(JsonMapping.PLUS_INF);
-            case MINUS_INF: return output.addAll(JsonMapping.MINUS_INF);
-            default: return output.addAll(JsonMapping.NAN);
-        }
-    }
-
-    private static DoubleToDecimal threadLocalInstance() {
+    private static DefaultDoubleEncoder threadLocalInstance() {
         return threadLocal.get();
     }
 
-    private String toDecimalString(double v) {
-        switch (toDecimal(v)) {
-            case NON_SPECIAL: return charsToString();
-            case PLUS_ZERO: return "0.0";
-            case MINUS_ZERO: return "-0.0";
-            case PLUS_INF: return "Infinity";
-            case MINUS_INF: return "-Infinity";
-            default: return "NaN";
-        }
-    }
-
-    private Appendable appendDecimalTo(double v, Appendable app)
-            throws IOException {
-        switch (toDecimal(v)) {
-            case NON_SPECIAL:
-                for (int i = 0; i <= index; ++i) {
-                    chars[i] = (char) bytes[i];
-                }
-                if (app instanceof StringBuilder) {
-                    return ((StringBuilder) app).append(chars, 0, index + 1);
-                }
-                if (app instanceof StringBuffer) {
-                    return ((StringBuffer) app).append(chars, 0, index + 1);
-                }
-                for (int i = 0; i <= index; ++i) {
-                    app.append(chars[i]);
-                }
-                return app;
-            case PLUS_ZERO: return app.append("0.0");
-            case MINUS_ZERO: return app.append("-0.0");
-            case PLUS_INF: return app.append("Infinity");
-            case MINUS_INF: return app.append("-Infinity");
-            default: return app.append("NaN");
-        }
-    }
-
-    /*
-    Returns
-        PLUS_ZERO       iff v is 0.0
-        MINUS_ZERO      iff v is -0.0
-        PLUS_INF        iff v is POSITIVE_INFINITY
-        MINUS_INF       iff v is NEGATIVE_INFINITY
-        NAN             iff v is NaN
+    /**
+     * Encodes a floating point number v as decimal values f,e where v = f * 10^e
+     *
+     * @param v input value
+     * @param encoder Encoder for the result. Only gets called for non-special numbers
+     * @return NON_SPECIAL     any non-special number
+     *         PLUS_ZERO       iff v is 0.0
+     *         MINUS_ZERO      iff v is -0.0
+     *         PLUS_INF        iff v is POSITIVE_INFINITY
+     *         MINUS_INF       iff v is NEGATIVE_INFINITY
+     *         NAN             iff v is NaN
      */
-    private int toDecimal(double v) {
+    public static int encode(double v, DoubleEncoder encoder) {
         /*
         For full details see references [2] and [1].
 
@@ -373,10 +300,7 @@ final public class DoubleToDecimal {
         long t = bits & T_MASK;
         int bq = (int) (bits >>> P - 1) & BQ_MASK;
         if (bq < BQ_MASK) {
-            index = -1;
-            if (bits < 0) {
-                append('-');
-            }
+            boolean negative = bits < 0;
             if (bq != 0) {
                 // normal value. Here mq = -q
                 int mq = -Q_MIN + 1 - bq;
@@ -385,16 +309,16 @@ final public class DoubleToDecimal {
                 if (0 < mq & mq < P) {
                     long f = c >> mq;
                     if (f << mq == c) {
-                        return toChars(f, 0);
+                        return encodeDecimal(negative, f, 0, encoder);
                     }
                 }
-                return toDecimal(-mq, c, 0);
+                return toDecimal(negative, -mq, c, 0, encoder);
             }
             if (t != 0) {
                 // subnormal value
                 return t < C_TINY
-                        ? toDecimal(Q_MIN, 10 * t, -1)
-                        : toDecimal(Q_MIN, t, 0);
+                        ? toDecimal(negative, Q_MIN, 10 * t, -1, encoder)
+                        : toDecimal(negative, Q_MIN, t, 0, encoder);
             }
             return bits == 0 ? PLUS_ZERO : MINUS_ZERO;
         }
@@ -404,7 +328,7 @@ final public class DoubleToDecimal {
         return bits > 0 ? PLUS_INF : MINUS_INF;
     }
 
-    private int toDecimal(int q, long c, int dk) {
+    private static int toDecimal(boolean negative, int q, long c, int dk, DoubleEncoder encoder) {
         /*
         The skeleton corresponds to figure 4 of [1].
         The efficient computations are those summarized in figure 7.
@@ -469,7 +393,7 @@ final public class DoubleToDecimal {
             boolean upin = vbl + out <= sp10 << 2;
             boolean wpin = (tp10 << 2) + out <= vbr;
             if (upin != wpin) {
-                return toChars(upin ? sp10 : tp10, k);
+                return encodeDecimal(negative, upin ? sp10 : tp10, k, encoder);
             }
         }
 
@@ -484,14 +408,14 @@ final public class DoubleToDecimal {
         boolean win = (t << 2) + out <= vbr;
         if (uin != win) {
             // Exactly one of u or w lies in Rv.
-            return toChars(uin ? s : t, k + dk);
+            return encodeDecimal(negative, uin ? s : t, k + dk, encoder);
         }
         /*
         Both u and w lie in Rv: determine the one closest to v.
         See section 9.4 of [1].
          */
         long cmp = vb - (s + t << 1);
-        return toChars(cmp < 0 || cmp == 0 && (s & 0x1) == 0 ? s : t, k + dk);
+        return encodeDecimal(negative, cmp < 0 || cmp == 0 && (s & 0x1) == 0 ? s : t, k + dk, encoder);
     }
 
     /*
@@ -507,191 +431,287 @@ final public class DoubleToDecimal {
         return vbp | (z & MASK_63) + MASK_63 >>> 63;
     }
 
-    /*
-    Formats the decimal f 10^e.
-     */
-    private int toChars(long f, int e) {
-        /*
-        For details not discussed here see section 10 of [1].
+    private static int encodeDecimal(boolean negative, long f, int e, DoubleEncoder encoder) {
+        encoder.encodeDouble(negative, f, e);
+        return NON_SPECIAL;
+    }
 
-        Determine len such that
-            10^(len-1) <= f < 10^len
-         */
-        int len = flog10pow2(Long.SIZE - numberOfLeadingZeros(f));
+    /*
+     For details not discussed here see section 10 of [1].
+     Determine length such that
+       10^(len-1) <= f < 10^len
+     */
+    public static int getLength(long f) {
+        int len = flog10pow2(Long.SIZE - Long.numberOfLeadingZeros(f));
         if (f >= pow10(len)) {
             len += 1;
         }
+        return len;
+    }
+
+    /**
+     * @param len length of the significand
+     * @return scalar needed to normalize the significand to always have H (9) digits
+     */
+    public static long getNormalizationScale(int len) {
+        return pow10(H - len);
+    }
+
+    public interface DoubleEncoder {
+        void encodeDouble(boolean negative, long significand, int exponent);
+    }
+
+    public static final class DefaultDoubleEncoder implements DoubleEncoder {
+
+        // Numerical results are created here...
+        private final byte[] bytes = new byte[MAX_CHARS];
+
+        // ... and copied here in appendTo()
+        private final char[] chars = new char[MAX_CHARS];
+
+        // Index into bytes of rightmost valid character.
+        private int index;
+
+        public String toDecimalString(double v) {
+            switch (encodeDouble(v)) {
+                case NON_SPECIAL: return charsToString();
+                case PLUS_ZERO: return "0.0";
+                case MINUS_ZERO: return "-0.0";
+                case PLUS_INF: return "Infinity";
+                case MINUS_INF: return "-Infinity";
+                default: return "NaN";
+            }
+        }
+
+        public Appendable appendDecimalTo(double v, Appendable app) throws IOException {
+            switch (encodeDouble(v)) {
+                case NON_SPECIAL:
+                    for (int i = 0; i <= index; ++i) {
+                        chars[i] = (char) bytes[i];
+                    }
+                    if (app instanceof StringBuilder) {
+                        return ((StringBuilder) app).append(chars, 0, getEncodedLength());
+                    }
+                    if (app instanceof StringBuffer) {
+                        return ((StringBuffer) app).append(chars, 0, getEncodedLength());
+                    }
+                    for (int i = 0; i <= index; ++i) {
+                        app.append(chars[i]);
+                    }
+                    return app;
+                case PLUS_ZERO: return app.append("0.0");
+                case MINUS_ZERO: return app.append("-0.0");
+                case PLUS_INF: return app.append("Infinity");
+                case MINUS_INF: return app.append("-Infinity");
+                default: return app.append("NaN");
+            }
+        }
+
+        public int encodeDouble(double v) {
+            return DoubleToDecimal.encode(v, this);
+        }
+
+        public int getEncodedLength() {
+            return index + 1;
+        }
+
+        public int getEncoded(byte[] dst, int offset, int length) {
+            final int encodedLength = getEncodedLength();
+            final int remaining = length - offset;
+            if (remaining < encodedLength) {
+                throw new ArrayIndexOutOfBoundsException("Target array is not large enough. " +
+                        "Remaining: " + remaining + ", Required: " + encodedLength);
+            }
+            System.arraycopy(this.bytes, 0, dst, offset, encodedLength);
+            return encodedLength;
+        }
+
+        @Override
+        public void encodeDouble(boolean negative, long f, int e) {
+            index = -1;
+            if (negative) {
+                append('-');
+            }
+            toChars(f, e);
+        }
 
         /*
-        Let fp and ep be the original f and e, respectively.
-        Transform f and e to ensure
-            10^(H-1) <= f < 10^H
-            fp 10^ep = f 10^(e-H) = 0.f 10^e
+        Formats the decimal f 10^e.
          */
-        f *= pow10(H - len);
-        e += len;
-
-        /*
-        The toChars?() methods perform left-to-right digits extraction
-        using ints, provided that the arguments are limited to 8 digits.
-        Therefore, split the H = 17 digits of f into:
-            h = the most significant digit of f
-            m = the next 8 most significant digits of f
-            l = the last 8, least significant digits of f
-
-        For n = 17, m = 8 the table in section 10 of [1] shows
-            floor(f / 10^8) = floor(193_428_131_138_340_668 f / 2^84) =
-            floor(floor(193_428_131_138_340_668 f / 2^64) / 2^20)
-        and for n = 9, m = 8
-            floor(hm / 10^8) = floor(1_441_151_881 hm / 2^57)
-         */
-        long hm = multiplyHigh(f, 193428131138340668L) >>> 20;
-        int l = (int) (f - 100000000L * hm);
-        int h = (int) (hm * 1441151881L >>> 57);
-        int m = (int) (hm - 100000000 * h);
-
-        if (0 < e && e <= 7) {
-            return toChars1(h, m, l, e);
-        }
-        if (-3 < e && e <= 0) {
-            return toChars2(h, m, l, e);
-        }
-        return toChars3(h, m, l, e);
-    }
-
-    private int toChars1(int h, int m, int l, int e) {
-        /*
-        0 < e <= 7: plain format without leading zeroes.
-        Left-to-right digits extraction:
-        algorithm 1 in [3], with b = 10, k = 8, n = 28.
-         */
-        appendDigit(h);
-        int y = y(m);
-        int t;
-        int i = 1;
-        for (; i < e; ++i) {
-            t = 10 * y;
-            appendDigit(t >>> 28);
-            y = t & MASK_28;
-        }
-        append('.');
-        for (; i <= 8; ++i) {
-            t = 10 * y;
-            appendDigit(t >>> 28);
-            y = t & MASK_28;
-        }
-        lowDigits(l);
-        return NON_SPECIAL;
-    }
-
-    private int toChars2(int h, int m, int l, int e) {
-        // -3 < e <= 0: plain format with leading zeroes.
-        appendDigit(0);
-        append('.');
-        for (; e < 0; ++e) {
-            appendDigit(0);
-        }
-        appendDigit(h);
-        append8Digits(m);
-        lowDigits(l);
-        return NON_SPECIAL;
-    }
-
-    private int toChars3(int h, int m, int l, int e) {
-        // -3 >= e | e > 7: computerized scientific notation
-        appendDigit(h);
-        append('.');
-        append8Digits(m);
-        lowDigits(l);
-        exponent(e - 1);
-        return NON_SPECIAL;
-    }
-
-    private void lowDigits(int l) {
-        if (l != 0) {
-            append8Digits(l);
-        }
-        removeTrailingZeroes();
-    }
-
-    private void append8Digits(int m) {
-        /*
-        Left-to-right digits extraction:
-        algorithm 1 in [3], with b = 10, k = 8, n = 28.
-         */
-        int y = y(m);
-        for (int i = 0; i < 8; ++i) {
-            int t = 10 * y;
-            appendDigit(t >>> 28);
-            y = t & MASK_28;
-        }
-    }
-
-    private void removeTrailingZeroes() {
-        while (bytes[index] == '0') {
-            --index;
-        }
-        // ... but do not remove the one directly to the right of '.'
-        if (bytes[index] == '.') {
-            ++index;
-        }
-    }
-
-    private int y(int a) {
-        /*
-        Algorithm 1 in [3] needs computation of
-            floor((a + 1) 2^n / b^k) - 1
-        with a < 10^8, b = 10, k = 8, n = 28.
-        Noting that
-            (a + 1) 2^n <= 10^8 2^28 < 10^17
-        For n = 17, m = 8 the table in section 10 of [1] leads to:
-         */
-        return (int) (multiplyHigh(
-                (long) (a + 1) << 28,
-                193428131138340668L) >>> 20) - 1;
-    }
-
-    private void exponent(int e) {
-        append('E');
-        if (e < 0) {
-            append('-');
-            e = -e;
-        }
-        if (e < 10) {
-            appendDigit(e);
-            return;
-        }
-        int d;
-        if (e >= 100) {
+        private int toChars(long f, int e) {
             /*
-            For n = 3, m = 2 the table in section 10 of [1] shows
-                floor(e / 100) = floor(1_311 e / 2^17)
+            Let fp and ep be the original f and e, respectively.
+            Transform f and e to ensure
+                10^(H-1) <= f < 10^H
+                fp 10^ep = f 10^(e-H) = 0.f 10^e
              */
-            d = e * 1311 >>> 17;
-            appendDigit(d);
-            e -= 100 * d;
+            final int len = getLength(f);
+            f *= getNormalizationScale(len);
+            e += len;
+
+            /*
+            The toChars?() methods perform left-to-right digits extraction
+            using ints, provided that the arguments are limited to 8 digits.
+            Therefore, split the H = 17 digits of f into:
+                h = the most significant digit of f
+                m = the next 8 most significant digits of f
+                l = the last 8, least significant digits of f
+
+            For n = 17, m = 8 the table in section 10 of [1] shows
+                floor(f / 10^8) = floor(193_428_131_138_340_668 f / 2^84) =
+                floor(floor(193_428_131_138_340_668 f / 2^64) / 2^20)
+            and for n = 9, m = 8
+                floor(hm / 10^8) = floor(1_441_151_881 hm / 2^57)
+             */
+            long hm = multiplyHigh(f, 193428131138340668L) >>> 20;
+            int l = (int) (f - 100000000L * hm);
+            int h = (int) (hm * 1441151881L >>> 57);
+            int m = (int) (hm - 100000000 * h);
+
+            if (0 < e && e <= 7) {
+                return toChars1(h, m, l, e);
+            }
+            if (-3 < e && e <= 0) {
+                return toChars2(h, m, l, e);
+            }
+            return toChars3(h, m, l, e);
         }
-        /*
-        For n = 2, m = 1 the table in section 10 of [1] shows
-            floor(e / 10) = floor(103 e / 2^10)
-         */
-        d = e * 103 >>> 10;
-        appendDigit(d);
-        appendDigit(e - 10 * d);
-    }
 
-    private void append(int c) {
-        bytes[++index] = (byte) c;
-    }
+        private int toChars1(int h, int m, int l, int e) {
+            /*
+            0 < e <= 7: plain format without leading zeroes.
+            Left-to-right digits extraction:
+            algorithm 1 in [3], with b = 10, k = 8, n = 28.
+             */
+            appendDigit(h);
+            int y = y(m);
+            int t;
+            int i = 1;
+            for (; i < e; ++i) {
+                t = 10 * y;
+                appendDigit(t >>> 28);
+                y = t & MASK_28;
+            }
+            append('.');
+            for (; i <= 8; ++i) {
+                t = 10 * y;
+                appendDigit(t >>> 28);
+                y = t & MASK_28;
+            }
+            lowDigits(l);
+            return NON_SPECIAL;
+        }
 
-    private void appendDigit(int d) {
-        bytes[++index] = (byte) ('0' + d);
-    }
+        private int toChars2(int h, int m, int l, int e) {
+            // -3 < e <= 0: plain format with leading zeroes.
+            appendDigit(0);
+            append('.');
+            for (; e < 0; ++e) {
+                appendDigit(0);
+            }
+            appendDigit(h);
+            append8Digits(m);
+            lowDigits(l);
+            return NON_SPECIAL;
+        }
 
-    // Using the deprecated constructor enhances performance.
-    @SuppressWarnings("deprecation")
-    private String charsToString() {
-        return new String(bytes, 0, 0, index + 1);
+        private int toChars3(int h, int m, int l, int e) {
+            // -3 >= e | e > 7: computerized scientific notation
+            appendDigit(h);
+            append('.');
+            append8Digits(m);
+            lowDigits(l);
+            exponent(e - 1);
+            return NON_SPECIAL;
+        }
+
+        private void lowDigits(int l) {
+            if (l != 0) {
+                append8Digits(l);
+            }
+            removeTrailingZeroes();
+        }
+
+        private void append8Digits(int m) {
+            /*
+            Left-to-right digits extraction:
+            algorithm 1 in [3], with b = 10, k = 8, n = 28.
+             */
+            int y = y(m);
+            for (int i = 0; i < 8; ++i) {
+                int t = 10 * y;
+                appendDigit(t >>> 28);
+                y = t & MASK_28;
+            }
+        }
+
+        private void removeTrailingZeroes() {
+            while (bytes[index] == '0') {
+                --index;
+            }
+            // ... but do not remove the one directly to the right of '.'
+            if (bytes[index] == '.') {
+                ++index;
+            }
+        }
+
+        private int y(int a) {
+            /*
+            Algorithm 1 in [3] needs computation of
+                floor((a + 1) 2^n / b^k) - 1
+            with a < 10^8, b = 10, k = 8, n = 28.
+            Noting that
+                (a + 1) 2^n <= 10^8 2^28 < 10^17
+            For n = 17, m = 8 the table in section 10 of [1] leads to:
+             */
+            return (int) (multiplyHigh(
+                    (long) (a + 1) << 28,
+                    193428131138340668L) >>> 20) - 1;
+        }
+
+        private void exponent(int e) {
+            append('E');
+            if (e < 0) {
+                append('-');
+                e = -e;
+            }
+            if (e < 10) {
+                appendDigit(e);
+                return;
+            }
+            int d;
+            if (e >= 100) {
+                /*
+                For n = 3, m = 2 the table in section 10 of [1] shows
+                    floor(e / 100) = floor(1_311 e / 2^17)
+                 */
+                d = e * 1311 >>> 17;
+                appendDigit(d);
+                e -= 100 * d;
+            }
+            /*
+            For n = 2, m = 1 the table in section 10 of [1] shows
+                floor(e / 10) = floor(103 e / 2^10)
+             */
+            d = e * 103 >>> 10;
+            appendDigit(d);
+            appendDigit(e - 10 * d);
+        }
+
+        private void append(int c) {
+            bytes[++index] = (byte) c;
+        }
+
+        private void appendDigit(int d) {
+            bytes[++index] = (byte) ('0' + d);
+        }
+
+        // Using the deprecated constructor enhances performance.
+        @SuppressWarnings("deprecation")
+        private String charsToString() {
+            return new String(bytes, 0, 0, getEncodedLength());
+        }
+
     }
 
 }

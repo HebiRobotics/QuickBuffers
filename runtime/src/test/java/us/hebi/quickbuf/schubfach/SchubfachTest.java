@@ -36,21 +36,33 @@ public class SchubfachTest {
     @Test
     public void testDoubleToString() {
         for (int i = 0; i < 100; i++) {
-            double expected = rnd.nextDouble();
-            String str = DoubleToDecimal.toString(expected);
-            double actual = Double.parseDouble(str);
-            assertTrue(ProtoUtil.isEqual(expected, actual));
+            testDouble(rnd.nextDouble());
+        }
+        for (int exp = -10; exp < 10; exp++) {
+            testDouble(Math.pow(10, exp));
         }
     }
 
     @Test
     public void testFloatToString() {
         for (int i = 0; i < 100; i++) {
-            float expected = rnd.nextFloat();
-            String str = FloatToDecimal.toString(expected);
-            float actual = Float.parseFloat(str);
-            assertTrue(ProtoUtil.isEqual(expected, actual));
+            testFloat(rnd.nextFloat());
         }
+        for (int exp = -10; exp < 10; exp++) {
+            testFloat((float) Math.pow(10, exp));
+        }
+    }
+
+    private static void testDouble(double expected) {
+        String str = DoubleToDecimal.toString(expected);
+        double actual = Double.parseDouble(str);
+        assertTrue(ProtoUtil.isEqual(expected, actual));
+    }
+
+    private static void testFloat(float expected) {
+        String str = FloatToDecimal.toString(expected);
+        float actual = Float.parseFloat(str);
+        assertTrue(ProtoUtil.isEqual(expected, actual));
     }
 
     Random rnd = new Random();

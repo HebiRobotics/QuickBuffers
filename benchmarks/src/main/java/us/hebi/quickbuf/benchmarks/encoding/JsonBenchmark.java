@@ -52,7 +52,18 @@ import java.util.concurrent.TimeUnit;
  * JsonBenchmark.writeDoubleNumbers  avgt   10  72,453 ± 0,937  us/op
  * JsonBenchmark.writeFloatNumbers   avgt   10  45,494 ± 0,315  us/op
  *
- * == JDK 17 (fixed floating point)
+ * ============= Floating point encoding (JDK17) =============
+ * === Schubfach (default implementation)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  69,058 ± 1,600  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  49,168 ± 2,137  us/op
+ *
+ * === Schubfach (custom without comma)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  35,870 ± 0,863  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  28,251 ± 0,633  us/op
+ *
+ * == Fixed floating point (deprecated)
  * Benchmark                         Mode  Cnt   Score   Error  Units
  * JsonBenchmark.writeDoubleNumbers  avgt   10  17,468 ± 0,406  us/op
  * JsonBenchmark.writeFloatNumbers   avgt   10  13,166 ± 0,239  us/op

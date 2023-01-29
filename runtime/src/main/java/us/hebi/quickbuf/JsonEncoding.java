@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,15 +20,18 @@
 
 package us.hebi.quickbuf;
 
+import us.hebi.quickbuf.schubfach.DoubleToDecimal;
+import us.hebi.quickbuf.schubfach.FloatToDecimal;
+
 import java.util.Arrays;
 
 import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
 
 /**
  * Utility methods for encoding values in a JSON compatible way.
- *
+ * <p>
  * The implementation was inspired by DSL-Platform and JsonIter (copied from DSL)
- *
+ * <p>
  * https://github.com/ngs-doo/dsl-json/blob/master/library/src/main/java/com/dslplatform/json/NumberConverter.java
  * https://github.com/json-iterator/java/blob/master/src/main/java/com/jsoniter/output/StreamImplNumber.java
  *
@@ -406,13 +409,13 @@ class JsonEncoding {
         /**
          * Converts the double to a 64 bit fixed-point number and writes the pre and after
          * comma digits as two separate values.
-         *
+         * <p>
          * Note that a 64 bit long can hold 19 digits total, so choosing a high fixed
          * resolution can overflow for large values. For example, a method with 12
          * digits precision should not be used for values that are larger than 10^7.
          * If values are unexpectedly large, this method will fall back to writing
          * only the pre-comma digits.
-         *
+         * <p>
          * {@link #writeDouble(double, RepeatedByte)} adaptively lowers the after
          * comma precision depending on the value size.
          */
@@ -685,6 +688,184 @@ class JsonEncoding {
         private static final int MAX_INT_SIZE = MIN_INT.length + 1;
         private static final int MAX_LONG_SIZE = MIN_LONG.length + 1;
         private static final int MAX_FIXED_DOUBLE_SIZE = MAX_LONG_SIZE + 1;
+
+    }
+
+    static class FloatEncoder implements FloatToDecimal.FloatEncoder, DoubleToDecimal.DoubleEncoder {
+
+        public void writeFloat(float value, RepeatedByte output) {
+            if (ENCODE_FLOAT_FIXED) {
+
+                // deprecated way with fixed precision
+                NumberEncoding.writeFloat(value, output);
+
+            } else if (ENCODE_FLOAT_NO_COMMA) {
+
+                // Always integer with exponent (co comma)
+                this.output = output.reserve(MAX_DOUBLE_SIZE);
+                final int type = FloatToDecimal.encode(value, this);
+                if (type != DoubleToDecimal.NON_SPECIAL) {
+                    writeSpecial(type, output);
+                }
+                this.output = null;
+
+            } else if (ENCODE_FLOAT_MINIMAL) {
+
+                // Java-like minimal representation, but without trailing zero
+                int type = schubfachf.encodeFloat(value);
+                if (type == FloatToDecimal.NON_SPECIAL) {
+                    int position = output.addLength(schubfachf.getEncodedLength());
+                    schubfachf.getEncoded(output.array, position, output.length);
+                    removeTrailingZero(output);
+                } else {
+                    writeSpecial(type, output);
+                }
+
+            } else {
+                throw new AssertionError("bad configuration");
+            }
+        }
+
+        public void writeDouble(double value, RepeatedByte output) {
+            if (ENCODE_FLOAT_FIXED) {
+
+                // deprecated way with fixed precision
+                NumberEncoding.writeDouble(value, output);
+
+            } else if(ENCODE_FLOAT_NO_COMMA) {
+
+                // Always integer with exponent (co comma)
+                this.output = output.reserve(MAX_DOUBLE_SIZE);
+                final int type = DoubleToDecimal.encode(value, this);
+                if (type != DoubleToDecimal.NON_SPECIAL) {
+                    writeSpecial(type, output);
+                }
+                this.output = null;
+
+            }  else if(ENCODE_FLOAT_MINIMAL) {
+
+                // Java-like minimal representation, but without trailing zero
+                int type = schubfachd.encodeDouble(value);
+                if (type == DoubleToDecimal.NON_SPECIAL) {
+                    int position = output.addLength(schubfachd.getEncodedLength());
+                    schubfachd.getEncoded(output.array, position, output.length);
+                    removeTrailingZero(output);
+                } else {
+                    writeSpecial(type, output);
+                }
+
+            } else {
+                throw new AssertionError("bad configuration");
+            }
+        }
+
+        private void removeTrailingZero(RepeatedByte output) {
+            // Schubfach encodes according to the Java rules w/ a minimal encoding
+            // and a trailing zero. Protobuf and JSON does not require the trailing
+            // zero, so we can omit it and save 2 characters.
+            short lastTwoBytes = ByteUtil.readLittleEndian16(output.array, output.length - 2);
+            if (lastTwoBytes == DOT_ZERO_LE) {
+                output.length -= 2;
+            }
+        }
+
+        @Override
+        public void encodeFloat(boolean negative, int significand, int exponent) {
+            writeFloatWithoutComma(negative, significand, exponent);
+        }
+
+        private void writeFloatWithoutComma(boolean negative, int significand, int exponent) {
+            final byte[] buffer = output.array;
+            if (negative) output.add(NEGATIVE_SIGN);
+            int newLength = NumberEncoding.writePositiveInt(significand, buffer, output.length);
+            final int trailingZeros = getNumTrailingZeros(buffer, output.length, newLength - 1);
+            newLength -= trailingZeros;
+            exponent += trailingZeros;
+            output.length = newLength;
+            if (exponent != 0) {
+                if (exponent > 0 && exponent <= 2 && trailingZeros >= exponent) {
+                    output.length += exponent;
+                } else {
+                    output.add(E);
+                    NumberEncoding.writeInt(exponent, output);
+                }
+            }
+        }
+
+        @Override
+        public void encodeDouble(boolean negative, long significand, int exponent) {
+            writeDoubleWithoutComma(negative, significand, exponent);
+        }
+
+        private void writeDoubleWithoutComma(boolean negative, long significand, int exponent) {
+            final byte[] buffer = output.array;
+            if (negative) output.add(NEGATIVE_SIGN);
+            int newLength = NumberEncoding.writePositiveLong(significand, buffer, output.length);
+            final int trailingZeros = getNumTrailingZeros(buffer, output.length, newLength - 1);
+            newLength -= trailingZeros;
+            exponent += trailingZeros;
+            output.length = newLength;
+            if (exponent != 0) {
+                if (exponent > 0 && exponent <= 2 && trailingZeros >= exponent) {
+                    output.length += exponent;
+                } else {
+                    output.add(E);
+                    NumberEncoding.writeInt(exponent, output);
+                }
+            }
+        }
+
+        static int getNumTrailingZeros(byte[] buffer, int startIx, int maxIx) {
+            for (int i = maxIx; i > startIx; i--) {
+                if (buffer[i] != ZERO) {
+                    return maxIx - i;
+                }
+            }
+            return maxIx - startIx;
+        }
+
+        private void writeSpecial(int type, RepeatedByte output) {
+            switch (type) {
+                case FloatToDecimal.NON_SPECIAL:
+                    throw new IllegalArgumentException("not a special type");
+                case FloatToDecimal.PLUS_ZERO:
+                    output.addAll(PLUS_ZERO);
+                    break;
+                case FloatToDecimal.MINUS_ZERO:
+                    output.addAll(MINUS_ZERO);
+                    break;
+                case FloatToDecimal.PLUS_INF:
+                    output.addAll(PLUS_INF);
+                    break;
+                case FloatToDecimal.MINUS_INF:
+                    output.addAll(MINUS_INF);
+                    break;
+                default:
+                    output.addAll(NAN);
+                    break;
+            }
+        }
+
+        RepeatedByte output;
+        final FloatToDecimal.DefaultFloatEncoder schubfachf = ENCODE_FLOAT_MINIMAL ? new FloatToDecimal.DefaultFloatEncoder() : null;
+        final DoubleToDecimal.DefaultDoubleEncoder schubfachd = ENCODE_FLOAT_MINIMAL ? new DoubleToDecimal.DefaultDoubleEncoder() : null;
+
+        static final int MAX_DOUBLE_SIZE = 17 + 6;
+
+        static final byte ZERO = (byte) '0';
+        static final short DOT_ZERO_LE = '.' | '0' << 8;
+        static final byte E = (byte) 'E';
+        static final byte NEGATIVE_SIGN = (byte) '-';
+        static final byte[] PLUS_ZERO = "0".getBytes(ASCII);
+        static final byte[] MINUS_ZERO = PLUS_ZERO;
+        static final byte[] PLUS_INF = "\"Infinity\"".getBytes(ASCII);
+        static final byte[] MINUS_INF = "\"-Infinity\"".getBytes(ASCII);
+        static final byte[] NAN = "\"NaN\"".getBytes(ASCII);
+
+        private static final String FLOAT_ENCODING_TYPE = System.getProperty("quickbuf.json.float_encoding", "minimal");
+        private static final boolean ENCODE_FLOAT_NO_COMMA = "no_comma".equalsIgnoreCase(FLOAT_ENCODING_TYPE);
+        static final boolean ENCODE_FLOAT_FIXED = "fixed".equalsIgnoreCase(FLOAT_ENCODING_TYPE);
+        private static final boolean ENCODE_FLOAT_MINIMAL = !ENCODE_FLOAT_NO_COMMA && !ENCODE_FLOAT_FIXED;
 
     }
 

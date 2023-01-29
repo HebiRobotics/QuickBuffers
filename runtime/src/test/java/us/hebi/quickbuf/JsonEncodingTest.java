@@ -44,6 +44,7 @@ public class JsonEncodingTest {
 
     final Random rnd = new Random(0);
     final RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+    final JsonEncoding.FloatEncoder floatEncoder = new JsonEncoding.FloatEncoder();
     final static int n = 10000;
 
     @Before
@@ -194,6 +195,27 @@ public class JsonEncodingTest {
     }
 
     @Test
+    public void testNumTrailingZeros() {
+        assertEquals(2, getTrailingZeros("0.1200"));
+        assertEquals(1, getTrailingZeros("0.0"));
+        assertEquals(5, getTrailingZeros("0.12300000"));
+        assertEquals(1, getTrailingZeros("12.0"));
+        assertEquals(0, getTrailingZeros("1.2"));
+        assertEquals(3, getTrailingZeros("123456000"));
+        assertEquals(2, getTrailingZeros("000"));
+        assertEquals(0, getTrailingZeros("0"));
+        assertEquals(0, getTrailingZeros("012"));
+        assertEquals(0, getTrailingZeros("500000064"));
+        assertEquals(0, getTrailingZeros("500000064"));
+        assertEquals(0, getTrailingZeros("10000000000000003"));
+    }
+
+    private static int getTrailingZeros(String chars) {
+        byte[] bytes = chars.getBytes(Charsets.ASCII);
+        return JsonEncoding.FloatEncoder.getNumTrailingZeros(bytes, 0, bytes.length - 1);
+    }
+
+    @Test
     public void testBooleanEncoding() throws Exception {
         assertEquals("true", encodeBoolean(true));
         assertEquals("false", encodeBoolean(false));
@@ -215,12 +237,12 @@ public class JsonEncodingTest {
     }
 
     private String encodeDouble(double expected) {
-        NumberEncoding.writeDouble(expected, bytes);
+        floatEncoder.writeDouble(expected, bytes);
         return getString();
     }
 
     private String encodeFloat(float expected) {
-        NumberEncoding.writeFloat(expected, bytes);
+        floatEncoder.writeFloat(expected, bytes);
         return getString();
     }
 
@@ -243,17 +265,23 @@ public class JsonEncodingTest {
         } else if (Double.isNaN(expected)) {
             assertEquals("\"NaN\"", encoded);
         } else {
-            double p = Math.abs(expected);
-            if (p > NumberEncoding.max3) {
-                assertEquals(encoded, expected, Double.parseDouble(encoded), 1);
-            } else if (p > NumberEncoding.max6) {
-                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-3);
-            } else if (p > NumberEncoding.max9) {
-                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-6);
-            } else if (p > NumberEncoding.max12) {
-                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-9);
+            if (!JsonEncoding.FloatEncoder.ENCODE_FLOAT_FIXED) {
+                if(!ProtoUtil.isEqual(expected, Double.parseDouble(encoded))) {
+                    assertEquals(Double.toString(expected), encoded);
+                }
             } else {
-                assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-12);
+                double p = Math.abs(expected);
+                if (p > NumberEncoding.max3) {
+                    assertEquals(encoded, expected, Double.parseDouble(encoded), 1);
+                } else if (p > NumberEncoding.max6) {
+                    assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-3);
+                } else if (p > NumberEncoding.max9) {
+                    assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-6);
+                } else if (p > NumberEncoding.max12) {
+                    assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-9);
+                } else {
+                    assertEquals(encoded, expected, Double.parseDouble(encoded), 1E-12);
+                }
             }
         }
     }
@@ -267,7 +295,13 @@ public class JsonEncodingTest {
         } else if (Float.isNaN(expected)) {
             assertEquals("\"NaN\"", encoded);
         } else {
-            assertEquals(encoded, expected, Float.parseFloat(encoded), 1E-6);
+            if (!JsonEncoding.FloatEncoder.ENCODE_FLOAT_FIXED) {
+                if(!ProtoUtil.isEqual(expected, Float.parseFloat(encoded))) {
+                    assertEquals(Float.toString(expected), encoded);
+                }
+            } else {
+                assertEquals(encoded, expected, Float.parseFloat(encoded), 1E-6);
+            }
         }
     }
 
