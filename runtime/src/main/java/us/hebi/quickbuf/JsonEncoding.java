@@ -475,28 +475,30 @@ class JsonEncoding {
 
                 final int q9 = (int) (q19 - q10 * pow9);
                 if (q9 != 0) {
-
-                    final int q6 = q9 / pow3;
-                    final int q3 = q9 / pow6;
-                    final int r6 = q6 - q3 * pow3;
-                    final int r9 = q9 - q6 * pow3;
-
                     buffer[pos++] = '.';
-                    if (r9 != 0) {
-                        pos += writeThreeDigits(buffer, pos, q3);
-                        pos += writeThreeDigits(buffer, pos, r6);
-                        pos += writeFinalDigits(buffer, pos, r9);
-                    } else if (r6 != 0) {
-                        pos += writeThreeDigits(buffer, pos, q3);
-                        pos += writeFinalDigits(buffer, pos, r6);
-                    } else {
-                        pos += writeFinalDigits(buffer, pos, q3);
-                    }
+                    pos = writeFraction9(q9, buffer, pos);
                 }
-
                 output.length = pos;
 
             }
+        }
+
+        static int writeFraction9(final int q9, final byte[] buffer, int pos) {
+            final int q6 = q9 / pow3;
+            final int q3 = q9 / pow6;
+            final int r6 = q6 - q3 * pow3;
+            final int r9 = q9 - q6 * pow3;
+            if (r9 != 0) {
+                pos += writeThreeDigits(buffer, pos, q3);
+                pos += writeThreeDigits(buffer, pos, r6);
+                pos += writeFinalDigits(buffer, pos, r9);
+            } else if (r6 != 0) {
+                pos += writeThreeDigits(buffer, pos, q3);
+                pos += writeFinalDigits(buffer, pos, r6);
+            } else {
+                pos += writeFinalDigits(buffer, pos, q3);
+            }
+            return pos;
         }
 
         static void writeDouble6(final double val, final RepeatedByte output) {
@@ -511,23 +513,25 @@ class JsonEncoding {
 
                 final int q6 = (int) (q19 - q13 * pow6);
                 if (q6 != 0) {
-
                     buffer[pos++] = '.';
-                    final int q3 = q6 / pow3;
-                    final int r6 = q6 - q3 * pow3;
-
-                    if (r6 != 0) {
-                        pos += writeThreeDigits(buffer, pos, q3);
-                        pos += writeFinalDigits(buffer, pos, r6);
-                    } else {
-                        pos += writeFinalDigits(buffer, pos, q3);
-                    }
-
+                    pos = writeFraction6(q6, buffer, pos);
                 }
 
                 output.length = pos;
 
             }
+        }
+
+        static int writeFraction6(final int q6, final byte[] buffer, int pos) {
+            final int q3 = q6 / pow3;
+            final int r6 = q6 - q3 * pow3;
+            if (r6 != 0) {
+                pos += writeThreeDigits(buffer, pos, q3);
+                pos += writeFinalDigits(buffer, pos, r6);
+            } else {
+                pos += writeFinalDigits(buffer, pos, q3);
+            }
+            return pos;
         }
 
         static void writeDouble3(final double val, final RepeatedByte output) {
@@ -543,12 +547,16 @@ class JsonEncoding {
                 final int q3 = (int) (q19 - q16 * pow3);
                 if (q3 != 0) {
                     buffer[pos++] = '.';
-                    pos += writeFinalDigits(buffer, pos, q3);
+                    pos = writeFraction3(q3, buffer, pos);
                 }
 
                 output.length = pos;
 
             }
+        }
+
+        static int writeFraction3(final int q3, final byte[] buffer, int pos) {
+            return pos + writeFinalDigits(buffer, pos, q3);
         }
 
         /**
@@ -712,7 +720,7 @@ class JsonEncoding {
             } else if (ENCODE_FLOAT_MINIMAL) {
 
                 // Java-like minimal representation, but without trailing zero
-                int type = schubfachf.encodeFloat(value);
+                final int type = schubfachf.encodeFloat(value);
                 if (type == FloatToDecimal.NON_SPECIAL) {
                     int position = output.addLength(schubfachf.getEncodedLength());
                     schubfachf.getEncoded(output.array, position, output.length);
@@ -745,7 +753,7 @@ class JsonEncoding {
             }  else if(ENCODE_FLOAT_MINIMAL) {
 
                 // Java-like minimal representation, but without trailing zero
-                int type = schubfachd.encodeDouble(value);
+                final int type = schubfachd.encodeDouble(value);
                 if (type == DoubleToDecimal.NON_SPECIAL) {
                     int position = output.addLength(schubfachd.getEncodedLength());
                     schubfachd.getEncoded(output.array, position, output.length);

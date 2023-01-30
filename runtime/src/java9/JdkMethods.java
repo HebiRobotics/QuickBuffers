@@ -22,7 +22,7 @@ package us.hebi.quickbuf.jdk;
 /**
  * This class calls JDK methods that were added in future versions.
  * The real class file gets compiled separately with a newer JDK and
- * a Java 6 source/target level so it can be loaded with older JDKs.
+ * a Java 6 source/target level, so it can be loaded with older JDKs.
  * <p>
  * When called from older JDKs, the methods will throw a NoSuchMethod
  * Exception. This allows using intrinsics without the overhead of

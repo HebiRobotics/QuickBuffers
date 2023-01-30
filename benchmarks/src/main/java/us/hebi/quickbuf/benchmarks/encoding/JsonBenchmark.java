@@ -47,11 +47,6 @@ import java.util.concurrent.TimeUnit;
  * JsonBenchmark.writeStringUtf8Chars     avgt   10    3,015 ± 0,026  us/op
  * JsonBenchmark.writeStringUtf8Encoded   avgt   10    0,384 ± 0,003  us/op
  *
- * == JDK 17 (original Schubfach)
- * Benchmark                         Mode  Cnt   Score   Error  Units
- * JsonBenchmark.writeDoubleNumbers  avgt   10  72,453 ± 0,937  us/op
- * JsonBenchmark.writeFloatNumbers   avgt   10  45,494 ± 0,315  us/op
- *
  * ============= Floating point encoding (JDK17) =============
  * === Schubfach (default implementation)
  * Benchmark                         Mode  Cnt   Score   Error  Units
@@ -82,6 +77,9 @@ public class JsonBenchmark {
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
                 .include(".*" + JsonBenchmark.class.getSimpleName() + ".*")
+//                .jvmArgs("-Dquickbuf.json.float_encoding=minimal")
+//                .jvmArgs("-Dquickbuf.json.float_encoding=no_comma")
+//                .jvmArgs("-Dquickbuf.json.float_encoding=fixed")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

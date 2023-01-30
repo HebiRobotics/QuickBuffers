@@ -11,7 +11,7 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://dev
 The main highlights are
 
  * **Allocation-free** in steady state. All parts of the API are mutable and reusable. Nested types can be allocated eagerly
- * **No reflection** use anywhere. GraalVM native-images and ProGuard [obfuscation](#proguard-obfuscation) are supported out of the box
+ * **No reflection** use anywhere. GraalVM native-images and ProGuard obfuscation ([config](#proguard-configuration)) are supported out of the box
  * **Faster** encoding and decoding [speed](./benchmarks)
  * **Smaller** code size than protobuf-javalite
  * **Built-in JSON** marshalling compliant with the [Proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
@@ -20,7 +20,7 @@ The main highlights are
 
 QuickBuffers implements the [proto2 specification](https://developers.google.com/protocol-buffers/docs/proto) and is compatible with all java versions from 6 through 20. So far we chose not to support proto3 because of some [design decisions](proto3.md) that make it unusable for us, but both versions are binary compatible and can work together. 
 
-QuickBuffers supports all features except for [Services](https://developers.google.com/protocol-buffers/docs/proto#services) and special casings of well-known proto3 types. [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are not directly supported, but they generate a matching [repeated field](https://developers.google.com/protocol-buffers/docs/proto#backwards). Support for [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) is experimental.
+QuickBuffers supports all features except for [Services](https://developers.google.com/protocol-buffers/docs/proto#services) and special cased json mappings for built-in proto3 types. [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are not directly supported, but they generate a matching [repeated field](https://developers.google.com/protocol-buffers/docs/proto#backwards). Support for [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) is experimental.
 
 ## Getting started
 
@@ -270,7 +270,7 @@ msg.clearQuick()
     .writeTo(jsonSink.clear());
 ```
 
-The default implementation encodes the minimal representation accepted by the protobuf spec, i.e., floating point numbers do not append a trailing zero, and long integers are encoded without quotes. Examples for alternative implementations based on GSON and Jackson are in the `quickbuf-compat` artifact.
+The default implementation encodes the minimal representation accepted by the protobuf spec, i.e., floating point numbers do not append a trailing zero, and long integers are encoded without quotes. Alternative implementations based on GSON and Jackson can be found in the `quickbuf-compat` artifact.
 
 ## Building from source
 
@@ -278,7 +278,7 @@ The project can be built with `mvn package` using jdk 8 through jdk 20.
 
 `mvn clean package --projects generator,runtime -am` omits building the benchmarks.
 
-Note that the `package` goal is always required, and that `mvn clean test` is not enough to work. This limitation stems from the fact that protobuf compiler plugins get executed by `protoc` and exchange information via protobuf messages on `std::in` and `std::out`. Using `std::in` makes it comparatively easy to get the schema information, but it becomes quite difficult to setup unit tests and debug plugins during development. To enable standard tests, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded during testing and development of the actual generator plugin. This makes the `generator` module dependent on the packaged output of the `parser` module.
+Note that the `package` goal is always required, and that `mvn clean test` is not enough to work. This limitation is introduced by the plugin mechanism of `protoc`, which exchanges information with plugins via protobuf messages on `std::in` and `std::out`. Using `std::in` makes it comparatively easy to get schema information, but it is quite difficult to set up unit tests and debug plugins during development. To enable standard tests, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded during testing and development of the actual generator plugin. This makes the `generator` module dependent on the packaged output of the `parser` module.
 
 ## Detailed accessors for different types
 
@@ -419,7 +419,7 @@ Be aware that this prevents the definition of cycles in the message definitions.
 
 -->
 
-## Proguard obfuscation
+## Proguard configuration
 
 There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file.
 
