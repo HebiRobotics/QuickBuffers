@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -193,7 +193,11 @@ class FieldUtil {
         String definition = String.format("%s %s %s = %d", label, type, descriptor.getName(), descriptor.getNumber());
         String options = "";
         if (descriptor.hasDefaultValue()) {
-            options = " [default = " + descriptor.getDefaultValue() + "]";
+            String defaultValue = descriptor.getDefaultValue();
+            if (defaultValue.contains("*/")) {
+                defaultValue = defaultValue.replaceAll("\\*/", "*\\\\/");
+            }
+            options = " [default = " + defaultValue + "]";
         } else if (descriptor.getOptions().hasPacked()) {
             options = " [packed = " + descriptor.getOptions().getPacked() + "]";
         }
@@ -343,35 +347,49 @@ class FieldUtil {
 
     static String getDefaultValue(FieldDescriptorProto descriptor) {
         final String value = descriptor.getDefaultValue();
-        if (value.isEmpty())
-            return getEmptyDefaultValue(descriptor.getType());
+        if (value.isEmpty()) return getEmptyDefaultValue(descriptor.getType());
 
-        if (isPrimitive(descriptor.getType())) {
+        // Some values need to be special cased to result in valid Java syntax
+        switch (descriptor.getType()) {
 
-            // Convert special floating point values
-            boolean isFloat = (descriptor.getType() == FieldDescriptorProto.Type.TYPE_FLOAT);
-            String constantClass = isFloat ? "Float" : "Double";
-            switch (value) {
-                case "nan":
-                    return constantClass + ".NaN";
-                case "-inf":
-                    return constantClass + ".NEGATIVE_INFINITY";
-                case "+inf":
-                case "inf":
-                    return constantClass + ".POSITIVE_INFINITY";
-            }
+            case TYPE_DOUBLE:
+                switch (value) {
+                    case "nan":
+                        return "Double.NaN";
+                    case "-inf":
+                        return "Double.NEGATIVE_INFINITY";
+                    case "+inf":
+                    case "inf":
+                        return "Double.POSITIVE_INFINITY";
+                    default:
+                        return value + "D";
+                }
 
-            // Add modifiers
-            String modifier = getPrimitiveModifier(descriptor.getType());
-            if (modifier.isEmpty())
-                return value;
+            case TYPE_FLOAT:
+                switch (value) {
+                    case "nan":
+                        return "Float.NaN";
+                    case "-inf":
+                        return "Float.NEGATIVE_INFINITY";
+                    case "+inf":
+                    case "inf":
+                        return "Float.POSITIVE_INFINITY";
+                    default:
+                        return value + "F";
+                }
 
-            char modifierChar = Character.toUpperCase(modifier.charAt(0));
-            char lastChar = Character.toUpperCase(value.charAt(value.length() - 1));
+            case TYPE_SFIXED64:
+            case TYPE_SINT64:
+            case TYPE_INT64:
+                return value + "L";
 
-            if (lastChar == modifierChar)
-                return value;
-            return value + modifierChar;
+            case TYPE_FIXED64: // unsigned in C++
+            case TYPE_UINT64:
+                return Long.parseUnsignedLong(value) + "L";
+
+            case TYPE_FIXED32: // unsigned in C++
+            case TYPE_UINT32:
+                return String.valueOf(Integer.parseUnsignedInt(value));
 
         }
 
@@ -413,25 +431,6 @@ class FieldUtil {
             case TYPE_GROUP:
             case TYPE_MESSAGE:
             case TYPE_BYTES:
-            default:
-                return "";
-
-        }
-    }
-
-    private static String getPrimitiveModifier(FieldDescriptorProto.Type type) {
-        switch (type) {
-
-            case TYPE_DOUBLE:
-                return "D";
-            case TYPE_FLOAT:
-                return "F";
-            case TYPE_SFIXED64:
-            case TYPE_FIXED64:
-            case TYPE_SINT64:
-            case TYPE_INT64:
-            case TYPE_UINT64:
-                return "L";
             default:
                 return "";
 

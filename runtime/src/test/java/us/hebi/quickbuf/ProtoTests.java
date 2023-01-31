@@ -141,6 +141,43 @@ public class ProtoTests {
     }
 
     @Test
+    public void testExtremeDefaults() {
+        TestExtremeDefaultValues msg = TestExtremeDefaultValues.newInstance();
+        assertEquals("[0, 1, 7, 8, 12, 10, 13, 9, 11, 92, 39, 34, -2]", msg.getEscapedBytes().toString());
+        assertEquals(0xFFFFFFFF, msg.getLargeUint32());
+        assertEquals(0xFFFFFFFFFFFFFFFFL, msg.getLargeUint64());
+        assertEquals(2123456789, msg.getLargeFixed32());
+        assertEquals(-8323287284586094827L, msg.getLargeFixed64());
+        assertEquals(-0x7FFFFFFF, msg.getSmallInt32());
+        assertEquals(-0x7FFFFFFFFFFFFFFFL, msg.getSmallInt64());
+        assertEquals(-0x80000000, msg.getReallySmallInt32());
+        assertEquals(-0x8000000000000000L, msg.getReallySmallInt64());
+        assertEquals(new String("\341\210\264".getBytes(ISO_8859_1), UTF_8), msg.getUtf8String());
+
+        assertTrue(ProtoUtil.isEqual(0f, msg.getZeroFloat()));
+        assertTrue(ProtoUtil.isEqual(1f, msg.getOneFloat()));
+        assertTrue(ProtoUtil.isEqual(1.5f, msg.getSmallFloat()));
+        assertTrue(ProtoUtil.isEqual(-1f, msg.getNegativeOneFloat()));
+        assertTrue(ProtoUtil.isEqual(-1.5f, msg.getNegativeFloat()));
+        assertTrue(ProtoUtil.isEqual(2E8f, msg.getLargeFloat()));
+        assertTrue(ProtoUtil.isEqual(-8e-28f, msg.getSmallNegativeFloat()));
+
+        assertTrue(ProtoUtil.isEqual(Double.POSITIVE_INFINITY, msg.getInfDouble()));
+        assertTrue(ProtoUtil.isEqual(Double.NEGATIVE_INFINITY, msg.getNegInfDouble()));
+        assertTrue(ProtoUtil.isEqual(Double.NaN, msg.getNanDouble()));
+        assertTrue(ProtoUtil.isEqual(Float.POSITIVE_INFINITY, msg.getInfFloat()));
+        assertTrue(ProtoUtil.isEqual(Float.NEGATIVE_INFINITY, msg.getNegInfFloat()));
+        assertTrue(ProtoUtil.isEqual(Float.NaN, msg.getNanFloat()));
+
+        assertEquals("? ? ?? ?? ??? ??/ ??-", msg.getCppTrigraph());
+        assertEquals("hel\000lo", msg.getStringWithZero());
+        assertEquals("[119, 111, 114, 0, 108, 100]", msg.getBytesWithZero().toString());
+        assertEquals("ab\000c", msg.getStringPieceWithZero());
+        assertEquals("12\0003", msg.getCordWithZero());
+        assertEquals("${unknown}", msg.getReplacementString());
+    }
+
+    @Test
     public void testOptionalPrimitives() throws IOException {
         TestAllTypes emptyMsg = TestAllTypes.newInstance();
         assertFalse(emptyMsg.hasOptionalBool());
