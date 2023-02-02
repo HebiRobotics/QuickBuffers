@@ -36,6 +36,7 @@ import us.hebi.quickbuf.generator.PluginOptions.ExtensionSupport;
 import us.hebi.quickbuf.generator.PluginOptions.FieldSerializationOrder;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static us.hebi.quickbuf.generator.Preconditions.*;
@@ -173,8 +174,11 @@ public class RequestInfo {
             // Extensions in embedded mode: treat extension fields the same as normal
             // fields and embed them directly into the message.
             List<FieldDescriptorProto> fieldList = descriptor.getFieldList();
+            final Set<String> nameCollisions = new HashSet<>();
+            nameCollisionCheck = nameCollisions::contains;
             RequestInfo request = getParentFile().getParentRequest();
-            if (request.getPluginOptions().getExtensionSupport() == ExtensionSupport.Embedded) {
+            if (!request.getExtensionRegistry().isEmpty() && request.getPluginOptions().getExtensionSupport() == ExtensionSupport.Embedded) {
+
                 // Check for extensions for this class
                 List<FieldDescriptorProto> extensions = request.getExtensionRegistry()
                         .getExtensionFields(getTypeId());
@@ -188,12 +192,11 @@ public class RequestInfo {
                     final Set<String> names = new HashSet<>();
                     for (FieldDescriptorProto field : fieldList) {
                         if (!names.add(field.getName())) {
-                            throw new GeneratorException("Embedding extensions in '" + parentTypeId + "" +
-                                    "' produces a naming collision with field '" + field.getName() + "'" +
-                                    " (defined in '" + field.getTypeName() + "')");
+                            nameCollisions.add(field.getName());
                         }
                     }
                 }
+
             }
 
             // Sort fields by serialization order such that they are accessed in a
@@ -267,6 +270,7 @@ public class RequestInfo {
         private final boolean storeUnknownFieldsEnabled;
         private final int numBitFields;
         private final boolean enforceHasChecksEnabled;
+        private final Function<String, Boolean> nameCollisionCheck;
 
     }
 
@@ -284,14 +288,19 @@ public class RequestInfo {
             hasBit = BitField.hasBit(bitIndex);
             setBit = BitField.setBit(bitIndex);
             clearBit = BitField.clearBit(bitIndex);
+            String upperCaseName;
             if (isGroup()) {
                 // name is all lowercase, so convert the type name instead (e.g. ".package.OptionalGroup")
                 String name = descriptor.getTypeName();
                 int packageEndIndex = name.lastIndexOf('.');
-                upperName = packageEndIndex > 0 ? name.substring(packageEndIndex + 1, name.length()) : name;
+                upperCaseName = packageEndIndex > 0 ? name.substring(packageEndIndex + 1) : name;
             } else {
-                upperName = NamingUtil.toUpperCamel(descriptor.getName());
+                upperCaseName = NamingUtil.toUpperCamel(descriptor.getName());
             }
+            if (descriptor.hasExtendee() && parentTypeInfo.getNameCollisionCheck().apply(descriptor.getName())) {
+                upperCaseName += descriptor.getNumber();
+            }
+            upperName = upperCaseName;
             lowerName = Character.toLowerCase(upperName.charAt(0)) + upperName.substring(1);
             hazzerName = "has" + upperName;
             setterName = "set" + upperName;
@@ -313,6 +322,22 @@ public class RequestInfo {
             methodAnnotations = isDeprecated() ?
                     Collections.singletonList(AnnotationSpec.builder(Deprecated.class).build()) :
                     Collections.emptyList();
+            if (!descriptor.hasExtendee()) {
+                jsonName = descriptor.getJsonName(); // Used for JSON serialization (camelCase)
+                protoFieldName = descriptor.getName(); // Original field name (under_score). Optional for JSON serialization. Parsers should support both.
+            } else {
+                // According to https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/util/JsonFormat
+                // Proto2 extensions are discarded in the JSON conversion, but the conformance tests do check for it.
+                // Swift-protobuf ran into the same issue: https://github.com/apple/swift-protobuf/issues/993
+                // According to the Python implementation, the fields get translated to "[full_name]" with brackets
+                // to indicate that it is an extension.
+                String fullName = getParentTypeInfo()
+                        .getParentFile()
+                        .getParentRequest()
+                        .getExtensionRegistry()
+                        .getFullName(descriptor);
+                jsonName = protoFieldName = "[" + fullName + "]";
+            }
         }
 
         public TypeName getRepeatedStoreType() {
@@ -516,16 +541,6 @@ public class RequestInfo {
             return type;
         }
 
-        // Used for JSON serialization (camelCase)
-        public String getJsonName() {
-            return descriptor.getJsonName();
-        }
-
-        // Original field name (under_score). Optional for JSON serialization. Parsers should support both.
-        public String getProtoFieldName() {
-            return descriptor.getName();
-        }
-
         public String getClearOtherOneOfName() {
             return getContainingOneOf().getClearName() + "Other" + upperName;
         }
@@ -576,6 +591,8 @@ public class RequestInfo {
         String adderName;
         String clearName;
         String defaultValue;
+        String jsonName;
+        String protoFieldName;
         int tag;
         int bytesPerTag;
         int packedTag;
@@ -652,27 +669,47 @@ public class RequestInfo {
                     .orElse(Collections.emptyList());
         }
 
+        String getFullName(FieldDescriptorProto extension) {
+            String fullName = fullNameMap.get(extension);
+            if (fullName == null) {
+                throw new GeneratorException("Could not determine full name for extension: " + extension.getName());
+            }
+            return fullName;
+        }
+
         void registerAllExtensions(CodeGeneratorRequest request) {
             request.getProtoFileList().forEach(file -> {
-                addExtensions(file.getExtensionList());
-                file.getMessageTypeList().forEach(this::addNestedExtensions);
+                addExtensions(file.getPackage(), file.getExtensionList());
+                for (DescriptorProtos.DescriptorProto type : file.getMessageTypeList()) {
+                    addNestedExtensions(file.getPackage(), type);
+                }
             });
+
         }
 
-        private void addNestedExtensions(DescriptorProtos.DescriptorProto descriptor) {
-            addExtensions(descriptor.getExtensionList());
-            descriptor.getNestedTypeList().forEach(this::addNestedExtensions);
+        private void addNestedExtensions(String parent, DescriptorProtos.DescriptorProto descriptor) {
+            String fullName = parent + "." + descriptor.getName();
+            addExtensions(fullName, descriptor.getExtensionList());
+            for (DescriptorProtos.DescriptorProto type : descriptor.getNestedTypeList()) {
+                addNestedExtensions(fullName, type);
+            }
         }
 
-        private void addExtensions(List<FieldDescriptorProto> extensions) {
+        private void addExtensions(String parent, List<FieldDescriptorProto> extensions) {
             if (extensions.isEmpty()) return;
             for (FieldDescriptorProto extension : extensions) {
                 extensionMap.computeIfAbsent(extension.getExtendee(), clazz -> new ArrayList<>()).add(extension);
+                fullNameMap.put(extension, parent + "." + extension.getName());
             }
+        }
+
+        boolean isEmpty() {
+            return extensionMap.isEmpty();
         }
 
         // extendee string -> descriptor
         private final Map<String, List<FieldDescriptorProto>> extensionMap = new HashMap<>();
+        private final Map<FieldDescriptorProto, String> fullNameMap = new IdentityHashMap<>();
 
     }
 

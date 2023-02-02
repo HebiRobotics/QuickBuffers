@@ -65,7 +65,7 @@ public class TypeRegistryTest {
         CodeGeneratorRequest request = TestRequestLoader.getAllTypesEagerRequest();
         TypeRegistry map = RequestInfo.withTypeRegistry(request).getTypeRegistry();
 
-        assertEquals(12, map.typeMap.entrySet().size());
+        assertEquals(15, map.typeMap.entrySet().size());
 
         assertEquals("protos.test.quickbuf.external.ImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage").toString());
         assertEquals("protos.test.quickbuf.external.ImportMessage.NestedImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage.NestedImportMessage").toString());
