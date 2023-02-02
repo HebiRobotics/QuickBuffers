@@ -1126,7 +1126,6 @@ public abstract class ProtoSource {
      *
      * @param store target store
      * @param tag tag of the contained repeated field
-     * @throws IOException
      */
     protected void reserveRepeatedFieldCapacity(RepeatedField<?,?> store, int tag) throws IOException {
         // implement in child classes that support looking ahead
@@ -1138,7 +1137,6 @@ public abstract class ProtoSource {
      * nothing if looking ahead is not supported.
      *
      * @param store target store
-     * @throws IOException
      */
     protected void reservePackedVarintCapacity(RepeatedField<?,?> store) throws IOException {
         // implement in child classes that support looking ahead
@@ -1246,8 +1244,11 @@ public abstract class ProtoSource {
 
         @Override
         public byte readRawByte() throws IOException {
-            if (position == sizeLimit || position == currentLimit || peek() == EOF) {
+            if (position == sizeLimit || position == currentLimit) {
                 require(1); // throws appropriate error
+            }
+            if (peek() == EOF) {
+                throw InvalidProtocolBufferException.truncatedMessage();
             }
             try {
                 position++;
@@ -1337,7 +1338,9 @@ public abstract class ProtoSource {
 
         @Override
         public boolean isAtEnd() throws IOException {
-            return buffer.position() == currentLimit || buffer.remaining() == 0;
+            return currentLimit != NO_LIMIT
+                    ? buffer.position() == currentLimit
+                    : buffer.remaining() == 0;
         }
 
         @Override
