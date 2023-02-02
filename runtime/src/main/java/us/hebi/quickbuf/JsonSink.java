@@ -168,7 +168,7 @@ public abstract class JsonSink implements Closeable, Flushable {
         try {
             return writeMessage(value);
         } catch (IOException e) {
-            throw new AssertionError("silent write should not have errors", e);
+            throw new RuntimeException("silent write should not have errors", e);
         }
     }
 
@@ -179,7 +179,7 @@ public abstract class JsonSink implements Closeable, Flushable {
         try {
             return writeRepeatedMessage(value);
         } catch (IOException e) {
-            throw new AssertionError("silent write should not have errors", e);
+            throw new RuntimeException("silent write should not have errors", e);
         }
     }
 
@@ -204,7 +204,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeFixed64(final FieldName name, final long value) throws IOException {
-        return writeInt64(name, value);
+        return writeInt64(name, value); // TODO: write unsigned 64
     }
 
     public JsonSink writeSFixed64(final FieldName name, final long value) throws IOException {
@@ -212,7 +212,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeUInt64(final FieldName name, final long value) throws IOException {
-        return writeInt64(name, value);
+        return writeInt64(name, value); // // TODO: write unsigned 64
     }
 
     public JsonSink writeSInt64(final FieldName name, final long value) throws IOException {
@@ -220,7 +220,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeFixed32(final FieldName name, final int value) throws IOException {
-        return writeInt32(name, value);
+        return writeInt32(name, value); // TODO: write unsigned 32
     }
 
     public JsonSink writeSFixed32(final FieldName name, final int value) throws IOException {
@@ -228,7 +228,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeUInt32(final FieldName name, final int value) throws IOException {
-        return writeInt32(name, value);
+        return writeInt32(name, value); // TODO: write unsigned 32
     }
 
     public JsonSink writeSInt32(final FieldName name, final int value) throws IOException {
@@ -240,7 +240,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedFixed64(final FieldName name, final RepeatedLong value) throws IOException {
-        return writeRepeatedInt64(name, value);
+        return writeRepeatedInt64(name, value); // TODO: write unsigned 64
     }
 
     public JsonSink writeRepeatedSFixed64(final FieldName name, final RepeatedLong value) throws IOException {
@@ -248,7 +248,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedUInt64(final FieldName name, final RepeatedLong value) throws IOException {
-        return writeRepeatedInt64(name, value);
+        return writeRepeatedInt64(name, value); // TODO: write unsigned 64
     }
 
     public JsonSink writeRepeatedSInt64(final FieldName name, final RepeatedLong value) throws IOException {
@@ -256,7 +256,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedFixed32(final FieldName name, final RepeatedInt value) throws IOException {
-        return writeRepeatedInt32(name, value);
+        return writeRepeatedInt32(name, value); // TODO: write unsigned 32
     }
 
     public JsonSink writeRepeatedSFixed32(final FieldName name, final RepeatedInt value) throws IOException {
@@ -264,7 +264,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedUInt32(final FieldName name, final RepeatedInt value) throws IOException {
-        return writeRepeatedInt32(name, value);
+        return writeRepeatedInt32(name, value); // TODO: write unsigned 32
     }
 
     public JsonSink writeRepeatedSInt32(final FieldName name, final RepeatedInt value) throws IOException {
@@ -540,10 +540,12 @@ public abstract class JsonSink implements Closeable, Flushable {
 
         @Override
         protected void writeFieldName(final FieldName name) {
+            removeTrailingSpace();
+            writeNewline();
             final byte[] key = !preserveProtoFieldNames ? name.getJsonKeyBytes() : name.getProtoKeyBytes();
             final int pos = output.addLength(key.length);
             System.arraycopy(key, 0, output.array, pos, key.length);
-            writeSpaceAfterFieldName();
+            writeSpaceBeforeValue();
         }
 
         @Override
@@ -606,39 +608,32 @@ public abstract class JsonSink implements Closeable, Flushable {
 
         @Override
         public JsonSink beginObject() {
-            isEmptyObjectOrArray = true;
             writeChar('{');
             indentLevel++;
-            writeNewline();
+            trailingComma = 0;
+            trailingSpace = 0;
             return this;
         }
 
         @Override
         public JsonSink endObject() {
-            indentLevel--;
             removeTrailingComma();
-            if (!isEmptyObjectOrArray) {
-                writeNewline();
-            }
+            indentLevel--;
+            writeNewline();
             writeChar('}');
             return this;
         }
 
         @Override
         protected void beginArray() {
-            isEmptyObjectOrArray = true;
             writeChar('[');
-            indentLevel++;
-            writeNewline();
+            trailingComma = 0;
+            trailingSpace = 0;
         }
 
         @Override
         protected void endArray() {
             removeTrailingComma();
-            indentLevel--;
-            if (!isEmptyObjectOrArray) {
-                writeNewline();
-            }
             writeChar(']');
             writeMore();
         }
@@ -646,22 +641,28 @@ public abstract class JsonSink implements Closeable, Flushable {
         // ==================== Utilities ====================
 
         private void writeMore() {
-            isEmptyObjectOrArray = false;
-            final int pos = output.length;
             writeChar(',');
-            writeNewline();
-            trailingSpace = output.length - pos;
+            trailingComma = 1;
+            writeSpaceBeforeValue();
         }
 
         private void removeTrailingComma() {
             // Called after at least one character, so no need to check bounds
-            output.length -= trailingSpace;
+            output.length -= trailingSpace + trailingComma;
             trailingSpace = 0;
+            trailingComma = 0;
         }
 
-        private final void writeSpaceAfterFieldName() {
+        private void removeTrailingSpace() {
+            output.length -= trailingSpace;
+            trailingSpace = 0;
+            trailingComma = 1;
+        }
+
+        private void writeSpaceBeforeValue() {
             if (pretty) {
                 writeChar(' ');
+                trailingSpace = 1;
             }
         }
 
@@ -671,9 +672,6 @@ public abstract class JsonSink implements Closeable, Flushable {
                 int pos = output.addLength(numSpaces + 1);
                 output.array[pos++] = '\n';
                 Arrays.fill(output.array, pos, output.length, (byte) ' ');
-                trailingSpace = numSpaces + 1;
-            } else {
-                trailingSpace = 0;
             }
         }
 
@@ -688,7 +686,7 @@ public abstract class JsonSink implements Closeable, Flushable {
         }
 
         @Override
-        public void flush() throws IOException {
+        public void flush() {
         }
 
         protected DefaultJsonSink() {
@@ -697,11 +695,9 @@ public abstract class JsonSink implements Closeable, Flushable {
         protected RepeatedByte output;
         protected boolean pretty = false;
         protected int indentLevel = 0;
+        protected int trailingComma = 0;
         protected int trailingSpace = 0;
-        private boolean isEmptyObjectOrArray = false;
-
         private static final int SPACES_PER_LEVEL = 2;
-
         private final JsonEncoding.FloatEncoder floatEncoder = new JsonEncoding.FloatEncoder();
 
     }

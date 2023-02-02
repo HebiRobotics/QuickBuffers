@@ -59,6 +59,9 @@ public final class FieldName {
     public byte[] getJsonKeyBytes() {
         if (jsonKey == null) {
             jsonKey = ('"' + jsonName + '"' + ':').getBytes(Charsets.UTF_8);
+            if (jsonName.equals(protoName)) {
+                protoKey = jsonKey;
+            }
         }
         return jsonKey;
     }
@@ -69,6 +72,9 @@ public final class FieldName {
     public byte[] getProtoKeyBytes() {
         if (protoKey == null) {
             protoKey = ('"' + protoName + '"' + ':').getBytes(Charsets.UTF_8);
+            if (protoName.equals(jsonName)) {
+                jsonKey = protoKey;
+            }
         }
         return protoKey;
     }

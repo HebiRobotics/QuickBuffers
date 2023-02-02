@@ -189,21 +189,21 @@ public abstract class JsonSource implements Closeable {
      * Read a {@code uint64} field value from the source.
      */
     public long readUInt64() throws IOException {
-        return this.readInt64();
+        return this.readInt64(); // TODO: read unsigned 64
     }
 
     /**
      * Read a {@code fixed64} field value from the source.
      */
     public long readFixed64() throws IOException {
-        return this.readInt64();
+        return this.readInt64(); // TODO: read unsigned 64
     }
 
     /**
      * Read a {@code fixed32} field value from the source.
      */
     public int readFixed32() throws IOException {
-        return this.readInt32();
+        return this.readInt32(); // TODO: read unsigned 32
     }
 
     /**
@@ -217,7 +217,7 @@ public abstract class JsonSource implements Closeable {
      * Read a {@code uint32} field value from the source.
      */
     public int readUInt32() throws IOException {
-        return this.readInt32();
+        return this.readInt32(); // TODO: read unsigned 32
     }
 
     /**
@@ -249,7 +249,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedFixed64(final RepeatedLong value) throws IOException {
-        readRepeatedInt64(value);
+        readRepeatedInt64(value); // TODO: read unsigned 64
     }
 
     public void readRepeatedSFixed64(final RepeatedLong value) throws IOException {
@@ -257,7 +257,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedUInt64(final RepeatedLong value) throws IOException {
-        readRepeatedInt64(value);
+        readRepeatedInt64(value); // TODO: read unsigned 64
     }
 
     public void readRepeatedSInt64(final RepeatedLong value) throws IOException {
@@ -265,7 +265,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedFixed32(final RepeatedInt value) throws IOException {
-        readRepeatedInt32(value);
+        readRepeatedInt32(value); // TODO: read unsigned 32
     }
 
     public void readRepeatedSFixed32(final RepeatedInt value) throws IOException {
@@ -273,7 +273,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedUInt32(final RepeatedInt value) throws IOException {
-        readRepeatedInt32(value);
+        readRepeatedInt32(value); // TODO: read unsigned 32
     }
 
     public void readRepeatedSInt32(final RepeatedInt value) throws IOException {
