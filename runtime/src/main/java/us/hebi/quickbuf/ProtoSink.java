@@ -485,12 +485,21 @@ public abstract class ProtoSink {
 
     /** Compute the number of bytes needed to encode all contained {@code uint32} values */
     public static int computeRepeatedUInt32SizeNoTag(final RepeatedInt values) {
-        return computeRepeatedInt32SizeNoTag(values);
+        int dataSize = 0;
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            dataSize += ProtoSink.computeUInt32SizeNoTag(values.array()[i]);
+        }
+        return dataSize;
     }
 
     /** Write a repeated (packed) {@code uint32} field to the sink. */
     public void writePackedUInt32NoTag(final RepeatedInt values) throws IOException {
-        writePackedInt32NoTag(values);
+        writeLength(computeRepeatedUInt32SizeNoTag(values));
+        final int length = values.length;
+        for (int i = 0; i < length; i++) {
+            writeUInt32NoTag(values.array()[i]);
+        }
     }
 
     /** Compute the number of bytes needed to encode all contained {@code sint32} values */
@@ -649,7 +658,7 @@ public abstract class ProtoSink {
 
     /** Write a {@code bool} field to the sink. */
     public void writeBoolNoTag(final boolean value) throws IOException {
-        writeRawByte(value ? 1 : 0);
+        writeRawByte((byte) (value ? 1 : 0));
     }
 
     /** Write a {@code string} field to the sink. */
@@ -687,7 +696,7 @@ public abstract class ProtoSink {
      * for converting the enum value to its numeric value.
      */
     public void writeEnumNoTag(final int value) throws IOException {
-        writeUInt32NoTag(value);
+        writeInt32NoTag(value);
     }
 
     /** Write an {@code sfixed32} field to the sink. */
@@ -994,7 +1003,7 @@ public abstract class ProtoSink {
      * Caller is responsible for converting the enum value to its numeric value.
      */
     public static int computeEnumSizeNoTag(final int value) {
-        return computeRawVarint32Size(value);
+        return computeInt32SizeNoTag(value);
     }
 
     /**
@@ -1178,7 +1187,7 @@ public abstract class ProtoSink {
     /** write a negative {@code int32} that must be sign-extended to 10 bytes */
     protected void writeNegativeVarint32(int value) throws IOException {
         if (UnsafeAccess.allowUnalignedAccess()) {
-            long first8 = (0x8080808080808080L | (~0L << 36))
+            final long first8 = (0x8080808080808080L | (~0L << 36))
                     | ((value & 0x7FL))
                     | ((value & (0x7FL << 7)) << 1)
                     | ((value & (0x7FL << 14)) << 2)
@@ -1203,7 +1212,7 @@ public abstract class ProtoSink {
     /** write a negative {@code int64} that must be sign-extended to 10 bytes */
     protected void writeNegativeVarint64(long value) throws IOException {
         if (UnsafeAccess.allowUnalignedAccess()) {
-            long first8 = 0x8080808080808080L
+            final long first8 = 0x8080808080808080L
                     | ((value & 0x7FL))
                     | ((value & (0x7FL << 7)) << 1)
                     | ((value & (0x7FL << 14)) << 2)

@@ -72,25 +72,17 @@ class FieldUtil {
      * a single bit comparison. This sorter groups all required fields, followed by OneOf groups, followed by
      * everything else.
      */
-    static final Comparator<FieldDescriptorProto> GroupOneOfAndRequiredBits = new Comparator<FieldDescriptorProto>() {
-        @Override
-        public int compare(FieldDescriptorProto o1, FieldDescriptorProto o2) {
-            int n1 = o1.hasOneofIndex() ? o1.getOneofIndex() : (o1.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
-            int n2 = o2.hasOneofIndex() ? o2.getOneofIndex() : (o2.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
-            return n2 - n1;
-        }
+    static final Comparator<FieldDescriptorProto> GroupOneOfAndRequiredBits = (o1, o2) -> {
+        int n1 = o1.hasOneofIndex() ? o1.getOneofIndex() : (o1.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
+        int n2 = o2.hasOneofIndex() ? o2.getOneofIndex() : (o2.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
+        return n2 - n1;
     };
 
     /**
      * Sort fields according to their specified field number. This is used as the serialization order
      * by Google's protobuf bindings.
      */
-    static final Comparator<FieldGenerator> AscendingNumberSorter = new Comparator<FieldGenerator>() {
-        @Override
-        public int compare(FieldGenerator objA, FieldGenerator objB) {
-            return objA.getInfo().getNumber() - objB.getInfo().getNumber();
-        }
-    };
+    static final Comparator<FieldGenerator> AscendingNumberSorter = Comparator.comparingInt(field -> field.getInfo().getNumber());
 
     /**
      * Sort the fields according to their layout in memory.
@@ -106,18 +98,15 @@ class FieldUtil {
      * For more info, see
      * http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html
      */
-    static final Comparator<FieldDescriptorProto> MemoryLayoutSorter = new Comparator<FieldDescriptorProto>() {
-        @Override
-        public int compare(FieldDescriptorProto objA, FieldDescriptorProto objB) {
-            // The higher the number, the closer to the beginning
-            int weightA = getSortingWeight(objA) + (objA.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
-            int weightB = getSortingWeight(objB) + (objB.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
-            if (weightA == weightB) {
-                // Higher field number -> lower ranking
-                return objA.getNumber() - objB.getNumber();
-            }
-            return weightB - weightA;
+    static final Comparator<FieldDescriptorProto> MemoryLayoutSorter = (objA, objB) -> {
+        // The higher the number, the closer to the beginning
+        int weightA = getSortingWeight(objA) + (objA.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+        int weightB = getSortingWeight(objB) + (objB.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+        if (weightA == weightB) {
+            // Higher field number -> lower ranking
+            return objA.getNumber() - objB.getNumber();
         }
+        return weightB - weightA;
     };
 
     private static int getSortingWeight(FieldDescriptorProto descriptor) {

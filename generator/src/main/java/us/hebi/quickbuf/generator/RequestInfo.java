@@ -32,8 +32,8 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
 import us.hebi.quickbuf.generator.PluginOptions.AllocationStrategy;
-import us.hebi.quickbuf.generator.PluginOptions.ExpectedIncomingOrder;
 import us.hebi.quickbuf.generator.PluginOptions.ExtensionSupport;
+import us.hebi.quickbuf.generator.PluginOptions.FieldSerializationOrder;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -165,7 +165,8 @@ public class RequestInfo {
             this.fieldCount = descriptor.getFieldCount();
 
             PluginOptions options = parentFile.getParentRequest().getPluginOptions();
-            this.expectedIncomingOrder = options.getExpectedIncomingOrder();
+            this.expectedInputOrder = options.getExpectedInputOrder();
+            this.outputOrder = options.getOutputOrder();
             this.storeUnknownFieldsEnabled = options.isStoreUnknownFieldsEnabled();
             this.enforceHasChecksEnabled = options.isEnforceHasChecksEnabled();
 
@@ -261,7 +262,8 @@ public class RequestInfo {
         private final List<MessageInfo> nestedTypes;
         private final List<EnumInfo> nestedEnums;
         private final List<OneOfInfo> oneOfs = new ArrayList<>();
-        private final ExpectedIncomingOrder expectedIncomingOrder;
+        private final FieldSerializationOrder expectedInputOrder;
+        private final FieldSerializationOrder outputOrder;
         private final boolean storeUnknownFieldsEnabled;
         private final int numBitFields;
         private final boolean enforceHasChecksEnabled;
@@ -354,11 +356,16 @@ public class RequestInfo {
         }
 
         public boolean isLazyAllocationEnabled() {
-            // currently only supported for nested types
-            return getPluginOptions().getAllocationStrategy() == AllocationStrategy.Lazy
-                    && !isRequired()
-                    && !isRepeated()
-                    && isMessageOrGroup();
+            // currently only supported for message fields
+            if (isRequired() || isRepeated() || !isMessageOrGroup()) {
+                return false;
+            }
+            // the lazy flag is technically for lazy parsing, but it
+            // seems reasonable to at least do a lazy allocation.
+            if (descriptor.getOptions().hasLazy()) {
+                return descriptor.getOptions().getLazy();
+            }
+            return getPluginOptions().getAllocationStrategy() == AllocationStrategy.Lazy;
         }
 
         public boolean isEnforceHasCheckEnabled() {

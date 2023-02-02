@@ -21,7 +21,7 @@
 package us.hebi.quickbuf.generator;
 
 import com.squareup.javapoet.*;
-import us.hebi.quickbuf.generator.PluginOptions.ExpectedIncomingOrder;
+import us.hebi.quickbuf.generator.PluginOptions.FieldSerializationOrder;
 import us.hebi.quickbuf.generator.RequestInfo.FieldInfo;
 import us.hebi.quickbuf.generator.RequestInfo.MessageInfo;
 
@@ -238,11 +238,11 @@ class MessageGenerator {
         // Packable fields make this a bit more complex since they need to generate two cases to preserve
         // backwards compatibility. However, any production proto file should already be using the packed
         // option whenever possible, so we don't need to optimize the non-packed case.
-        final boolean enableFallthroughOptimization = info.getExpectedIncomingOrder() != ExpectedIncomingOrder.None;
-        final List<FieldGenerator> sortedFields = getFieldSortedByExpectedIncomingOrder();
+        final boolean enableFallthroughOptimization = info.getExpectedInputOrder() != FieldSerializationOrder.None;
+        final List<FieldGenerator> sortedFields = getFieldSortedByExpectedInputOrder();
 
         if (enableFallthroughOptimization) {
-            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
+            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedInputOrder() + ")");
         }
 
         mergeFrom.addStatement(named("int tag = input.readTag()"))
@@ -336,7 +336,7 @@ class MessageGenerator {
             writeTo.beginControlFlow("try");
         }
 
-        fields.forEach(f -> {
+        getFieldSortedByOutputOrder().forEach(f -> {
             if (f.getInfo().isRequired()) {
                 // no need to check has state again
                 f.generateSerializationCode(writeTo);
@@ -604,7 +604,7 @@ class MessageGenerator {
         writeTo.addStatement("output.beginObject()");
 
         // add every set field
-        fields.forEach(f -> {
+        getFieldSortedByOutputOrder().forEach(f -> {
             if (f.getInfo().isRequired()) {
                 // no need to check has state again
                 f.generateJsonSerializationCode(writeTo);
@@ -679,7 +679,7 @@ class MessageGenerator {
                     .beginControlFlow("if (input.isAtField($N.$N))",
                             info.getFieldNamesClass().simpleName(),
                             field.getInfo().getFieldName())
-                            .beginControlFlow("if (!input.trySkipNullValue())");
+                    .beginControlFlow("if (!input.trySkipNullValue())");
             field.generateJsonDeserializationCode(mergeFrom);
 
             // Unknown field -> skip
@@ -821,17 +821,28 @@ class MessageGenerator {
         m.put("unknownBytesKey", RuntimeClasses.unknownBytesFieldName);
     }
 
-    private List<FieldGenerator> getFieldSortedByExpectedIncomingOrder() {
-        final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
-        switch (info.getExpectedIncomingOrder()) {
+    private List<FieldGenerator> getFieldSortedByExpectedInputOrder() {
+        switch (info.getExpectedInputOrder()) {
             case AscendingNumber:
+                final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
                 sortedFields.sort(FieldUtil.AscendingNumberSorter);
-                break;
+                return sortedFields;
             case Quickbuf: // keep existing order
             case None: // no optimization
                 break;
         }
-        return sortedFields;
+        return fields;
+    }
+
+    private List<FieldGenerator> getFieldSortedByOutputOrder() {
+        // Sorts output the same way as protobuf. This is always slower,
+        // but it results in binary equivalence for conformance tests.
+        if (info.getOutputOrder() == FieldSerializationOrder.AscendingNumber) {
+            final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
+            sortedFields.sort(FieldUtil.AscendingNumberSorter);
+            return sortedFields;
+        }
+        return fields;
     }
 
     final MessageInfo info;

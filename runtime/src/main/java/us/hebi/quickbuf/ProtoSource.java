@@ -671,7 +671,7 @@ public abstract class ProtoSource {
 
     /** Read a {@code bool} field value from the source. */
     public boolean readBool() throws IOException {
-        return readRawVarint32() != 0;
+        return readRawVarint64() != 0;
     }
 
     /** Read a repeated (packed) {@code enum} field value from the source. */

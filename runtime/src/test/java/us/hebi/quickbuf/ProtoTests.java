@@ -253,6 +253,17 @@ public class ProtoTests {
     }
 
     @Test
+    public void testUnsignedRangeOverflow() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance()
+                .setOptionalUint32(-1)
+                .setOptionalUint64(-1)
+                .addAllRepeatedUint32(0,12345,12345,12345,-1,0,1,-1,-1,1)
+                .addAllRepeatedUint64(0,12345,12345,12345,-1,0,1,-1,-1,1);
+        TestAllTypes result = TestAllTypes.parseFrom(msg.toByteArray());
+        assertEquals(msg, result);
+    }
+
+    @Test
     public void testRepeatedPrimitives() throws IOException {
         RepeatedPackables.Packed emptyMsg = RepeatedPackables.Packed.newInstance();
         assertFalse(emptyMsg.hasBools());

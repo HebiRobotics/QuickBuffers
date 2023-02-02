@@ -42,7 +42,8 @@ class PluginOptions {
         final Map<String, String> map = ParserUtil.getGeneratorParameters(request);
         indentString = parseIndentString(map.getOrDefault("indent", "2"));
         replacePackageFunction = parseReplacePackage(map.get("replace_package"));
-        expectedIncomingOrder = ExpectedIncomingOrder.parseFromString(map.getOrDefault("input_order", "quickbuf"));
+        expectedInputOrder = FieldSerializationOrder.parseInputOrder(map.getOrDefault("input_order", "quickbuf"));
+        outputOrder = FieldSerializationOrder.parseInputOrder(map.getOrDefault("output_order", "quickbuf"));
         storeUnknownFieldsEnabled = parseBoolean(map.getOrDefault("store_unknown_fields", "false"));
         allocationStrategy = AllocationStrategy.parseFromString(map.getOrDefault("allocation", "eager"));
         extensionSupport = ExtensionSupport.parseFromString(map.getOrDefault("extensions", "disabled"));
@@ -50,12 +51,12 @@ class PluginOptions {
         tryGetAccessorsEnabled = parseBoolean(map.getOrDefault("java8_optional", "false"));
     }
 
-    enum ExpectedIncomingOrder {
+    enum FieldSerializationOrder {
         Quickbuf, // parsing messages from Quickbuf
         AscendingNumber, // parsing messages from official protobuf bindings
         None; // parsing messages from unknown sources
 
-        static ExpectedIncomingOrder parseFromString(String string) {
+        static FieldSerializationOrder parseInputOrder(String string) {
             switch (string.toLowerCase()) {
                 case "quickbuf":
                     return Quickbuf;
@@ -66,6 +67,16 @@ class PluginOptions {
                     return None;
             }
             throw new GeneratorException("'input_order' parameter accepts ['quickbuf', 'number', 'random']. Found: " + string);
+        }
+
+        static FieldSerializationOrder parseOutputOrder(String string) {
+            switch (string.toLowerCase()) {
+                case "quickbuf":
+                    return Quickbuf;
+                case "number":
+                    return AscendingNumber;
+            }
+            throw new GeneratorException("'output_order' parameter accepts ['quickbuf', 'number']. Found: " + string);
         }
 
         @Override
@@ -145,7 +156,8 @@ class PluginOptions {
                 .replaceAll(replacement);
     }
 
-    final ExpectedIncomingOrder expectedIncomingOrder;
+    final FieldSerializationOrder expectedInputOrder;
+    final FieldSerializationOrder outputOrder;
     final AllocationStrategy allocationStrategy;
     final ExtensionSupport extensionSupport;
     final String indentString;
