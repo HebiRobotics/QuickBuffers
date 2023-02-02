@@ -72,8 +72,8 @@ public class RequestInfo {
                 .collect(Collectors.toList());
     }
 
-    public boolean shouldEnumUseArrayLookup(int highestNumber) {
-        return highestNumber < 50; // parameter?
+    public boolean shouldEnumUseArrayLookup(int lowestNumber, int highestNumber) {
+        return lowestNumber >= 0 && highestNumber < 50; // parameter?
     }
 
     private final CodeGeneratorRequest descriptor;
@@ -174,11 +174,24 @@ public class RequestInfo {
             List<FieldDescriptorProto> fieldList = descriptor.getFieldList();
             RequestInfo request = getParentFile().getParentRequest();
             if (request.getPluginOptions().getExtensionSupport() == ExtensionSupport.Embedded) {
+                // Check for extensions for this class
                 List<FieldDescriptorProto> extensions = request.getExtensionRegistry()
                         .getExtensionFields(getTypeId());
-                if(!extensions.isEmpty()) {
+
+                if (!extensions.isEmpty()) {
+                    // Build combined list
                     fieldList = new ArrayList<>(fieldList);
                     fieldList.addAll(extensions);
+
+                    // Check for duplicate names
+                    final Set<String> names = new HashSet<>();
+                    for (FieldDescriptorProto field : fieldList) {
+                        if (!names.add(field.getName())) {
+                            throw new GeneratorException("Embedding extensions in '" + parentTypeId + "" +
+                                    "' produces a naming collision with field '" + field.getName() + "'" +
+                                    " (defined in '" + field.getTypeName() + "')");
+                        }
+                    }
                 }
             }
 
@@ -570,10 +583,13 @@ public class RequestInfo {
         EnumInfo(FileInfo parentFile, String parentTypeId, ClassName parentType, boolean isNested, EnumDescriptorProto descriptor) {
             super(parentFile, parentTypeId, parentType, isNested, descriptor.getName());
             this.descriptor = descriptor;
+            this.lowestNumber = descriptor.getValueList().stream()
+                    .mapToInt(DescriptorProtos.EnumValueDescriptorProto::getNumber)
+                    .min().orElse(0);
             this.highestNumber = descriptor.getValueList().stream()
                     .mapToInt(DescriptorProtos.EnumValueDescriptorProto::getNumber)
-                    .max().orElseGet(() -> 0);
-            this.usingArrayLookup = parentFile.getParentRequest().shouldEnumUseArrayLookup(highestNumber);
+                    .max().orElse(0);
+            this.usingArrayLookup = parentFile.getParentRequest().shouldEnumUseArrayLookup(lowestNumber, highestNumber);
         }
 
         public List<DescriptorProtos.EnumValueDescriptorProto> getValues() {
@@ -581,6 +597,7 @@ public class RequestInfo {
         }
 
         private final EnumDescriptorProto descriptor;
+        private final int lowestNumber;
         private final int highestNumber;
         private final boolean usingArrayLookup;
 

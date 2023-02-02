@@ -1266,6 +1266,9 @@ public abstract class ProtoSource {
 
         @Override
         public void skipRawBytes(int length) throws IOException {
+            if (length == 0) {
+                return;
+            }
             require(length);
             if (peekByte != EOF) {
                 peekByte = EOF;
@@ -1278,14 +1281,22 @@ public abstract class ProtoSource {
 
         @Override
         public void readRawBytes(byte[] buffer, int offset, int length) throws IOException {
+            if (length == 0) {
+                return;
+            }
             require(length);
             if (peekByte != EOF) {
                 buffer[offset++] = (byte) peekByte;
                 length--;
                 peekByte = EOF;
             }
-            if (input.read(buffer, offset, length) < length) {
-                throw InvalidProtocolBufferException.truncatedMessage();
+            while (length > 0) {
+                int n = input.read(buffer, offset, length);
+                if (n == EOF) {
+                    throw InvalidProtocolBufferException.truncatedMessage();
+                }
+                offset += n;
+                length -= n;
             }
         }
 
