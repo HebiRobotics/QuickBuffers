@@ -146,7 +146,11 @@
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>${protoc.jar.version}</version>
+                <configuration>
+                    <!-- don't cache because it breaks multi-executions -->
+                    <optimizeCodegen>false</optimizeCodegen>
+                </configuration>
                 <executions>
                     <execution>
                         <id>generate-eager-protos</id>
@@ -155,7 +159,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <protocVersion>${protoc.version}</protocVersion>
+                            <protocVersion>${protobuf.version}</protocVersion>
 
                             <inputDirectories>
                                 <include>${proto.dir}/</include>
@@ -191,7 +195,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <protocVersion>${protoc.version}</protocVersion>
+                            <protocVersion>${protobuf.version}</protocVersion>
 
                             <inputDirectories>
                                 <include>${proto.dir}/../lazy/</include>

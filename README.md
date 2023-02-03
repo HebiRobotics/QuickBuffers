@@ -18,9 +18,13 @@ The main highlights are
  * **Improved order** for optimized [sequential memory access](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order)
  * **Optional accessors** as an opt-in feature (java8)
 
-QuickBuffers implements the [proto2 specification](https://developers.google.com/protocol-buffers/docs/proto) and is compatible with all java versions from 6 through 20. So far we chose not to support proto3 because of some [design decisions](proto3.md) that make it unusable for us, but both versions are binary compatible and can work together. 
+QuickBuffers fully [conforms](./conformance) to the [proto2 specification](https://developers.google.com/protocol-buffers/docs/proto) and is compatible with all java versions from 6 through 20. So far we have decided against explicitly implementing the proto3 deviations due to some of their [design decisions](proto3.md), but proto3 messages can be generated and are wire compatible. The current limitations include
 
-QuickBuffers supports all features except for [Services](https://developers.google.com/protocol-buffers/docs/proto#services) and special cased json mappings for built-in proto3 types. [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are not directly supported, but they generate a matching [repeated field](https://developers.google.com/protocol-buffers/docs/proto#backwards). Support for [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) is experimental.
+* [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) are embedded directly into the extended message, so support is limited to generation time.
+* [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are implemented as a [repeated field](https://developers.google.com/protocol-buffers/docs/proto#backwards) that matches the wire representation.
+* Unsigned integer types within the sign range are encoded as negative JSON numbers
+* The JSON marshalling does not special case the built-in [proto3 types](https://developers.google.com/protocol-buffers/docs/proto3) such as timestamp and duration
+* [Services](https://developers.google.com/protocol-buffers/docs/proto#services) are currently ignored
 
 ## Getting started
 

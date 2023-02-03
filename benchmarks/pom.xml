@@ -79,7 +79,7 @@
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>${protoc.jar.version}</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>
@@ -87,7 +87,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <protocVersion>${protoc.version}</protocVersion>
+                            <protocVersion>${protobuf.version}</protocVersion>
 
                             <inputDirectories>
                                 <include>${proto.dir}</include>

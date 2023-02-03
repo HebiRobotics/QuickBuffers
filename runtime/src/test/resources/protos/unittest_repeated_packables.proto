@@ -30,6 +30,7 @@
 
 // Author: maxtroy@google.com (Max Cai)
 
+syntax = "proto2";
 package protobuf_unittest;
 
 option java_package = "protos.test.protobuf";

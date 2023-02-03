@@ -73,7 +73,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * Copies all fields and data from another message of the same
      * type into this message.
      *
-     * @param other
+     * @param other message with the contents to be copied
      * @return this
      */
     public abstract MessageType copyFrom(MessageType other);
@@ -308,7 +308,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
-     * Returns a string that contains a human readable representation of the contents. The output
+     * Returns a string that contains a human-readable representation of the contents. The output
      * may not be compatible with any existing readers.
      */
     @Override
@@ -319,12 +319,10 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
-     * Provides support for cloning if the method is generated for child classes
+     * Creates a new instance of this message with the same content
      */
     @Override
-    public ProtoMessage clone() throws CloneNotSupportedException {
-        return (ProtoMessage) super.clone();
-    }
+    public abstract MessageType clone();
 
     /**
      * @return the full path to all missing required fields in the message

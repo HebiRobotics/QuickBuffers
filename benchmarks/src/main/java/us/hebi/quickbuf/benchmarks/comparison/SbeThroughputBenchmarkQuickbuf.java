@@ -173,12 +173,12 @@ public class SbeThroughputBenchmarkQuickbuf {
 
     @Benchmark
     public Object testMarketEncodeJson() throws IOException {
-        return jsonSink.writeMessage(buildMarketData(marketData)).getBytes();
+        return jsonSink.clear().writeMessage(buildMarketData(marketData)).getBytes();
     }
 
     @Benchmark
     public Object testCarEncodeJson() throws IOException {
-        return jsonSink.writeMessage(buildCarData(car)).getBytes();
+        return jsonSink.clear().writeMessage(buildCarData(car)).getBytes();
     }
 
     public static MarketDataIncrementalRefreshTrades buildMarketData(MarketDataIncrementalRefreshTrades marketData) {

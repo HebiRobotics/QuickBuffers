@@ -16,18 +16,16 @@
         <finalName>${protocPluginName}-${project.version}</finalName>
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
-        <protoc.fileName>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
+        <protoc.fileName>protoc-${protobuf.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
         <protoc.path>${project.basedir}/../.protoc</protoc.path>
         <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
         <protoc.pluginDir>${project.basedir}/../parser/target</protoc.pluginDir>
         <protoc.pluginFile>${protoc.pluginDir}/protoc-gen-request${protoc.pluginExt}</protoc.pluginFile>
         <protoc.outputDir>${project.build.directory}/test-classes/us/hebi/quickbuf/generator</protoc.outputDir>
-        <native.extension>.exe</native.extension>
         <native.staticArg>--static</native.staticArg>
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
-        <graalvm.tools.version>0.9.19</graalvm.tools.version>
         <proto.dir.unsupported>${project.basedir}/src/test/resources/protos/unsupported</proto.dir.unsupported>
     </properties>
 
@@ -78,7 +76,7 @@
 
                                 <!-- download proto compiler if needed -->
                                 <mkdir dir="${protoc.path}"/>
-                                <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protoc.version}/${protoc.fileName}"
+                                <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protobuf.version}/${protoc.fileName}"
                                      dest="${protoc.executable}" skipexisting="true" verbose="on"/>
                                 <chmod file="${protoc.executable}" perm="775" type="file"/>
 
@@ -246,7 +244,6 @@
             </activation>
             <properties>
                 <protoc.os>windows</protoc.os>
-                <native.extension><!-- added automatically --></native.extension>
             </properties>
         </profile>
         <profile>
