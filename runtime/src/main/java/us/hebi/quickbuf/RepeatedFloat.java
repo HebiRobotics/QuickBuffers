@@ -229,4 +229,4 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
     float[] array = EMPTY_ARRAY;
     private static final float[] EMPTY_ARRAY = new float[0];
 
-}
+} // RepeatedFloat

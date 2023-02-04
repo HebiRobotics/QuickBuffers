@@ -1115,6 +1115,11 @@ public abstract class ProtoSink {
         writeRawBytes(value, 0, value.length);
     }
 
+    /** Writes the contents as an array of bytes */
+    public void writeRawBytes(final RepeatedByte bytes) throws IOException {
+        writeRawBytes(bytes.array(), 0, bytes.length());
+    }
+
     /** Write part of an array of bytes. */
     public void writeRawBytes(final byte[] value, int offset, int length) throws IOException {
         final int limit = offset + length;

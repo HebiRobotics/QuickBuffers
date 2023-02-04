@@ -71,11 +71,19 @@ public final class Utf8String {
         string = null;
     }
 
-    private void ensureSerialized() {
+    /**
+     * Makes sure that the content is in serialized form. This is a
+     * minor optimization in case you have commonly used string
+     * constants that should only be serialized once.
+     *
+     * @return this
+     */
+    public Utf8String ensureSerialized() {
         if (serializedSize < 0) {
             ensureCapacity((string.length() * Utf8.MAX_UTF8_EXPANSION));
             serializedSize = Utf8.encodeArray(string, bytes, 0, bytes.length);
         }
+        return this;
     }
 
     public String getString() {

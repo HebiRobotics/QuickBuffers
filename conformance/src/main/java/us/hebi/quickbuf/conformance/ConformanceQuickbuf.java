@@ -188,7 +188,7 @@ public class ConformanceQuickbuf {
         int len = bytes.length();
         ByteBuffer byteBuffer = ByteBuffer.wrap(array, off, len);
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(len);
-        directBuffer.put(array, off, len);
+        bytes.writeTo(directBuffer);
         directBuffer.flip();
 
         ProtoMessage<?> expected = parseFromSource(ProtoSource.newInstance(bytes), msg);
@@ -196,13 +196,13 @@ public class ConformanceQuickbuf {
 
         // Array source
         checkEqualDecoding(expected, actual, ProtoSource.newArraySource().setInput(bytes));
-        checkEqualDecoding(expected, actual, ProtoSource.newArraySource().setInput(array, 0, len));
+        checkEqualDecoding(expected, actual, ProtoSource.newArraySource().setInput(array, off, len));
         checkEqualDecoding(expected, actual, ProtoSource.newArraySource().setInput(byteBuffer.duplicate()));
         checkEqualDecoding(expected, actual, ProtoSource.newArraySource().setInput(byteBuffer.asReadOnlyBuffer().duplicate()));
 
         // Direct source
         checkEqualDecoding(expected, actual, ProtoSource.newDirectSource().setInput(bytes));
-        checkEqualDecoding(expected, actual, ProtoSource.newDirectSource().setInput(array, 0, len));
+        checkEqualDecoding(expected, actual, ProtoSource.newDirectSource().setInput(array, off, len));
         checkEqualDecoding(expected, actual, ProtoSource.newDirectSource().setInput(byteBuffer.duplicate()));
         checkEqualDecoding(expected, actual, ProtoSource.newDirectSource().setInput(byteBuffer.asReadOnlyBuffer().duplicate()));
         checkEqualDecoding(expected, actual, ProtoSource.newDirectSource().setInput(directBuffer.duplicate()));

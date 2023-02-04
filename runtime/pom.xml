@@ -118,6 +118,12 @@
                                 <replace file="${copyToDir}/RepeatedByte.java" token="Float" value="Byte"/>
                                 <replace file="${copyToDir}/RepeatedByte.java" token="float" value="byte"/>
 
+                                <!-- Add a few extra methods for simplifying JSON writes -->
+                                <replace file="${copyToDir}/RepeatedByte.java" token="} // RepeatedByte" value=""/>
+                                <concat destfile="${copyToDir}/RepeatedByte.java" append="true">
+                                    <fileset file="src/test/resources/concat/RepeatedByte.txt" />
+                                </concat>
+
                             </tasks>
                         </configuration>
                     </execution>

@@ -1,0 +1,16 @@
+    public RepeatedByte writeTo(ProtoSink sink) throws java.io.IOException {
+        sink.writeRawBytes(array, 0, length);
+        return this;
+    }
+
+    public RepeatedByte writeTo(java.io.OutputStream outputStream) throws java.io.IOException {
+        outputStream.write(array, 0, length);
+        return this;
+    }
+
+    public RepeatedByte writeTo(java.nio.ByteBuffer buffer) {
+        buffer.put(array, 0, length);
+        return this;
+    }
+
+} // RepeatedByte

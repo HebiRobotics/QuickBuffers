@@ -349,7 +349,7 @@ class MessageGenerator {
         if (info.isStoreUnknownFieldsEnabled()) {
             writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
-                    .addStatement(named("output.writeRawBytes($unknownBytes:N.array(), 0, $unknownBytes:N.length())"))
+                    .addStatement(named("output.writeRawBytes($unknownBytes:N)"))
                     .endControlFlow();
         }
 
