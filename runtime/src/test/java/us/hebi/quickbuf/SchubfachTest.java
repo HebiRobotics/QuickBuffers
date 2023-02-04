@@ -17,11 +17,11 @@
  * limitations under the License.
  * #L%
  */
-package us.hebi.quickbuf.schubfach;
+package us.hebi.quickbuf;
 
 import org.junit.Test;
-import us.hebi.quickbuf.ProtoUtil;
-import us.hebi.quickbuf.jdk.JdkMath;
+import us.hebi.quickbuf.Schubfach.DoubleToDecimal;
+import us.hebi.quickbuf.Schubfach.FloatToDecimal;
 
 import java.util.Random;
 
@@ -38,8 +38,8 @@ public class SchubfachTest {
         for (int i = 0; i < 100; i++) {
             testDouble(rnd.nextDouble());
         }
-        for (int exp = -10; exp < 10; exp++) {
-            testDouble(Math.pow(10, exp));
+        for (int exp = -200; exp < 200; exp++) {
+            testDouble(Math.pow(10, exp) + rnd.nextDouble());
         }
     }
 
@@ -48,8 +48,8 @@ public class SchubfachTest {
         for (int i = 0; i < 100; i++) {
             testFloat(rnd.nextFloat());
         }
-        for (int exp = -10; exp < 10; exp++) {
-            testFloat((float) Math.pow(10, exp));
+        for (int exp = -50; exp < 50; exp++) {
+            testFloat((float) Math.pow(10, exp) + rnd.nextFloat());
         }
     }
 

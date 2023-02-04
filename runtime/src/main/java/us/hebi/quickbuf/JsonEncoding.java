@@ -20,12 +20,12 @@
 
 package us.hebi.quickbuf;
 
-import us.hebi.quickbuf.schubfach.DoubleToDecimal;
-import us.hebi.quickbuf.schubfach.FloatToDecimal;
+import us.hebi.quickbuf.Schubfach.DoubleToDecimal;
 
 import java.util.Arrays;
 
 import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
+import static us.hebi.quickbuf.Schubfach.*;
 
 /**
  * Utility methods for encoding values in a JSON compatible way.
