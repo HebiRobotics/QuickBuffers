@@ -30,7 +30,6 @@ import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
 import us.hebi.quickbuf.JsonSource.ArraySource;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
-import us.hebi.quickbuf.schubfach.DoubleToDecimal;
 
 import java.io.IOException;
 import java.util.Random;
@@ -268,7 +267,7 @@ public class JsonEncodingTest {
         } else {
             if (!JsonEncoding.ENCODE_FLOAT_FIXED) {
                 if(!ProtoUtil.isEqual(expected, Double.parseDouble(encoded))) {
-                    assertEquals(DoubleToDecimal.toString(expected), encoded);
+                    assertEquals(Double.toString(expected), encoded);
                 }
             } else {
                 double p = Math.abs(expected);
