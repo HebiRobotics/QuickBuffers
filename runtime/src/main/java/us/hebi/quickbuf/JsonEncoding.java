@@ -20,12 +20,11 @@
 
 package us.hebi.quickbuf;
 
-import us.hebi.quickbuf.Schubfach.DoubleToDecimal;
-
 import java.util.Arrays;
 
 import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
 import static us.hebi.quickbuf.Schubfach.*;
+import static us.hebi.quickbuf.jdk.JdkMath.*;
 
 /**
  * Utility methods for encoding values in a JSON compatible way.
@@ -643,6 +642,79 @@ class JsonEncoding {
             return 3;
         }
 
+        static int writeNineDigits(final byte[] buf, final int pos, final int q9) {
+            final int q6 = q9 / pow3;
+            final int q3 = q9 / pow6;
+            ByteUtil.writeLittleEndian32(buf, pos, NumberEncoding.THREE_DIGITS[q3]);
+            ByteUtil.writeLittleEndian32(buf, pos + 3, NumberEncoding.THREE_DIGITS[q6 - q3 * pow3]);
+            ByteUtil.writeLittleEndian32(buf, pos + 6, NumberEncoding.THREE_DIGITS[q9 - q6 * pow3]);
+            return 9;
+        }
+
+        static int writeExponent(final byte[] buf, int pos, final int exponent) {
+            // max exponent range is -1022 to +1023
+            buf[pos++] = 'E';
+            if (exponent < 0) {
+                buf[pos++] = '-';
+                return writePositiveInt(-exponent, buf, pos);
+            } else {
+                return writePositiveInt(exponent, buf, pos);
+            }
+        }
+
+        static int write8Digits(final byte[] buf, final int pos, final long q8) {
+            // From jsoniter-scala: https://github.com/plokhotnyuk/jsoniter-scala
+            // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+            long y1 = q8 * 140737489;
+            long y2 = (y1 & 0x7FFFFFFFFFFFL) * 100;
+            long y3 = (y2 & 0x7FFFFFFFFFFFL) * 100;
+            long y4 = (y3 & 0x7FFFFFFFFFFFL) * 100;
+            long d1 = digits[(int) (y1 >> 47)];
+            long d2 = digits[(int) (y2 >> 47)] << 16;
+            long d3 = ((long) digits[(int) (y3 >> 47)]) << 32;
+            long d4 = (long) (digits[(int) (y4 >> 47)]) << 48;
+            ByteUtil.writeLittleEndian64(buf, pos, d1 | d2 | d3 | d4);
+            return 8;
+        }
+
+        static int write4Digits(final byte[] buf, final int pos, int q0) {
+            int q1 = q0 * 5243 >> 19; // divide a small positive int by 100
+            int d1 = digits[q0 - q1 * 100] << 16;
+            int d2 = digits[q1];
+            ByteUtil.writeLittleEndian32(buf, pos, d1 | d2);
+            return 4;
+        }
+
+        static int write3Digits(final byte[] buf, final int pos, int q3) {
+            int q1 = q3 * 1311 >> 17; // divide a small positive int by 100
+            int value = digits[q3 - q1 * 100] << 8 | q1 + '0';
+            ByteUtil.writeLittleEndian32(buf, pos, value);
+            return 3;
+        }
+
+        static int write2Digits(final byte[] buf, final int pos, int q2) {
+            ByteUtil.writeLittleEndian16(buf, pos, digits[q2]);
+            return 2;
+        }
+
+        static int write1Digit(final byte[] buf, final int pos, final int q1) {
+            buf[pos] = (byte) (q1 + '0');
+            return 1;
+        }
+
+        private static final short[] digits = new short[]{
+                12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640,
+                12337, 12593, 12849, 13105, 13361, 13617, 13873, 14129, 14385, 14641,
+                12338, 12594, 12850, 13106, 13362, 13618, 13874, 14130, 14386, 14642,
+                12339, 12595, 12851, 13107, 13363, 13619, 13875, 14131, 14387, 14643,
+                12340, 12596, 12852, 13108, 13364, 13620, 13876, 14132, 14388, 14644,
+                12341, 12597, 12853, 13109, 13365, 13621, 13877, 14133, 14389, 14645,
+                12342, 12598, 12854, 13110, 13366, 13622, 13878, 14134, 14390, 14646,
+                12343, 12599, 12855, 13111, 13367, 13623, 13879, 14135, 14391, 14647,
+                12344, 12600, 12856, 13112, 13368, 13624, 13880, 14136, 14392, 14648,
+                12345, 12601, 12857, 13113, 13369, 13625, 13881, 14137, 14393, 14649
+        };
+
         // Lookup table that packs three character digits and size information
         // into an int. This way we can write up to three characters at once. It
         // is arranged in little endian order so the 3 digit case can be optimized
@@ -699,90 +771,133 @@ class JsonEncoding {
 
     }
 
-    static class FloatEncoder implements FloatToDecimal.FloatEncoder, DoubleToDecimal.DoubleEncoder {
+    interface FloatEncoder {
 
+        void writeFloat(float value, RepeatedByte output);
+
+        void writeDouble(double value, RepeatedByte output);
+
+    }
+
+    static FloatEncoder getFloatEncoder() {
+        // deprecated way with fixed precision (for testing purposes)
+        // about 3-4x faster than minimal
+        if (ENCODE_FLOAT_FIXED) {
+            return FixedFloatEncoder.INSTANCE;
+        }
+
+        // without comma, e.g., 28.2 => 282E-1
+        // about 25% faster than minimal
+        if (ENCODE_FLOAT_NO_COMMA) {
+            return new NoCommaFloatEncoder();
+        }
+
+        // (default) minimal size representation
+        return new MinimalFloatEncoder();
+    }
+
+    private static final String FLOAT_ENCODING_TYPE = System.getProperty("quickbuf.json.float_encoding", "minimal");
+    private static final boolean ENCODE_FLOAT_NO_COMMA = "no_comma".equalsIgnoreCase(FLOAT_ENCODING_TYPE);
+    static final boolean ENCODE_FLOAT_FIXED = "fixed".equalsIgnoreCase(FLOAT_ENCODING_TYPE);
+    private static final boolean ENCODE_FLOAT_MINIMAL = !ENCODE_FLOAT_NO_COMMA && !ENCODE_FLOAT_FIXED;
+
+    enum FixedFloatEncoder implements FloatEncoder {
+        INSTANCE;
+
+        @Override
         public void writeFloat(float value, RepeatedByte output) {
-            if (ENCODE_FLOAT_FIXED) {
-
-                // deprecated way with fixed precision
-                NumberEncoding.writeFloat(value, output);
-
-            } else if (ENCODE_FLOAT_NO_COMMA) {
-
-                // Always integer with exponent (co comma)
-                this.output = output.reserve(MAX_DOUBLE_SIZE);
-                final int type = FloatToDecimal.encode(value, this);
-                if (type != DoubleToDecimal.NON_SPECIAL) {
-                    writeSpecial(type, output);
-                }
-                this.output = null;
-
-            } else if (ENCODE_FLOAT_MINIMAL) {
-
-                // Java-like minimal representation, but without trailing zero
-                final int type = schubfachf.encodeFloat(value);
-                if (type == FloatToDecimal.NON_SPECIAL) {
-                    int position = output.addLength(schubfachf.getEncodedLength());
-                    schubfachf.getEncoded(output.array, position, output.length);
-                    removeTrailingZero(output);
-                } else {
-                    writeSpecial(type, output);
-                }
-
-            } else {
-                throw new AssertionError("bad configuration");
-            }
+            NumberEncoding.writeFloat(value, output);
         }
 
+        @Override
         public void writeDouble(double value, RepeatedByte output) {
-            if (ENCODE_FLOAT_FIXED) {
-
-                // deprecated way with fixed precision
-                NumberEncoding.writeDouble(value, output);
-
-            } else if(ENCODE_FLOAT_NO_COMMA) {
-
-                // Always integer with exponent (co comma)
-                this.output = output.reserve(MAX_DOUBLE_SIZE);
-                final int type = DoubleToDecimal.encode(value, this);
-                if (type != DoubleToDecimal.NON_SPECIAL) {
-                    writeSpecial(type, output);
-                }
-                this.output = null;
-
-            }  else if(ENCODE_FLOAT_MINIMAL) {
-
-                // Java-like minimal representation, but without trailing zero
-                final int type = schubfachd.encodeDouble(value);
-                if (type == DoubleToDecimal.NON_SPECIAL) {
-                    int position = output.addLength(schubfachd.getEncodedLength());
-                    schubfachd.getEncoded(output.array, position, output.length);
-                    removeTrailingZero(output);
-                } else {
-                    writeSpecial(type, output);
-                }
-
-            } else {
-                throw new AssertionError("bad configuration");
-            }
+            NumberEncoding.writeDouble(value, output);
         }
 
-        private void removeTrailingZero(RepeatedByte output) {
-            // Schubfach encodes according to the Java rules w/ a minimal encoding
-            // and a trailing zero. Protobuf and JSON does not require the trailing
-            // zero, so we can omit it and save 2 characters.
-            short lastTwoBytes = ByteUtil.readLittleEndian16(output.array, output.length - 2);
-            if (lastTwoBytes == DOT_ZERO_LE) {
-                output.length -= 2;
+    }
+
+    static abstract class SchubfachEncoder implements Schubfach.FloatEncoder, DoubleEncoder, FloatEncoder {
+
+        @Override
+        public void writeFloat(float value, RepeatedByte output) {
+            try {
+                this.output = output.reserve(MAX_CHARS_FLOAT);
+                final int type = Schubfach.encodeFloat(value, this);
+                if (type != Schubfach.NON_SPECIAL) {
+                    writeSpecial(type, output);
+                }
+            } finally {
+                this.output = null;
             }
         }
 
         @Override
-        public void encodeFloat(boolean negative, int significand, int exponent) {
-            writeFloatWithoutComma(negative, significand, exponent);
+        public void writeDouble(double value, RepeatedByte output) {
+            try {
+                this.output = output.reserve(MAX_CHARS_DOUBLE);
+                final int type = Schubfach.encodeDouble(value, this);
+                if (type != Schubfach.NON_SPECIAL) {
+                    writeSpecial(type, output);
+                }
+            } finally {
+                this.output = null;
+            }
         }
 
-        private void writeFloatWithoutComma(boolean negative, int significand, int exponent) {
+        private void writeSpecial(int type, RepeatedByte output) {
+            switch (type) {
+                case Schubfach.NON_SPECIAL:
+                    throw new IllegalArgumentException("not a special type");
+                case Schubfach.PLUS_ZERO:
+                    output.addAll(PLUS_ZERO);
+                    break;
+                case Schubfach.MINUS_ZERO:
+                    output.addAll(MINUS_ZERO);
+                    break;
+                case Schubfach.PLUS_INF:
+                    output.addAll(PLUS_INF);
+                    break;
+                case Schubfach.MINUS_INF:
+                    output.addAll(MINUS_INF);
+                    break;
+                default:
+                    output.addAll(NAN);
+                    break;
+            }
+        }
+
+        protected RepeatedByte output;
+
+        private static final byte[] PLUS_ZERO = "0".getBytes(ASCII);
+        private static final byte[] MINUS_ZERO = PLUS_ZERO;
+        private static final byte[] PLUS_INF = "\"Infinity\"".getBytes(ASCII);
+        private static final byte[] MINUS_INF = "\"-Infinity\"".getBytes(ASCII);
+        private static final byte[] NAN = "\"NaN\"".getBytes(ASCII);
+
+        /*
+Room for the longer of the forms
+-ddddd.dddd         H + 2 characters
+-0.00ddddddddd      H + 5 characters
+-d.ddddddddE-ee     H + 6 characters
+where there are H digits d
+*/
+        public static final int MAX_CHARS_FLOAT = H_FLOAT + 6 + 1; // +1 when writing exp as 4 digits
+
+        /*
+Room for the longer of the forms
+    -ddddd.dddddddddddd         H + 2 characters
+    -0.00ddddddddddddddddd      H + 5 characters
+    -d.ddddddddddddddddE-eee    H + 7 characters
+where there are H digits d
+ */
+        public static final int MAX_CHARS_DOUBLE = H_DOUBLE + 7 + 1; // +1 when writing exp as 4 digits
+
+    }
+
+    static class NoCommaFloatEncoder extends SchubfachEncoder {
+
+        @Override
+        public void encodeFloat(boolean negative, int significand, int exponent) {
             final byte[] buffer = output.array;
             if (negative) output.add(NEGATIVE_SIGN);
             int newLength = NumberEncoding.writePositiveInt(significand, buffer, output.length);
@@ -794,18 +909,13 @@ class JsonEncoding {
                 if (exponent > 0 && exponent <= 2 && trailingZeros >= exponent) {
                     output.length += exponent;
                 } else {
-                    output.add(E);
-                    NumberEncoding.writeInt(exponent, output);
+                    output.length = NumberEncoding.writeExponent(buffer, newLength, exponent);
                 }
             }
         }
 
         @Override
         public void encodeDouble(boolean negative, long significand, int exponent) {
-            writeDoubleWithoutComma(negative, significand, exponent);
-        }
-
-        private void writeDoubleWithoutComma(boolean negative, long significand, int exponent) {
             final byte[] buffer = output.array;
             if (negative) output.add(NEGATIVE_SIGN);
             int newLength = NumberEncoding.writePositiveLong(significand, buffer, output.length);
@@ -832,48 +942,193 @@ class JsonEncoding {
             return maxIx - startIx;
         }
 
-        private void writeSpecial(int type, RepeatedByte output) {
-            switch (type) {
-                case FloatToDecimal.NON_SPECIAL:
-                    throw new IllegalArgumentException("not a special type");
-                case FloatToDecimal.PLUS_ZERO:
-                    output.addAll(PLUS_ZERO);
-                    break;
-                case FloatToDecimal.MINUS_ZERO:
-                    output.addAll(MINUS_ZERO);
-                    break;
-                case FloatToDecimal.PLUS_INF:
-                    output.addAll(PLUS_INF);
-                    break;
-                case FloatToDecimal.MINUS_INF:
-                    output.addAll(MINUS_INF);
-                    break;
-                default:
-                    output.addAll(NAN);
-                    break;
-            }
-        }
-
-        RepeatedByte output;
-        final FloatToDecimal.DefaultFloatEncoder schubfachf = ENCODE_FLOAT_MINIMAL ? new FloatToDecimal.DefaultFloatEncoder() : null;
-        final DoubleToDecimal.DefaultDoubleEncoder schubfachd = ENCODE_FLOAT_MINIMAL ? new DoubleToDecimal.DefaultDoubleEncoder() : null;
-
-        static final int MAX_DOUBLE_SIZE = 17 + 6;
-
         static final byte ZERO = (byte) '0';
         static final short DOT_ZERO_LE = '.' | '0' << 8;
         static final byte E = (byte) 'E';
         static final byte NEGATIVE_SIGN = (byte) '-';
-        static final byte[] PLUS_ZERO = "0".getBytes(ASCII);
-        static final byte[] MINUS_ZERO = PLUS_ZERO;
-        static final byte[] PLUS_INF = "\"Infinity\"".getBytes(ASCII);
-        static final byte[] MINUS_INF = "\"-Infinity\"".getBytes(ASCII);
-        static final byte[] NAN = "\"NaN\"".getBytes(ASCII);
 
-        private static final String FLOAT_ENCODING_TYPE = System.getProperty("quickbuf.json.float_encoding", "minimal");
-        private static final boolean ENCODE_FLOAT_NO_COMMA = "no_comma".equalsIgnoreCase(FLOAT_ENCODING_TYPE);
-        static final boolean ENCODE_FLOAT_FIXED = "fixed".equalsIgnoreCase(FLOAT_ENCODING_TYPE);
-        private static final boolean ENCODE_FLOAT_MINIMAL = !ENCODE_FLOAT_NO_COMMA && !ENCODE_FLOAT_FIXED;
+    }
+
+    /**
+     * Converts a floating point number to the minimal string
+     * representation according to the Java rules and removal
+     * of trailing commas '.0'
+     */
+    static class MinimalFloatEncoder extends SchubfachEncoder {
+
+        @Override
+        public void encodeFloat(boolean negative, int f, int e) {
+            if (negative) {
+                append('-');
+            }
+            final int len = getDecimalLength(f);
+            f *= getNormalizationScale(H_FLOAT, len);
+            e += len;
+            int h = (int) (f * 1441151881L >>> 57);
+            int l = f - 100000000 * h;
+            if (0 < e && e <= 7) {
+                toChars1(h, l, e);
+            } else if (-3 < e && e <= 0) {
+                toChars2(h, l, e);
+            } else {
+                toChars3(h, l, e);
+            }
+        }
+
+        private void toChars1(int h, int l, int e) {
+        /*
+        0 < e <= 7: plain format without leading zeroes.
+        Left-to-right digits extraction:
+        algorithm 1 in [3], with b = 10, k = 8, n = 28.
+         */
+            appendDigit(h);
+            int y = (int) (multiplyHigh((long) (l + 1) << 28, 193428131138340668L) >>> 20) - 1;
+            int t;
+            int i = 1;
+            for (; i < e; ++i) {
+                t = 10 * y;
+                appendDigit(t >>> 28);
+                y = t & MASK_28;
+            }
+            append('.');
+            for (; i <= 8; ++i) {
+                t = 10 * y;
+                appendDigit(t >>> 28);
+                y = t & MASK_28;
+            }
+            removeTrailingZeroes();
+        }
+
+        private void toChars2(int h, int l, int e) {
+            // -3 < e <= 0: plain format with leading zeroes.
+            appendDigit(0);
+            append('.');
+            for (; e < 0; ++e) {
+                appendDigit(0);
+            }
+            appendDigit(h);
+            append8Digits(l);
+            removeTrailingZeroes();
+        }
+
+        private void toChars3(int h, int l, int e) {
+            // -3 >= e | e > 7: computerized scientific notation
+            appendDigit(h);
+            append('.');
+            append8Digits(l);
+            removeTrailingZeroes();
+            exponent(e - 1);
+        }
+
+        @Override
+        public void encodeDouble(boolean negative, long f, int e) {
+            if (negative) {
+                append('-');
+            }
+            toChars(f, e);
+        }
+
+        /*
+        Formats the decimal f 10^e.
+         */
+        private void toChars(long f, int e) {
+            final int len = getDecimalLength(f);
+            f *= getNormalizationScale(H_DOUBLE, len);
+            e += len;
+
+            long hm = multiplyHigh(f, 193428131138340668L) >>> 20;
+            int l = (int) (f - 100000000L * hm);
+            int h = (int) (hm * 1441151881L >>> 57);
+            int m = (int) (hm - 100000000 * h);
+
+            if (0 < e && e <= 7) {
+                toChars1(h, m, l, e);
+            } else if (-3 < e && e <= 0) {
+                toChars2(h, m, l, e);
+            } else {
+                toChars3(h, m, l, e);
+            }
+        }
+
+        private void toChars1(int h, int m, int l, int e) {
+        /*
+        0 < e <= 7: plain format without leading zeroes.
+        Left-to-right digits extraction:
+        algorithm 1 in [3], with b = 10, k = 8, n = 28.
+         */
+            appendDigit(h);
+            int y = (int) (multiplyHigh((long) (m + 1) << 28, 193428131138340668L) >>> 20) - 1;
+            int t;
+            int i = 1;
+            for (; i < e; ++i) {
+                t = 10 * y;
+                appendDigit(t >>> 28);
+                y = t & MASK_28;
+            }
+            append('.');
+            for (; i <= 8; ++i) {
+                t = 10 * y;
+                appendDigit(t >>> 28);
+                y = t & MASK_28;
+            }
+            lowDigits(l);
+        }
+
+        private void toChars2(int h, int m, int l, int e) {
+            // -3 < e <= 0: plain format with leading zeroes.
+            appendDigit(0);
+            append('.');
+            for (; e < 0; ++e) {
+                appendDigit(0);
+            }
+            appendDigit(h);
+            append8Digits(m);
+            lowDigits(l);
+        }
+
+        private void toChars3(int h, int m, int l, int e) {
+            // -3 >= e | e > 7: computerized scientific notation
+            appendDigit(h);
+            append('.');
+            append8Digits(m);
+            lowDigits(l);
+            exponent(e - 1);
+        }
+
+        private void lowDigits(int l) {
+            if (l != 0) {
+                append8Digits(l);
+            }
+            removeTrailingZeroes();
+        }
+
+        private void removeTrailingZeroes() {
+            while (output.array[output.length - 1] == '0') {
+                output.length--;
+            }
+            // The Protobuf and JSON specs do not require a trailing zero
+            if (output.array[output.length - 1] == '.') {
+                output.length--;
+            }
+        }
+
+        private void exponent(int e) {
+            output.length = NumberEncoding.writeExponent(output.array, output.length, e);
+        }
+
+        private void append(int c) {
+            output.array[output.length++] = (byte) c;
+        }
+
+        private void appendDigit(int d) {
+            output.array[output.length++] = (byte) ('0' + d);
+        }
+
+        private void append8Digits(int m) {
+            output.length += NumberEncoding.write8Digits(output.array, output.length, m);
+        }
+
+        private static final int MASK_28 = (1 << 28) - 1; // Used for left-to-tight digit extraction.
 
     }
 
@@ -891,5 +1146,4 @@ class JsonEncoding {
         private static final byte[] FALSE = {'f', 'a', 'l', 's', 'e'};
 
     }
-
 }

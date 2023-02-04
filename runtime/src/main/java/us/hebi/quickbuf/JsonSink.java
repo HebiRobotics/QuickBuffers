@@ -698,7 +698,7 @@ public abstract class JsonSink implements Closeable, Flushable {
         protected int trailingComma = 0;
         protected int trailingSpace = 0;
         private static final int SPACES_PER_LEVEL = 2;
-        private final JsonEncoding.FloatEncoder floatEncoder = new JsonEncoding.FloatEncoder();
+        private final JsonEncoding.FloatEncoder floatEncoder = JsonEncoding.getFloatEncoder();
 
     }
 }
