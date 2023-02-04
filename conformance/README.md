@@ -6,7 +6,7 @@ QuickBuffers currently passes all required and recommended tests and provides op
 
 **Compile the QuickBuffers test executable**
 
-Due to some issues with Java wrapper scripts, we found it best to compile the Java code to a native executable. This also tests GraalVM integration and makes sure that there is no use of runtime reflections. 
+Due to some issues with Java wrapper scripts, we found it best to compile the Java code to a native executable. This also tests GraalVM integration and makes sure that there no accidental runtime reflections. 
 
 ```shell
 # full packaging and native compilation
