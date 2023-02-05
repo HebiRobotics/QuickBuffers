@@ -116,7 +116,7 @@ public class ConformanceQuickbuf {
         // Protobuf out
         if (request.getRequestedOutputFormat() == Conformance.WireFormat.PROTOBUF) {
             try {
-                response.getMutableProtobufPayload().copyFrom(serializeBinary(testMessage));
+                response.setProtobufPayload(serializeBinary(testMessage));
             } catch (IOException ioe) {
                 response.setSerializeError("(" + sinkName + ") " + ioe.getMessage());
             }

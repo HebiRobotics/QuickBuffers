@@ -309,6 +309,7 @@ public class RequestInfo {
             mutableGetterName = "getMutable" + upperName;
             adderName = "add" + upperName;
             clearName = "clear" + upperName;
+            lazyInitName = "init" + upperName;
             isPrimitive = FieldUtil.isPrimitive(descriptor.getType());
             tag = FieldUtil.makeTag(descriptor);
             bytesPerTag = FieldUtil.computeRawVarint32Size(tag) +
@@ -381,16 +382,25 @@ public class RequestInfo {
         }
 
         public boolean isLazyAllocationEnabled() {
-            // currently only supported for message fields
-            if (isRequired() || isRepeated() || !isMessageOrGroup()) {
+            // never enable on required fields or primitives
+            if (isRequired() || isSingularPrimitiveOrEnum()) {
                 return false;
             }
             // the lazy flag is technically for lazy parsing, but it
             // seems reasonable to at least do a lazy allocation.
-            if (descriptor.getOptions().hasLazy()) {
-                return descriptor.getOptions().getLazy();
+            if (descriptor.getOptions().hasLazy() && descriptor.getOptions().getLazy()) {
+                return true;
             }
-            return getPluginOptions().getAllocationStrategy() == AllocationStrategy.Lazy;
+            // only messages
+            switch (getPluginOptions().getAllocationStrategy()) {
+                case Lazy:
+                    return true;
+                case LazyMessage:
+                    return isMessageOrGroup();
+                case Eager:
+                default:
+                    return false;
+            }
         }
 
         public boolean isEnforceHasCheckEnabled() {
@@ -469,13 +479,22 @@ public class RequestInfo {
             return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REPEATED;
         }
 
+        public boolean isSingular() {
+            return !isRepeated();
+        }
+
         public boolean isPacked() {
             return isPackable() && descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
         }
 
+        public boolean isSingularPrimitiveOrEnum() {
+            return isSingular() && (isPrimitive() || isEnum());
+        }
+
         public boolean isPackable() {
-            if (!isRepeated())
+            if (!isRepeated()) {
                 return false;
+            }
 
             switch (descriptor.getType()) {
                 case TYPE_STRING:
@@ -590,6 +609,7 @@ public class RequestInfo {
         String mutableGetterName;
         String adderName;
         String clearName;
+        String lazyInitName;
         String defaultValue;
         String jsonName;
         String protoFieldName;

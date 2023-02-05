@@ -94,16 +94,19 @@ class PluginOptions {
 
     enum AllocationStrategy {
         Lazy,
+        LazyMessage,
         Eager;
 
         static AllocationStrategy parseFromString(String string) {
             switch (string.toLowerCase()) {
-                case "eager":
-                    return Eager;
                 case "lazy":
                     return Lazy;
+                case "lazymsg":
+                    return LazyMessage;
+                case "eager":
+                    return Eager;
             }
-            throw new GeneratorException("'allocation' parameter accepts ['eager', 'lazy']. Found: " + string);
+            throw new GeneratorException("'allocation' parameter accepts ['lazy', 'lazymsg', 'eager']. Found: " + string);
         }
 
     }
