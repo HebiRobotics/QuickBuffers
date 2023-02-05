@@ -429,9 +429,9 @@ Be aware that this prevents the definition of cycles in the message definitions.
 There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file.
 
 ```text
--dontwarn us.hebi.quickbuf.jdk.JdkMethods
+-dontwarn us.hebi.quickbuf.JdkMethods
 ```
 
 ## Acknowledgements
 
-Many internals and large parts of the generated API are based on [Protobuf-Java](https://github.com/protocolbuffers/protobuf). The encoding of floating point numbers during JSON serialization is based on [Schubfach](https://github.com/c4f7fcce9cb06515/Schubfach/) [[Giu2020](https://drive.google.com/open?id=1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN)].
+Many internals and large parts of the generated API are based on [Protobuf-Java](https://github.com/protocolbuffers/protobuf). The encoding of floating point numbers during JSON serialization is based on [Schubfach](https://github.com/c4f7fcce9cb06515/Schubfach/) [[Giu2020](https://drive.google.com/open?id=1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN)]. Many other JSON parts were inspired by [dsl-json](https://github.com/ngs-doo/dsl-json), [jsoniter](https://jsoniter.com/), and [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala).

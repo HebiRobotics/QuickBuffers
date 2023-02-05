@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
 import static us.hebi.quickbuf.Schubfach.*;
-import static us.hebi.quickbuf.jdk.JdkMath.*;
+import static us.hebi.quickbuf.JdkMath.*;
 
 /**
  * Utility methods for encoding values in a JSON compatible way.

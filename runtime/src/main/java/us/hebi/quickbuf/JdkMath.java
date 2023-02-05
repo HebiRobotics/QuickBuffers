@@ -17,7 +17,7 @@
  * limitations under the License.
  * #L%
  */
-package us.hebi.quickbuf.jdk;
+package us.hebi.quickbuf;
 
 /**
  * This class dispatches calls to built-in Java methods

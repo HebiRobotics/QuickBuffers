@@ -43,13 +43,13 @@ package us.hebi.quickbuf;
 import static java.lang.Double.*;
 import static java.lang.Float.*;
 import static us.hebi.quickbuf.Schubfach.MathUtils.*;
-import static us.hebi.quickbuf.jdk.JdkMath.*;
+import static us.hebi.quickbuf.JdkMath.*;
 
 /**
  * This class exposes methods to decompose a {@double} or {@float} into
  * its significand and exponent parts.
  * <p>
- * The Schubfach algorithm was created by Raffaelo Giuletti. Besides extracting
+ * The Schubfach algorithm was created by Raffaelo Giuletti. Besides isolating
  * the decomposition part, the algorithm was not changed in any way. The paper
  * and sources with license can be found at the following links:
  * <p>
