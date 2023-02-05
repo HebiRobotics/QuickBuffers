@@ -44,7 +44,7 @@ public class JsonEncodingTest {
 
     final Random rnd = new Random(0);
     final RepeatedByte bytes = RepeatedByte.newEmptyInstance();
-    final JsonEncoding.FloatEncoder floatEncoder = new JsonEncoding.FloatEncoder();
+    final JsonEncoding.FloatEncoder floatEncoder = JsonEncoding.getFloatEncoder();
     final static int n = 10000;
 
     @Before
@@ -212,7 +212,7 @@ public class JsonEncodingTest {
 
     private static int getTrailingZeros(String chars) {
         byte[] bytes = chars.getBytes(Charsets.ASCII);
-        return JsonEncoding.FloatEncoder.getNumTrailingZeros(bytes, 0, bytes.length - 1);
+        return JsonEncoding.NoCommaFloatEncoder.getNumTrailingZeros(bytes, 0, bytes.length - 1);
     }
 
     @Test
@@ -265,7 +265,7 @@ public class JsonEncodingTest {
         } else if (Double.isNaN(expected)) {
             assertEquals("\"NaN\"", encoded);
         } else {
-            if (!JsonEncoding.FloatEncoder.ENCODE_FLOAT_FIXED) {
+            if (!JsonEncoding.ENCODE_FLOAT_FIXED) {
                 if(!ProtoUtil.isEqual(expected, Double.parseDouble(encoded))) {
                     assertEquals(Double.toString(expected), encoded);
                 }
@@ -295,7 +295,7 @@ public class JsonEncodingTest {
         } else if (Float.isNaN(expected)) {
             assertEquals("\"NaN\"", encoded);
         } else {
-            if (!JsonEncoding.FloatEncoder.ENCODE_FLOAT_FIXED) {
+            if (!JsonEncoding.ENCODE_FLOAT_FIXED) {
                 if(!ProtoUtil.isEqual(expected, Float.parseFloat(encoded))) {
                     assertEquals(Float.toString(expected), encoded);
                 }
