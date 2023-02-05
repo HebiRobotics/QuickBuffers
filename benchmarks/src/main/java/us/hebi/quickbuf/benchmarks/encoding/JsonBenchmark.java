@@ -53,6 +53,11 @@ import java.util.concurrent.TimeUnit;
  * JsonBenchmark.writeDoubleNumbers  avgt   10  69,058 ± 1,600  us/op
  * JsonBenchmark.writeFloatNumbers   avgt   10  49,168 ± 2,137  us/op
  *
+ * === Schubfach (default algorithm after direct integration)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  45,576 ± 0,204  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  37,687 ± 0,286  us/op
+ *
  * === Schubfach (custom without comma)
  * Benchmark                         Mode  Cnt   Score   Error  Units
  * JsonBenchmark.writeDoubleNumbers  avgt   10  35,870 ± 0,863  us/op

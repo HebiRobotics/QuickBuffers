@@ -155,6 +155,24 @@ public final class Utf8String {
         return this;
     }
 
+    public Utf8String writeTo(ProtoSink sink) throws java.io.IOException {
+        ensureSerialized();
+        sink.writeRawBytes(bytes, 0, serializedSize);
+        return this;
+    }
+
+    public Utf8String writeTo(java.io.OutputStream outputStream) throws java.io.IOException {
+        ensureSerialized();
+        outputStream.write(bytes, 0, serializedSize);
+        return this;
+    }
+
+    public Utf8String writeTo(java.nio.ByteBuffer buffer) {
+        ensureSerialized();
+        buffer.put(bytes, 0, serializedSize);
+        return this;
+    }
+
     public void clear() {
         serializedSize = 0;
         string = "";

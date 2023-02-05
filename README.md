@@ -14,17 +14,17 @@ The main highlights are
  * **No reflections**. GraalVM native-images and ProGuard obfuscation ([config](#proguard-configuration)) are supported out of the box
  * **Faster** encoding and decoding [speed](./benchmarks)
  * **Smaller** code size than protobuf-javalite
- * **Built-in JSON** marshalling compliant with the [Proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
+ * **Built-in JSON** marshalling compliant with the [proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
  * **Improved order** for optimized [sequential memory access](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order)
  * **Optional accessors** as an opt-in feature (java8)
 
-QuickBuffers fully [conforms](./conformance) to the [proto2 specification](https://developers.google.com/protocol-buffers/docs/proto) and is compatible with all java versions from 6 through 20. So far we have decided against explicitly implementing the proto3 deviations due to some of their [design decisions](proto3.md), but proto3 messages can be generated and are wire compatible. The current limitations include
+QuickBuffers passes all [proto2 conformance tests](./conformance) and is compatible with all java versions from 6 through 20. Proto3 messages can be generated and are wire compatible, but so far the behavioral differences have not been explicitly added due to some [proto3 design decisions](proto3.md) that have kept us from using it. The current limitations include
 
+* [Services](https://developers.google.com/protocol-buffers/docs/proto#services) are not implemented
 * [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) are embedded directly into the extended message, so support is limited to generation time.
-* [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are implemented as a [repeated field](https://developers.google.com/protocol-buffers/docs/proto#backwards) that matches the wire representation.
+* [Maps](https://developers.google.com/protocol-buffers/docs/proto#maps) are implemented as [repeated entries](https://developers.google.com/protocol-buffers/docs/proto#backwards) that match the wire representation.
+* The JSON marshalling does not special case the well-known [proto3 types](https://developers.google.com/protocol-buffers/docs/proto3) including timestamp and duration
 * Unsigned integer types within the sign range are encoded as negative JSON numbers
-* The JSON marshalling does not special case the built-in [proto3 types](https://developers.google.com/protocol-buffers/docs/proto3) such as timestamp and duration
-* [Services](https://developers.google.com/protocol-buffers/docs/proto#services) are currently ignored
 
 ## Getting started
 
@@ -314,7 +314,7 @@ public final class SimpleMessage {
 
 ### Message fields
 
-Nested message types are `final` and allocated during construction time. The recommended way to set nested message content is by accessing the internal store with `getMutableNestedMessage()`. Setting content using `setNestedMessage(NestedMessage.newInstance())` copies the data, but does not change the internal reference.
+Nested message types are allocated internally. The recommended way to set nested message content is by accessing the internal store with `getMutableNestedMessage()`. Setting content using `setNestedMessage(NestedMessage.newInstance())` copies the data, but does not change the internal reference.
 
 ```proto
 // .proto
