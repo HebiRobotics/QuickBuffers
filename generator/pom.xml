@@ -14,8 +14,6 @@
     <properties>
         <protocPluginName>protoc-gen-quickbuf</protocPluginName>
         <finalName>${protocPluginName}-${project.version}</finalName>
-        <protoc.os>determined-via-profile</protoc.os>
-        <protoc.arch>x86_64</protoc.arch>
         <protoc.fileName>protoc-${protobuf.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
         <protoc.path>${project.basedir}/../.protoc</protoc.path>
         <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
@@ -235,51 +233,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>platform-windows</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-            <properties>
-                <protoc.os>windows</protoc.os>
-            </properties>
-        </profile>
-        <profile>
-            <id>platform-linux</id>
-            <activation>
-                <os>
-                    <name>linux</name>
-                </os>
-            </activation>
-            <properties>
-                <protoc.os>linux</protoc.os>
-            </properties>
-        </profile>
-        <profile>
-            <id>platform-osx</id>
-            <activation>
-                <os>
-                    <name>mac os x</name>
-                </os>
-            </activation>
-            <properties>
-                <protoc.os>osx</protoc.os>
-                <native.staticArg>--verbose</native.staticArg> <!-- unsupported on osx -->
-            </properties>
-        </profile>
-        <profile>
-            <id>arch-aarch64</id>
-            <activation>
-                <os>
-                    <arch>aarch64</arch>
-                </os>
-            </activation>
-            <properties>
-                <protoc.arch>aarch_64</protoc.arch>
-            </properties>
-        </profile>
         <profile>
             <id>native</id>
             <build>
