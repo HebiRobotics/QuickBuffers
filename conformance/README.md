@@ -23,8 +23,9 @@ The generated executable is in `${quickbufDir}/conformance/target/ConformanceQui
 The `conformance_test_runner` executable needs to be compiled on Linux using the commands below. Depending on the CPU this can take tens of minutes.
 
 ```shell
-git checkout https://github.com/protocolbuffers/protobuf.git
+git clone https://github.com/protocolbuffers/protobuf.git
 cd protobuf
+git submodule update --init --recursive
 cmake . -Dprotobuf_BUILD_CONFORMANCE=ON && cmake --build .
 ```
 
