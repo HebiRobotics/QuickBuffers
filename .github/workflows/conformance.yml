@@ -41,8 +41,7 @@ jobs:
     - name: Conformance 3.21.4
       run: |
         # download pre-built binary because the tester takes 20+ minutes to compile
-        mkdir lib
         wget -O conformance_test_runner https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc_conformance_test_runner-3.21.4.0-linux-x86_64.exe
-        wget -O lib/libjsoncpp.so.24 https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/libjsoncpp.so.1.9.4
+        sudo wget -O /usr/lib/libjsoncpp.so.24 https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/libjsoncpp.so.1.9.4
         chmod +x conformance_test_runner
         ./conformance_test_runner --enforce_recommended conformance/target/ConformanceQuickbuf.exe
