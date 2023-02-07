@@ -1,4 +1,4 @@
-name: Protobuf conformance test
+name: Protobuf Conformance Tests
 
 on:
   push:
