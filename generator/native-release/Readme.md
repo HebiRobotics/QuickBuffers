@@ -1,10 +1,10 @@
 # Deploying binary plugin artifacts
 
-In order to to support the `pluginArtifact` parameter (`"us.hebi.quickbuf:protoc-gen-quickbuf:${version}"`) of the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin) we need to create native executables with the same naming convention as [protoc](https://repo1.maven.org/maven2/com/google/protobuf/protoc/3.20.0/) and the [protoc-gen-grpc-java](https://repo1.maven.org/maven2/io/grpc/protoc-gen-grpc-java/1.9.1/) plugin, and upload them to Maven Central. 
+In order to support the `pluginArtifact` parameter (`"us.hebi.quickbuf:protoc-gen-quickbuf:${version}"`) of the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin), we need to upload native executables to Maven Central and match the naming convention of [protoc](https://repo1.maven.org/maven2/com/google/protobuf/protoc/3.20.0/) and the [protoc-gen-grpc-java](https://repo1.maven.org/maven2/io/grpc/protoc-gen-grpc-java/1.9.1/) plugin.
 
 The Java bytecode can be compiled to a standalone native executable using [GraalVM](https://www.graalvm.org/). This also gets rid of requiring an installed Java runtime and significantly speeds up execution due to ahead of time compilation and faster startup time. The caveat is that the images need to be compiled on each supported platform, which requires a self-hosted runner (macOS aarch64).
 
-The process could be fully automated, but with native executables it's better to do some extra sanity checking. Maven can't update releases if they break. We can automate more tests if updates ever become more frequent.
+Given that Maven releases can only be released once, we decided to add some manual sanity checking rather than fully automating the release pipeline. The checks can be automated if updates ever become more frequent. The self-hosted runner already has everything setup, so the notes below are only reminders in case it ever breaks.
 
 ### Creating native executables
 

@@ -6,13 +6,16 @@ QuickBuffers currently passes all required and recommended tests and provides op
 
 **Compile the QuickBuffers test executable**
 
-Due to some issues with Java wrapper scripts, we found it best to compile the Java code to a native executable. This also tests GraalVM integration and makes sure that there no accidental runtime reflections. 
+After encountering issues with Java wrapper scripts, we decided to compile the Java code to a native executable. This simultaneously tests GraalVM integration and makes sure that there no accidental runtime reflections. 
 
 ```shell
-# full packaging and native compilation
-mvn clean package --projects conformance -am -Pnative
+# 1) build a native image of the generator
+mvn clean package --projects parser,generator -am -Pnative
 
-# native compilation without prior packaging
+# 2) test the native generator and build the conformance executable
+mvn clean package --projects runtime,compat,conformance -am -Pnative -PuseNativeGen
+
+# (note) native compilation without any prior packaging
 mvn native:compile-no-fork -pl conformance -Pnative
 ```
 
