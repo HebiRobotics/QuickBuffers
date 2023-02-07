@@ -32,7 +32,7 @@ jobs:
     - name: Run conformance test
       run: |
         # download pre-built binary because the tester takes 20+ minutes to compile
-        wget https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc_conformance_test_runner-3.21.4.0-linux-x86_64.exe
-        chmod +x protoc_conformance_test_runner-3.21.4.0-linux-x86_64.exe
+        wget https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc_conformance_test_runner-3.20.2-linux-x86_64.exe
+        chmod +x protoc_conformance_test_runner-3.20.2-linux-x86_64.exe
         chmod +x conformance/target/ConformanceQuickbuf.exe
-        ./protoc_conformance_test_runner-3.21.4.0-linux-x86_64.exe --enforce_recommended conformance/target/ConformanceQuickbuf.exe
+        ./protoc_conformance_test_runner-3.20.2-linux-x86_64.exe --enforce_recommended conformance/target/ConformanceQuickbuf.exe
