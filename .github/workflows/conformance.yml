@@ -1,0 +1,47 @@
+name: Protobuf Conformance Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v3
+    - uses: graalvm/setup-graalvm@v1
+      with:
+        version: 'latest'
+        java-version: '17'
+        set-java-home: 'true'
+        components: 'native-image'
+        cache: 'maven'
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build generator
+      run: mvn clean package --projects parser,generator -am -Pnative
+
+    - name: Build conformance executable
+      run: |
+        mvn clean package --projects runtime,compat,conformance -am -Pnative -PuseNativeGen
+        chmod +x conformance/target/ConformanceQuickbuf.exe
+
+    - name: Conformance 3.20.2
+      run: |
+        # download pre-built binary because the tester takes 20+ minutes to compile
+        wget -O conformance_test_runner https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc_conformance_test_runner-3.20.2-linux-x86_64.exe
+        chmod +x conformance_test_runner
+        ./conformance_test_runner --enforce_recommended conformance/target/ConformanceQuickbuf.exe
+
+    - name: Conformance 3.21.4
+      run: |
+        # download pre-built binary because the tester takes 20+ minutes to compile
+        wget -O conformance_test_runner https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/protoc_conformance_test_runner-3.21.4.0-linux-x86_64.exe
+        sudo wget -O /usr/lib/libjsoncpp.so.24 https://github.com/HebiRobotics/QuickBuffers/releases/download/1.0-rc1/libjsoncpp.so.1.9.4
+        chmod +x conformance_test_runner
+        ./conformance_test_runner --enforce_recommended conformance/target/ConformanceQuickbuf.exe

@@ -6,6 +6,10 @@
 
 # QuickBuffers - Fast Protocol Buffers without Allocations
 
+[![build](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/maven.yml/badge.svg)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/maven.yml)
+[![conformance checks](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml/badge.svg?event=status)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/us.hebi.quickbuf/quickbuf-runtime/badge.svg)](https://maven-badges.herokuapp.com/maven-central/us.hebi.quickbuf/quickbuf-runtime)
+
 QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://developers.google.com/protocol-buffers/) that has been developed for low latency use cases in zero-allocation environments. The API follows Protobuf-Java where feasible to simplify migration.
 
 The main highlights are

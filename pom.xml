@@ -85,6 +85,8 @@
 
         <graalvm.tools.version>0.9.19</graalvm.tools.version>
         <native.extension>.exe</native.extension>
+        <protoc.os>determined-via-profile</protoc.os>
+        <protoc.arch>x86_64</protoc.arch>
 
         <!-- Jigsaw module name -->
         <javaModuleName />
@@ -306,7 +308,48 @@
             </activation>
             <properties>
                 <protoc.pluginExt>.bat</protoc.pluginExt>
+                <protoc.os>windows</protoc.os>
                 <native.extension><!-- added automatically --></native.extension>
+            </properties>
+        </profile>
+        <profile>
+            <id>platform-linux</id>
+            <activation>
+                <os>
+                    <name>linux</name>
+                </os>
+            </activation>
+            <properties>
+                <protoc.os>linux</protoc.os>
+            </properties>
+        </profile>
+        <profile>
+            <id>platform-osx</id>
+            <activation>
+                <os>
+                    <name>mac os x</name>
+                </os>
+            </activation>
+            <properties>
+                <protoc.os>osx</protoc.os>
+                <native.staticArg>--verbose</native.staticArg> <!-- unsupported on osx -->
+            </properties>
+        </profile>
+        <profile>
+            <id>arch-aarch64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <protoc.arch>aarch_64</protoc.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>useNativeGen</id>
+            <properties>
+                <protoc.pluginExt>-${project.version}-${protoc.os}-${protoc.arch}.exe</protoc.pluginExt>
             </properties>
         </profile>
     </profiles>
