@@ -35,7 +35,7 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 
 ```xml
 <properties>
-  <quickbuf.version>1.0.0</quickbuf.version>
+  <quickbuf.version>1.1.0</quickbuf.version>
   <quickbuf.options>indent=4,java8_optional=true</quickbuf.options>
 </properties>
 ```
@@ -94,32 +94,32 @@ The generator features several options that can be supplied as a comma-separated
 | **extensions**           | **disabled**, embedded     | `embedded` adds extensions from within a single protoc call directly to the extended message. This requires extensions to be known at generation time. Some plugins may do a separate request per file, so it may require an import to combine multiple files.                                                    |
 | **java8_optional**       | **false**, true            | creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher.                                                                                                                                                      |                               
 
-## Manual installation
+## Manual generation
 
-Alternatively, you can also manually execute `protoc` with the `quickbuf` plugin. The plugin can be installed as a package or run as a standalone executable.
+If you do not want to generate messages at build time, you can also manually execute `protoc` with the `quickbuf` plugin. The plugin can be installed as a package or run as a standalone executable.
 
 **Package installation**
 
-The easiest option is to go to the [download](https://hebirobotics.github.io/QuickBuffers/download.html) site and install the appropriate package. The `protoc-gen-quickbuf` executable is automatically added to the path. There are also commandline installation options that work well on CI.
+The easiest option is to go to the [download](https://hebirobotics.github.io/QuickBuffers/download.html) site and install the appropriate package. There are also commandline options for installation on CI. The package includes the `protoc-gen-quickbuf` plugin as well as a matching `protoc-quickbuf` proto compiler, so you can immediately call
 
-For unsupported platforms you can download the Java wrapper scripts in `protoc-gen-quickbuf-${version}.zip` and place them on the path. This requires a Java 8 or higher runtime.
+`protoc-quickbuf --quickbuf_out=indent=4,replace_package=(protobuf)=quickbuf:. <proto files>`
 
 **Standalone executable**
 
-If you prefer a standalone executable, you can go to the [Releases](https://github.com/HebiRobotics/QuickBuffers/releases) section and download the `protoc-gen-quickbuf-${version}-${arch}.exe` for your system. The plugin path needs to be manually specified by adding the `--plugin-protoc-gen-quickbuf=${pathToExe}` parameter. Depending on your system you may also need to set the executable bit and remove quarantine flags (macOS).
+If you prefer a standalone executable, you can go to the [Releases](https://github.com/HebiRobotics/QuickBuffers/releases) section and download an appropriate `protoc-gen-quickbuf-${version}-${arch}.exe` for your system. The plugin path needs to be manually specified by adding the `--plugin-protoc-gen-quickbuf=${pathToExe}` parameter. Depending on your system you may also need to set the executable bit and remove quarantine flags (macOS).
 
 ```bash
 sudo xattr -r -d com.apple.quarantine protoc-gen-quickbuf
 sudo chmod +x protoc-gen-quickbuf
 ```
 
-**Run protoc**
-
-You can download protoc from [here](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and run it with `--quickbuf_out=<options>:./path/to/output`. For example, 
+If you don't already have protoc, you can download it from [here](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and run it with `--quickbuf_out=<options>:./path/to/output`. For example, 
 
 ```bash
-protoc --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
+protoc --plugin-protoc-gen-quickbuf=${pathToExe} --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
 ```
+
+For unsupported platforms you can download the Java wrapper scripts in `protoc-gen-quickbuf-${version}.zip` and place them on the path. This requires a Java 8 or higher runtime.
 
 ## Reading and writing messages
 
