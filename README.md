@@ -100,9 +100,9 @@ If you do not want to generate messages at build time, you can also manually exe
 
 **Package installation**
 
-The easiest option is to go to the [download](https://hebirobotics.github.io/QuickBuffers/download.html) site and install the appropriate package. There are also commandline options for installation on CI. The package includes the `protoc-gen-quickbuf` plugin as well as a matching `protoc-quickbuf` proto compiler, so you can immediately call
+The easiest option is to visit the [download site](https://hebirobotics.github.io/QuickBuffers/download.html) and install the appropriate package. There are also commandline options for installation on CI. The package includes the `protoc-gen-quickbuf` plugin as well as a matching `protoc-quickbuf` proto compiler, so you can immediately call
 
-`protoc-quickbuf --quickbuf_out=indent=4,replace_package=(protobuf)=quickbuf:. <proto files>`
+`protoc-quickbuf --quickbuf_out=indent=4,replace_package=protobuf=quickbuf:. <proto files>`
 
 **Standalone executable**
 
