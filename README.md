@@ -19,7 +19,7 @@ The main highlights are
  * **Faster** encoding and decoding [speed](./benchmarks)
  * **Smaller** code size than protobuf-javalite
  * **Built-in JSON** marshalling compliant with the [proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
- * **Improved order** for optimized [sequential memory access](https://github.com/HebiRobotics/QuickBuffers/wiki/Serialization-Order)
+ * **Improved order** for optimized [sequential memory access](order.md)
  * **Optional accessors** as an opt-in feature (java8)
 
 QuickBuffers passes all [proto2 conformance tests](./conformance) and is compatible with all Java versions from 6 through 20. Proto3 messages can be generated and are wire compatible, but so far the behavioral differences have not been explicitly added due to some [proto3 design decisions](proto3.md) that have kept us from using it. Current limitations include
