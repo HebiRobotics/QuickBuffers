@@ -108,7 +108,8 @@ public class JsonSinkTest {
                 "  \"optionalNestedMessage\": {\n" +
                 "    \"bb\": 2\n" +
                 "  },\n" +
-                "  \"optionalForeignMessage\": {}\n" +
+                "  \"optionalForeignMessage\": {\n" +
+                "  }\n" +
                 "}", msg.toString());
     }
 
@@ -116,7 +117,7 @@ public class JsonSinkTest {
     public void testEmptyMessage() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         assertEquals("{}", newJsonSink().writeMessage(msg).toString());
-        assertEquals("{}", newJsonSinkPretty().writeMessage(msg).toString());
+        assertEquals("{\n}", newJsonSinkPretty().writeMessage(msg).toString());
     }
 
     @Test
@@ -155,7 +156,8 @@ public class JsonSinkTest {
                 "  \"optionalForeignMessage\": {\n" +
                 "    \"c\": 3\n" +
                 "  },\n" +
-                "  \"optionalImportMessage\": {},\n" +
+                "  \"optionalImportMessage\": {\n" +
+                "  },\n" +
                 "  \"optionalgroup\": {\n" +
                 "    \"a\": 4\n" +
                 "  },\n" +
@@ -163,66 +165,26 @@ public class JsonSinkTest {
                 "  \"defaultBytes\": \"YLQguzhR2dR6y5M9vnA5m/bJLaM68B1Pt3DpjAMl9B0+uviYbacSyCvNTVVL8LVAI8KbYk3p75wvkx78WA+a+wgbEuEHsegF8rT18PHQDC0PYmNGcJIcUFhn/yD2qDNemK+HJThVhrQf7/IFtOBaAAgj94tfj1wCQ5zo9np4HZDL5r8a5/K8QKSXCaBsDjFJm/ApacpC0gPlZrzGlt4I+gECoP0uIzCwlkq7fEQwIN4crQm/1jgf+5Tar7uQxO2RoGE60dxLRwOvhMHWOxqHaSHG1YadYcy5jtE65sCaE/yR4Uki8wHPi8+TQxWmBJ0vB9mD+qkbj05yZey4FafLqw==\",\n" +
                 "  \"optionalString\": \"optionalString\uD83D\uDCA9\",\n" +
                 "  \"optionalCord\": \"hello!\",\n" +
-                "  \"repeatedDouble\": [\n" +
-                "    \"NaN\",\n" +
-                "    \"-Infinity\",\n" +
-                "    0,\n" +
-                "    -28.3\n" +
-                "  ],\n" +
+                "  \"repeatedDouble\": [\"NaN\", \"-Infinity\", 0, -28.3],\n" +
                 "  \"repeatedFloat\": [],\n" +
-                "  \"repeatedInt32\": [\n" +
-                "    -2,\n" +
-                "    -1,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2,\n" +
-                "    3,\n" +
-                "    4,\n" +
-                "    5\n" +
-                "  ],\n" +
-                "  \"repeatedPackedInt32\": [\n" +
-                "    -1,\n" +
-                "    0,\n" +
-                "    1,\n" +
-                "    2,\n" +
-                "    3,\n" +
-                "    4,\n" +
-                "    5\n" +
-                "  ],\n" +
-                "  \"repeatedForeignMessage\": [\n" +
-                "    {\n" +
-                "      \"c\": 0\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"c\": 1\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"c\": 2\n" +
-                "    },\n" +
-                "    {},\n" +
-                "    {}\n" +
-                "  ],\n" +
-                "  \"repeatedgroup\": [\n" +
-                "    {\n" +
-                "      \"a\": 3\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"a\": 4\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"repeatedBytes\": [\n" +
-                "    \"YXNjaWk=\",\n" +
-                "    \"dXRmOPCfkqk=\",\n" +
-                "    \"YXNjaWk=\",\n" +
-                "    \"dXRmOPCfkqk=\",\n" +
-                "    \"\"\n" +
-                "  ],\n" +
-                "  \"repeatedString\": [\n" +
-                "    \"hello\",\n" +
-                "    \"world\",\n" +
-                "    \"ascii\",\n" +
-                "    \"utf8\uD83D\uDCA9\"\n" +
-                "  ]\n" +
+                "  \"repeatedInt32\": [-2, -1, 0, 1, 2, 3, 4, 5],\n" +
+                "  \"repeatedPackedInt32\": [-1, 0, 1, 2, 3, 4, 5],\n" +
+                "  \"repeatedForeignMessage\": [{\n" +
+                "    \"c\": 0\n" +
+                "  }, {\n" +
+                "    \"c\": 1\n" +
+                "  }, {\n" +
+                "    \"c\": 2\n" +
+                "  }, {\n" +
+                "  }, {\n" +
+                "  }],\n" +
+                "  \"repeatedgroup\": [{\n" +
+                "    \"a\": 3\n" +
+                "  }, {\n" +
+                "    \"a\": 4\n" +
+                "  }],\n" +
+                "  \"repeatedBytes\": [\"YXNjaWk=\", \"dXRmOPCfkqk=\", \"YXNjaWk=\", \"dXRmOPCfkqk=\", \"\"],\n" +
+                "  \"repeatedString\": [\"hello\", \"world\", \"ascii\", \"utf8\uD83D\uDCA9\"]\n" +
                 "}";
         assertEquals(desired, msg.toString());
     }

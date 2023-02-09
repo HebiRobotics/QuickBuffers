@@ -62,14 +62,44 @@ public class TypeRegistryTest {
     // Uses renamed packages
     @Test
     public void testAllTypesTypeMap() {
-        CodeGeneratorRequest request = TestRequestLoader.getAllTypesRequest();
+        CodeGeneratorRequest request = TestRequestLoader.getAllTypesEagerRequest();
         TypeRegistry map = RequestInfo.withTypeRegistry(request).getTypeRegistry();
 
-        assertEquals(10, map.typeMap.entrySet().size());
+        assertEquals(15, map.typeMap.entrySet().size());
 
         assertEquals("protos.test.quickbuf.external.ImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage").toString());
         assertEquals("protos.test.quickbuf.external.ImportMessage.NestedImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage.NestedImportMessage").toString());
         assertEquals("protos.test.quickbuf.ForeignEnum", map.resolveMessageType(".quickbuf_unittest.ForeignEnum").toString());
+    }
+
+    @Test
+    public void testLazyRequiredRecursion() {
+        CodeGeneratorRequest request = TestRequestLoader.getLazyRecursionRequest();
+        TypeRegistry map = RequestInfo.withTypeRegistry(request).getTypeRegistry();
+
+        assertEquals("protos.test.quickbuf.unsupported.Recursion.MainMessage", map.resolveMessageType(".quickbuf_unsupported.MainMessage").toString());
+        assertTrue(map.hasRequiredFieldsInHierarchy(map.resolveMessageType(".quickbuf_unsupported.MainMessage")));
+
+        assertEquals("protos.test.quickbuf.unsupported.Recursion.NestedMessage", map.resolveMessageType(".quickbuf_unsupported.NestedMessage").toString());
+        assertTrue(map.hasRequiredFieldsInHierarchy(map.resolveMessageType(".quickbuf_unsupported.NestedMessage")));
+
+        assertEquals("protos.test.quickbuf.unsupported.Recursion.InnerNestedMessage", map.resolveMessageType(".quickbuf_unsupported.InnerNestedMessage").toString());
+        assertTrue(map.hasRequiredFieldsInHierarchy(map.resolveMessageType(".quickbuf_unsupported.InnerNestedMessage")));
+    }
+
+    @Test
+    public void testLazyRequiredRecursion_reverse() {
+        CodeGeneratorRequest request = TestRequestLoader.getLazyRecursionRequest();
+        TypeRegistry map = RequestInfo.withTypeRegistry(request).getTypeRegistry();
+
+        assertEquals("protos.test.quickbuf.unsupported.Recursion.InnerNestedMessage", map.resolveMessageType(".quickbuf_unsupported.InnerNestedMessage").toString());
+        assertTrue(map.hasRequiredFieldsInHierarchy(map.resolveMessageType(".quickbuf_unsupported.InnerNestedMessage")));
+
+        assertEquals("protos.test.quickbuf.unsupported.Recursion.NestedMessage", map.resolveMessageType(".quickbuf_unsupported.NestedMessage").toString());
+        assertTrue(map.hasRequiredFieldsInHierarchy(map.resolveMessageType(".quickbuf_unsupported.NestedMessage")));
+
+        assertEquals("protos.test.quickbuf.unsupported.Recursion.MainMessage", map.resolveMessageType(".quickbuf_unsupported.MainMessage").toString());
+        assertTrue(map.hasRequiredFieldsInHierarchy(map.resolveMessageType(".quickbuf_unsupported.MainMessage")));
     }
 
 }

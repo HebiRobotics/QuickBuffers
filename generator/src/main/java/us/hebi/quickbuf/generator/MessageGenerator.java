@@ -21,7 +21,7 @@
 package us.hebi.quickbuf.generator;
 
 import com.squareup.javapoet.*;
-import us.hebi.quickbuf.generator.RequestInfo.ExpectedIncomingOrder;
+import us.hebi.quickbuf.generator.PluginOptions.FieldSerializationOrder;
 import us.hebi.quickbuf.generator.RequestInfo.FieldInfo;
 import us.hebi.quickbuf.generator.RequestInfo.MessageInfo;
 
@@ -123,7 +123,7 @@ class MessageGenerator {
     }
 
     private void generateUnknownByteMembers(TypeSpec.Builder type) {
-        if (!info.isStoreUnknownFields()) {
+        if (!info.isStoreUnknownFieldsEnabled()) {
             return;
         }
         type.addField(FieldSpec.builder(RuntimeClasses.BytesType, "unknownBytes")
@@ -174,7 +174,7 @@ class MessageGenerator {
             fields.forEach(field -> field.generateClearQuickCode(clear));
         }
 
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             clear.addStatement(named("$unknownBytes:N.clear()"));
         }
 
@@ -238,11 +238,11 @@ class MessageGenerator {
         // Packable fields make this a bit more complex since they need to generate two cases to preserve
         // backwards compatibility. However, any production proto file should already be using the packed
         // option whenever possible, so we don't need to optimize the non-packed case.
-        final boolean enableFallthroughOptimization = info.getExpectedIncomingOrder() != ExpectedIncomingOrder.None;
-        final List<FieldGenerator> sortedFields = getFieldSortedByExpectedIncomingOrder();
+        final boolean enableFallthroughOptimization = info.getExpectedInputOrder() != FieldSerializationOrder.None;
+        final List<FieldGenerator> sortedFields = getFieldSortedByExpectedInputOrder();
 
         if (enableFallthroughOptimization) {
-            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedIncomingOrder() + ")");
+            mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedInputOrder() + ")");
         }
 
         mergeFrom.addStatement(named("int tag = input.readTag()"))
@@ -286,7 +286,7 @@ class MessageGenerator {
                 .endControlFlow();
 
         // default case -> skip field
-        CodeBlock ifSkipField = info.isStoreUnknownFields() ?
+        CodeBlock ifSkipField = info.isStoreUnknownFieldsEnabled() ?
                 named("if (!input.skipField(tag, $unknownBytes:N))") :
                 named("if (!input.skipField(tag))");
 
@@ -336,7 +336,7 @@ class MessageGenerator {
             writeTo.beginControlFlow("try");
         }
 
-        fields.forEach(f -> {
+        getFieldSortedByOutputOrder().forEach(f -> {
             if (f.getInfo().isRequired()) {
                 // no need to check has state again
                 f.generateSerializationCode(writeTo);
@@ -346,10 +346,10 @@ class MessageGenerator {
                 writeTo.endControlFlow();
             }
         });
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
-                    .addStatement(named("output.writeRawBytes($unknownBytes:N.array(), 0, $unknownBytes:N.length())"))
+                    .addStatement(named("output.writeRawBytes($unknownBytes:N)"))
                     .endControlFlow();
         }
 
@@ -387,7 +387,7 @@ class MessageGenerator {
                 computeSerializedSize.endControlFlow();
             }
         });
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             computeSerializedSize.addStatement(named("size += $unknownBytes:N.length()"));
         }
         computeSerializedSize.addStatement("return size");
@@ -419,7 +419,7 @@ class MessageGenerator {
             copyFrom.endControlFlow();
         }
 
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             copyFrom.addStatement(named("$unknownBytes:N.copyFrom(other.$unknownBytes:N)"));
         }
         copyFrom.addStatement("return this");
@@ -444,7 +444,7 @@ class MessageGenerator {
             mergeFrom.endControlFlow();
         });
 
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             mergeFrom.beginControlFlow("$L", named("if (other.$unknownBytes:N.length() > 0)"))
                     .addStatement(named("$unknownBytes:N.addAll(other.$unknownBytes:N)"))
                     .endControlFlow();
@@ -604,7 +604,7 @@ class MessageGenerator {
         writeTo.addStatement("output.beginObject()");
 
         // add every set field
-        fields.forEach(f -> {
+        getFieldSortedByOutputOrder().forEach(f -> {
             if (f.getInfo().isRequired()) {
                 // no need to check has state again
                 f.generateJsonSerializationCode(writeTo);
@@ -616,7 +616,7 @@ class MessageGenerator {
         });
 
         // add unknown fields as base64
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
                     .addStatement(named("output.writeBytes($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
@@ -679,7 +679,7 @@ class MessageGenerator {
                     .beginControlFlow("if (input.isAtField($N.$N))",
                             info.getFieldNamesClass().simpleName(),
                             field.getInfo().getFieldName())
-                            .beginControlFlow("if (!input.trySkipNullValue())");
+                    .beginControlFlow("if (!input.trySkipNullValue())");
             field.generateJsonDeserializationCode(mergeFrom);
 
             // Unknown field -> skip
@@ -728,7 +728,7 @@ class MessageGenerator {
         }
 
         // add unknown bytes
-        if (info.isStoreUnknownFields()) {
+        if (info.isStoreUnknownFieldsEnabled()) {
             mergeFrom
                     .addCode("case $L:\n", RuntimeClasses.unknownBytesFieldHash1)
                     .beginControlFlow("case $L:", RuntimeClasses.unknownBytesFieldHash2)
@@ -821,17 +821,28 @@ class MessageGenerator {
         m.put("unknownBytesKey", RuntimeClasses.unknownBytesFieldName);
     }
 
-    private List<FieldGenerator> getFieldSortedByExpectedIncomingOrder() {
-        final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
-        switch (info.getExpectedIncomingOrder()) {
+    private List<FieldGenerator> getFieldSortedByExpectedInputOrder() {
+        switch (info.getExpectedInputOrder()) {
             case AscendingNumber:
+                final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
                 sortedFields.sort(FieldUtil.AscendingNumberSorter);
-                break;
+                return sortedFields;
             case Quickbuf: // keep existing order
             case None: // no optimization
                 break;
         }
-        return sortedFields;
+        return fields;
+    }
+
+    private List<FieldGenerator> getFieldSortedByOutputOrder() {
+        // Sorts output the same way as protobuf. This is always slower,
+        // but it results in binary equivalence for conformance tests.
+        if (info.getOutputOrder() == FieldSerializationOrder.AscendingNumber) {
+            final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
+            sortedFields.sort(FieldUtil.AscendingNumberSorter);
+            return sortedFields;
+        }
+        return fields;
     }
 
     final MessageInfo info;

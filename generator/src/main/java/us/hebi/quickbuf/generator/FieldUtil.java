@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -72,25 +72,17 @@ class FieldUtil {
      * a single bit comparison. This sorter groups all required fields, followed by OneOf groups, followed by
      * everything else.
      */
-    static final Comparator<FieldDescriptorProto> GroupOneOfAndRequiredBits = new Comparator<FieldDescriptorProto>() {
-        @Override
-        public int compare(FieldDescriptorProto o1, FieldDescriptorProto o2) {
-            int n1 = o1.hasOneofIndex() ? o1.getOneofIndex() : (o1.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
-            int n2 = o2.hasOneofIndex() ? o2.getOneofIndex() : (o2.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
-            return n2 - n1;
-        }
+    static final Comparator<FieldDescriptorProto> GroupOneOfAndRequiredBits = (o1, o2) -> {
+        int n1 = o1.hasOneofIndex() ? o1.getOneofIndex() : (o1.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
+        int n2 = o2.hasOneofIndex() ? o2.getOneofIndex() : (o2.getLabel() == Label.LABEL_REQUIRED) ? Integer.MAX_VALUE : -1;
+        return n2 - n1;
     };
 
     /**
      * Sort fields according to their specified field number. This is used as the serialization order
      * by Google's protobuf bindings.
      */
-    static final Comparator<FieldGenerator> AscendingNumberSorter = new Comparator<FieldGenerator>() {
-        @Override
-        public int compare(FieldGenerator objA, FieldGenerator objB) {
-            return objA.getInfo().getNumber() - objB.getInfo().getNumber();
-        }
-    };
+    static final Comparator<FieldGenerator> AscendingNumberSorter = Comparator.comparingInt(field -> field.getInfo().getNumber());
 
     /**
      * Sort the fields according to their layout in memory.
@@ -106,18 +98,15 @@ class FieldUtil {
      * For more info, see
      * http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html
      */
-    static final Comparator<FieldDescriptorProto> MemoryLayoutSorter = new Comparator<FieldDescriptorProto>() {
-        @Override
-        public int compare(FieldDescriptorProto objA, FieldDescriptorProto objB) {
-            // The higher the number, the closer to the beginning
-            int weightA = getSortingWeight(objA) + (objA.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
-            int weightB = getSortingWeight(objB) + (objB.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
-            if (weightA == weightB) {
-                // Higher field number -> lower ranking
-                return objA.getNumber() - objB.getNumber();
-            }
-            return weightB - weightA;
+    static final Comparator<FieldDescriptorProto> MemoryLayoutSorter = (objA, objB) -> {
+        // The higher the number, the closer to the beginning
+        int weightA = getSortingWeight(objA) + (objA.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+        int weightB = getSortingWeight(objB) + (objB.getLabel() == Label.LABEL_REPEATED ? -50 : 0);
+        if (weightA == weightB) {
+            // Higher field number -> lower ranking
+            return objA.getNumber() - objB.getNumber();
         }
+        return weightB - weightA;
     };
 
     private static int getSortingWeight(FieldDescriptorProto descriptor) {
@@ -193,11 +182,17 @@ class FieldUtil {
         String definition = String.format("%s %s %s = %d", label, type, descriptor.getName(), descriptor.getNumber());
         String options = "";
         if (descriptor.hasDefaultValue()) {
-            options = " [default = " + descriptor.getDefaultValue() + "]";
+            String defaultValue = descriptor.getDefaultValue();
+            if (defaultValue.contains("*/")) {
+                defaultValue = defaultValue.replaceAll("\\*/", "*\\\\/");
+            }
+            options = " [default = " + defaultValue + "]";
         } else if (descriptor.getOptions().hasPacked()) {
             options = " [packed = " + descriptor.getOptions().getPacked() + "]";
         }
-        return definition + options + ";";
+
+        String line = definition + options + ";";
+        return !descriptor.hasExtendee() ? line : "extend {\n  " + line + "\n}";
     }
 
     private static int getWireType(FieldDescriptorProto.Type type) {
@@ -341,35 +336,49 @@ class FieldUtil {
 
     static String getDefaultValue(FieldDescriptorProto descriptor) {
         final String value = descriptor.getDefaultValue();
-        if (value.isEmpty())
-            return getEmptyDefaultValue(descriptor.getType());
+        if (value.isEmpty()) return getEmptyDefaultValue(descriptor.getType());
 
-        if (isPrimitive(descriptor.getType())) {
+        // Some values need to be special cased to result in valid Java syntax
+        switch (descriptor.getType()) {
 
-            // Convert special floating point values
-            boolean isFloat = (descriptor.getType() == FieldDescriptorProto.Type.TYPE_FLOAT);
-            String constantClass = isFloat ? "Float" : "Double";
-            switch (value) {
-                case "nan":
-                    return constantClass + ".NaN";
-                case "-inf":
-                    return constantClass + ".NEGATIVE_INFINITY";
-                case "+inf":
-                case "inf":
-                    return constantClass + ".POSITIVE_INFINITY";
-            }
+            case TYPE_DOUBLE:
+                switch (value) {
+                    case "nan":
+                        return "Double.NaN";
+                    case "-inf":
+                        return "Double.NEGATIVE_INFINITY";
+                    case "+inf":
+                    case "inf":
+                        return "Double.POSITIVE_INFINITY";
+                    default:
+                        return value + "D";
+                }
 
-            // Add modifiers
-            String modifier = getPrimitiveModifier(descriptor.getType());
-            if (modifier.isEmpty())
-                return value;
+            case TYPE_FLOAT:
+                switch (value) {
+                    case "nan":
+                        return "Float.NaN";
+                    case "-inf":
+                        return "Float.NEGATIVE_INFINITY";
+                    case "+inf":
+                    case "inf":
+                        return "Float.POSITIVE_INFINITY";
+                    default:
+                        return value + "F";
+                }
 
-            char modifierChar = Character.toUpperCase(modifier.charAt(0));
-            char lastChar = Character.toUpperCase(value.charAt(value.length() - 1));
+            case TYPE_SFIXED64:
+            case TYPE_SINT64:
+            case TYPE_INT64:
+                return value + "L";
 
-            if (lastChar == modifierChar)
-                return value;
-            return value + modifierChar;
+            case TYPE_FIXED64: // unsigned in C++
+            case TYPE_UINT64:
+                return Long.parseUnsignedLong(value) + "L";
+
+            case TYPE_FIXED32: // unsigned in C++
+            case TYPE_UINT32:
+                return String.valueOf(Integer.parseUnsignedInt(value));
 
         }
 
@@ -411,25 +420,6 @@ class FieldUtil {
             case TYPE_GROUP:
             case TYPE_MESSAGE:
             case TYPE_BYTES:
-            default:
-                return "";
-
-        }
-    }
-
-    private static String getPrimitiveModifier(FieldDescriptorProto.Type type) {
-        switch (type) {
-
-            case TYPE_DOUBLE:
-                return "D";
-            case TYPE_FLOAT:
-                return "F";
-            case TYPE_SFIXED64:
-            case TYPE_FIXED64:
-            case TYPE_SINT64:
-            case TYPE_INT64:
-            case TYPE_UINT64:
-                return "L";
             default:
                 return "";
 

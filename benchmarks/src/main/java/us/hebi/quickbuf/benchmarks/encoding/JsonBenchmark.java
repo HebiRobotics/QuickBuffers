@@ -47,6 +47,27 @@ import java.util.concurrent.TimeUnit;
  * JsonBenchmark.writeStringUtf8Chars     avgt   10    3,015 ± 0,026  us/op
  * JsonBenchmark.writeStringUtf8Encoded   avgt   10    0,384 ± 0,003  us/op
  *
+ * ============= Floating point encoding (JDK17) =============
+ * === Schubfach (default implementation)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  69,058 ± 1,600  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  49,168 ± 2,137  us/op
+ *
+ * === Schubfach (default algorithm after direct integration)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  45,576 ± 0,204  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  37,687 ± 0,286  us/op
+ *
+ * === Schubfach (custom without comma)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  35,870 ± 0,863  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  28,251 ± 0,633  us/op
+ *
+ * == Fixed floating point (deprecated)
+ * Benchmark                         Mode  Cnt   Score   Error  Units
+ * JsonBenchmark.writeDoubleNumbers  avgt   10  17,468 ± 0,406  us/op
+ * JsonBenchmark.writeFloatNumbers   avgt   10  13,166 ± 0,239  us/op
+ *
  * @author Florian Enner
  * @since 13 Nov 2019
  */
@@ -61,6 +82,9 @@ public class JsonBenchmark {
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
                 .include(".*" + JsonBenchmark.class.getSimpleName() + ".*")
+//                .jvmArgs("-Dquickbuf.json.float_encoding=minimal")
+//                .jvmArgs("-Dquickbuf.json.float_encoding=no_comma")
+//                .jvmArgs("-Dquickbuf.json.float_encoding=fixed")
                 .verbosity(VerboseMode.NORMAL)
                 .build();
         new Runner(options).run();

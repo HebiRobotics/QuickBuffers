@@ -31,9 +31,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
-import us.hebi.quickbuf.parser.ParserUtil;
+import us.hebi.quickbuf.generator.PluginOptions.AllocationStrategy;
+import us.hebi.quickbuf.generator.PluginOptions.ExtensionSupport;
+import us.hebi.quickbuf.generator.PluginOptions.FieldSerializationOrder;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static us.hebi.quickbuf.generator.Preconditions.*;
@@ -61,97 +64,24 @@ public class RequestInfo {
 
     private RequestInfo(CodeGeneratorRequest descriptor) {
         this.descriptor = descriptor;
-        this.generatorParameters = ParserUtil.parseGeneratorParameters(descriptor.getParameter());
+        this.pluginOptions = new PluginOptions(descriptor);
+        if (pluginOptions.getExtensionSupport() != ExtensionSupport.Disabled) {
+            extensionRegistry.registerAllExtensions(descriptor);
+        }
         this.files = descriptor.getProtoFileList().stream()
                 .map(desc -> new FileInfo(this, desc))
                 .collect(Collectors.toList());
     }
 
-    /**
-     * replace_package=pattern=replacement
-     *
-     * @param javaPackage
-     * @return
-     */
-    public String applyJavaPackageReplace(String javaPackage) {
-        String replaceOption = generatorParameters.get("replace_package");
-        if (replaceOption == null)
-            return javaPackage;
-
-        String[] parts = replaceOption.split("=");
-        if (parts.length != 2)
-            throw new GeneratorException("'replace_package' expects 'pattern=replacement'. Found: '" + replaceOption + "'");
-
-        return javaPackage.replaceAll(parts[0], parts[1]);
-    }
-
-    public String getIndentString() {
-        String indent = generatorParameters.getOrDefault("indent", "2");
-        switch (indent) {
-            case "8":
-                return "        ";
-            case "4":
-                return "    ";
-            case "2":
-                return "  ";
-            case "tab":
-                return "\t";
-        }
-        throw new GeneratorException("Expected 2,4,8,tab. Found: " + indent);
-    }
-
-    enum ExpectedIncomingOrder {
-        Quickbuf, // parsing messages from Quickbuf
-        AscendingNumber, // parsing messages from official protobuf bindings
-        None; // parsing messages from unknown sources
-
-        @Override
-        public String toString() {
-            switch (this) {
-                case Quickbuf:
-                    return "QuickBuffers";
-                case AscendingNumber:
-                    return "Sorted by Field Numbers";
-                default:
-                    return name();
-            }
-        }
-    }
-
-    public ExpectedIncomingOrder getExpectedIncomingOrder() {
-        String order = generatorParameters.getOrDefault("input_order", "quickbuf");
-        switch (order.toLowerCase()) {
-            case "quickbuf":
-                return ExpectedIncomingOrder.Quickbuf;
-            case "number":
-                return ExpectedIncomingOrder.AscendingNumber;
-            case "random":
-            case "none":
-                return ExpectedIncomingOrder.None;
-        }
-        throw new GeneratorException("Expected input_order quickbuf,number,random. Found: " + order);
-    }
-
-    public boolean shouldEnumUseArrayLookup(int highestNumber) {
-        return highestNumber < 50; // parameter?
-    }
-
-    public boolean getStoreUnknownFields() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("store_unknown_fields", "false"));
-    }
-
-    public boolean getEnforceHasChecks() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("enforce_has_checks", "false"));
-    }
-
-    public boolean generateTryGetAccessors() {
-        return Boolean.parseBoolean(generatorParameters.getOrDefault("java8_optional", "false"));
+    public boolean shouldEnumUseArrayLookup(int lowestNumber, int highestNumber) {
+        return lowestNumber >= 0 && highestNumber < 50; // parameter?
     }
 
     private final CodeGeneratorRequest descriptor;
-    private final Map<String, String> generatorParameters;
+    private final PluginOptions pluginOptions;
     private final List<FileInfo> files;
     private final TypeRegistry typeRegistry = TypeRegistry.empty();
+    private final ExtensionRegistry extensionRegistry = new ExtensionRegistry();
 
     @Value
     public static class FileInfo {
@@ -163,8 +93,10 @@ public class RequestInfo {
             fileName = descriptor.getName();
             protoPackage = NamingUtil.getProtoPackage(descriptor);
 
-            javaPackage = getParentRequest().applyJavaPackageReplace(
-                    NamingUtil.getJavaPackage(descriptor));
+            javaPackage = getParentRequest()
+                    .getPluginOptions()
+                    .getReplacePackageFunction()
+                    .apply(NamingUtil.getJavaPackage(descriptor));
 
             outerClassName = ClassName.get(javaPackage, NamingUtil.getJavaOuterClassname(descriptor));
 
@@ -232,13 +164,44 @@ public class RequestInfo {
             super(parentFile, parentTypeId, parentType, isNested, descriptor.getName());
             this.descriptor = descriptor;
             this.fieldCount = descriptor.getFieldCount();
-            this.storeUnknownFields = parentFile.getParentRequest().getStoreUnknownFields();
-            this.expectedIncomingOrder = getParentFile().getParentRequest().getExpectedIncomingOrder();
-            this.enforceHasChecks = getParentFile().getParentRequest().getEnforceHasChecks();
+
+            PluginOptions options = parentFile.getParentRequest().getPluginOptions();
+            this.expectedInputOrder = options.getExpectedInputOrder();
+            this.outputOrder = options.getOutputOrder();
+            this.storeUnknownFieldsEnabled = options.isStoreUnknownFieldsEnabled();
+            this.enforceHasChecksEnabled = options.isEnforceHasChecksEnabled();
+
+            // Extensions in embedded mode: treat extension fields the same as normal
+            // fields and embed them directly into the message.
+            List<FieldDescriptorProto> fieldList = descriptor.getFieldList();
+            final Set<String> nameCollisions = new HashSet<>();
+            nameCollisionCheck = nameCollisions::contains;
+            RequestInfo request = getParentFile().getParentRequest();
+            if (!request.getExtensionRegistry().isEmpty() && request.getPluginOptions().getExtensionSupport() == ExtensionSupport.Embedded) {
+
+                // Check for extensions for this class
+                List<FieldDescriptorProto> extensions = request.getExtensionRegistry()
+                        .getExtensionFields(getTypeId());
+
+                if (!extensions.isEmpty()) {
+                    // Build combined list
+                    fieldList = new ArrayList<>(fieldList);
+                    fieldList.addAll(extensions);
+
+                    // Check for duplicate names
+                    final Set<String> names = new HashSet<>();
+                    for (FieldDescriptorProto field : fieldList) {
+                        if (!names.add(field.getName())) {
+                            nameCollisions.add(field.getName());
+                        }
+                    }
+                }
+
+            }
 
             // Sort fields by serialization order such that they are accessed in a
             // sequential access pattern.
-            List<FieldDescriptorProto> sortedFields = descriptor.getFieldList().stream()
+            List<FieldDescriptorProto> sortedFields = fieldList.stream()
                     .sorted(FieldUtil.MemoryLayoutSorter)
                     .collect(Collectors.toList());
 
@@ -278,7 +241,7 @@ public class RequestInfo {
 
         }
 
-        private Set<Integer> getSyntheticOneOfIndices(){
+        private Set<Integer> getSyntheticOneOfIndices() {
             // Filter synthetic OneOfs for single-fields (proto3 explicit optionals)
             // see https://github.com/protocolbuffers/protobuf/blob/d36a64116f19ce59acf3af49e66cadef4c2fb2df/src/google/protobuf/descriptor.proto#L219-L240
             // TODO: implement https://github.com/protocolbuffers/protobuf/blob/f75fd051d68136ce366c464cea4f3074158cd141/docs/implementing_proto3_presence.md#api-changes
@@ -302,10 +265,12 @@ public class RequestInfo {
         private final List<MessageInfo> nestedTypes;
         private final List<EnumInfo> nestedEnums;
         private final List<OneOfInfo> oneOfs = new ArrayList<>();
-        private final ExpectedIncomingOrder expectedIncomingOrder;
-        private final boolean storeUnknownFields;
+        private final FieldSerializationOrder expectedInputOrder;
+        private final FieldSerializationOrder outputOrder;
+        private final boolean storeUnknownFieldsEnabled;
         private final int numBitFields;
-        private final boolean enforceHasChecks;
+        private final boolean enforceHasChecksEnabled;
+        private final Function<String, Boolean> nameCollisionCheck;
 
     }
 
@@ -318,18 +283,24 @@ public class RequestInfo {
             this.parentType = parentType;
             this.descriptor = descriptor;
             this.bitIndex = bitIndex;
+            this.storeUnknownFieldsEnabled = parentTypeInfo.isStoreUnknownFieldsEnabled();
 
             hasBit = BitField.hasBit(bitIndex);
             setBit = BitField.setBit(bitIndex);
             clearBit = BitField.clearBit(bitIndex);
+            String upperCaseName;
             if (isGroup()) {
                 // name is all lowercase, so convert the type name instead (e.g. ".package.OptionalGroup")
                 String name = descriptor.getTypeName();
                 int packageEndIndex = name.lastIndexOf('.');
-                upperName = packageEndIndex > 0 ? name.substring(packageEndIndex + 1, name.length()) : name;
+                upperCaseName = packageEndIndex > 0 ? name.substring(packageEndIndex + 1) : name;
             } else {
-                upperName = NamingUtil.toUpperCamel(descriptor.getName());
+                upperCaseName = NamingUtil.toUpperCamel(descriptor.getName());
             }
+            if (descriptor.hasExtendee() && parentTypeInfo.getNameCollisionCheck().apply(descriptor.getName())) {
+                upperCaseName += descriptor.getNumber();
+            }
+            upperName = upperCaseName;
             lowerName = Character.toLowerCase(upperName.charAt(0)) + upperName.substring(1);
             hazzerName = "has" + upperName;
             setterName = "set" + upperName;
@@ -338,6 +309,7 @@ public class RequestInfo {
             mutableGetterName = "getMutable" + upperName;
             adderName = "add" + upperName;
             clearName = "clear" + upperName;
+            lazyInitName = "init" + upperName;
             isPrimitive = FieldUtil.isPrimitive(descriptor.getType());
             tag = FieldUtil.makeTag(descriptor);
             bytesPerTag = FieldUtil.computeRawVarint32Size(tag) +
@@ -351,6 +323,22 @@ public class RequestInfo {
             methodAnnotations = isDeprecated() ?
                     Collections.singletonList(AnnotationSpec.builder(Deprecated.class).build()) :
                     Collections.emptyList();
+            if (!descriptor.hasExtendee()) {
+                jsonName = descriptor.getJsonName(); // Used for JSON serialization (camelCase)
+                protoFieldName = descriptor.getName(); // Original field name (under_score). Optional for JSON serialization. Parsers should support both.
+            } else {
+                // According to https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/util/JsonFormat
+                // Proto2 extensions are discarded in the JSON conversion, but the conformance tests do check for it.
+                // Swift-protobuf ran into the same issue: https://github.com/apple/swift-protobuf/issues/993
+                // According to the Python implementation, the fields get translated to "[full_name]" with brackets
+                // to indicate that it is an extension.
+                String fullName = getParentTypeInfo()
+                        .getParentFile()
+                        .getParentRequest()
+                        .getExtensionRegistry()
+                        .getFullName(descriptor);
+                jsonName = protoFieldName = "[" + fullName + "]";
+            }
         }
 
         public TypeName getRepeatedStoreType() {
@@ -393,6 +381,68 @@ public class RequestInfo {
             return getTypeName();
         }
 
+        public boolean isLazyAllocationEnabled() {
+            // never enable on required fields or primitives
+            if (isRequired() || isSingularPrimitiveOrEnum()) {
+                return false;
+            }
+            // the lazy flag is technically for lazy parsing, but it
+            // seems reasonable to at least do a lazy allocation.
+            if (descriptor.getOptions().hasLazy() && descriptor.getOptions().getLazy()) {
+                return true;
+            }
+            // only messages
+            switch (getPluginOptions().getAllocationStrategy()) {
+                case Lazy:
+                    return true;
+                case LazyMessage:
+                    return isMessageOrGroup();
+                case Eager:
+                default:
+                    return false;
+            }
+        }
+
+        public boolean isEnforceHasCheckEnabled() {
+            return getPluginOptions().isEnforceHasChecksEnabled();
+        }
+
+        public boolean isTryGetAccessorEnabled() {
+            return getPluginOptions().isTryGetAccessorsEnabled();
+        }
+
+        public boolean isPresenceEnabled() {
+            // Checks whether field presence is enabled for this field. See
+            // https://github.com/protocolbuffers/protobuf/blob/main/docs/implementing_proto3_presence.md
+            String syntax = getParentTypeInfo().getParentFile().getDescriptor().getSyntax();
+            switch (syntax) {
+                case "proto3":
+                    // proto3 initially did not have field presence for primitives. This eventually
+                    // turned out to be a mistake, but they couldn't change the default behavior anymore
+                    // and added explicit support for opting in to proto2-like field presence. IMO presence
+                    // should always be the default, but if we ever officially support proto3, disabling
+                    // field presence should:
+                    //
+                    // * not generate a has method
+                    // * not modify bit fields
+                    // * serialize and compute size when the field value is not zero
+                    //
+                    // Note that the code is completely compatible as is. The only difference is that a
+                    // zero value may end up being serialized, and that a has method may not return true
+                    // if the received value was an omitted zero.
+                    return (descriptor.hasProto3Optional() && descriptor.getProto3Optional())
+                            || isMessageOrGroup() || isRepeated();
+                default:
+                case "proto2":
+                    // In proto2 everything uses presence by default
+                    return true;
+            }
+        }
+
+        public PluginOptions getPluginOptions() {
+            return getParentFile().getParentRequest().getPluginOptions();
+        }
+
         public int getEndGroupTag() {
             return FieldUtil.makeGroupEndTag(tag);
         }
@@ -429,13 +479,22 @@ public class RequestInfo {
             return descriptor.getLabel() == FieldDescriptorProto.Label.LABEL_REPEATED;
         }
 
+        public boolean isSingular() {
+            return !isRepeated();
+        }
+
         public boolean isPacked() {
             return isPackable() && descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
         }
 
+        public boolean isSingularPrimitiveOrEnum() {
+            return isSingular() && (isPrimitive() || isEnum());
+        }
+
         public boolean isPackable() {
-            if (!isRepeated())
+            if (!isRepeated()) {
                 return false;
+            }
 
             switch (descriptor.getType()) {
                 case TYPE_STRING:
@@ -501,16 +560,6 @@ public class RequestInfo {
             return type;
         }
 
-        // Used for JSON serialization (camelCase)
-        public String getJsonName() {
-            return descriptor.getJsonName();
-        }
-
-        // Original field name (under_score). Optional for JSON serialization. Parsers should support both.
-        public String getProtoFieldName() {
-            return descriptor.getName();
-        }
-
         public String getClearOtherOneOfName() {
             return getContainingOneOf().getClearName() + "Other" + upperName;
         }
@@ -548,6 +597,7 @@ public class RequestInfo {
         private final String setBit;
         private final String clearBit;
         private final boolean isPrimitive;
+        private final boolean storeUnknownFieldsEnabled;
         private final List<AnnotationSpec> methodAnnotations;
         String fieldName;
         String lowerName;
@@ -559,7 +609,10 @@ public class RequestInfo {
         String mutableGetterName;
         String adderName;
         String clearName;
+        String lazyInitName;
         String defaultValue;
+        String jsonName;
+        String protoFieldName;
         int tag;
         int bytesPerTag;
         int packedTag;
@@ -574,10 +627,13 @@ public class RequestInfo {
         EnumInfo(FileInfo parentFile, String parentTypeId, ClassName parentType, boolean isNested, EnumDescriptorProto descriptor) {
             super(parentFile, parentTypeId, parentType, isNested, descriptor.getName());
             this.descriptor = descriptor;
+            this.lowestNumber = descriptor.getValueList().stream()
+                    .mapToInt(DescriptorProtos.EnumValueDescriptorProto::getNumber)
+                    .min().orElse(0);
             this.highestNumber = descriptor.getValueList().stream()
                     .mapToInt(DescriptorProtos.EnumValueDescriptorProto::getNumber)
-                    .max().orElseGet(() -> 0);
-            this.usingArrayLookup = parentFile.getParentRequest().shouldEnumUseArrayLookup(highestNumber);
+                    .max().orElse(0);
+            this.usingArrayLookup = parentFile.getParentRequest().shouldEnumUseArrayLookup(lowestNumber, highestNumber);
         }
 
         public List<DescriptorProtos.EnumValueDescriptorProto> getValues() {
@@ -585,6 +641,7 @@ public class RequestInfo {
         }
 
         private final EnumDescriptorProto descriptor;
+        private final int lowestNumber;
         private final int highestNumber;
         private final boolean usingArrayLookup;
 
@@ -622,6 +679,57 @@ public class RequestInfo {
         private final String upperName;
         private final String hazzerName;
         private final String clearName;
+
+    }
+
+    static class ExtensionRegistry {
+
+        List<FieldDescriptorProto> getExtensionFields(String protoTypeName) {
+            return Optional.ofNullable(extensionMap.get(protoTypeName))
+                    .orElse(Collections.emptyList());
+        }
+
+        String getFullName(FieldDescriptorProto extension) {
+            String fullName = fullNameMap.get(extension);
+            if (fullName == null) {
+                throw new GeneratorException("Could not determine full name for extension: " + extension.getName());
+            }
+            return fullName;
+        }
+
+        void registerAllExtensions(CodeGeneratorRequest request) {
+            request.getProtoFileList().forEach(file -> {
+                addExtensions(file.getPackage(), file.getExtensionList());
+                for (DescriptorProtos.DescriptorProto type : file.getMessageTypeList()) {
+                    addNestedExtensions(file.getPackage(), type);
+                }
+            });
+
+        }
+
+        private void addNestedExtensions(String parent, DescriptorProtos.DescriptorProto descriptor) {
+            String fullName = parent + "." + descriptor.getName();
+            addExtensions(fullName, descriptor.getExtensionList());
+            for (DescriptorProtos.DescriptorProto type : descriptor.getNestedTypeList()) {
+                addNestedExtensions(fullName, type);
+            }
+        }
+
+        private void addExtensions(String parent, List<FieldDescriptorProto> extensions) {
+            if (extensions.isEmpty()) return;
+            for (FieldDescriptorProto extension : extensions) {
+                extensionMap.computeIfAbsent(extension.getExtendee(), clazz -> new ArrayList<>()).add(extension);
+                fullNameMap.put(extension, parent + "." + extension.getName());
+            }
+        }
+
+        boolean isEmpty() {
+            return extensionMap.isEmpty();
+        }
+
+        // extendee string -> descriptor
+        private final Map<String, List<FieldDescriptorProto>> extensionMap = new HashMap<>();
+        private final Map<FieldDescriptorProto, String> fullNameMap = new IdentityHashMap<>();
 
     }
 

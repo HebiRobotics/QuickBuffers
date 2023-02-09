@@ -25,6 +25,7 @@ import protos.test.quickbuf.RepeatedPackables;
 import protos.test.quickbuf.TestAllTypes;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -129,91 +130,120 @@ public class ProtoFailTests {
 
     // --------------------------------------------------------------------------------------
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceVarint32() throws IOException {
         // id is at the very end, so don't set it for other types
         writeToTruncated(TestAllTypes.newInstance().setId(Integer.MIN_VALUE));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceVarint64() throws IOException {
         writeToTruncated(TestAllTypes.newInstance().setDefaultInt64(Long.MIN_VALUE));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceFixed32() throws IOException {
         writeToTruncated(TestAllTypes.newInstance().setDefaultFixed32(Integer.MAX_VALUE));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceFixed64() throws IOException {
         writeToTruncated(TestAllTypes.newInstance().setDefaultFixed64(Long.MAX_VALUE));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceString() throws IOException {
         writeToTruncated(TestAllTypes.newInstance().setOptionalString("this should fail"));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceBytes() throws IOException {
         writeToTruncated(TestAllTypes.newInstance().addAllDefaultBytes(new byte[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpacePackedBoolean() throws IOException {
         writeToTruncated(RepeatedPackables.Packed.newInstance().addAllBools(new boolean[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpacePackedDouble() throws IOException {
         writeToTruncated(RepeatedPackables.Packed.newInstance().addAllDoubles(new double[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpacePackedFloat() throws IOException {
         writeToTruncated(RepeatedPackables.Packed.newInstance().addAllFloats(new float[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpacePackedVarint32() throws IOException {
         writeToTruncated(RepeatedPackables.Packed.newInstance().addAllInt32S(new int[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpacePackedFixed32() throws IOException {
         writeToTruncated(RepeatedPackables.Packed.newInstance().addAllFixed32S(new int[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpacePackedVarint64() throws IOException {
         writeToTruncated(RepeatedPackables.Packed.newInstance().addAllInt64S(new long[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpacePackedFixed64() throws IOException {
         writeToTruncated(RepeatedPackables.Packed.newInstance().addAllFixed64S(new long[213]));
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceMessage() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.getMutableOptionalNestedMessage().setBb(1);
         writeToTruncated(msg);
     }
 
-    @Test(expected = ProtoSink.OutOfSpaceException.class)
+    @Test
     public void testOutOfSpaceGroup() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.getMutableOptionalGroup().setA(2);
         writeToTruncated(msg);
     }
 
-    private void writeToTruncated(ProtoMessage msg) throws IOException {
+    private void writeToTruncated(ProtoMessage<?> msg) throws IOException {
         byte[] buffer = new byte[msg.getSerializedSize() - 1];
-        // use unsafe to make sure that we aren't relying on normal array checks
-        ProtoSink output = ProtoSink.newDirectSink().setOutput(buffer);
-        msg.writeTo(output);
+
+        try {
+            msg.writeTo(ProtoSink.newArraySink().setOutput(buffer));
+            fail("ArraySink");
+        } catch (ProtoSink.OutOfSpaceException oos) {
+        }
+
+        try {
+            msg.writeTo(ProtoSink.newDirectSink().setOutput(buffer));
+            fail("DirectSink");
+        } catch (ProtoSink.OutOfSpaceException oos) {
+        }
+
+        try {
+            msg.writeTo(ProtoSink.newBufferSink().setOutput(ByteBuffer.wrap(buffer)));
+            fail("BufferSink");
+        } catch (ProtoSink.OutOfSpaceException oos) {
+        }
+
+        // ByteSink and StreamSink grow as needed, so they don't fail
+/*        try {
+            msg.writeTo(ProtoSink.newBytesSink().setOutput(RepeatedByte.newInstance(buffer)));
+            fail("BytesSink");
+        } catch (ProtoSink.OutOfSpaceException oos) {
+        }
+
+        try {
+            msg.writeTo(ProtoSink.newStreamSink().setOutput(new ByteArrayOutputStream(buffer.length)));
+            fail("StreamSink");
+        } catch (ProtoSink.OutOfSpaceException oos) {
+        }*/
+
     }
 
     // --------------------------------------------------------------------------------------
@@ -284,90 +314,112 @@ public class ProtoFailTests {
 
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedVarint32() throws IOException {
         readFromTruncated(TestAllTypes.newInstance().setId(Integer.MIN_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedVarint64() throws IOException {
         readFromTruncated(TestAllTypes.newInstance().setDefaultInt64(Long.MIN_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedFixed32() throws IOException {
         readFromTruncated(TestAllTypes.newInstance().setDefaultFixed32(Integer.MAX_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedFixed64() throws IOException {
         readFromTruncated(TestAllTypes.newInstance().setDefaultFixed64(Long.MAX_VALUE));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedString() throws IOException {
         readFromTruncated(TestAllTypes.newInstance().setOptionalString("this should fail"));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedBytes() throws IOException {
         readFromTruncated(TestAllTypes.newInstance().addAllDefaultBytes(new byte[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedPackedBoolean() throws IOException {
         readFromTruncated(RepeatedPackables.Packed.newInstance().addAllBools(new boolean[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedPackedDouble() throws IOException {
         readFromTruncated(RepeatedPackables.Packed.newInstance().addAllDoubles(new double[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedPackedFloat() throws IOException {
         readFromTruncated(RepeatedPackables.Packed.newInstance().addAllFloats(new float[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedPackedVarint32() throws IOException {
         readFromTruncated(RepeatedPackables.Packed.newInstance().addAllInt32S(new int[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedPackedFixed32() throws IOException {
         readFromTruncated(RepeatedPackables.Packed.newInstance().addAllFixed32S(new int[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedPackedVarint64() throws IOException {
         readFromTruncated(RepeatedPackables.Packed.newInstance().addAllInt64S(new long[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedPackedFixed64() throws IOException {
         readFromTruncated(RepeatedPackables.Packed.newInstance().addAllFixed64S(new long[213]));
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedMessage() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.getMutableOptionalNestedMessage().setBb(1);
         readFromTruncated(msg);
     }
 
-    @Test(expected = InvalidProtocolBufferException.class)
+    @Test
     public void testTruncatedGroup() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.getMutableOptionalGroup().setA(2);
         readFromTruncated(msg);
     }
 
-    private <T extends ProtoMessage> T readFromTruncated(T msg) throws IOException {
+    private void readFromTruncated(ProtoMessage<?> msg) throws IOException {
         byte[] data = msg.toByteArray();
-        ProtoSource input = ProtoSource.newDirectSource().setInput(data, 0, data.length - 1);
-        msg.clear().mergeFrom(input);
-        return msg;
+
+        try {
+            msg.clear().mergeFrom(ProtoSource.newArraySource().setInput(data, 0, data.length - 1));
+            fail("ArraySource");
+        } catch (InvalidProtocolBufferException ex) {
+        }
+
+        try {
+            msg.clear().mergeFrom(ProtoSource.newDirectSource().setInput(data, 0, data.length - 1));
+            fail("DirectSource");
+        } catch (InvalidProtocolBufferException ex) {
+        }
+
+        try {
+            msg.clear().mergeFrom(ProtoSource.newStreamSource().setInput(new ByteArrayInputStream(data, 0, data.length - 1)));
+            fail("StreamSource");
+        } catch (InvalidProtocolBufferException ex) {
+        }
+
+        try {
+            msg.clear().mergeFrom(ProtoSource.newBufferSource().setInput(ByteBuffer.wrap(data, 0, data.length - 1)));
+            fail("BufferSource");
+        } catch (InvalidProtocolBufferException ex) {
+        }
+
     }
 
     // --------------------------------------------------------------------------------------

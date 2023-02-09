@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quickbuf-parent</artifactId>
+        <groupId>us.hebi.quickbuf</groupId>
+        <version>1.1.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>conformance</artifactId>
+
+    <properties>
+        <mainName>ConformanceQuickbuf</mainName>
+        <finalName>quickbuf-conformance-${project.version}</finalName>
+        <license.skipUpdateLicense>true</license.skipUpdateLicense>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>us.hebi.quickbuf</groupId>
+            <artifactId>quickbuf-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <!-- enable if we need ground truth for conformance tests -->
+        <!--
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+        </dependency> -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Downloads protoc w/ plugin and generates messages -->
+            <!-- Default settings expect .proto files to be in src/main/protobuf -->
+            <plugin>
+                <groupId>com.github.os72</groupId>
+                <artifactId>protoc-jar-maven-plugin</artifactId>
+                <version>${protoc.jar.version}</version>
+                <configuration>
+                    <protocVersion>${protobuf.version}</protocVersion>
+                </configuration>
+
+                <executions>
+
+                    <!-- Message generation -->
+                    <execution>
+                        <id>generate-quickbuf</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <inputDirectories>
+                                <dir>src/main/proto3</dir> <!-- Data about the conformance test -->
+                                <dir>src/main/proto2</dir>  <!-- The actual payload of the test -->
+                            </inputDirectories>
+                            <addSources>main</addSources>
+                            <outputTargets>
+                                <outputTarget>
+                                    <type>quickbuf</type>
+                                    <!-- Plugin path must be absolute with the full name -->
+                                    <pluginPath>${project.basedir}/../generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
+<!--                                    <pluginArtifact>us.hebi.quickbuf:protoc-gen-quickbuf:${quickbuf.version}</pluginArtifact>-->
+                                    <outputOptions>replace_package=protobuf=quickbuf,indent=4,input_order=number,output_order=number,store_unknown_fields=true,extensions=embedded,allocation=lazy</outputOptions>
+                                    <outputDirectory>target/generated-sources/annotations/</outputDirectory>
+                                </outputTarget>
+                                <!-- enable to get ground truth -->
+<!--                                <outputTarget>
+                                    <type>java</type>
+                                    <outputDirectory>target/generated-sources/annotations/</outputDirectory>
+                                </outputTarget>-->
+                            </outputTargets>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
+            <!-- Create uber-jar that we can call as an executable -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>${finalName}</finalName>
+                            <minimizeJar>true</minimizeJar>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>us.hebi.quickbuf.conformance.${mainName}</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${graalvm.tools.version}</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <skip>false</skip>
+                            <skipNativeTests>true</skipNativeTests>
+                            <useArgFile>false</useArgFile>
+                            <imageName>${mainName}${native.extension}</imageName>
+                            <classpath>
+                                <param>${project.build.directory}/${finalName}.jar</param>
+                            </classpath>
+                            <buildArgs>
+                                <arg>--no-fallback</arg>
+                                <arg>--verbose</arg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

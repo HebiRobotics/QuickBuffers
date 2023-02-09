@@ -47,29 +47,13 @@ public class FieldGenerator {
                 .addJavadoc(named("$commentLine:L"))
                 .addModifiers(Modifier.PRIVATE);
 
-        if (info.isRepeated() && info.isMessageOrGroup()) {
-            field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.getFactory())", RuntimeClasses.RepeatedMessage, info.getTypeName());
-        } else if (info.isRepeated() && info.isEnum()) {
-            field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance($T.converter())", RuntimeClasses.RepeatedEnum, info.getTypeName());
-        } else if (info.isRepeated()) {
-            field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
-        } else if (info.isBytes()) {
-            if (!info.hasDefaultValue()) {
-                field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
-            } else {
-                field.addModifiers(Modifier.FINAL).initializer(named("$storeType:T.newInstance($defaultField:N)"));
-            }
-        } else if (info.isMessageOrGroup()) {
-            field.addModifiers(Modifier.FINAL).initializer("$T.newInstance()", storeType);
-        } else if (info.isString()) {
-            if (!info.hasDefaultValue()) {
-                field.addModifiers(Modifier.FINAL).initializer("$T.newEmptyInstance()", storeType);
-            } else {
-                field.addModifiers(Modifier.FINAL).initializer(named("$storeType:T.newInstance($default:S)"));
-            }
+        if (info.isLazyAllocationEnabled()) {
+            field.initializer("null");
+        } else if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes() || info.isString()) {
+            field.addModifiers(Modifier.FINAL).initializer(initializer());
         } else if (info.isPrimitive() || info.isEnum()) {
             if (info.hasDefaultValue()) {
-                field.initializer(named("$default:L"));
+                field.initializer(initializer());
             }
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
@@ -85,12 +69,50 @@ public class FieldGenerator {
         }
     }
 
+    private CodeBlock initializer() {
+        CodeBlock.Builder initializer = CodeBlock.builder();
+        if (info.isRepeated() && info.isMessageOrGroup()) {
+            initializer.add("$T.newEmptyInstance($T.getFactory())", RuntimeClasses.RepeatedMessage, info.getTypeName());
+        } else if (info.isRepeated() && info.isEnum()) {
+            initializer.add("$T.newEmptyInstance($T.converter())", RuntimeClasses.RepeatedEnum, info.getTypeName());
+        } else if (info.isRepeated()) {
+            initializer.add("$T.newEmptyInstance()", storeType);
+        } else if (info.isBytes()) {
+            if (!info.hasDefaultValue()) {
+                initializer.add(named("$storeType:T.newEmptyInstance()"));
+            } else {
+                initializer.add(named("$storeType:T.newInstance($defaultField:N)"));
+            }
+        } else if (info.isMessageOrGroup()) {
+            initializer.add(named("$storeType:T.newInstance()"));
+        } else if (info.isString()) {
+            if (!info.hasDefaultValue()) {
+                initializer.add(named("$storeType:T.newEmptyInstance()"));
+            } else {
+                initializer.add(named("$storeType:T.newInstance($default:S)"));
+            }
+        } else if (info.isPrimitive() || info.isEnum()) {
+            if (info.hasDefaultValue()) {
+                initializer.add(named("$default:L"));
+            }
+        } else {
+            throw new IllegalStateException("unhandled field: " + info.getDescriptor());
+        }
+        return initializer.build();
+    }
+
     protected void generateClearCode(MethodSpec.Builder method) {
+        if (info.isSingularPrimitiveOrEnum()) {
+            method.addStatement(named("$field:N = $default:L"));
+            return;
+        }
+
+        if (info.isLazyAllocationEnabled()) {
+            method.beginControlFlow(named("if ($field:N != null)"));
+        }
+
         if (info.isRepeated() || info.isMessageOrGroup()) {
             method.addStatement(named("$field:N.clear()"));
-
-        } else if (info.isPrimitive() || info.isEnum()) {
-            method.addStatement(named("$field:N = $default:L"));
 
         } else if (info.isString()) {
             if (info.hasDefaultValue()) {
@@ -107,27 +129,50 @@ public class FieldGenerator {
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
+
+        if (info.isLazyAllocationEnabled()) {
+            method.endControlFlow();
+        }
     }
 
     protected void generateClearQuickCode(MethodSpec.Builder method) {
+        if (info.isSingularPrimitiveOrEnum()) {
+            return; // no action needed
+        }
+
+        if (info.isLazyAllocationEnabled()) {
+            method.beginControlFlow(named("if ($field:N != null)"));
+        }
+
         if (info.isMessageOrGroup()) { // includes repeated messages
             method.addStatement(named("$field:N.clearQuick()"));
         } else if (info.isRepeated() || info.isBytes() || info.isString()) {
             method.addStatement(named("$field:N.clear()"));
-        } else if (info.isPrimitive() || info.isEnum()) {
-            // do nothing
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
+        }
+
+        if (info.isLazyAllocationEnabled()) {
+            method.endControlFlow();
         }
     }
 
     protected void generateCopyFromCode(MethodSpec.Builder method) {
-        if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
-            method.addStatement(named("$field:N.copyFrom(other.$field:N)"));
-
-        } else if (info.isPrimitive() || info.isEnum()) {
+        if (info.isSingularPrimitiveOrEnum()) {
             method.addStatement(named("$field:N = other.$field:N"));
 
+        } else if (info.isRepeated() || info.isBytes() || info.isMessageOrGroup() || info.isString()) {
+            if (info.isLazyAllocationEnabled()) {
+                method.addCode(named("" +
+                        "if (other.$hasMethod:N()) {$>\n" +
+                        "$lazyInitMethod:L();\n" +
+                        "$field:N.copyFrom(other.$field:N);\n" +
+                        "$<} else {$>\n" +
+                        "$clearMethod:L();\n" +
+                        "$<}\n"));
+            } else {
+                method.addStatement(named("$field:N.copyFrom(other.$field:N)"));
+            }
         } else {
             throw new IllegalStateException("unhandled field: " + info.getDescriptor());
         }
@@ -170,39 +215,37 @@ public class FieldGenerator {
      * @return true if the tag needs to be read
      */
     protected boolean generateMergingCode(MethodSpec.Builder method) {
+        method.addCode(clearOtherOneOfs).addCode(ensureFieldNotNull);
         if (info.isRepeated()) {
             method
-                    .addCode(clearOtherOneOfs)
                     .addNamedCode("tag = input.readRepeated$capitalizedType:L($field:N, tag);\n", m)
                     .addStatement(named("$setHas:L"));
             return false; // tag is already read, so don't read again
 
         } else if (info.isString() || info.isMessageOrGroup() || info.isBytes()) {
             method
-                    .addCode(clearOtherOneOfs)
                     .addStatement(named("input.read$capitalizedType:L($field:N$secondArgs:L)"))
                     .addStatement(named("$setHas:L"));
 
         } else if (info.isPrimitive()) {
             method
-                    .addCode(clearOtherOneOfs)
                     .addStatement(named("$field:N = input.read$capitalizedType:L()"))
                     .addStatement(named("$setHas:L"));
 
         } else if (info.isEnum()) {
             method
-                    .addCode(clearOtherOneOfs)
                     .addStatement("final int value = input.readInt32()")
                     .beginControlFlow("if ($T.forNumber(value) != null)", typeName)
                     .addStatement(named("$field:N = value"))
                     .addStatement(named("$setHas:L"));
 
-            // TODO:
-            //  Google's Protobuf recently selectively ignores repeated enum values. However,
-            //  that seems odd given that re-serialization with unknown fields can result in a
-            //  different order. I don't think this is desired behavior? This is technically also
-            //  true when serializing an optional enum field twice via a delta update.
-            if (info.getParentTypeInfo().isStoreUnknownFields()) {
+            // NOTE:
+            //  Google's Protobuf-Java selectively moves repeated enum values that it does not know.
+            //  This is problematic when going through a routing node as it may change the order of the
+            //  data by sorting it as known values followed by unknown values. Even though this is
+            //  the specified behavior, I don't think that this is desired and would rather have users
+            //  deal with potential null values.
+            if (info.isStoreUnknownFieldsEnabled()) {
                 method.nextControlFlow("else")
                         .addStatement("input.skipEnum(tag, value, $N)", RuntimeClasses.unknownBytesField);
             }
@@ -222,7 +265,7 @@ public class FieldGenerator {
         if (!info.isPackable()) {
             throw new IllegalStateException("not a packable type: " + info.getDescriptor());
         }
-        method.addCode(clearOtherOneOfs);
+        method.addCode(clearOtherOneOfs).addCode(ensureFieldNotNull);
         if (info.isFixedWidth()) {
             method.addStatement(named("input.readPacked$capitalizedType:L($field:N)"));
         } else {
@@ -342,7 +385,7 @@ public class FieldGenerator {
     }
 
     protected void generateJsonDeserializationCode(MethodSpec.Builder method) {
-        method.addCode(clearOtherOneOfs);
+        method.addCode(clearOtherOneOfs).addCode(ensureFieldNotNull);
         if (info.isRepeated()) {
             if (info.isEnum()) {
                 method.addStatement(named("input.readRepeated$capitalizedType:L($field:N, $type:T.converter())"));
@@ -370,16 +413,40 @@ public class FieldGenerator {
     }
 
     protected void generateMemberMethods(TypeSpec.Builder type) {
+        generateInitializedMethod(type);
         generateHasMethod(type);
         generateClearMethod(type);
         generateGetMethods(type);
         if (info.isEnum()) {
             generateExtraEnumAccessors(type);
         }
-        if (info.getParentFile().getParentRequest().generateTryGetAccessors()) {
+        if (info.isTryGetAccessorEnabled()) {
             generateTryGetMethod(type);
         }
         generateSetMethods(type);
+    }
+
+    protected void generateInitializedMethod(TypeSpec.Builder type) {
+        if (info.isLazyAllocationEnabled()) {
+            type.addMethod(MethodSpec.methodBuilder(info.getLazyInitName())
+                    .addModifiers(Modifier.PRIVATE)
+                    .addCode(CodeBlock.builder()
+                            .beginControlFlow("if ($N == null)", info.getFieldName())
+                            .add(named("$field:N = ")).addStatement(initializer())
+                            .endControlFlow()
+                            .build())
+                    .build());
+        }
+    }
+
+    private CodeBlock lazyFieldInit() {
+        if (info.isLazyAllocationEnabled()) {
+            return CodeBlock.builder()
+                    .addStatement("$N()", info.getLazyInitName())
+                    .build();
+        } else {
+            return EMPTY_BLOCK;
+        }
     }
 
     protected void generateHasMethod(TypeSpec.Builder type) {
@@ -400,6 +467,7 @@ public class FieldGenerator {
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
                     .addCode(clearOtherOneOfs)
+                    .addCode(ensureFieldNotNull)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.add(value)"))
                     .addStatement(named("return this"))
@@ -413,10 +481,26 @@ public class FieldGenerator {
                     .varargs(true)
                     .returns(info.getParentType())
                     .addCode(clearOtherOneOfs)
+                    .addCode(ensureFieldNotNull)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.addAll(values)"))
                     .addStatement(named("return this"));
             type.addMethod(addAll.build());
+
+            if (info.isBytes()) {
+                MethodSpec.Builder setBytes = MethodSpec.methodBuilder("set" + info.getUpperName())
+                        .addAnnotations(info.getMethodAnnotations())
+                        .addModifiers(Modifier.PUBLIC)
+                        .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
+                        .varargs(true)
+                        .returns(info.getParentType())
+                        .addCode(clearOtherOneOfs)
+                        .addCode(ensureFieldNotNull)
+                        .addStatement(named("$setHas:L"))
+                        .addStatement(named("$field:N.copyFrom(values)"))
+                        .addStatement(named("return this"));
+                type.addMethod(setBytes.build());
+            }
 
         } else if (info.isMessageOrGroup() || info.isString()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
@@ -425,6 +509,7 @@ public class FieldGenerator {
                     .returns(info.getParentType())
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
                     .addCode(clearOtherOneOfs)
+                    .addCode(ensureFieldNotNull)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("$field:N.copyFrom(value)"))
                     .addStatement(named("return this"))
@@ -438,6 +523,7 @@ public class FieldGenerator {
                     .addParameter(info.getTypeName(), "value", Modifier.FINAL)
                     .returns(info.getParentType())
                     .addCode(clearOtherOneOfs)
+                    .addCode(ensureFieldNotNull)
                     .addNamedCode("" +
                             "$setHas:L;\n" +
                             "$field:N = $valueOrNumber:L;\n" +
@@ -471,6 +557,7 @@ public class FieldGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(int.class)
                 .addCode(enforceHasCheck)
+                .addCode(ensureFieldNotNull)
                 .addStatement(named("return $field:N"))
                 .build());
 
@@ -512,7 +599,8 @@ public class FieldGenerator {
         MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
-                .addCode(enforceHasCheck);
+                .addCode(enforceHasCheck)
+                .addCode(ensureFieldNotNull);
 
         if (info.isRepeated()) {
             getter.returns(storeType).addStatement(named("return $field:N"));
@@ -544,6 +632,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
                     .addCode(clearOtherOneOfs)
+                    .addCode(ensureFieldNotNull)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("return $field:N"))
                     .build();
@@ -562,6 +651,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
                     .addCode(enforceHasCheck)
+                    .addCode(ensureFieldNotNull)
                     .addStatement(named("return this.$field:N"))
                     .build());
 
@@ -570,6 +660,7 @@ public class FieldGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
                     .addCode(clearOtherOneOfs)
+                    .addCode(ensureFieldNotNull)
                     .addStatement(named("$setHas:L"))
                     .addStatement(named("return this.$field:N"))
                     .build());
@@ -599,7 +690,7 @@ public class FieldGenerator {
     }
 
     private CodeBlock generateEnforceHasCheck() {
-        if (!info.getParentTypeInfo().isEnforceHasChecks())
+        if (!info.isEnforceHasCheckEnabled())
             return EMPTY_BLOCK;
 
         return CodeBlock.builder()
@@ -614,8 +705,6 @@ public class FieldGenerator {
         this.info = info;
         typeName = info.getTypeName();
         storeType = info.getStoreType();
-        clearOtherOneOfs = generateClearOtherOneOfs();
-        enforceHasCheck = generateEnforceHasCheck();
 
         // Common-variable map for named arguments
         m.put("field", info.getFieldName());
@@ -627,10 +716,12 @@ public class FieldGenerator {
         m.put("storeType", storeType);
         m.put("commentLine", info.getJavadoc());
         m.put("getMutableMethod", info.getMutableGetterName());
+        m.put("lazyInitMethod", info.getLazyInitName());
         m.put("getMethod", info.getGetterName());
         m.put("setMethod", info.getSetterName());
         m.put("addMethod", info.getAdderName());
         m.put("hasMethod", info.getHazzerName());
+        m.put("clearMethod", info.getClearName());
         m.put("getHas", info.getHasBit());
         m.put("setHas", info.getSetBit());
         m.put("clearHas", info.getClearBit());
@@ -656,6 +747,11 @@ public class FieldGenerator {
         m.put("protoSink", RuntimeClasses.ProtoSink);
         m.put("protoUtil", RuntimeClasses.ProtoUtil);
         m.put("protoEnum", RuntimeClasses.ProtoEnum);
+
+        // Common configuration-dependent code blocks
+        clearOtherOneOfs = generateClearOtherOneOfs();
+        enforceHasCheck = generateEnforceHasCheck();
+        ensureFieldNotNull = lazyFieldInit();
     }
 
     protected final RequestInfo.FieldInfo info;
@@ -663,6 +759,7 @@ public class FieldGenerator {
     protected final TypeName storeType;
     protected final CodeBlock clearOtherOneOfs;
     protected final CodeBlock enforceHasCheck;
+    protected final CodeBlock ensureFieldNotNull;
     private static final CodeBlock EMPTY_BLOCK = CodeBlock.builder().build();
 
     protected final HashMap<String, Object> m = new HashMap<>();

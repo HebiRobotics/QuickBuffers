@@ -20,8 +20,11 @@
 
 package us.hebi.quickbuf;
 
+import com.google.quickbuf.Struct;
+import com.google.quickbuf.Value;
 import org.junit.Test;
 import protos.test.quickbuf.*;
+import protos.test.quickbuf.LazyTypes.LazyMessage;
 import protos.test.quickbuf.TestAllTypes.NestedEnum;
 import protos.test.quickbuf.UnittestFieldOrder.MessageWithMultibyteNumbers;
 import protos.test.quickbuf.UnittestRequired.TestAllTypesRequired;
@@ -138,6 +141,43 @@ public class ProtoTests {
     }
 
     @Test
+    public void testExtremeDefaults() {
+        TestExtremeDefaultValues msg = TestExtremeDefaultValues.newInstance();
+        assertEquals("[0, 1, 7, 8, 12, 10, 13, 9, 11, 92, 39, 34, -2]", msg.getEscapedBytes().toString());
+        assertEquals(0xFFFFFFFF, msg.getLargeUint32());
+        assertEquals(0xFFFFFFFFFFFFFFFFL, msg.getLargeUint64());
+        assertEquals(2123456789, msg.getLargeFixed32());
+        assertEquals(-8323287284586094827L, msg.getLargeFixed64());
+        assertEquals(-0x7FFFFFFF, msg.getSmallInt32());
+        assertEquals(-0x7FFFFFFFFFFFFFFFL, msg.getSmallInt64());
+        assertEquals(-0x80000000, msg.getReallySmallInt32());
+        assertEquals(-0x8000000000000000L, msg.getReallySmallInt64());
+        assertEquals(new String("\341\210\264".getBytes(ISO_8859_1), UTF_8), msg.getUtf8String());
+
+        assertTrue(ProtoUtil.isEqual(0f, msg.getZeroFloat()));
+        assertTrue(ProtoUtil.isEqual(1f, msg.getOneFloat()));
+        assertTrue(ProtoUtil.isEqual(1.5f, msg.getSmallFloat()));
+        assertTrue(ProtoUtil.isEqual(-1f, msg.getNegativeOneFloat()));
+        assertTrue(ProtoUtil.isEqual(-1.5f, msg.getNegativeFloat()));
+        assertTrue(ProtoUtil.isEqual(2E8f, msg.getLargeFloat()));
+        assertTrue(ProtoUtil.isEqual(-8e-28f, msg.getSmallNegativeFloat()));
+
+        assertTrue(ProtoUtil.isEqual(Double.POSITIVE_INFINITY, msg.getInfDouble()));
+        assertTrue(ProtoUtil.isEqual(Double.NEGATIVE_INFINITY, msg.getNegInfDouble()));
+        assertTrue(ProtoUtil.isEqual(Double.NaN, msg.getNanDouble()));
+        assertTrue(ProtoUtil.isEqual(Float.POSITIVE_INFINITY, msg.getInfFloat()));
+        assertTrue(ProtoUtil.isEqual(Float.NEGATIVE_INFINITY, msg.getNegInfFloat()));
+        assertTrue(ProtoUtil.isEqual(Float.NaN, msg.getNanFloat()));
+
+        assertEquals("? ? ?? ?? ??? ??/ ??-", msg.getCppTrigraph());
+        assertEquals("hel\000lo", msg.getStringWithZero());
+        assertEquals("[119, 111, 114, 0, 108, 100]", msg.getBytesWithZero().toString());
+        assertEquals("ab\000c", msg.getStringPieceWithZero());
+        assertEquals("12\0003", msg.getCordWithZero());
+        assertEquals("${unknown}", msg.getReplacementString());
+    }
+
+    @Test
     public void testOptionalPrimitives() throws IOException {
         TestAllTypes emptyMsg = TestAllTypes.newInstance();
         assertFalse(emptyMsg.hasOptionalBool());
@@ -210,6 +250,17 @@ public class ProtoTests {
         assertEquals(msg3.clear(), msg4.clearQuick());
         assertArrayEquals(msg3.toByteArray(), msg4.toByteArray());
 
+    }
+
+    @Test
+    public void testUnsignedRangeOverflow() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance()
+                .setOptionalUint32(-1)
+                .setOptionalUint64(-1)
+                .addAllRepeatedUint32(0,12345,12345,12345,-1,0,1,-1,-1,1)
+                .addAllRepeatedUint64(0,12345,12345,12345,-1,0,1,-1,-1,1);
+        TestAllTypes result = TestAllTypes.parseFrom(msg.toByteArray());
+        assertEquals(msg, result);
     }
 
     @Test
@@ -697,6 +748,149 @@ public class ProtoTests {
             fail();
         }
         assertArrayEquals(outData, inData);
+    }
+
+    @Test
+    public void testLazyInitialization() throws IOException {
+        assertNotNull(Value.newInstance().getMutableListValue());
+        assertNotNull(Value.newInstance().getMutableStringValueBytes());
+        assertNotNull(Value.newInstance().getMutableStructValue());
+        assertNotNull(Value.newInstance().getMutableListValue());
+
+        Struct struct = Struct.newInstance();
+
+        // Singular (getMutable)
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalStringBytes());
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalBytes());
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalGroup());
+        assertNotNull(LazyMessage.newInstance().getMutableOptionalNestedMessage());
+
+        // Repeated (getMutable)
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedInt32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedInt64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedUint32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedUint64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedSint32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedSint64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedFixed32());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedFixed64());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedFloat());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedDouble());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedBool());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedString());
+        assertNotNull(LazyMessage.newInstance().getMutableRepeatedBytes());
+
+        // Initialize everything
+        LazyMessage msg = LazyMessage.newInstance();
+        msg.setOptionalString("test");
+        msg.addAllOptionalBytes(new byte[20]);
+        msg.setOptionalGroup(LazyMessage.OptionalGroup.newInstance().setA(2));
+        msg.setOptionalNestedMessage(LazyMessage.NestedMessage.newInstance().setRecursiveMessage(LazyMessage.newInstance()));
+        msg.getMutableRepeatedInt32().add(1);
+        msg.getMutableRepeatedInt64().add(2);
+        msg.getMutableRepeatedUint32().add(3);
+        msg.getMutableRepeatedUint64().add(4);
+        msg.getMutableRepeatedSint32().add(5);
+        msg.getMutableRepeatedSint64().add(6);
+        msg.getMutableRepeatedFixed32().add(7);
+        msg.getMutableRepeatedFixed64().add(8);
+        msg.getMutableRepeatedFloat().add(9);
+        msg.getMutableRepeatedDouble().add(10);
+        msg.getMutableRepeatedBool().add(true);
+        msg.getMutableRepeatedString().add("string");
+        msg.getMutableRepeatedBytes().add(new byte[20]);
+
+        // Check initialization of required fields in lazy nested messages
+        assertTrue(msg.isInitialized());
+        msg.getMutableRepeatedNestedMessage().next();
+        assertFalse(msg.isInitialized());
+        msg.getRepeatedNestedMessage().get(0).getMutableRecursiveMessage();
+        assertTrue(msg.isInitialized());
+
+        // Copy in various ways
+        LazyMessage copy = msg.clone();
+        copy.copyFrom(LazyMessage.newInstance());
+        LazyMessage.newInstance().copyFrom(copy);
+        LazyMessage.newInstance().copyFrom(msg);
+
+        // Clear various states
+        msg.clone().clear().clear();
+        copy.clear().clone().clear();
+        msg.clone().clearQuick();
+        copy.clearQuick().clone().clearQuick();
+
+        // Individual clears
+        LazyMessage empty = LazyMessage.newInstance();
+        assertTrue(empty.isEmpty());
+        empty.clearOptionalString();
+        empty.clearOptionalBytes();
+        empty.clearOptionalGroup();
+        empty.clearOptionalNestedMessage();
+        empty.clearRepeatedInt32();
+        empty.clearRepeatedInt64();
+        empty.clearRepeatedUint32();
+        empty.clearRepeatedUint64();
+        empty.clearRepeatedSint32();
+        empty.clearRepeatedSint64();
+        empty.clearRepeatedFixed32();
+        empty.clearRepeatedFixed64();
+        empty.clearRepeatedFloat();
+        empty.clearRepeatedDouble();
+        empty.clearRepeatedBool();
+        empty.clearRepeatedString();
+        empty.clearRepeatedBytes();
+        assertTrue(empty.isEmpty());
+
+        empty.copyFrom(msg);
+        assertFalse(empty.isEmpty());
+        empty.clearOptionalString();
+        empty.clearOptionalBytes();
+        empty.clearOptionalGroup();
+        empty.clearOptionalNestedMessage();
+        empty.clearRepeatedInt32();
+        empty.clearRepeatedInt64();
+        empty.clearRepeatedUint32();
+        empty.clearRepeatedUint64();
+        empty.clearRepeatedSint32();
+        empty.clearRepeatedSint64();
+        empty.clearRepeatedFixed32();
+        empty.clearRepeatedFixed64();
+        empty.clearRepeatedFloat();
+        empty.clearRepeatedDouble();
+        empty.clearRepeatedBool();
+        empty.clearRepeatedString();
+        empty.clearRepeatedBytes();
+        empty.clearRepeatedNestedMessage();
+        assertTrue(empty.isEmpty());
+
+        // merge
+        copy.mergeFrom(msg).mergeFrom(msg);
+        empty = LazyMessage.newInstance().mergeFrom(copy);
+        assertFalse(empty.isEmpty());
+
+    }
+
+    @Test
+    public void testRecursionLimit() throws IOException {
+        LazyMessage msg = LazyMessage.newInstance();
+        LazyMessage nested = msg;
+        for (int i = 0; i < 33; i++) { // above default limit 64
+            nested = nested.getMutableOptionalNestedMessage().getMutableRecursiveMessage();
+        }
+        byte[] lotsOfNestedMessages = msg.toByteArray();
+
+
+        try {
+            ProtoSource source = ProtoSource.newInstance(lotsOfNestedMessages);
+            LazyMessage.parseFrom(source);
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("limit"));
+        }
+
+        ProtoSource source = ProtoSource.newInstance(lotsOfNestedMessages);
+        assertEquals(64, source.setRecursionLimit(66));
+        assertEquals(msg, LazyMessage.parseFrom(source));
+
     }
 
 }

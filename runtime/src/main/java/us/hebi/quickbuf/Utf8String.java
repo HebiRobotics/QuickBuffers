@@ -71,11 +71,19 @@ public final class Utf8String {
         string = null;
     }
 
-    private void ensureSerialized() {
+    /**
+     * Makes sure that the content is in serialized form. This is a
+     * minor optimization in case you have commonly used string
+     * constants that should only be serialized once.
+     *
+     * @return this
+     */
+    public Utf8String ensureSerialized() {
         if (serializedSize < 0) {
             ensureCapacity((string.length() * Utf8.MAX_UTF8_EXPANSION));
             serializedSize = Utf8.encodeArray(string, bytes, 0, bytes.length);
         }
+        return this;
     }
 
     public String getString() {
@@ -144,6 +152,24 @@ public final class Utf8String {
             ensureCapacityInternal(serializedSize);
             System.arraycopy(other.bytes, 0, bytes, 0, serializedSize);
         }
+        return this;
+    }
+
+    public Utf8String writeTo(ProtoSink sink) throws java.io.IOException {
+        ensureSerialized();
+        sink.writeRawBytes(bytes, 0, serializedSize);
+        return this;
+    }
+
+    public Utf8String writeTo(java.io.OutputStream outputStream) throws java.io.IOException {
+        ensureSerialized();
+        outputStream.write(bytes, 0, serializedSize);
+        return this;
+    }
+
+    public Utf8String writeTo(java.nio.ByteBuffer buffer) {
+        ensureSerialized();
+        buffer.put(bytes, 0, serializedSize);
         return this;
     }
 

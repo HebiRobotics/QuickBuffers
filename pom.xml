@@ -7,7 +7,7 @@
     <groupId>us.hebi.quickbuf</groupId>
     <artifactId>quickbuf-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1.1-SNAPSHOT</version>
 
     <name>QuickBuffers</name>
     <url>https://github.com/HebiRobotics/QuickBuffers</url>
@@ -68,6 +68,7 @@
         <module>generator</module>
         <module>runtime</module>
         <module>compat</module>
+        <module>conformance</module>
         <module>benchmarks</module>
     </modules>
 
@@ -77,9 +78,16 @@
         <maven.compiler.target>8</maven.compiler.target>
         <maven.compiler.testSource>8</maven.compiler.testSource>
         <maven.compiler.testTarget>8</maven.compiler.testTarget>
-        <protoc.version>3.21.12</protoc.version>
+        <protobuf.version>3.21.12</protobuf.version>
+        <protoc.jar.version>3.11.4</protoc.jar.version>
         <proto.dir>${project.basedir}/../runtime/src/test/resources/protos</proto.dir>
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
+
+        <graalvm.tools.version>0.9.19</graalvm.tools.version>
+        <native.staticArg>--static</native.staticArg>
+        <native.extension>.exe</native.extension>
+        <protoc.os>determined-via-profile</protoc.os>
+        <protoc.arch>x86_64</protoc.arch>
 
         <!-- Jigsaw module name -->
         <javaModuleName />
@@ -111,17 +119,17 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
-                <version>${protoc.version}</version>
+                <version>${protobuf.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java-util</artifactId>
-                <version>${protoc.version}</version>
+                <version>${protobuf.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-javalite</artifactId>
-                <version>${protoc.version}</version>
+                <version>${protobuf.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.squareup</groupId>
@@ -301,6 +309,48 @@
             </activation>
             <properties>
                 <protoc.pluginExt>.bat</protoc.pluginExt>
+                <protoc.os>windows</protoc.os>
+                <native.extension><!-- added automatically --></native.extension>
+            </properties>
+        </profile>
+        <profile>
+            <id>platform-linux</id>
+            <activation>
+                <os>
+                    <name>linux</name>
+                </os>
+            </activation>
+            <properties>
+                <protoc.os>linux</protoc.os>
+            </properties>
+        </profile>
+        <profile>
+            <id>platform-osx</id>
+            <activation>
+                <os>
+                    <name>mac os x</name>
+                </os>
+            </activation>
+            <properties>
+                <protoc.os>osx</protoc.os>
+                <native.staticArg>--verbose</native.staticArg> <!-- unsupported on osx -->
+            </properties>
+        </profile>
+        <profile>
+            <id>arch-aarch64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <protoc.arch>aarch_64</protoc.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>useNativeGen</id>
+            <properties>
+                <protoc.pluginExt>-${project.version}-${protoc.os}-${protoc.arch}.exe</protoc.pluginExt>
             </properties>
         </profile>
     </profiles>

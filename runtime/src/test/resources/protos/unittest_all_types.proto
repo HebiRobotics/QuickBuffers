@@ -156,6 +156,34 @@ message TestAllTypes {
   optional int32 output = 100005;
   optional string decoder = 100006;
 
+  // extensions
+  extensions 1200 to 2000;
+
+  // message_set test case.
+  message MessageSetCorrect {
+    option message_set_wire_format = true;
+
+    extensions 4 to max;
+  }
+
+  message MessageSetCorrectExtension1 {
+    extend MessageSetCorrect {
+      optional MessageSetCorrectExtension1 message_set_extension = 1547769;
+    }
+    optional string str = 25;
+  }
+
+  message MessageSetCorrectExtension2 {
+    extend MessageSetCorrect {
+      optional MessageSetCorrectExtension2 message_set_extension = 4135312;
+    }
+    optional int32 i = 9;
+  }
+
+}
+
+extend TestAllTypes {
+  optional int32 extension_int32 = 1200;
 }
 
 message ForeignMessage {
@@ -167,4 +195,61 @@ enum ForeignEnum {
   FOREIGN_FOO = 4;
   FOREIGN_BAR = 5;
   FOREIGN_BAZ = 6;
+}
+
+message TestExtremeDefaultValues {
+  optional bytes escaped_bytes = 1 [default = "\0\001\a\b\f\n\r\t\v\\\'\"\xfe"];
+  optional uint32 large_uint32 = 2 [default = 0xFFFFFFFF];
+  optional uint64 large_uint64 = 3 [default = 0xFFFFFFFFFFFFFFFF];
+  optional  int32 small_int32  = 4 [default = -0x7FFFFFFF];
+  optional  int64 small_int64  = 5 [default = -0x7FFFFFFFFFFFFFFF];
+  optional  int32 really_small_int32 = 21 [default = -0x80000000];
+  optional  int64 really_small_int64 = 22 [default = -0x8000000000000000];
+
+  // The default value here is UTF-8 for "\u1234".  (We could also just type
+  // the UTF-8 text directly into this text file rather than escape it, but
+  // lots of people use editors that would be confused by this.)
+  optional string utf8_string = 6 [default = "\341\210\264"];
+
+  // Tests for single-precision floating-point values.
+  optional float zero_float = 7 [default = 0];
+  optional float one_float = 8 [default = 1];
+  optional float small_float = 9 [default = 1.5];
+  optional float negative_one_float = 10 [default = -1];
+  optional float negative_float = 11 [default = -1.5];
+  // Using exponents
+  optional float large_float = 12 [default = 2E8];
+  optional float small_negative_float = 13 [default = -8e-28];
+
+  optional fixed64 large_fixed64 = 248 [default = 10123456789123456789];
+  optional fixed32 large_fixed32 = 247 [default = 2123456789];
+
+  // Text for nonfinite floating-point values.
+  optional double inf_double = 14 [default = inf];
+  optional double neg_inf_double = 15 [default = -inf];
+  optional double nan_double = 16 [default = nan];
+  optional float inf_float = 17 [default = inf];
+  optional float neg_inf_float = 18 [default = -inf];
+  optional float nan_float = 19 [default = nan];
+
+  // Tests for C++ trigraphs.
+  // Trigraphs should be escaped in C++ generated files, but they should not be
+  // escaped for other languages.
+  // Note that in .proto file, "\?" is a valid way to escape ? in string
+  // literals.
+  optional string cpp_trigraph = 20 [default = "? \? ?? \?? \??? ??/ ?\?-"];
+
+  // String defaults containing the character '\000'
+  optional string string_with_zero       = 23 [default = "hel\000lo"];
+  optional  bytes bytes_with_zero        = 24 [default = "wor\000ld"];
+  optional string string_piece_with_zero = 25 [ctype=STRING_PIECE,
+    default="ab\000c"];
+  optional string cord_with_zero         = 26 [ctype=CORD,
+    default="12\0003"];
+  optional string replacement_string     = 27 [default="${unknown}"];
+}
+
+message TestCommentInjectionMessage {
+  // */ <- This should not close the generated doc comment
+  optional string a = 1 [default="*/ <- Neither should this."];
 }

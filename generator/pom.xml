@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quickbuf-parent</artifactId>
         <groupId>us.hebi.quickbuf</groupId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -14,20 +14,15 @@
     <properties>
         <protocPluginName>protoc-gen-quickbuf</protocPluginName>
         <finalName>${protocPluginName}-${project.version}</finalName>
-        <protoc.os>determined-via-profile</protoc.os>
-        <protoc.arch>x86_64</protoc.arch>
-        <protoc.fileName>protoc-${protoc.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
+        <protoc.fileName>protoc-${protobuf.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
         <protoc.path>${project.basedir}/../.protoc</protoc.path>
         <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
         <protoc.pluginDir>${project.basedir}/../parser/target</protoc.pluginDir>
         <protoc.pluginFile>${protoc.pluginDir}/protoc-gen-request${protoc.pluginExt}</protoc.pluginFile>
         <protoc.outputDir>${project.build.directory}/test-classes/us/hebi/quickbuf/generator</protoc.outputDir>
-        <native.extension>.exe</native.extension>
-        <native.staticArg>--static</native.staticArg>
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
-        <graalvm.tools.version>0.9.19</graalvm.tools.version>
         <proto.dir.unsupported>${project.basedir}/src/test/resources/protos/unsupported</proto.dir.unsupported>
     </properties>
 
@@ -78,7 +73,7 @@
 
                                 <!-- download proto compiler if needed -->
                                 <mkdir dir="${protoc.path}"/>
-                                <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protoc.version}/${protoc.fileName}"
+                                <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protobuf.version}/${protoc.fileName}"
                                      dest="${protoc.executable}" skipexisting="true" verbose="on"/>
                                 <chmod file="${protoc.executable}" perm="775" type="file"/>
 
@@ -98,7 +93,14 @@
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
-                                    <arg value="--request_out=request_file=allTypes.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true:${protoc.outputDir}"/>
+                                    <arg value="--request_out=request_file=allTypes_eager.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true,allocation=eager:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/namespaces.proto"/>
+                                    <arg value="${proto.dir}/unittest_all_types.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=allTypes_lazy.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true,allocation=lazy:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/unittest_all_types.proto"/>
@@ -129,7 +131,13 @@
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
-                                    <arg value="--request_out=request_file=unsupported_proto3.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--request_out=request_file=lazy_recursion.request,replace_package=(protobuf)=quickbuf,allocation=lazy:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/recursion.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>
+                                    <arg value="--request_out=request_file=unsupported_proto3.request,replace_package=(protobuf)=quickbuf,allocation=lazy:${protoc.outputDir}"/>
                                     <arg value="--proto_path=${proto.dir.unsupported}/"/>
                                     <arg value="${proto.dir.unsupported}/proto3.proto"/>
                                 </exec>
@@ -224,52 +232,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>platform-windows</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-            <properties>
-                <protoc.os>windows</protoc.os>
-                <native.extension><!-- added automatically --></native.extension>
-            </properties>
-        </profile>
-        <profile>
-            <id>platform-linux</id>
-            <activation>
-                <os>
-                    <name>linux</name>
-                </os>
-            </activation>
-            <properties>
-                <protoc.os>linux</protoc.os>
-            </properties>
-        </profile>
-        <profile>
-            <id>platform-osx</id>
-            <activation>
-                <os>
-                    <name>mac os x</name>
-                </os>
-            </activation>
-            <properties>
-                <protoc.os>osx</protoc.os>
-                <native.staticArg>--verbose</native.staticArg> <!-- unsupported on osx -->
-            </properties>
-        </profile>
-        <profile>
-            <id>arch-aarch64</id>
-            <activation>
-                <os>
-                    <arch>aarch64</arch>
-                </os>
-            </activation>
-            <properties>
-                <protoc.arch>aarch_64</protoc.arch>
-            </properties>
-        </profile>
         <profile>
             <id>native</id>
             <build>
