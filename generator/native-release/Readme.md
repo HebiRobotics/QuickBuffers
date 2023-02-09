@@ -15,16 +15,21 @@ Given that Maven releases can only be released once, we decided to add some manu
   * Conveyor CLI
 * push the desired commit to the `release/native-gen` branch
 
-### Releasing to Github
+### Testing the executables
 
-* download the [workflow artifacts](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/native-plugin.yml) and append everything to the release
+* download the [workflow artifacts](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/native-plugin.yml)
 * (manually) confirm that the executables run on different operating systems
-* create a Github release and upload the entire site and all executables
-* update `icon.png` and `download.html` to `docs/`
 
 ### Releasing to Maven Central
 
 * cd into `generator/native-release`
-* download the executables and extract them into `bin`
+* copy the workflow artifact executables into `bin/`
 * set the appropriate `<version>` in the `pom.xml`
 * `mvn clean deploy`
+
+### Releasing to Github
+
+* create a Github release and upload the entire site (in the workflow files) and all executables
+* update `icon.png` and `download.html` to `docs/`
+
+

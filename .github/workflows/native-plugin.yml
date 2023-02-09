@@ -67,7 +67,7 @@ jobs:
     - name: Conveyor site
       working-directory: ./generator/native-release
       run: |
-        chmod +x bin/*.exe
+        mvn clean package
         conveyor make site
       
     - name: Upload site

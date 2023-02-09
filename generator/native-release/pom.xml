@@ -17,10 +17,46 @@
     <properties>
         <license.skip>true</license.skip>
         <finalName>${project.artifactId}-${project.version}</finalName>
+        <protoc.baseUrl>https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}</protoc.baseUrl>
     </properties>
 
     <build>
         <plugins>
+
+            <!-- download protoc for building the site (bundled with Conveyor) -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>download-protoc</id>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <tasks>
+
+                                <!-- download proto compiler for all OS -->
+                                <mkdir dir="protoc"/>
+                                <get src="${protoc.baseUrl}-linux-x86_64.exe" dest="protoc" skipexisting="true" verbose="on"/>
+                                <get src="${protoc.baseUrl}-windows-x86_64.exe" dest="protoc" skipexisting="true" verbose="on"/>
+                                <get src="${protoc.baseUrl}-osx-x86_64.exe" dest="protoc" skipexisting="true" verbose="on"/>
+                                <get src="${protoc.baseUrl}-osx-aarch_64.exe" dest="protoc" skipexisting="true" verbose="on"/>
+
+                                <!-- add executable bit for protoc-->
+                                <chmod file="protoc/**.exe" perm="775" type="both"/>
+
+                                <!-- add executable bit for the plugin -->
+                                <chmod file="bin/**.exe" perm="775" type="both"/>
+
+                            </tasks>                            <testSourceRoot>target/generated-test-sources</testSourceRoot>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- add native resources -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.3.0</version>
@@ -43,6 +79,8 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- push native plugins with expected naming convention -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

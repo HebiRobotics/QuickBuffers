@@ -84,6 +84,7 @@
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
 
         <graalvm.tools.version>0.9.19</graalvm.tools.version>
+        <native.staticArg>--static</native.staticArg>
         <native.extension>.exe</native.extension>
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
