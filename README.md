@@ -23,7 +23,7 @@ The main highlights are
  * **Improved order** for optimized [sequential memory access](order.md)
  * **Optional accessors** as an opt-in feature (java8)
 
-QuickBuffers passes all [proto2 conformance tests](./conformance) and is compatible with all Java versions from 6 through 20. Proto3 messages can be generated and are wire compatible, but so far the behavioral differences have not been explicitly added due to some [proto3 design decisions](proto3.md) that have kept us from using it. Current limitations include
+QuickBuffers passes all [proto2 conformance tests](./conformance) and is compatible with all Java versions from 6 through 20 as well as Android. Proto3 messages can be generated and are wire compatible, but so far the behavioral differences have not been explicitly added due to some [proto3 design decisions](proto3.md) that have kept us from using it. Current limitations include
 
 * [Services](https://developers.google.com/protocol-buffers/docs/proto#services) are not implemented
 * [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) are embedded directly into the extended message, so support is limited to generation time.
@@ -37,7 +37,7 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 ```xml
 <properties>
   <quickbuf.version>1.1.0</quickbuf.version>
-  <quickbuf.options>indent=4,java8_optional=true</quickbuf.options>
+  <quickbuf.options>indent=4,allocation=lazy,extensions=embedded</quickbuf.options>
 </properties>
 ```
 
@@ -49,7 +49,13 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 </dependency>
 ```
 
-The message generator `protoc-gen-quickbuf` is set up as a plugin for the protocol buffers compiler `protoc`. The easiest way to generate messages is to use the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin).
+The message generator `protoc-gen-quickbuf` is set up as a plugin for the protocol buffers compiler `protoc`. You can install one of the [pre-built packages](https://hebirobotics.github.io/QuickBuffers/download.html) and run:
+
+```sh
+protoc-quickbuf --quickbuf_out=${quickbuf.options>:<outputDir> <protoFiles>
+```
+
+Alternatively, you can also use the [raw plugin binaries](https://github.com/HebiRobotics/QuickBuffers/releases) or the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin):
 
 ```xml
 <!-- Downloads protoc w/ plugin and generates messages -->
@@ -94,33 +100,6 @@ The generator features several options that can be supplied as a comma-separated
 | **allocation**           | **eager**, lazy, lazymsg   | changes the allocation strategy for nested types. `eager` allocates up-front and results in fewer runtime-allocations, but it may be wasteful and prohibits recursive type declarations. `lazy` waits until the field is actually needed. `lazymsg` acts lazy for nested messages, and eager for everything else. |
 | **extensions**           | **disabled**, embedded     | `embedded` adds extensions from within a single protoc call directly to the extended message. This requires extensions to be known at generation time. Some plugins may do a separate request per file, so it may require an import to combine multiple files.                                                    |
 | **java8_optional**       | **false**, true            | creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher.                                                                                                                                                      |                               
-
-## Manual generation
-
-If you do not want to generate messages at build time, you can also manually execute `protoc` with the `quickbuf` plugin. The plugin can be installed as a package or run as a standalone executable.
-
-**Package installation**
-
-The easiest option is to visit the [download site](https://hebirobotics.github.io/QuickBuffers/download.html) and install the appropriate package. There are also commandline options for installation on CI. The package includes the `protoc-gen-quickbuf` plugin as well as a matching `protoc-quickbuf` proto compiler, so you can immediately call
-
-`protoc-quickbuf --quickbuf_out=indent=4,replace_package=protobuf=quickbuf:. <proto files>`
-
-**Standalone executable**
-
-If you prefer a standalone executable, you can go to the [Releases](https://github.com/HebiRobotics/QuickBuffers/releases) section and download an appropriate `protoc-gen-quickbuf-${version}-${arch}.exe` for your system. The plugin path needs to be manually specified by adding the `--plugin-protoc-gen-quickbuf=${pathToExe}` parameter. Depending on your system you may also need to set the executable bit and remove quarantine flags (macOS).
-
-```bash
-sudo xattr -r -d com.apple.quarantine protoc-gen-quickbuf
-sudo chmod +x protoc-gen-quickbuf
-```
-
-If you don't already have protoc, you can download it from [here](https://repo1.maven.org/maven2/com/google/protobuf/protoc/) and run it with `--quickbuf_out=<options>:./path/to/output`. For example, 
-
-```bash
-protoc --plugin-protoc-gen-quickbuf=${pathToExe} --quickbuf_out=indent=4,input_order=quickbuf:<output_directory> <proto_files>
-```
-
-For unsupported platforms you can download the Java wrapper scripts in `protoc-gen-quickbuf-${version}.zip` and place them on the path. This requires a Java 8 or higher runtime.
 
 ## Reading and writing messages
 
@@ -239,16 +218,13 @@ The default toString method for all messages returns prettified json. The above 
 ```text
 {
   "text": "👍 QuickBuffers 👍",
-  "peopleList": [
-    {
+  "peopleList": [{
       "id": 0,
       "name": "First Name"
-    },
-    {
+    }, {
       "id": 1,
       "name": "Last Name"
-    }
-  ]
+    }]
 }
 ```
 
