@@ -11,7 +11,7 @@
 [![Protobuf Conformance Tests](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml/badge.svg?branch=develop)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/us.hebi.quickbuf/quickbuf-runtime/badge.svg)](https://maven-badges.herokuapp.com/maven-central/us.hebi.quickbuf/quickbuf-runtime)
 
-QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://developers.google.com/protocol-buffers/) that has been developed for low latency use cases in zero-allocation environments. The API follows Protobuf-Java where feasible to simplify migration.
+QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://developers.google.com/protocol-buffers/) that has been developed for low latency use cases in zero-allocation environments. It has no external dependencies, and the API follows Protobuf-Java where feasible to simplify migration.
 
 The main highlights are
 
