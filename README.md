@@ -55,7 +55,13 @@ The message generator `protoc-gen-quickbuf` is set up as a plugin for the protoc
 protoc-quickbuf --quickbuf_out=${quickbuf.options>:<outputDir> <protoFiles>
 ```
 
-Alternatively, you can also use the [raw plugin binaries](https://github.com/HebiRobotics/QuickBuffers/releases) or the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin):
+or use a [protoc-gen-quickbuf-${version}-${arch}.exe](https://github.com/HebiRobotics/QuickBuffers/releases) plugin binary with an absolute `pluginPath`:
+
+```sh
+protoc --plugin-protoc-gen-quickbuf=${pathToPlugin} --quickbuf_out=${quickbuf.options>:<outputDir> <protoFiles>
+```
+
+or build messages in Maven using the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin):
 
 ```xml
 <!-- Downloads protoc w/ plugin and generates messages -->
