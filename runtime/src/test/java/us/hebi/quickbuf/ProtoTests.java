@@ -257,8 +257,8 @@ public class ProtoTests {
         TestAllTypes msg = TestAllTypes.newInstance()
                 .setOptionalUint32(-1)
                 .setOptionalUint64(-1)
-                .addAllRepeatedUint32(0,12345,12345,12345,-1,0,1,-1,-1,1)
-                .addAllRepeatedUint64(0,12345,12345,12345,-1,0,1,-1,-1,1);
+                .addAllRepeatedUint32(0, 12345, 12345, 12345, -1, 0, 1, -1, -1, 1)
+                .addAllRepeatedUint64(0, 12345, 12345, 12345, -1, 0, 1, -1, -1, 1);
         TestAllTypes result = TestAllTypes.parseFrom(msg.toByteArray());
         assertEquals(msg, result);
     }
@@ -868,6 +868,15 @@ public class ProtoTests {
         empty = LazyMessage.newInstance().mergeFrom(copy);
         assertFalse(empty.isEmpty());
 
+    }
+
+    @Test
+    public void testRepeatedInternalArray() throws IOException {
+        LazyMessage msg = LazyMessage.newInstance();
+        msg.getMutableRepeatedFixed32().setInternalArray(new int[]{1, 2, 3, 4});
+        msg.getMutableRepeatedFloat().setInternalArray(new float[]{1, 2, 3, 4}, 3);
+        assertEquals(42, msg.getSerializedSize());
+        assertEquals(msg, LazyMessage.parseFrom(msg.toByteArray()));
     }
 
     @Test
