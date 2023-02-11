@@ -90,6 +90,7 @@
                                     <arg value="--proto_path=${proto.dir}/"/>
                                     <arg value="${proto.dir}/namespaces.proto"/>
                                     <arg value="${proto.dir}/namespaces_import.proto"/>
+                                    <arg value="${proto.dir}/unittest_default_package_imports.proto"/>
                                 </exec>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--plugin=protoc-gen-request=${protoc.pluginFile}"/>

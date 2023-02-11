@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package unittest_packages;
+import "namespaces_default_package.proto";
+
+option java_package = "protos.test.protobuf.nopackage";
+option java_outer_classname = "ImportingOuterClass";
+option java_multiple_files = false;
+
+message ForeignDefaultPackageImport {
+  optional NoPackageImportMessage import_message = 1;
+  optional .NoPackageImportMessage.NoPackageNestedImportMessage nested_import_message = 2;
+}

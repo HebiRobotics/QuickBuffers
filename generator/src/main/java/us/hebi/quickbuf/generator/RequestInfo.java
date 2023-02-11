@@ -106,7 +106,8 @@ public class RequestInfo {
             generateMultipleFiles = options.hasJavaMultipleFiles() && options.getJavaMultipleFiles();
             deprecated = options.hasDeprecated() && options.getDeprecated();
 
-            baseTypeId = "." + protoPackage;
+            // The first message appends a '.', so we omit it to not have two '.' in the default package
+            baseTypeId = protoPackage.isEmpty() ? "" : "." + protoPackage;
 
             messageTypes = descriptor.getMessageTypeList().stream()
                     .map(desc -> new MessageInfo(this, baseTypeId, outerClassName, !generateMultipleFiles, desc))
