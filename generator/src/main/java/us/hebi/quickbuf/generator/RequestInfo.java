@@ -334,14 +334,13 @@ public class RequestInfo {
                 // Swift-protobuf ran into the same issue: https://github.com/apple/swift-protobuf/issues/993
                 // According to the Python implementation, the fields get translated to "[full_name]" with brackets
                 // to indicate that it is an extension.
-                String packageIdentifer = getParentTypeInfo()
+                String fullName = getParentTypeInfo()
                         .getParentFile()
                         .getParentRequest()
                         .getExtensionRegistry()
-                        .getPackageIdentifier(descriptor);
-                // TODO: are both names valid?
-                jsonName = "[" + packageIdentifer + descriptor.getJsonName() + "]";
-                protoFieldName = "[" + packageIdentifer + descriptor.getName() + "]";
+                        .getFullName(descriptor);
+                // note: extensions only seem to use the fully qualified proto field name
+                jsonName = protoFieldName = "[" + fullName + "]";
             }
         }
 
@@ -693,8 +692,8 @@ public class RequestInfo {
                     .orElse(Collections.emptyList());
         }
 
-        String getPackageIdentifier(FieldDescriptorProto extension) {
-            String fullName = packageIdentifierMap.get(extension);
+        String getFullName(FieldDescriptorProto extension) {
+            String fullName = fullNameMap.get(extension);
             if (fullName == null) {
                 throw new GeneratorException("Could not determine full name for extension: " + extension.getName());
             }
@@ -723,7 +722,7 @@ public class RequestInfo {
             if (extensions.isEmpty()) return;
             for (FieldDescriptorProto extension : extensions) {
                 extensionMap.computeIfAbsent(extension.getExtendee(), clazz -> new ArrayList<>()).add(extension);
-                packageIdentifierMap.put(extension, parent + ".");
+                fullNameMap.put(extension, parent + "." + extension.getName());
             }
         }
 
@@ -733,7 +732,7 @@ public class RequestInfo {
 
         // extendee string -> descriptor
         private final Map<String, List<FieldDescriptorProto>> extensionMap = new HashMap<>();
-        private final Map<FieldDescriptorProto, String> packageIdentifierMap = new IdentityHashMap<>();
+        private final Map<FieldDescriptorProto, String> fullNameMap = new IdentityHashMap<>();
 
     }
 

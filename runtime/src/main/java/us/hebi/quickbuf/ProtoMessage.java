@@ -379,9 +379,9 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
 
     /**
      * JSON field name for serializing unknown bytes. Protobuf handles JSON serialized extensions
-     * with the full name surrounded by brackets. This is not part of the spec, so an extension
+     * with the full field name surrounded by brackets. This is not part of the spec, so an extension
      * seems appropriate and won't collide with a specified "unknown_bytes" field.
      */
-    protected static final FieldName unknownBytesFieldName = FieldName.forField("[quickbuf.unknownBytes]", "[quickbuf.unknown_bytes]");
+    protected static final FieldName unknownBytesFieldName = FieldName.forField("[quickbuf.unknown_bytes]");
 
 }

@@ -51,8 +51,7 @@ class RuntimeClasses {
 
     static final String unknownBytesField = "unknownBytes";
     static final String unknownBytesFieldName = "unknownBytesFieldName";
-    static final int unknownBytesFieldHash1 = "[quickbuf.unknownBytes]".hashCode();
-    static final int unknownBytesFieldHash2 = "[quickbuf.unknown_bytes]".hashCode();
+    static final int unknownBytesFieldHash = "[quickbuf.unknown_bytes]".hashCode();
 
     private static final ClassName RepeatedDouble = ClassName.get(API_PACKAGE, "RepeatedDouble");
     private static final ClassName RepeatedFloat = ClassName.get(API_PACKAGE, "RepeatedFloat");
