@@ -751,6 +751,34 @@ public class ProtoTests {
     }
 
     @Test
+    public void testCollidingFieldNames() throws IOException {
+        TestAllTypes expected = TestAllTypes.newInstance()
+                .setSerializedSize300(0)
+                .setCachedSize301(1)
+                .setMissingFields302(2)
+                .setUnknownBytes303(3)
+                .setQuick304(4);
+        String json = expected.toString();
+        assertEquals("{\n" +
+                "  \"serializedSize\": 0,\n" +
+                "  \"cachedSize\": 1,\n" +
+                "  \"missingFields\": 2,\n" +
+                "  \"unknownBytes\": 3,\n" +
+                "  \"quick\": 4\n" +
+                "}", json);
+        TestAllTypes actual = TestAllTypes.parseFrom(JsonSource.newInstance(json));
+        assertEquals(expected, actual);
+        actual.clearSerializedSize300()
+                .clearCachedSize301()
+                .clearMissingFields302()
+                .clearUnknownBytes303()
+                .clearQuick304();
+        assertTrue(actual.isEmpty());
+        actual.mergeFrom(ProtoSource.newInstance(expected.toByteArray()));
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void testLazyInitialization() throws IOException {
         assertNotNull(Value.newInstance().getMutableListValue());
         assertNotNull(Value.newInstance().getMutableStringValueBytes());

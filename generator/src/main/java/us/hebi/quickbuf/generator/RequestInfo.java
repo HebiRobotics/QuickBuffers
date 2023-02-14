@@ -31,7 +31,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
-import us.hebi.quickbuf.generator.PluginOptions.AllocationStrategy;
 import us.hebi.quickbuf.generator.PluginOptions.ExtensionSupport;
 import us.hebi.quickbuf.generator.PluginOptions.FieldSerializationOrder;
 
@@ -298,7 +297,9 @@ public class RequestInfo {
             } else {
                 upperCaseName = NamingUtil.toUpperCamel(descriptor.getName());
             }
-            if (descriptor.hasExtendee() && parentTypeInfo.getNameCollisionCheck().apply(descriptor.getName())) {
+
+            if (NamingUtil.isCollidingFieldName(descriptor.getName()) ||
+                    (descriptor.hasExtendee() && parentTypeInfo.getNameCollisionCheck().apply(descriptor.getName()))) {
                 upperCaseName += descriptor.getNumber();
             }
             upperName = upperCaseName;
@@ -333,12 +334,14 @@ public class RequestInfo {
                 // Swift-protobuf ran into the same issue: https://github.com/apple/swift-protobuf/issues/993
                 // According to the Python implementation, the fields get translated to "[full_name]" with brackets
                 // to indicate that it is an extension.
-                String fullName = getParentTypeInfo()
+                String packageIdentifer = getParentTypeInfo()
                         .getParentFile()
                         .getParentRequest()
                         .getExtensionRegistry()
-                        .getFullName(descriptor);
-                jsonName = protoFieldName = "[" + fullName + "]";
+                        .getPackageIdentifier(descriptor);
+                // TODO: are both names valid?
+                jsonName = "[" + packageIdentifer + descriptor.getJsonName() + "]";
+                protoFieldName = "[" + packageIdentifer + descriptor.getName() + "]";
             }
         }
 
@@ -690,8 +693,8 @@ public class RequestInfo {
                     .orElse(Collections.emptyList());
         }
 
-        String getFullName(FieldDescriptorProto extension) {
-            String fullName = fullNameMap.get(extension);
+        String getPackageIdentifier(FieldDescriptorProto extension) {
+            String fullName = packageIdentifierMap.get(extension);
             if (fullName == null) {
                 throw new GeneratorException("Could not determine full name for extension: " + extension.getName());
             }
@@ -720,7 +723,7 @@ public class RequestInfo {
             if (extensions.isEmpty()) return;
             for (FieldDescriptorProto extension : extensions) {
                 extensionMap.computeIfAbsent(extension.getExtendee(), clazz -> new ArrayList<>()).add(extension);
-                fullNameMap.put(extension, parent + "." + extension.getName());
+                packageIdentifierMap.put(extension, parent + ".");
             }
         }
 
@@ -730,7 +733,7 @@ public class RequestInfo {
 
         // extendee string -> descriptor
         private final Map<String, List<FieldDescriptorProto>> extensionMap = new HashMap<>();
-        private final Map<FieldDescriptorProto, String> fullNameMap = new IdentityHashMap<>();
+        private final Map<FieldDescriptorProto, String> packageIdentifierMap = new IdentityHashMap<>();
 
     }
 

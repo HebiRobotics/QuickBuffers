@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -130,6 +130,10 @@ class NamingUtil {
         return keywordSet.contains(name) ? name + "_" : name;
     }
 
+    public static boolean isCollidingFieldName(String field) {
+        return collidingFieldSet.contains(field);
+    }
+
     private static final HashSet<String> keywordSet = new HashSet<>(Arrays.asList(
             // Reserved Java Keywords
             "abstract", "assert", "boolean", "break", "byte", "case", "catch",
@@ -143,9 +147,18 @@ class NamingUtil {
             // Reserved Keywords for Literals
             "false", "null", "true",
 
-            // Reserved keywords for internal variables
+            // Reserved names for internal variables
             "value", "values", "input", "output",
-            "other", "o", "size", "unknownBytes"
+            "other", "o", "size", "unknownBytes",
+            "cachedSize", "bitfield0_", "unknownBytesFieldName"
+    ));
+
+    private static final HashSet<String> collidingFieldSet = new HashSet<>(Arrays.asList(
+            "quick", // clearQuick
+            "missing_fields", "missingFields", // getMissingFields
+            "unknown_bytes", "unknownBytes",// getUnknownFields
+            "serialized_size", "serializedSize", // getSerializedSize
+            "cached_size", "cachedSize" // getSerializedSize
     ));
 
 }
