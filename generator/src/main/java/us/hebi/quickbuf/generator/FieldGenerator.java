@@ -710,11 +710,11 @@ public class FieldGenerator {
         m.put("field", info.getFieldName());
         m.put("default", info.getDefaultValue());
         if (info.isEnum()) {
-			m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + "_VALUE" : "0");
-			m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
-			m.put("protoEnum", ParameterizedTypeName.get(RuntimeClasses.ProtoEnum, info.getTypeName()));
+          m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + "_VALUE" : "0");
+          m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
+          m.put("protoEnum", ParameterizedTypeName.get(RuntimeClasses.ProtoEnum, info.getTypeName()));
 		} else {
-			m.put("protoEnum", RuntimeClasses.ProtoEnum);
+          m.put("protoEnum", RuntimeClasses.ProtoEnum);
 		}
         m.put("storeType", storeType);
         m.put("commentLine", info.getJavadoc());
@@ -749,7 +749,6 @@ public class FieldGenerator {
         m.put("protoSource", RuntimeClasses.ProtoSource);
         m.put("protoSink", RuntimeClasses.ProtoSink);
         m.put("protoUtil", RuntimeClasses.ProtoUtil);
-        m.put("protoEnum", RuntimeClasses.ProtoEnum);
 
         // Common configuration-dependent code blocks
         clearOtherOneOfs = generateClearOtherOneOfs();
