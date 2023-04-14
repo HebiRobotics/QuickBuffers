@@ -42,7 +42,7 @@ class EnumGenerator {
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.enumBuilder(info.getTypeName())
-                .addSuperinterface(RuntimeClasses.ProtoEnum)
+                .addSuperinterface(ParameterizedTypeName.get(RuntimeClasses.ProtoEnum, info.getTypeName()))
                 .addModifiers(PUBLIC);
 
         // Add enum constants
