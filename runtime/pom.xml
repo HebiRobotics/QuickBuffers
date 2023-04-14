@@ -18,7 +18,8 @@
         <maven.compiler.target>6</maven.compiler.target>
         <apiDirectory>us/hebi/quickbuf</apiDirectory>
         <copyFromDir>${basedir}/src/main/java/${apiDirectory}</copyFromDir>
-        <copyToDir>${basedir}/target/generated-sources/${apiDirectory}</copyToDir>
+        <generatedSourcesDir>${basedir}/target/generated-sources/annotations/</generatedSourcesDir>
+        <copyToDir>${generatedSourcesDir}/${apiDirectory}</copyToDir>
     </properties>
 
     <dependencies>
@@ -141,7 +142,7 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>${copyToDir}</source>
+                                <source>${generatedSourcesDir}</source>
                             </sources>
                         </configuration>
                     </execution>

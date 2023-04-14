@@ -713,8 +713,6 @@ public class FieldGenerator {
           m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + "_VALUE" : "0");
           m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
           m.put("protoEnum", ParameterizedTypeName.get(RuntimeClasses.ProtoEnum, info.getTypeName()));
-		} else {
-          m.put("protoEnum", RuntimeClasses.ProtoEnum);
 		}
         m.put("storeType", storeType);
         m.put("commentLine", info.getJavadoc());
