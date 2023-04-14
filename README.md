@@ -16,7 +16,7 @@ QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://dev
 The main highlights are
 
  * **Allocation-free** in steady state. All parts of the API are mutable and reusable.
- * **No reflections**. GraalVM native-images and ProGuard obfuscation ([config](#proguard-configuration)) are supported out of the box
+ * **No reflections**. GraalVM native-images and R8/ProGuard obfuscation ([config](#proguard-configuration)) are supported out of the box
  * **Faster** encoding and decoding [speed](./benchmarks)
  * **Smaller** code size than protobuf-javalite
  * **Built-in JSON** marshalling compliant with the [proto3 mapping](https://developers.google.com/protocol-buffers/docs/proto3#json)
@@ -36,7 +36,7 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 
 ```xml
 <properties>
-  <quickbuf.version>1.1.0</quickbuf.version>
+  <quickbuf.version>1.1.1</quickbuf.version>
   <quickbuf.options>indent=4,allocation=lazy,extensions=embedded</quickbuf.options>
 </properties>
 ```
@@ -52,10 +52,16 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 The message generator `protoc-gen-quickbuf` is set up as a plugin for the protocol buffers compiler `protoc`. You can install one of the [pre-built packages](https://hebirobotics.github.io/QuickBuffers/download.html) and run:
 
 ```sh
-protoc-quickbuf --quickbuf_out=${quickbuf.options>:<outputDir> <protoFiles>
+protoc-quickbuf --quickbuf_out=${options>:<outputDir> <protoFiles>
 ```
 
-Alternatively, you can also use the [raw plugin binaries](https://github.com/HebiRobotics/QuickBuffers/releases) or the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin):
+or use a [protoc-gen-quickbuf-${version}-${arch}.exe](https://github.com/HebiRobotics/QuickBuffers/releases) plugin binary with an absolute `pluginPath`:
+
+```sh
+protoc --plugin-protoc-gen-quickbuf=${exePath} --quickbuf_out=${options>:<outputDir> <protoFiles>
+```
+
+or build messages in Maven using the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin):
 
 ```xml
 <!-- Downloads protoc w/ plugin and generates messages -->
@@ -408,7 +414,7 @@ Be aware that this prevents the definition of cycles in the message definitions.
 
 ## Proguard configuration
 
-There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file.
+There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file. R8 should automatically pick it up from the bundled [config file](./runtime/src/main/resources/META-INF/proguard/quickbuf-runtime.pro).
 
 ```text
 -dontwarn us.hebi.quickbuf.JdkMethods

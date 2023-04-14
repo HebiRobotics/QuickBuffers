@@ -21,14 +21,13 @@
 package us.hebi.quickbuf;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import org.junit.Ignore;
 import org.junit.Test;
-import protos.test.protobuf.ForeignEnum;
-import protos.test.protobuf.ForeignMessage;
-import protos.test.protobuf.RepeatedPackables;
-import protos.test.protobuf.TestAllTypes;
+import protos.test.protobuf.*;
 import protos.test.protobuf.TestAllTypes.NestedEnum;
+import protos.test.protobuf.TestEnumsMessage.EnumAllowingAlias;
 import protos.test.protobuf.external.ImportEnum;
 
 import java.io.IOException;
@@ -277,11 +276,37 @@ public class CompatibilityTest {
         assertEquals(591, parseJson(JSON_MANUAL_INPUT).getSerializedSize());
     }
 
-    private static TestAllTypes parseJson(String input) {
+    @Test
+    public void testEnumAlias() throws IOException {
+        TestEnumsMessage.Builder msg = TestEnumsMessage.newBuilder();
+        assertEquals(EnumAllowingAlias.EAA_STARTED, EnumAllowingAlias.EAA_RUNNING);
+        assertEquals(EnumAllowingAlias.EAA_STARTED_VALUE, EnumAllowingAlias.EAA_RUNNING_VALUE);
+        assertEquals(EnumAllowingAlias.EAA_UNSPECIFIED, msg.getField());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, msg.getDefaultStarted());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, msg.getDefaultRunning());
+        assertArrayEquals(
+                msg.clear().setField(EnumAllowingAlias.EAA_STARTED).build().toByteArray(),
+                msg.clear().setField(EnumAllowingAlias.EAA_RUNNING).build().toByteArray());
+        assertEquals(
+                msg.clear().setField(EnumAllowingAlias.EAA_STARTED).toString(),
+                msg.clear().setField(EnumAllowingAlias.EAA_RUNNING).toString());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, mergeJson("{\"field\":\"EAA_STARTED\"}", TestEnumsMessage.newBuilder()).getField());
         try {
-            TestAllTypes.Builder builder = TestAllTypes.newBuilder();
+            // I'm not sure why JSON decoding wouldn't work for
+            mergeJson("{\"field\":\"EAA_PROCESSING\"}", TestEnumsMessage.newBuilder());
+            fail("EAA_PROCESSING");
+        } catch (Exception expected) {
+        }
+    }
+
+    private static TestAllTypes parseJson(String input) {
+        return mergeJson(input, TestAllTypes.newBuilder()).build();
+    }
+
+    private static <B extends Message.Builder> B mergeJson(String input, B builder) {
+        try {
             JsonFormat.parser().merge(input, builder);
-            return builder.build();
+            return builder;
         } catch (Throwable e) {
             throw new IllegalArgumentException(input, e);
         }

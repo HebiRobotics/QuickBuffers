@@ -730,8 +730,7 @@ class MessageGenerator {
         // add unknown bytes
         if (info.isStoreUnknownFieldsEnabled()) {
             mergeFrom
-                    .addCode("case $L:\n", RuntimeClasses.unknownBytesFieldHash1)
-                    .beginControlFlow("case $L:", RuntimeClasses.unknownBytesFieldHash2)
+                    .beginControlFlow("case $L:", RuntimeClasses.unknownBytesFieldHash)
                     .beginControlFlow("if (input.isAtField($T.$N))",
                             RuntimeClasses.AbstractMessage, RuntimeClasses.unknownBytesFieldName)
                     .addStatement("mergeFrom(input.readBytesAsSource())")

@@ -135,6 +135,13 @@ message TestAllTypes {
   // Try to fail with java reserved keywords
   optional int32 synchronized = 96;
 
+  // Collisions with generated methods
+  optional int32 serialized_size = 300;
+  optional int32 cached_size = 301;
+  optional int32 missing_fields = 302;
+  optional int32 unknown_bytes = 303;
+  optional int32 quick = 304;
+
   oneof oneof_field {
     uint32 oneof_uint32 = 111;
     NestedMessage oneof_nested_message = 112;
@@ -252,4 +259,22 @@ message TestExtremeDefaultValues {
 message TestCommentInjectionMessage {
   // */ <- This should not close the generated doc comment
   optional string a = 1 [default="*/ <- Neither should this."];
+}
+
+message TestEnumsMessage {
+  // From https://protobuf.dev/programming-guides/proto3/:
+  //   You can define aliases by assigning the same value to different enum constants.
+  //   To do this you need to set the allow_alias option to true, otherwise the protocol
+  //   compiler generates a warning message when aliases are found. Though all alias
+  //   values are valid during deserialization, the first value is always used when serializing.
+  enum EnumAllowingAlias {
+    option allow_alias = true;
+    EAA_UNSPECIFIED = 0;
+    EAA_STARTED = 1;
+    EAA_RUNNING = 1;
+    EAA_FINISHED = 2;
+  }
+  optional EnumAllowingAlias field = 1;
+  optional EnumAllowingAlias defaultStarted = 2 [default = EAA_STARTED];
+  optional EnumAllowingAlias defaultRunning = 3 [default = EAA_RUNNING];
 }

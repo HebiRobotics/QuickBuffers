@@ -22,6 +22,8 @@ package us.hebi.quickbuf;
 
 import java.util.Arrays;
 
+import static us.hebi.quickbuf.ProtoUtil.*;
+
 /**
  * Class that represents the data for a repeated float field.
  *
@@ -103,6 +105,25 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
     }
 
     /**
+     * Gifts ownership of the supplied array and uses it as the internal storage array.
+     * Subsequent write actions may change the contents, and append actions may replace
+     * the internal storage array with something else.
+     *
+     * @param array array with valid data from zero to length
+     * @return this
+     */
+    public RepeatedFloat setInternalArray(float[] array) {
+        return setInternalArray(array, array.length);
+    }
+
+    public RepeatedFloat setInternalArray(float[] array, int length) {
+        checkNotNull(array);
+        this.array = array;
+        this.length = length;
+        return this;
+    }
+
+    /**
      * @return total capacity of the internal storage array
      */
     @Override
@@ -114,7 +135,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
      * Creates a copy of the valid data contained in the
      * internal storage.
      *
-     * @return copy of valid data
+     * @return copy of only valid data
      */
     public final float[] toArray() {
         if (length == 0) return EMPTY_ARRAY;

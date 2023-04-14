@@ -244,14 +244,14 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * Parse {@code data} as a message of this type and merge it with the message being built.
      */
-    public static <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data) throws InvalidProtocolBufferException {
+    public static <T extends ProtoMessage<T>> T mergeFrom(T msg, final byte[] data) throws InvalidProtocolBufferException {
         return mergeFrom(msg, data, 0, data.length);
     }
 
     /**
      * Parse {@code data} as a message of this type and merge it with the message being built.
      */
-    public static <T extends ProtoMessage> T mergeFrom(T msg, final byte[] data, final int off, final int len)
+    public static <T extends ProtoMessage<T>> T mergeFrom(T msg, final byte[] data, final int off, final int len)
             throws InvalidProtocolBufferException {
         try {
             return ProtoMessage.mergeFrom(msg, ProtoSource.newInstance(data, off, len));
@@ -265,7 +265,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * Parse {@code input} as a message of this type and merge it with the message being built.
      */
-    public static <T extends ProtoMessage> T mergeFrom(T msg, ProtoSource input) throws IOException {
+    public static <T extends ProtoMessage<T>> T mergeFrom(T msg, ProtoSource input) throws IOException {
         msg.mergeFrom(input);
         input.checkLastTagWas(0);
         return msg;
@@ -274,7 +274,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * Parse {@code input} as a message of this type and merge it with the message being built.
      */
-    public static <T extends ProtoMessage> T mergeFrom(T msg, JsonSource input) throws IOException {
+    public static <T extends ProtoMessage<T>> T mergeFrom(T msg, JsonSource input) throws IOException {
         msg.mergeFrom(input);
         return msg;
     }
@@ -378,8 +378,10 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
-     * JSON field name for serializing unknown bytes
+     * JSON field name for serializing unknown bytes. Protobuf handles JSON serialized extensions
+     * with the full field name surrounded by brackets. This is not part of the spec, so an extension
+     * seems appropriate and won't collide with a specified "unknown_bytes" field.
      */
-    protected static final FieldName unknownBytesFieldName = FieldName.forField("unknownBytes", "unknown_bytes");
+    protected static final FieldName unknownBytesFieldName = FieldName.forField("[quickbuf.unknown_bytes]");
 
 }

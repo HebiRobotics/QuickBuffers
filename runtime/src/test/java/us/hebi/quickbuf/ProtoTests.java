@@ -26,6 +26,7 @@ import org.junit.Test;
 import protos.test.quickbuf.*;
 import protos.test.quickbuf.LazyTypes.LazyMessage;
 import protos.test.quickbuf.TestAllTypes.NestedEnum;
+import protos.test.quickbuf.TestEnumsMessage.EnumAllowingAlias;
 import protos.test.quickbuf.UnittestFieldOrder.MessageWithMultibyteNumbers;
 import protos.test.quickbuf.UnittestRequired.TestAllTypesRequired;
 import protos.test.quickbuf.external.ImportEnum;
@@ -257,8 +258,8 @@ public class ProtoTests {
         TestAllTypes msg = TestAllTypes.newInstance()
                 .setOptionalUint32(-1)
                 .setOptionalUint64(-1)
-                .addAllRepeatedUint32(0,12345,12345,12345,-1,0,1,-1,-1,1)
-                .addAllRepeatedUint64(0,12345,12345,12345,-1,0,1,-1,-1,1);
+                .addAllRepeatedUint32(0, 12345, 12345, 12345, -1, 0, 1, -1, -1, 1)
+                .addAllRepeatedUint64(0, 12345, 12345, 12345, -1, 0, 1, -1, -1, 1);
         TestAllTypes result = TestAllTypes.parseFrom(msg.toByteArray());
         assertEquals(msg, result);
     }
@@ -751,6 +752,34 @@ public class ProtoTests {
     }
 
     @Test
+    public void testCollidingFieldNames() throws IOException {
+        TestAllTypes expected = TestAllTypes.newInstance()
+                .setSerializedSize300(0)
+                .setCachedSize301(1)
+                .setMissingFields302(2)
+                .setUnknownBytes303(3)
+                .setQuick304(4);
+        String json = expected.toString();
+        assertEquals("{\n" +
+                "  \"serializedSize\": 0,\n" +
+                "  \"cachedSize\": 1,\n" +
+                "  \"missingFields\": 2,\n" +
+                "  \"unknownBytes\": 3,\n" +
+                "  \"quick\": 4\n" +
+                "}", json);
+        TestAllTypes actual = TestAllTypes.parseFrom(JsonSource.newInstance(json));
+        assertEquals(expected, actual);
+        actual.clearSerializedSize300()
+                .clearCachedSize301()
+                .clearMissingFields302()
+                .clearUnknownBytes303()
+                .clearQuick304();
+        assertTrue(actual.isEmpty());
+        actual.mergeFrom(ProtoSource.newInstance(expected.toByteArray()));
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void testLazyInitialization() throws IOException {
         assertNotNull(Value.newInstance().getMutableListValue());
         assertNotNull(Value.newInstance().getMutableStringValueBytes());
@@ -871,6 +900,15 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedInternalArray() throws IOException {
+        LazyMessage msg = LazyMessage.newInstance();
+        msg.getMutableRepeatedFixed32().setInternalArray(new int[]{1, 2, 3, 4});
+        msg.getMutableRepeatedFloat().setInternalArray(new float[]{1, 2, 3, 4}, 3);
+        assertEquals(42, msg.getSerializedSize());
+        assertEquals(msg, LazyMessage.parseFrom(msg.toByteArray()));
+    }
+
+    @Test
     public void testRecursionLimit() throws IOException {
         LazyMessage msg = LazyMessage.newInstance();
         LazyMessage nested = msg;
@@ -891,6 +929,31 @@ public class ProtoTests {
         assertEquals(64, source.setRecursionLimit(66));
         assertEquals(msg, LazyMessage.parseFrom(source));
 
+    }
+
+    @Test
+    public void testEnumAlias() throws IOException {
+        assertEquals(EnumAllowingAlias.EAA_STARTED, EnumAllowingAlias.EAA_RUNNING);
+        assertEquals(EnumAllowingAlias.EAA_STARTED_VALUE, EnumAllowingAlias.EAA_RUNNING_VALUE);
+
+        TestEnumsMessage msg = TestEnumsMessage.newInstance();
+        assertEquals(EnumAllowingAlias.EAA_UNSPECIFIED, msg.getField());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, msg.getDefaultStarted());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, msg.getDefaultRunning());
+        assertArrayEquals(
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_STARTED).toByteArray(),
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_RUNNING).toByteArray());
+        assertEquals(
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_STARTED).toString(),
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_RUNNING).toString());
+
+        assertEquals(EnumAllowingAlias.EAA_STARTED, TestEnumsMessage.parseFrom(JsonSource.newInstance("{\"field\":\"EAA_STARTED\"}")).getField());
+
+        try {
+            // I'm not sure why JSON decoding shouldn't work for aliases, but when in doubt stick to Protobuf behavior
+            assertEquals(EnumAllowingAlias.EAA_STARTED, TestEnumsMessage.parseFrom(JsonSource.newInstance("{\"field\":\"EAA_PROCESSING\"}")).getField());
+        } catch (Exception expected) {
+        }
     }
 
 }

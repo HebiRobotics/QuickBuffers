@@ -102,6 +102,10 @@ public class ConformanceQuickbufTest {
                 .newInstance(input)
                 .setIgnoreUnknownFields(false));
         assertEquals(1, msg.getExtensionInt32());
+        assertEquals("" +
+                "{\n" +
+                "  \"[protobuf_test_messages.proto2.extension_int32]\": 1\n" +
+                "}", msg.toString());
     }
 
 }
