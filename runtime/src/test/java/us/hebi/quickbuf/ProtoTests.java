@@ -26,6 +26,7 @@ import org.junit.Test;
 import protos.test.quickbuf.*;
 import protos.test.quickbuf.LazyTypes.LazyMessage;
 import protos.test.quickbuf.TestAllTypes.NestedEnum;
+import protos.test.quickbuf.TestEnumsMessage.EnumAllowingAlias;
 import protos.test.quickbuf.UnittestFieldOrder.MessageWithMultibyteNumbers;
 import protos.test.quickbuf.UnittestRequired.TestAllTypesRequired;
 import protos.test.quickbuf.external.ImportEnum;
@@ -928,6 +929,31 @@ public class ProtoTests {
         assertEquals(64, source.setRecursionLimit(66));
         assertEquals(msg, LazyMessage.parseFrom(source));
 
+    }
+
+    @Test
+    public void testEnumAlias() throws IOException {
+        assertEquals(EnumAllowingAlias.EAA_STARTED, EnumAllowingAlias.EAA_RUNNING);
+        assertEquals(EnumAllowingAlias.EAA_STARTED_VALUE, EnumAllowingAlias.EAA_RUNNING_VALUE);
+
+        TestEnumsMessage msg = TestEnumsMessage.newInstance();
+        assertEquals(EnumAllowingAlias.EAA_UNSPECIFIED, msg.getField());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, msg.getDefaultStarted());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, msg.getDefaultRunning());
+        assertArrayEquals(
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_STARTED).toByteArray(),
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_RUNNING).toByteArray());
+        assertEquals(
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_STARTED).toString(),
+                msg.clearQuick().setField(EnumAllowingAlias.EAA_RUNNING).toString());
+
+        assertEquals(EnumAllowingAlias.EAA_STARTED, TestEnumsMessage.parseFrom(JsonSource.newInstance("{\"field\":\"EAA_STARTED\"}")).getField());
+
+        try {
+            // I'm not sure why JSON decoding shouldn't work for aliases, but when in doubt stick to Protobuf behavior
+            assertEquals(EnumAllowingAlias.EAA_STARTED, TestEnumsMessage.parseFrom(JsonSource.newInstance("{\"field\":\"EAA_PROCESSING\"}")).getField());
+        } catch (Exception expected) {
+        }
     }
 
 }

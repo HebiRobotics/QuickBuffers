@@ -21,10 +21,7 @@
 package us.hebi.quickbuf.generator;
 
 import com.google.protobuf.DescriptorProtos;
-import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
-import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
-import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
-import com.google.protobuf.DescriptorProtos.OneofDescriptorProto;
+import com.google.protobuf.DescriptorProtos.*;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.squareup.javapoet.*;
 import lombok.EqualsAndHashCode;
@@ -630,23 +627,39 @@ public class RequestInfo {
         EnumInfo(FileInfo parentFile, String parentTypeId, ClassName parentType, boolean isNested, EnumDescriptorProto descriptor) {
             super(parentFile, parentTypeId, parentType, isNested, descriptor.getName());
             this.descriptor = descriptor;
-            this.lowestNumber = descriptor.getValueList().stream()
-                    .mapToInt(DescriptorProtos.EnumValueDescriptorProto::getNumber)
-                    .min().orElse(0);
-            this.highestNumber = descriptor.getValueList().stream()
-                    .mapToInt(DescriptorProtos.EnumValueDescriptorProto::getNumber)
-                    .max().orElse(0);
+
+            int low = 0, high = 0;
+            Set<Integer> usedFields = new HashSet<>();
+            for (EnumValueDescriptorProto value : descriptor.getValueList()) {
+                if (usedFields.add(value.getNumber())) {
+                    values.add(value);
+                    low = Math.min(low, value.getNumber());
+                    high = Math.max(high, value.getNumber());
+                } else {
+                    aliases.add(value);
+                }
+            }
+
+            this.lowestNumber = low;
+            this.highestNumber = high;
             this.usingArrayLookup = parentFile.getParentRequest().shouldEnumUseArrayLookup(lowestNumber, highestNumber);
         }
 
-        public List<DescriptorProtos.EnumValueDescriptorProto> getValues() {
-            return descriptor.getValueList();
+        public EnumValueDescriptorProto findAliasedValue(EnumValueDescriptorProto alias) {
+            for (EnumValueDescriptorProto value : values) {
+                if (alias.getNumber() == value.getNumber()) {
+                    return value;
+                }
+            }
+            throw new IllegalArgumentException("Enum value does not have an alias");
         }
 
         private final EnumDescriptorProto descriptor;
         private final int lowestNumber;
         private final int highestNumber;
         private final boolean usingArrayLookup;
+        private final List<EnumValueDescriptorProto> values = new ArrayList<>();
+        private final List<EnumValueDescriptorProto> aliases = new ArrayList<>();
 
     }
 

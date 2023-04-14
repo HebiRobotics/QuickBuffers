@@ -38,6 +38,15 @@ class EnumGenerator {
     EnumGenerator(EnumInfo info) {
         this.info = info;
         this.converterClass = info.getTypeName().nestedClass(info.getTypeName().simpleName() + "Converter");
+        this.converterInterface = ParameterizedTypeName.get(RuntimeClasses.EnumConverter, info.getTypeName());
+    }
+
+    private static String getFieldName(EnumValueDescriptorProto value) {
+        return NamingUtil.filterKeyword(value.getName());
+    }
+
+    private static String getValueFieldName(EnumValueDescriptorProto value) {
+        return value.getName() + "_VALUE";
     }
 
     TypeSpec generate() {
@@ -48,15 +57,21 @@ class EnumGenerator {
         // Add enum constants
         for (EnumValueDescriptorProto value : info.getValues()) {
             String name = value.getName();
-            String numberField = name + "_VALUE";
-            String enumField = NamingUtil.filterKeyword(name);
-
-            type.addEnumConstant(enumField, TypeSpec.anonymousClassBuilder("$S, $L", name, value.getNumber()).build());
-
-            FieldSpec constField = FieldSpec.builder(int.class, numberField, PUBLIC, STATIC, FINAL)
+            type.addEnumConstant(getFieldName(value), TypeSpec.anonymousClassBuilder("$S, $L", name, value.getNumber()).build());
+            type.addField(FieldSpec.builder(int.class, getValueFieldName(value), PUBLIC, STATIC, FINAL)
                     .initializer("$L", value.getNumber())
-                    .build();
-            type.addField(constField);
+                    .build());
+        }
+
+        // Add alias constants
+        for (EnumValueDescriptorProto alias : info.getAliases()) {
+            EnumValueDescriptorProto value = info.findAliasedValue(alias);
+            type.addField(FieldSpec.builder(info.getTypeName(), getFieldName(alias), PUBLIC, STATIC, FINAL)
+                    .initializer("$L", getFieldName(value))
+                    .build());
+            type.addField(FieldSpec.builder(int.class, getValueFieldName(alias), PUBLIC, STATIC, FINAL)
+                    .initializer("$L", getValueFieldName(value))
+                    .build());
         }
 
         generateProtoEnumInterface(type);
@@ -98,7 +113,7 @@ class EnumGenerator {
 
         typeSpec.addMethod(MethodSpec.methodBuilder("converter")
                 .addModifiers(PUBLIC, STATIC)
-                .returns(converterClass)
+                .returns(converterInterface)
                 .addStatement("return $T.INSTANCE", converterClass)
                 .build());
 
@@ -122,7 +137,7 @@ class EnumGenerator {
 
     private void generateConverter(TypeSpec.Builder typeSpec) {
         TypeSpec.Builder decoder = TypeSpec.enumBuilder(converterClass)
-                .addSuperinterface(ParameterizedTypeName.get(RuntimeClasses.EnumConverter, info.getTypeName()))
+                .addSuperinterface(converterInterface)
                 .addEnumConstant("INSTANCE");
 
         // Number to Enum
@@ -220,5 +235,6 @@ class EnumGenerator {
 
     final EnumInfo info;
     final ClassName converterClass;
+    final ParameterizedTypeName converterInterface;
 
 }

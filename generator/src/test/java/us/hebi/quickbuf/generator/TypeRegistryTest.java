@@ -89,7 +89,7 @@ public class TypeRegistryTest {
         CodeGeneratorRequest request = TestRequestLoader.getAllTypesEagerRequest();
         TypeRegistry map = RequestInfo.withTypeRegistry(request).getTypeRegistry();
 
-        assertEquals(15, map.typeMap.entrySet().size());
+        assertEquals(17, map.typeMap.entrySet().size());
 
         assertEquals("protos.test.quickbuf.external.ImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage").toString());
         assertEquals("protos.test.quickbuf.external.ImportMessage.NestedImportMessage", map.resolveMessageType(".quickbuf_unittest_import.ImportMessage.NestedImportMessage").toString());
@@ -107,6 +107,8 @@ public class TypeRegistryTest {
                 ".quickbuf_unittest.TestAllTypes.OptionalGroup=protos.test.quickbuf.TestAllTypes.OptionalGroup\n" +
                 ".quickbuf_unittest.TestAllTypes.RepeatedGroup=protos.test.quickbuf.TestAllTypes.RepeatedGroup\n" +
                 ".quickbuf_unittest.TestCommentInjectionMessage=protos.test.quickbuf.TestCommentInjectionMessage\n" +
+                ".quickbuf_unittest.TestEnumsMessage=protos.test.quickbuf.TestEnumsMessage\n" +
+                ".quickbuf_unittest.TestEnumsMessage.EnumAllowingAlias=protos.test.quickbuf.TestEnumsMessage.EnumAllowingAlias\n" +
                 ".quickbuf_unittest.TestExtremeDefaultValues=protos.test.quickbuf.TestExtremeDefaultValues\n" +
                 ".quickbuf_unittest_import.ImportEnum=protos.test.quickbuf.external.ImportEnum\n" +
                 ".quickbuf_unittest_import.ImportMessage=protos.test.quickbuf.external.ImportMessage\n" +
