@@ -43,6 +43,7 @@ jobs:
         retention-days: 10
 
   conveyor-site:
+    needs: [build-images]
     runs-on: [self-hosted, macos-aarch64]
     timeout-minutes: 20
     steps:
