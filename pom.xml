@@ -7,7 +7,7 @@
     <groupId>us.hebi.quickbuf</groupId>
     <artifactId>quickbuf-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.2</version>
 
     <name>QuickBuffers</name>
     <url>https://github.com/HebiRobotics/QuickBuffers</url>
