@@ -127,20 +127,23 @@ message TestAllTypes {
 
   optional int32 id = 86;
 
-  // Try to cause conflicts.
-  optional int32 tag = 93;
-  optional int32 get_serialized_size = 94;
-  optional int32 write_to = 95;
+  // Try to cause conflicts
+  optional string tag = 93;
+  optional double get_serialized_size = 94;
+  optional double write_to = 95;
 
   // Try to fail with java reserved keywords
-  optional int32 synchronized = 96;
+  optional double synchronized = 96;
 
   // Collisions with generated methods
-  optional int32 serialized_size = 300;
-  optional int32 cached_size = 301;
-  optional int32 missing_fields = 302;
-  optional int32 unknown_bytes = 303;
-  optional int32 quick = 304;
+  optional double serialized_size = 300;
+  optional double cached_size = 301;
+  optional double missing_fields = 302;
+  optional double unknown_bytes = 303;
+  optional double quick = 304;
+
+  // Collisions with inherited methods
+  optional double class = 305;
 
   oneof oneof_field {
     uint32 oneof_uint32 = 111;

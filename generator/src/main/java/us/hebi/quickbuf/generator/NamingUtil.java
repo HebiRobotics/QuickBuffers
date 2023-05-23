@@ -148,12 +148,13 @@ class NamingUtil {
             "false", "null", "true",
 
             // Reserved names for internal variables
-            "value", "values", "input", "output",
+            "value", "values", "input", "output", "tag",
             "other", "o", "size", "unknownBytes",
             "cachedSize", "bitfield0_", "unknownBytesFieldName"
     ));
 
     private static final HashSet<String> collidingFieldSet = new HashSet<>(Arrays.asList(
+            "class", // Object::getClass
             "quick", // clearQuick
             "missing_fields", "missingFields", // getMissingFields
             "unknown_bytes", "unknownBytes",// getUnknownFields
