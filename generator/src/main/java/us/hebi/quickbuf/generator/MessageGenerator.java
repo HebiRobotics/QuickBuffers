@@ -243,6 +243,9 @@ class MessageGenerator {
 
         if (enableFallthroughOptimization) {
             mergeFrom.addComment("Enabled Fall-Through Optimization (" + info.getExpectedInputOrder() + ")");
+            mergeFrom.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
+                    .addMember("value", "$S", "fallthrough")
+                    .build());
         }
 
         mergeFrom.addStatement(named("int tag = input.readTag()"))
