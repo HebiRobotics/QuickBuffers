@@ -21,6 +21,8 @@
 package us.hebi.quickbuf;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import org.junit.Ignore;
@@ -83,6 +85,14 @@ public class CompatibilityTest {
 
     public static byte[] getDescriptorBytes() {
         return TestAllTypes.getDescriptor().toProto().toByteArray();
+    }
+
+    public static String printDescriptor(byte[] bytes) {
+        try {
+            return DescriptorProtos.DescriptorProto.parseFrom(bytes).toString();
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     public static Iterable<byte[]> getAllMessages() {

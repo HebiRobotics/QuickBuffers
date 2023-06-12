@@ -20,7 +20,6 @@
 
 package us.hebi.quickbuf;
 
-import com.google.protobuf.DescriptorProtos;
 import com.google.quickbuf.Struct;
 import com.google.quickbuf.Value;
 import org.junit.Ignore;
@@ -155,7 +154,7 @@ public class ProtoTests {
         assertEquals(-0x7FFFFFFFFFFFFFFFL, msg.getSmallInt64());
         assertEquals(-0x80000000, msg.getReallySmallInt32());
         assertEquals(-0x8000000000000000L, msg.getReallySmallInt64());
-        assertEquals(new String("\341\210\264".getBytes(ISO_8859_1), UTF_8), msg.getUtf8String());
+        assertEquals(new String("\341\210\264" .getBytes(ISO_8859_1), UTF_8), msg.getUtf8String());
 
         assertTrue(ProtoUtil.isEqual(0f, msg.getZeroFloat()));
         assertTrue(ProtoUtil.isEqual(1f, msg.getOneFloat()));
@@ -454,7 +453,7 @@ public class ProtoTests {
 
     @Test
     public void testBytes() throws IOException {
-        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
+        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9" .getBytes(UTF_8);
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
 
@@ -482,8 +481,8 @@ public class ProtoTests {
     public void testRepeatedBytes() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedBytes());
         assertEquals(2, msg.getRepeatedBytes().length());
-        assertArrayEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
-        assertArrayEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
+        assertArrayEquals("ascii" .getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
+        assertArrayEquals("utf8\uD83D\uDCA9" .getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
         TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }
@@ -936,7 +935,7 @@ public class ProtoTests {
     @Test
     public void testDescriptorContent() throws IOException {
         byte[] bytes = LazyMessage.NestedMessage.protoDescriptorBytes();
-        String content = DescriptorProtos.DescriptorProto.parseFrom(bytes).toString();
+        String content = CompatibilityTest.printDescriptor(bytes);
         assertEquals("" +
                 "name: \"NestedMessage\"\n" +
                 "field {\n" +
@@ -963,9 +962,9 @@ public class ProtoTests {
         byte[] actual = TestAllTypes.protoDescriptorBytes();
 
         // Compare string representations to check what fields are different
-        DescriptorProtos.DescriptorProto proto = DescriptorProtos.DescriptorProto.parseFrom(expected);
-        DescriptorProtos.DescriptorProto quick = DescriptorProtos.DescriptorProto.parseFrom(actual);
-        assertEquals("Descriptor content", proto.toString(), quick.toString());
+        assertEquals("Descriptor content",
+                CompatibilityTest.printDescriptor(expected),
+                CompatibilityTest.printDescriptor(actual));
 
         // Compare the binary form
         assertArrayEquals("Descriptor bytes", expected, actual);
