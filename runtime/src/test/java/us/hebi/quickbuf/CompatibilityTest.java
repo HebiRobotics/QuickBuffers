@@ -81,6 +81,10 @@ public class CompatibilityTest {
 
     }
 
+    public static byte[] getDescriptorBytes() {
+        return TestAllTypes.getDescriptor().toProto().toByteArray();
+    }
+
     public static Iterable<byte[]> getAllMessages() {
         return Arrays.asList(
                 optionalBytes(),

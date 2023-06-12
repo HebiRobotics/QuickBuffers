@@ -180,7 +180,7 @@
                                     <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
                                     <outputOptions>
-                                        replace_package=(protobuf)=quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=false,input_order=quickbuf,allocation=eager
+                                        replace_package=(protobuf)=quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=false,input_order=quickbuf,allocation=eager,gen_descriptors=true
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>
@@ -214,7 +214,7 @@
                                     <pluginPath>${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
                                     <type>quickbuf</type>
                                     <outputOptions>
-                                        replace_package=(protobuf)=quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=true,allocation=lazy,extensions=embedded
+                                        replace_package=(protobuf)=quickbuf,indent=4,store_unknown_fields=true,enforce_has_checks=true,allocation=lazy,extensions=embedded,gen_descriptors=true
                                     </outputOptions>
                                     <addSources>test</addSources>
                                 </outputTarget>

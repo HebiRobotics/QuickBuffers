@@ -20,8 +20,10 @@
 
 package us.hebi.quickbuf;
 
+import com.google.protobuf.DescriptorProtos;
 import com.google.quickbuf.Struct;
 import com.google.quickbuf.Value;
+import org.junit.Ignore;
 import org.junit.Test;
 import protos.test.quickbuf.*;
 import protos.test.quickbuf.LazyTypes.LazyMessage;
@@ -929,6 +931,44 @@ public class ProtoTests {
         assertEquals(64, source.setRecursionLimit(66));
         assertEquals(msg, LazyMessage.parseFrom(source));
 
+    }
+
+    @Test
+    public void testDescriptorContent() throws IOException {
+        byte[] bytes = LazyMessage.NestedMessage.protoDescriptorBytes();
+        String content = DescriptorProtos.DescriptorProto.parseFrom(bytes).toString();
+        assertEquals("" +
+                "name: \"NestedMessage\"\n" +
+                "field {\n" +
+                "  name: \"bb\"\n" +
+                "  number: 1\n" +
+                "  label: LABEL_OPTIONAL\n" +
+                "  type: TYPE_INT32\n" +
+                "  json_name: \"bb\"\n" +
+                "}\n" +
+                "field {\n" +
+                "  name: \"recursive_message\"\n" +
+                "  number: 2\n" +
+                "  label: LABEL_REQUIRED\n" +
+                "  type: TYPE_MESSAGE\n" +
+                "  type_name: \".quickbuf_unittest.LazyMessage\"\n" +
+                "  json_name: \"recursiveMessage\"\n" +
+                "}\n", content);
+    }
+
+    @Ignore // Protobuf-java does some symbol stripping, so it's not equivalent
+    @Test
+    public void testDescriptorBinaryForm() throws IOException {
+        byte[] expected = CompatibilityTest.getDescriptorBytes();
+        byte[] actual = TestAllTypes.protoDescriptorBytes();
+
+        // Compare string representations to check what fields are different
+        DescriptorProtos.DescriptorProto proto = DescriptorProtos.DescriptorProto.parseFrom(expected);
+        DescriptorProtos.DescriptorProto quick = DescriptorProtos.DescriptorProto.parseFrom(actual);
+        assertEquals("Descriptor content", proto.toString(), quick.toString());
+
+        // Compare the binary form
+        assertArrayEquals("Descriptor bytes", expected, actual);
     }
 
     @Test
