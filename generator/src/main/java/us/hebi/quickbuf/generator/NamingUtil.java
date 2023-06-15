@@ -91,12 +91,13 @@ class NamingUtil {
      * Port of JavaNano's "UnderscoresToCamelCaseImpl". Guava's CaseFormat doesn't
      * write upper case after numbers, so the names wouldn't be consistent.
      *
-     * @param input
-     * @param cap_next_letter
-     * @return
+     * @param input original name with lower_underscore case
+     * @param capFirstLetter true if the first letter should be capitalized
+     * @return camelCase
      */
-    private static String underscoresToCamelCaseImpl(CharSequence input, boolean cap_next_letter) {
+    private static String underscoresToCamelCaseImpl(CharSequence input, boolean capFirstLetter) {
         StringBuilder result = new StringBuilder(input.length());
+        boolean cap_next_letter = capFirstLetter;
         for (int i = 0; i < input.length(); i++) {
             final char c = input.charAt(i);
             if ('a' <= c && c <= 'z') {
@@ -153,13 +154,23 @@ class NamingUtil {
             "cachedSize", "bitfield0_", "unknownBytesFieldName"
     ));
 
-    private static final HashSet<String> collidingFieldSet = new HashSet<>(Arrays.asList(
+    private static final HashSet<String> collidingFieldSet = withCamelCaseNames(
             "class", // Object::getClass
             "quick", // clearQuick
-            "missing_fields", "missingFields", // getMissingFields
-            "unknown_bytes", "unknownBytes",// getUnknownFields
-            "serialized_size", "serializedSize", // getSerializedSize
-            "cached_size", "cachedSize" // getSerializedSize
-    ));
+            "missing_fields", // getMissingFields
+            "unknown_bytes",// getUnknownFields
+            "serialized_size", // getSerializedSize
+            "cached_size", // getSerializedSize
+            "descriptor_proto", "descriptor_proto_bytes" // getDescriptorProtoBytes
+    );
+
+    private static HashSet<String> withCamelCaseNames(String... fieldNames) {
+        HashSet<String> set = new HashSet<>(fieldNames.length * 2);
+        for (String fieldName : fieldNames) {
+            set.add(fieldName);
+            set.add(underscoresToCamelCaseImpl(fieldName, false));
+        }
+        return set;
+    }
 
 }

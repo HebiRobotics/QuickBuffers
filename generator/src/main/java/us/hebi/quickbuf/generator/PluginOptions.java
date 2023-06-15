@@ -49,6 +49,7 @@ class PluginOptions {
         extensionSupport = ExtensionSupport.parseFromString(map.getOrDefault("extensions", "disabled"));
         enforceHasChecksEnabled = parseBoolean(map.getOrDefault("enforce_has_checks", "false"));
         tryGetAccessorsEnabled = parseBoolean(map.getOrDefault("java8_optional", "false"));
+        generateDescriptors = parseBoolean(map.getOrDefault("gen_descriptors", "false"));
     }
 
     enum FieldSerializationOrder {
@@ -167,6 +168,7 @@ class PluginOptions {
     final boolean storeUnknownFieldsEnabled;
     final boolean enforceHasChecksEnabled;
     final boolean tryGetAccessorsEnabled;
+    final boolean generateDescriptors;
     final Function<String, String> replacePackageFunction;
 
 }

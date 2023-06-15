@@ -22,7 +22,7 @@ message TestAllTypes {
   }
 
   // Singular
-  optional    int32 optional_int32    =  1;
+  optional    int32 optional_int32    =  1 [json_name = "optionalInt32"]; // stays in descriptor
   optional    int64 optional_int64    =  2;
   optional   uint32 optional_uint32   =  3;
   optional   uint64 optional_uint64   =  4;
@@ -141,9 +141,10 @@ message TestAllTypes {
   optional double missing_fields = 302;
   optional double unknown_bytes = 303;
   optional double quick = 304;
+  optional string descriptor_proto = 305;
 
   // Collisions with inherited methods
-  optional double class = 305;
+  optional double class = 310;
 
   oneof oneof_field {
     uint32 oneof_uint32 = 111;

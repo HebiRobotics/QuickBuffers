@@ -370,6 +370,14 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
         return bytes.getBytes(ProtoUtil.Charsets.ISO_8859_1);
     }
 
+    protected static RepeatedByte parseDescriptorData(int expectedSize, String... parts) {
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance().reserve(expectedSize);
+        for (String part : parts) {
+            bytes.addAll(Base64.decode(part));
+        }
+        return bytes;
+    }
+
     /**
      * @return binary representation of all fields with tags that could not be parsed
      */
