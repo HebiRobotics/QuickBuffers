@@ -119,7 +119,7 @@ class MessageGenerator {
                 .build());
 
         // Descriptors
-        if (info.getParentFile().getParentRequest().getPluginOptions().isGenerateDescriptors()){
+        if (info.getParentFile().getParentRequest().getPluginOptions().isGenerateDescriptors()) {
             generateDescriptors(type);
         }
 
@@ -871,7 +871,8 @@ class MessageGenerator {
         type.addType(descriptorClass);
 
         // Add static access method
-        type.addMethod(MethodSpec.methodBuilder("protoDescriptorBytes")
+        type.addMethod(MethodSpec.methodBuilder("getDescriptorProtoBytes")
+                .addJavadoc("Get the serialized protocol message representation of the message's type descriptor.")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .returns(byte[].class)
                 .addStatement("return $L.$L.toArray()", wrapperClassName, fieldName)

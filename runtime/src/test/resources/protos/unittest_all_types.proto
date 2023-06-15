@@ -141,9 +141,10 @@ message TestAllTypes {
   optional double missing_fields = 302;
   optional double unknown_bytes = 303;
   optional double quick = 304;
+  optional string descriptor_proto = 305;
 
   // Collisions with inherited methods
-  optional double class = 305;
+  optional double class = 310;
 
   oneof oneof_field {
     uint32 oneof_uint32 = 111;

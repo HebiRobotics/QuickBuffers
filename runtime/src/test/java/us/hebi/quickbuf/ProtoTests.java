@@ -934,7 +934,7 @@ public class ProtoTests {
 
     @Test
     public void testDescriptorContent() throws IOException {
-        byte[] bytes = LazyMessage.NestedMessage.protoDescriptorBytes();
+        byte[] bytes = LazyMessage.NestedMessage.getDescriptorProtoBytes();
         String content = CompatibilityTest.printDescriptor(bytes);
         assertEquals("" +
                 "name: \"NestedMessage\"\n" +
@@ -959,7 +959,7 @@ public class ProtoTests {
     @Test
     public void testDescriptorBinaryForm() throws IOException {
         byte[] expected = CompatibilityTest.getDescriptorBytes();
-        byte[] actual = TestAllTypes.protoDescriptorBytes();
+        byte[] actual = TestAllTypes.getDescriptorProtoBytes();
 
         // Compare string representations to check what fields are different
         assertEquals("Descriptor content",
