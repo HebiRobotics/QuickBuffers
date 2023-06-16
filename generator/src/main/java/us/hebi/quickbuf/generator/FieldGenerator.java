@@ -516,6 +516,20 @@ public class FieldGenerator {
                     .build();
             type.addMethod(setter);
 
+            if(info.isString()) { // setString(Utf8String)
+                type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
+                        .addAnnotations(info.getMethodAnnotations())
+                        .addModifiers(Modifier.PUBLIC)
+                        .returns(info.getParentType())
+                        .addParameter(RuntimeClasses.StringType, "value", Modifier.FINAL)
+                        .addCode(clearOtherOneOfs)
+                        .addCode(ensureFieldNotNull)
+                        .addStatement(named("$setHas:L"))
+                        .addStatement(named("$field:N.copyFrom(value)"))
+                        .addStatement(named("return this"))
+                        .build());
+            }
+
         } else if (info.isPrimitive() || info.isEnum()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
                     .addAnnotations(info.getMethodAnnotations())
