@@ -9,16 +9,25 @@ option java_package = "protos.test.protobuf";
 option java_outer_classname = "AllTypesOuterClass";
 option java_multiple_files = true;
 
-message TestAllTypes {
+// comment on message header line 1
+// comment on message header line 2
+message TestAllTypes { // comment post message
 
+  // comment on nested message
   message NestedMessage {
-    optional int32 bb = 1;
+    // comment before message field
+    optional int32 bb = 1; // comment post message field
   }
 
-  enum NestedEnum {
+  // comment on nested enum line 1
+  //
+  // comment on nested enum line 3
+  enum NestedEnum { // comment post enum
+    // comment before enum field
     FOO = 1;
-    BAR = 2;
-    BAZ = 3;
+    BAR = 2; // comment post enum field
+    // comment before enum field 2
+    BAZ = 3; // comment post enum field 2
   }
 
   // Singular
@@ -38,7 +47,7 @@ message TestAllTypes {
   optional   string optional_string   = 14;
   optional    bytes optional_bytes    = 15;
 
-  optional group OptionalGroup = 16 {
+  optional group OptionalGroup = 16 { // comment post group
     optional int32 a = 17;
   }
 
