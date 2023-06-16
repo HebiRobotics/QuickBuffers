@@ -629,7 +629,7 @@ public class FieldGenerator {
     protected void generateTryGetMethod(TypeSpec.Builder type) {
         MethodSpec.Builder tryGet = MethodSpec.methodBuilder(info.getTryGetName())
                 .addJavadoc(Javadoc.forMessageField(info)
-                        .add("\n@return optional value if the field was set")
+                        .add("\n@return the value of $L if it is set, or empty if not", info.getFieldName())
                         .build())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)

@@ -23,6 +23,7 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.DescriptorProtos.SourceCodeInfo;
 import com.squareup.javapoet.CodeBlock;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 /**
@@ -46,9 +47,18 @@ class Javadoc {
     }
 
     public static CodeBlock.Builder forMessageField(RequestInfo.FieldInfo info) {
-        return withComments(info.getSourceLocation())
-                .add("<code>$L</code>", getFieldDefinitionLine(info.getDescriptor()));
+        // Fields get called a lot, so we cache the expensive parts
+        CodeBlock block = cachedFields.get(info.getDescriptor());
+        if (block == null) {
+            block = withComments(info.getSourceLocation())
+                    .add("<code>$L</code>", getFieldDefinitionLine(info.getDescriptor()))
+                    .build();
+            cachedFields.put(info.getDescriptor(), block);
+        }
+        return block.toBuilder();
     }
+
+    private static final HashMap<DescriptorProtos.FieldDescriptorProto, CodeBlock> cachedFields = new HashMap<>();
 
     public static CodeBlock forEnum(RequestInfo.EnumInfo info) {
         return forType("enum", info);
@@ -61,7 +71,8 @@ class Javadoc {
     }
 
     public static CodeBlock.Builder withComments(SourceCodeInfo.Location location) {
-        // Protobuf-java seems to prefer leading comments and only use trailing as a fallback
+        // Protobuf-java seems to prefer leading comments and only use trailing as a fallback.
+        // They also remove the first space as well as empty lines, but that'
         CodeBlock.Builder builder = CodeBlock.builder();
         String format = "<pre>\n$L</pre>\n\n";
         if (location.hasLeadingComments()) {
