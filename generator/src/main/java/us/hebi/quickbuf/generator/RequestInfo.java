@@ -361,10 +361,6 @@ public class RequestInfo {
             return repeatedStoreType;
         }
 
-        public String getJavadoc() {
-            return FieldUtil.getProtoDefinitionLine(descriptor) + "\n";
-        }
-
         public boolean isFixedWidth() {
             return FieldUtil.isFixedWidth(descriptor.getType());
         }

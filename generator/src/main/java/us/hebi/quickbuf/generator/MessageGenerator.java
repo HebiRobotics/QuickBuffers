@@ -40,7 +40,7 @@ class MessageGenerator {
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.classBuilder(info.getTypeName())
-                .addJavadoc(JavadocSpec.forMessage(info))
+                .addJavadoc(Javadoc.forMessage(info))
                 .superclass(ParameterizedTypeName.get(RuntimeClasses.AbstractMessage, info.getTypeName()))
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
@@ -72,7 +72,7 @@ class MessageGenerator {
 
         // newInstance() method
         type.addMethod(MethodSpec.methodBuilder("newInstance")
-                .addJavadoc(JavadocSpec.withComments(info.getSourceLocation())
+                .addJavadoc(Javadoc.withComments(info.getSourceLocation())
                         .add("@return a new empty instance of {@code $T}", info.getTypeName())
                         .build())
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -140,7 +140,7 @@ class MessageGenerator {
                 .initializer("$T.newEmptyInstance()", RuntimeClasses.BytesType)
                 .build());
         type.addMethod(MethodSpec.methodBuilder("getUnknownBytes")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .returns(RuntimeClasses.BytesType)
@@ -155,6 +155,8 @@ class MessageGenerator {
 
     private void generateIsEmpty(TypeSpec.Builder type) {
         MethodSpec.Builder isEmpty = MethodSpec.methodBuilder("isEmpty")
+                .addJavadoc(Javadoc.inherit())
+                .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(boolean.class)
                 .addStatement("return $N", BitField.hasNoBits(numBitFields));
@@ -163,7 +165,7 @@ class MessageGenerator {
 
     private MethodSpec generateClearCode(String name, boolean isFullClear) {
         MethodSpec.Builder clear = MethodSpec.methodBuilder(name)
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
@@ -194,7 +196,7 @@ class MessageGenerator {
 
     private void generateEquals(TypeSpec.Builder type) {
         MethodSpec.Builder equals = MethodSpec.methodBuilder("equals")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(boolean.class)
@@ -234,7 +236,7 @@ class MessageGenerator {
 
     private void generateMergeFrom(TypeSpec.Builder type) {
         MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
@@ -272,9 +274,11 @@ class MessageGenerator {
             boolean readTag = true;
             if (field.getInfo().isPackable()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getPackedTag());
+                mergeFrom.addComment("$L [packed=true]", field.getInfo().getFieldName());
                 readTag = field.generateMergingCodeFromPacked(mergeFrom);
             } else {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
+                mergeFrom.addComment("$L", field.getInfo().getFieldName());
                 readTag = field.generateMergingCode(mergeFrom);
             }
 
@@ -317,6 +321,7 @@ class MessageGenerator {
         for (FieldGenerator field : sortedFields) {
             if (field.getInfo().isPackable()) {
                 mergeFrom.beginControlFlow("case $L:", field.getInfo().getTag());
+                mergeFrom.addComment("$L [packed=false]", field.getInfo().getFieldName());
                 boolean readTag = field.generateMergingCode(mergeFrom);
                 if (readTag) {
                     mergeFrom.addCode(named("tag = input.readTag();\n"));
@@ -338,7 +343,7 @@ class MessageGenerator {
 
     private void generateWriteTo(TypeSpec.Builder type) {
         MethodSpec.Builder writeTo = MethodSpec.methodBuilder("writeTo")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(void.class)
@@ -380,7 +385,7 @@ class MessageGenerator {
 
     private void generateComputeSerializedSize(TypeSpec.Builder type) {
         MethodSpec.Builder computeSerializedSize = MethodSpec.methodBuilder("computeSerializedSize")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PROTECTED)
                 .returns(int.class);
@@ -419,7 +424,7 @@ class MessageGenerator {
 
     private void generateCopyFrom(TypeSpec.Builder type) {
         MethodSpec.Builder copyFrom = MethodSpec.methodBuilder("copyFrom")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addParameter(info.getTypeName(), "other", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
@@ -446,7 +451,7 @@ class MessageGenerator {
 
     private void generateMergeFromMessage(TypeSpec.Builder type) {
         MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addParameter(info.getTypeName(), "other", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
@@ -475,7 +480,7 @@ class MessageGenerator {
     private void generateClone(TypeSpec.Builder type) {
         type.addSuperinterface(Cloneable.class);
         type.addMethod(MethodSpec.methodBuilder("clone")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
@@ -516,7 +521,7 @@ class MessageGenerator {
         }
 
         MethodSpec.Builder isInitialized = MethodSpec.methodBuilder("isInitialized")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .returns(boolean.class);
@@ -554,7 +559,7 @@ class MessageGenerator {
 
         // missing fields lookup
         MethodSpec.Builder getMissingFields = MethodSpec.methodBuilder("getMissingFields")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PROTECTED, Modifier.FINAL)
                 .addParameter(String.class, "prefix")
@@ -610,7 +615,7 @@ class MessageGenerator {
 
     private void generateWriteToJson(TypeSpec.Builder type) {
         MethodSpec.Builder writeTo = MethodSpec.methodBuilder("writeTo")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addParameter(RuntimeClasses.JsonSink, "output", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
@@ -658,7 +663,7 @@ class MessageGenerator {
 
     private void generateMergeFromJson(TypeSpec.Builder type) {
         MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .returns(info.getTypeName())
                 .addParameter(RuntimeClasses.JsonSource, "input", Modifier.FINAL)
@@ -792,7 +797,7 @@ class MessageGenerator {
         ClassName factoryTypeName = info.getTypeName().nestedClass(info.getTypeName().simpleName() + "Factory");
 
         MethodSpec factoryMethod = MethodSpec.methodBuilder("create")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
@@ -837,7 +842,7 @@ class MessageGenerator {
     }
 
     private void generateDescriptors(TypeSpec.Builder type) {
-        // From Protoc's SharedCodeGenerator::GenerateDescriptors:
+        // Inspired by Protoc's SharedCodeGenerator::GenerateDescriptors:
         //
         // Embed the descriptor.  We simply serialize the entire FileDescriptorProto
         // and embed it as a string literal, which is parsed and built into real
@@ -862,7 +867,7 @@ class MessageGenerator {
         // Construct bytes from individual base64 String sections
         final byte[] descriptor = stripSerializedDescriptor(info.getDescriptor()).toByteArray();
         CodeBlock.Builder initBlock = CodeBlock.builder();
-        initBlock.addNamed("$abstractMessage:T.parseDescriptorData(", m).add("$L$>", descriptor.length);
+        initBlock.addNamed("$abstractMessage:T.parseDescriptorBase64(", m).add("$L$>", descriptor.length);
 
         for (int partIx = 0; partIx < descriptor.length; partIx += bytesPerPart) {
             byte[] part = Arrays.copyOfRange(descriptor, partIx, Math.min(descriptor.length, partIx + bytesPerPart));
@@ -891,7 +896,7 @@ class MessageGenerator {
 
         // Add static access method
         type.addMethod(MethodSpec.methodBuilder("getDescriptorProtoBytes")
-                .addJavadoc("Get the serialized protocol message representation of the message's type descriptor.")
+                .addJavadoc("@return the serialized proto representation of this type's descriptor.")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .returns(byte[].class)
                 .addStatement("return $L.$L.toArray()", wrapperClassName, fieldName)

@@ -44,32 +44,6 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
-     * Get the number of bytes required to encode this message.
-     * Returns the cached size or calls getSerializedSize which
-     * sets the cached size. This is used internally when serializing
-     * so the size is only computed once. If a member is modified
-     * then this could be stale call getSerializedSize if in doubt.
-     */
-    public int getCachedSize() {
-        if (cachedSize < 0) {
-            // getSerializedSize sets cachedSize
-            getSerializedSize();
-        }
-        return cachedSize;
-    }
-
-    /**
-     * Computes the number of bytes required to encode this message.
-     * The size is cached and the cached result can be retrieved
-     * using getCachedSize().
-     */
-    public int getSerializedSize() {
-        int size = computeSerializedSize();
-        cachedSize = size;
-        return size;
-    }
-
-    /**
      * Copies all fields and data from another message of the same
      * type into this message.
      *
@@ -101,8 +75,14 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
-     * Returns true if all required fields in the message and all embedded
-     * messages are set, false otherwise.
+     * @return true if none of the fields in this message are set
+     */
+    public boolean isEmpty() {
+        throw new RuntimeException("Generated message does not implement isEmpty");
+    }
+
+    /**
+     * @return true if all required fields in this message and in nested messages are set
      */
     public boolean isInitialized() {
         return true;
@@ -127,8 +107,40 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
+     * Get the number of bytes required to encode this message.
+     * Returns the cached size or calls getSerializedSize which
+     * sets the cached size. This is used internally when serializing
+     * so the size is only computed once. If a member is modified
+     * then this could be stale call getSerializedSize if in doubt.
+     *
+     * @return the cached size of the serialized proto form
+     */
+    public int getCachedSize() {
+        if (cachedSize < 0) {
+            // getSerializedSize sets cachedSize
+            getSerializedSize();
+        }
+        return cachedSize;
+    }
+
+    /**
+     * Computes the number of bytes required to encode this message.
+     * The size is cached and the cached result can be retrieved
+     * using getCachedSize().
+     *
+     * @return the size of the serialized proto form
+     */
+    public int getSerializedSize() {
+        int size = computeSerializedSize();
+        cachedSize = size;
+        return size;
+    }
+
+    /**
      * Computes the number of bytes required to encode this message. This does
      * not update the cached size.
+     *
+     * @return the size of the serialized proto form
      */
     protected abstract int computeSerializedSize();
 
@@ -143,6 +155,8 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * Serializes the message and writes it to the {@code output} in
      * length delimited form.
+     *
+     * @return this
      */
     public MessageType writeDelimitedTo(ProtoSink output) throws IOException {
         getSerializedSize(); // force cache update
@@ -152,6 +166,8 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
 
     /**
      * Merges the contents for one message written in length delimited form.
+     *
+     * @return this
      */
     public MessageType mergeDelimitedFrom(ProtoSource input) throws IOException {
         input.readMessage(this);
@@ -161,6 +177,8 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     /**
      * Parse {@code input} as a message of this type and merge it with the
      * message being built.
+     *
+     * @return this
      */
     public abstract MessageType mergeFrom(ProtoSource input) throws IOException;
 
@@ -180,9 +198,11 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * preserved.
      *
      * <p>This is equivalent to the {@code Message::MergeFrom} method in C++.
+     *
+     * @return this
      */
     public MessageType mergeFrom(MessageType other) {
-        throw new RuntimeException("MergeFrom method not generated");
+        throw new RuntimeException("Generated message does not implement mergeFrom");
     }
 
     /**
@@ -198,6 +218,12 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
         throw new IllegalStateException("Generated message does not implement JSON output");
     }
 
+    /**
+     * Parse {@code input} as a message of this type and merge it with the
+     * message being built.
+     *
+     * @return this
+     */
     public MessageType mergeFrom(final JsonSource input) throws IOException {
         throw new IllegalStateException("Generated message does not implement JSON input");
     }
@@ -283,8 +309,8 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * Indicates whether another object is "equal to" this one.
      * <p>
      * An object is considered equal when it is of the same message
-     * type, contains the same fields (same has state), and all of
-     * the field contents are equal.
+     * type, contains the same fields (same has state), and all the
+     * field contents are equal.
      * <p>
      * This comparison ignores unknown fields, so the serialized binary
      * form may not be equal.
@@ -370,7 +396,17 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
         return bytes.getBytes(ProtoUtil.Charsets.ISO_8859_1);
     }
 
-    protected static RepeatedByte parseDescriptorData(int expectedSize, String... parts) {
+    /**
+     * Parses descriptor data from a base64 encoded string representation.
+     * Byte arrays are stored very inefficiently in class files, so we
+     * store the binary data in string form and parse it at runtime. String
+     * literals are limited to 64K, so the data may be split into parts.
+     *
+     * @param expectedSize size hint for allocating the initial array
+     * @param parts binary parts encoded as base64 strings. Each part must be shorter than 64K.
+     * @return the byte representation of the descriptor
+     */
+    protected static RepeatedByte parseDescriptorBase64(int expectedSize, String... parts) {
         RepeatedByte bytes = RepeatedByte.newEmptyInstance().reserve(expectedSize);
         for (String part : parts) {
             bytes.addAll(Base64.decode(part));
@@ -382,7 +418,7 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * @return binary representation of all fields with tags that could not be parsed
      */
     public RepeatedByte getUnknownBytes() {
-        throw new IllegalStateException("Support for unknown bytes has not been generated.");
+        throw new IllegalStateException("The message was generated without support for unknown bytes.");
     }
 
     /**

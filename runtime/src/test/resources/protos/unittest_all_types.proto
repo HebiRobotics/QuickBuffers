@@ -51,6 +51,10 @@ message TestAllTypes { // comment post message
     optional int32 a = 17;
   }
 
+  //    a more
+  //      complex
+  // multi-line
+  //     comment
   optional NestedMessage      optional_nested_message  = 18;
   optional ForeignMessage optional_foreign_message = 19;
   optional quickbuf_unittest_import.ImportMessage optional_import_message = 20;

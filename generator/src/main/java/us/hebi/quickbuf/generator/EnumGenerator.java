@@ -20,7 +20,6 @@
 
 package us.hebi.quickbuf.generator;
 
-import com.google.protobuf.DescriptorProtos.EnumValueDescriptorProto;
 import com.squareup.javapoet.*;
 import us.hebi.quickbuf.generator.RequestInfo.EnumInfo;
 import us.hebi.quickbuf.generator.RequestInfo.EnumValueInfo;
@@ -52,7 +51,7 @@ class EnumGenerator {
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.enumBuilder(info.getTypeName())
-                .addJavadoc(JavadocSpec.forEnum(info))
+                .addJavadoc(Javadoc.forEnum(info))
                 .addSuperinterface(ParameterizedTypeName.get(RuntimeClasses.ProtoEnum, info.getTypeName()))
                 .addModifiers(PUBLIC);
 
@@ -61,10 +60,10 @@ class EnumGenerator {
             String name = value.getName();
             type.addEnumConstant(getFieldName(value),
                     TypeSpec.anonymousClassBuilder("$S, $L", name, value.getNumber())
-                            .addJavadoc(JavadocSpec.forEnumValue(value)).build());
+                            .addJavadoc(Javadoc.forEnumValue(value)).build());
             type.addField(FieldSpec.builder(int.class, getValueFieldName(value), PUBLIC, STATIC, FINAL)
                     .initializer("$L", value.getNumber())
-                    .addJavadoc(JavadocSpec.forEnumValue(value))
+                    .addJavadoc(Javadoc.forEnumValue(value))
                     .build());
         }
 
@@ -73,11 +72,11 @@ class EnumGenerator {
             EnumValueInfo value = info.findAliasedValue(alias);
             type.addField(FieldSpec.builder(info.getTypeName(), getFieldName(alias), PUBLIC, STATIC, FINAL)
                     .initializer("$L", getFieldName(value))
-                    .addJavadoc(JavadocSpec.forEnumValue(value))
+                    .addJavadoc(Javadoc.forEnumValue(value))
                     .build());
             type.addField(FieldSpec.builder(int.class, getValueFieldName(alias), PUBLIC, STATIC, FINAL)
                     .initializer("$L", getValueFieldName(value))
-                    .addJavadoc(JavadocSpec.forEnumValue(value))
+                    .addJavadoc(Javadoc.forEnumValue(value))
                     .build());
         }
 
@@ -159,7 +158,7 @@ class EnumGenerator {
 
         // Number to Enum
         MethodSpec.Builder forNumber = MethodSpec.methodBuilder("forNumber")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC, FINAL)
                 .returns(info.getTypeName())
@@ -199,7 +198,7 @@ class EnumGenerator {
 
         // Name to Enum
         MethodSpec.Builder forName = MethodSpec.methodBuilder("forName")
-                .addJavadoc(JavadocSpec.inherit())
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC, FINAL)
                 .returns(info.getTypeName())
