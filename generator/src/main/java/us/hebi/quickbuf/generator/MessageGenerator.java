@@ -40,6 +40,7 @@ class MessageGenerator {
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.classBuilder(info.getTypeName())
+                .addJavadoc(JavadocSpec.forMessage(info))
                 .superclass(ParameterizedTypeName.get(RuntimeClasses.AbstractMessage, info.getTypeName()))
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
@@ -71,6 +72,9 @@ class MessageGenerator {
 
         // newInstance() method
         type.addMethod(MethodSpec.methodBuilder("newInstance")
+                .addJavadoc(JavadocSpec.withComments(info.getSourceLocation())
+                        .add("@return a new empty instance of {@code $T}", info.getTypeName())
+                        .build())
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .returns(info.getTypeName())
                 .addStatement("return new $T()", info.getTypeName())
@@ -136,6 +140,7 @@ class MessageGenerator {
                 .initializer("$T.newEmptyInstance()", RuntimeClasses.BytesType)
                 .build());
         type.addMethod(MethodSpec.methodBuilder("getUnknownBytes")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .returns(RuntimeClasses.BytesType)
@@ -158,6 +163,7 @@ class MessageGenerator {
 
     private MethodSpec generateClearCode(String name, boolean isFullClear) {
         MethodSpec.Builder clear = MethodSpec.methodBuilder(name)
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
@@ -188,6 +194,7 @@ class MessageGenerator {
 
     private void generateEquals(TypeSpec.Builder type) {
         MethodSpec.Builder equals = MethodSpec.methodBuilder("equals")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(boolean.class)
@@ -227,6 +234,7 @@ class MessageGenerator {
 
     private void generateMergeFrom(TypeSpec.Builder type) {
         MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
@@ -330,6 +338,7 @@ class MessageGenerator {
 
     private void generateWriteTo(TypeSpec.Builder type) {
         MethodSpec.Builder writeTo = MethodSpec.methodBuilder("writeTo")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(void.class)
@@ -371,6 +380,7 @@ class MessageGenerator {
 
     private void generateComputeSerializedSize(TypeSpec.Builder type) {
         MethodSpec.Builder computeSerializedSize = MethodSpec.methodBuilder("computeSerializedSize")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PROTECTED)
                 .returns(int.class);
@@ -409,6 +419,7 @@ class MessageGenerator {
 
     private void generateCopyFrom(TypeSpec.Builder type) {
         MethodSpec.Builder copyFrom = MethodSpec.methodBuilder("copyFrom")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addParameter(info.getTypeName(), "other", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
@@ -435,6 +446,7 @@ class MessageGenerator {
 
     private void generateMergeFromMessage(TypeSpec.Builder type) {
         MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addParameter(info.getTypeName(), "other", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
@@ -463,6 +475,7 @@ class MessageGenerator {
     private void generateClone(TypeSpec.Builder type) {
         type.addSuperinterface(Cloneable.class);
         type.addMethod(MethodSpec.methodBuilder("clone")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
@@ -503,6 +516,7 @@ class MessageGenerator {
         }
 
         MethodSpec.Builder isInitialized = MethodSpec.methodBuilder("isInitialized")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .returns(boolean.class);
@@ -540,6 +554,7 @@ class MessageGenerator {
 
         // missing fields lookup
         MethodSpec.Builder getMissingFields = MethodSpec.methodBuilder("getMissingFields")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PROTECTED, Modifier.FINAL)
                 .addParameter(String.class, "prefix")
@@ -595,6 +610,7 @@ class MessageGenerator {
 
     private void generateWriteToJson(TypeSpec.Builder type) {
         MethodSpec.Builder writeTo = MethodSpec.methodBuilder("writeTo")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addParameter(RuntimeClasses.JsonSink, "output", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC)
@@ -642,6 +658,7 @@ class MessageGenerator {
 
     private void generateMergeFromJson(TypeSpec.Builder type) {
         MethodSpec.Builder mergeFrom = MethodSpec.methodBuilder("mergeFrom")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .returns(info.getTypeName())
                 .addParameter(RuntimeClasses.JsonSource, "input", Modifier.FINAL)
@@ -775,6 +792,7 @@ class MessageGenerator {
         ClassName factoryTypeName = info.getTypeName().nestedClass(info.getTypeName().simpleName() + "Factory");
 
         MethodSpec factoryMethod = MethodSpec.methodBuilder("create")
+                .addJavadoc(JavadocSpec.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName())
@@ -791,6 +809,7 @@ class MessageGenerator {
         type.addType(factoryEnum);
 
         type.addMethod(MethodSpec.methodBuilder("getFactory")
+                .addJavadoc("@return factory for creating $T messages", info.getTypeName())
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .returns(factoryReturnType)
                 .addStatement("return $T.INSTANCE", factoryTypeName)

@@ -33,11 +33,16 @@ public interface ProtoEnum<E extends Enum> {
     public interface EnumConverter<E extends ProtoEnum> {
 
         /**
-         * @param value number defined in proto file
-         * @return corresponding enum value or null if not known
+         * @param value The numeric wire value of the enum entry.
+         * @return The enum value associated with the given numeric wire value, or null if unknown.
          */
         public E forNumber(int value);
 
+        /**
+         *
+         * @param value The text representation of the enum entry
+         * @return The enum value associated with the given text representation, or null if unknown.
+         */
         public E forName(CharSequence value);
 
     }

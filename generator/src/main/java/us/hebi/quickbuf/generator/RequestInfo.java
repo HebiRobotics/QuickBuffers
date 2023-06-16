@@ -85,6 +85,7 @@ public class RequestInfo {
         FileInfo(RequestInfo parentRequest, FileDescriptorProto descriptor) {
             this.parentRequest = parentRequest;
             this.descriptor = descriptor;
+            this.sourceMap = SourceLocations.createElementMap(descriptor);
 
             fileName = descriptor.getName();
             protoPackage = NamingUtil.getProtoPackage(descriptor);
@@ -115,11 +116,16 @@ public class RequestInfo {
 
         }
 
+        SourceCodeInfo.Location getSourceLocation(String identifier) {
+            return sourceMap.getOrDefault(identifier, SourceCodeInfo.Location.getDefaultInstance());
+        }
+
         private final RequestInfo parentRequest;
         private final FileDescriptorProto descriptor;
         private final String baseTypeId;
         private final String fileName;
         private final boolean generateMultipleFiles;
+        private final Map<String, SourceCodeInfo.Location> sourceMap;
 
         private final ClassName outerClassName;
         private final String protoPackage;
@@ -143,6 +149,7 @@ public class RequestInfo {
             this.fieldNamesClass = this.typeName.nestedClass("FieldNames");
             this.typeId = parentTypeId + "." + name;
             this.isNested = isNested;
+            this.sourceLocation = getParentFile().getSourceLocation(typeId);
         }
 
         private final FileInfo parentFile;
@@ -150,6 +157,7 @@ public class RequestInfo {
         protected final String typeId;
         protected final ClassName typeName;
         protected final ClassName fieldNamesClass;
+        private final SourceCodeInfo.Location sourceLocation;
 
     }
 
@@ -281,6 +289,9 @@ public class RequestInfo {
             this.descriptor = descriptor;
             this.bitIndex = bitIndex;
             this.storeUnknownFieldsEnabled = parentTypeInfo.isStoreUnknownFieldsEnabled();
+
+            String fieldId = parentTypeInfo.typeId + "." + descriptor.getName();
+            sourceLocation = getParentFile().getSourceLocation(fieldId);
 
             hasBit = BitField.hasBit(bitIndex);
             setBit = BitField.setBit(bitIndex);
@@ -599,6 +610,7 @@ public class RequestInfo {
         private final boolean isPrimitive;
         private final boolean storeUnknownFieldsEnabled;
         private final List<AnnotationSpec> methodAnnotations;
+        private final SourceCodeInfo.Location sourceLocation;
         String fieldName;
         String lowerName;
         String upperName;
@@ -632,11 +644,11 @@ public class RequestInfo {
             Set<Integer> usedFields = new HashSet<>();
             for (EnumValueDescriptorProto value : descriptor.getValueList()) {
                 if (usedFields.add(value.getNumber())) {
-                    values.add(value);
+                    values.add(new EnumValueInfo(this, value));
                     low = Math.min(low, value.getNumber());
                     high = Math.max(high, value.getNumber());
                 } else {
-                    aliases.add(value);
+                    aliases.add(new EnumValueInfo(this, value));
                 }
             }
 
@@ -645,8 +657,8 @@ public class RequestInfo {
             this.usingArrayLookup = parentFile.getParentRequest().shouldEnumUseArrayLookup(lowestNumber, highestNumber);
         }
 
-        public EnumValueDescriptorProto findAliasedValue(EnumValueDescriptorProto alias) {
-            for (EnumValueDescriptorProto value : values) {
+        public EnumValueInfo findAliasedValue(EnumValueInfo alias) {
+            for (EnumValueInfo value : values) {
                 if (alias.getNumber() == value.getNumber()) {
                     return value;
                 }
@@ -658,8 +670,32 @@ public class RequestInfo {
         private final int lowestNumber;
         private final int highestNumber;
         private final boolean usingArrayLookup;
-        private final List<EnumValueDescriptorProto> values = new ArrayList<>();
-        private final List<EnumValueDescriptorProto> aliases = new ArrayList<>();
+        private final List<EnumValueInfo> values = new ArrayList<>();
+        private final List<EnumValueInfo> aliases = new ArrayList<>();
+
+    }
+
+    @Value
+    public static class EnumValueInfo {
+
+        EnumValueInfo(EnumInfo parentType, EnumValueDescriptorProto descriptor) {
+            this.parentType = parentType;
+            this.descriptor = descriptor;
+            String valueId = parentType.getTypeId() + "." + descriptor.getName();
+            this.sourceLocation = parentType.getParentFile().getSourceLocation(valueId);
+        }
+
+        public String getName() {
+            return descriptor.getName();
+        }
+
+        public int getNumber() {
+            return descriptor.getNumber();
+        }
+
+        EnumInfo parentType;
+        EnumValueDescriptorProto descriptor;
+        SourceCodeInfo.Location sourceLocation;
 
     }
 
