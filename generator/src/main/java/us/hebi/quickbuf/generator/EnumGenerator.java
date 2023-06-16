@@ -20,9 +20,9 @@
 
 package us.hebi.quickbuf.generator;
 
-import com.google.protobuf.DescriptorProtos.EnumValueDescriptorProto;
 import com.squareup.javapoet.*;
 import us.hebi.quickbuf.generator.RequestInfo.EnumInfo;
+import us.hebi.quickbuf.generator.RequestInfo.EnumValueInfo;
 
 import javax.lang.model.element.Modifier;
 import java.util.function.IntConsumer;
@@ -41,36 +41,42 @@ class EnumGenerator {
         this.converterInterface = ParameterizedTypeName.get(RuntimeClasses.EnumConverter, info.getTypeName());
     }
 
-    private static String getFieldName(EnumValueDescriptorProto value) {
+    private static String getFieldName(EnumValueInfo value) {
         return NamingUtil.filterKeyword(value.getName());
     }
 
-    private static String getValueFieldName(EnumValueDescriptorProto value) {
+    private static String getValueFieldName(EnumValueInfo value) {
         return value.getName() + "_VALUE";
     }
 
     TypeSpec generate() {
         TypeSpec.Builder type = TypeSpec.enumBuilder(info.getTypeName())
+                .addJavadoc(Javadoc.forEnum(info))
                 .addSuperinterface(ParameterizedTypeName.get(RuntimeClasses.ProtoEnum, info.getTypeName()))
                 .addModifiers(PUBLIC);
 
         // Add enum constants
-        for (EnumValueDescriptorProto value : info.getValues()) {
+        for (EnumValueInfo value : info.getValues()) {
             String name = value.getName();
-            type.addEnumConstant(getFieldName(value), TypeSpec.anonymousClassBuilder("$S, $L", name, value.getNumber()).build());
+            type.addEnumConstant(getFieldName(value),
+                    TypeSpec.anonymousClassBuilder("$S, $L", name, value.getNumber())
+                            .addJavadoc(Javadoc.forEnumValue(value)).build());
             type.addField(FieldSpec.builder(int.class, getValueFieldName(value), PUBLIC, STATIC, FINAL)
                     .initializer("$L", value.getNumber())
+                    .addJavadoc(Javadoc.forEnumValue(value))
                     .build());
         }
 
         // Add alias constants
-        for (EnumValueDescriptorProto alias : info.getAliases()) {
-            EnumValueDescriptorProto value = info.findAliasedValue(alias);
+        for (EnumValueInfo alias : info.getAliases()) {
+            EnumValueInfo value = info.findAliasedValue(alias);
             type.addField(FieldSpec.builder(info.getTypeName(), getFieldName(alias), PUBLIC, STATIC, FINAL)
                     .initializer("$L", getFieldName(value))
+                    .addJavadoc(Javadoc.forEnumValue(value))
                     .build());
             type.addField(FieldSpec.builder(int.class, getValueFieldName(alias), PUBLIC, STATIC, FINAL)
                     .initializer("$L", getValueFieldName(value))
+                    .addJavadoc(Javadoc.forEnumValue(value))
                     .build());
         }
 
@@ -95,6 +101,7 @@ class EnumGenerator {
 
     private void generateProtoEnumInterface(TypeSpec.Builder typeSpec) {
         typeSpec.addMethod(MethodSpec.methodBuilder("getName")
+                .addJavadoc("@return the string representation of enum entry")
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC)
                 .returns(String.class)
@@ -102,6 +109,7 @@ class EnumGenerator {
                 .build());
 
         typeSpec.addMethod(MethodSpec.methodBuilder("getNumber")
+                .addJavadoc("@return the numeric wire value of this enum entry")
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC)
                 .returns(int.class)
@@ -112,12 +120,16 @@ class EnumGenerator {
     private void generateStaticMethods(TypeSpec.Builder typeSpec) {
 
         typeSpec.addMethod(MethodSpec.methodBuilder("converter")
+                .addJavadoc("@return a converter that maps between this enum's numeric and text representations")
                 .addModifiers(PUBLIC, STATIC)
                 .returns(converterInterface)
                 .addStatement("return $T.INSTANCE", converterClass)
                 .build());
 
         typeSpec.addMethod(MethodSpec.methodBuilder("forNumber")
+                .addJavadoc(
+                        "@param value The numeric wire value of the corresponding enum entry.\n" +
+                        "@return The enum associated with the given numeric wire value, or null if unknown.")
                 .addModifiers(PUBLIC, STATIC)
                 .returns(info.getTypeName())
                 .addParameter(TypeName.INT, "value")
@@ -125,6 +137,10 @@ class EnumGenerator {
                 .build());
 
         typeSpec.addMethod(MethodSpec.methodBuilder("forNumberOr")
+                .addJavadoc("" +
+                        "@param value The numeric wire value of the corresponding enum entry.\n" +
+                        "@param other Fallback value in case the value is not known.\n" +
+                        "@return The enum associated with the given numeric wire value, or the fallback value if unknown.")
                 .addModifiers(PUBLIC, STATIC)
                 .returns(info.getTypeName())
                 .addParameter(int.class, "number")
@@ -142,6 +158,7 @@ class EnumGenerator {
 
         // Number to Enum
         MethodSpec.Builder forNumber = MethodSpec.methodBuilder("forNumber")
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC, FINAL)
                 .returns(info.getTypeName())
@@ -161,7 +178,7 @@ class EnumGenerator {
                     .build());
 
             CodeBlock.Builder initBlock = CodeBlock.builder();
-            for (EnumValueDescriptorProto value : info.getValues()) {
+            for (EnumValueInfo value : info.getValues()) {
                 initBlock.addStatement("lookup[$L] = $L", value.getNumber(), NamingUtil.filterKeyword(value.getName()));
             }
             decoder.addStaticBlock(initBlock.build());
@@ -170,7 +187,7 @@ class EnumGenerator {
 
             // lookup using switch statement
             forNumber.beginControlFlow("switch(value)");
-            for (EnumValueDescriptorProto value : info.getValues()) {
+            for (EnumValueInfo value : info.getValues()) {
                 forNumber.addStatement("case $L: return $L", value.getNumber(), NamingUtil.filterKeyword(value.getName()));
             }
             forNumber.addStatement("default: return null");
@@ -181,13 +198,14 @@ class EnumGenerator {
 
         // Name to Enum
         MethodSpec.Builder forName = MethodSpec.methodBuilder("forName")
+                .addJavadoc(Javadoc.inherit())
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC, FINAL)
                 .returns(info.getTypeName())
                 .addParameter(CharSequence.class, "value", FINAL);
 
         int[] cases = info.getValues().stream()
-                .map(EnumValueDescriptorProto::getName)
+                .map(EnumValueInfo::getName)
                 .mapToInt(String::length)
                 .distinct()
                 .sorted().toArray();

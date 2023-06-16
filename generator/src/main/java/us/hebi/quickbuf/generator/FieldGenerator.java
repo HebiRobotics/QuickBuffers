@@ -44,7 +44,7 @@ public class FieldGenerator {
 
     protected void generateMemberFields(TypeSpec.Builder type) {
         FieldSpec.Builder field = FieldSpec.builder(storeType, info.getFieldName())
-                .addJavadoc(named("$commentLine:L"))
+                .addJavadoc(Javadoc.forMessageField(info).build())
                 .addModifiers(Modifier.PRIVATE);
 
         if (info.isLazyAllocationEnabled()) {
@@ -451,6 +451,9 @@ public class FieldGenerator {
 
     protected void generateHasMethod(TypeSpec.Builder type) {
         type.addMethod(MethodSpec.methodBuilder(info.getHazzerName())
+                .addJavadoc(Javadoc.forMessageField(info)
+                        .add("\n@return whether the $L field is set", info.getFieldName())
+                        .build())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(TypeName.BOOLEAN)
@@ -462,6 +465,10 @@ public class FieldGenerator {
         if (info.isRepeated() || info.isBytes()) {
 
             MethodSpec adder = MethodSpec.methodBuilder(info.getAdderName())
+                    .addJavadoc(Javadoc.forMessageField(info)
+                            .add("\n@param value the $L to add", info.getFieldName())
+                            .add("\n@return this")
+                            .build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getInputParameterType(), "value", Modifier.FINAL)
@@ -475,6 +482,10 @@ public class FieldGenerator {
             type.addMethod(adder);
 
             MethodSpec.Builder addAll = MethodSpec.methodBuilder("addAll" + info.getUpperName())
+                    .addJavadoc(Javadoc.forMessageField(info)
+                            .add("\n@param values the $L to add", info.getFieldName())
+                            .add("\n@return this")
+                            .build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
@@ -489,6 +500,10 @@ public class FieldGenerator {
 
             if (info.isBytes()) {
                 MethodSpec.Builder setBytes = MethodSpec.methodBuilder("set" + info.getUpperName())
+                        .addJavadoc(Javadoc.forMessageField(info)
+                                .add("\n@param values the $L to set", info.getFieldName())
+                                .add("\n@return this")
+                                .build())
                         .addAnnotations(info.getMethodAnnotations())
                         .addModifiers(Modifier.PUBLIC)
                         .addParameter(ArrayTypeName.of(info.getInputParameterType()), "values", Modifier.FINAL)
@@ -504,6 +519,10 @@ public class FieldGenerator {
 
         } else if (info.isMessageOrGroup() || info.isString()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addJavadoc(Javadoc.forMessageField(info)
+                            .add("\n@param value the $L to set", info.getFieldName())
+                            .add("\n@return this")
+                            .build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(info.getParentType())
@@ -516,8 +535,30 @@ public class FieldGenerator {
                     .build();
             type.addMethod(setter);
 
+            if (info.isString()) { // setString(Utf8String)
+                type.addMethod(MethodSpec.methodBuilder(info.getSetterName())
+                        .addJavadoc(Javadoc.forMessageField(info)
+                                .add("\n@param value the $L to set", info.getFieldName())
+                                .add("\n@return this")
+                                .build())
+                        .addAnnotations(info.getMethodAnnotations())
+                        .addModifiers(Modifier.PUBLIC)
+                        .returns(info.getParentType())
+                        .addParameter(RuntimeClasses.StringType, "value", Modifier.FINAL)
+                        .addCode(clearOtherOneOfs)
+                        .addCode(ensureFieldNotNull)
+                        .addStatement(named("$setHas:L"))
+                        .addStatement(named("$field:N.copyFrom(value)"))
+                        .addStatement(named("return this"))
+                        .build());
+            }
+
         } else if (info.isPrimitive() || info.isEnum()) {
             MethodSpec setter = MethodSpec.methodBuilder(info.getSetterName())
+                    .addJavadoc(Javadoc.forMessageField(info)
+                            .add("\n@param value the $L to set", info.getFieldName())
+                            .add("\n@return this")
+                            .build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(info.getTypeName(), "value", Modifier.FINAL)
@@ -553,7 +594,9 @@ public class FieldGenerator {
                 .addAnnotations(info.getMethodAnnotations())
                 .addJavadoc(named("" +
                         "Gets the value of the internal enum store. The result is\n" +
-                        "equivalent to {@link $message:T#$getMethod:N()}.getNumber().\n"))
+                        "equivalent to {@link $message:T#$getMethod:N()}.getNumber().\n" +
+                        "\n" +
+                        "@return numeric wire representation"))
                 .addModifiers(Modifier.PUBLIC)
                 .returns(int.class)
                 .addCode(enforceHasCheck)
@@ -568,7 +611,10 @@ public class FieldGenerator {
                         "Sets the value of the internal enum store. This does not\n" +
                         "do any validity checks, so be sure to use appropriate value\n" +
                         "constants from {@link $type:T}. Setting an invalid value\n" +
-                        "can cause {@link $message:T#$getMethod:N()} to return null\n"))
+                        "can cause {@link $message:T#$getMethod:N()} to return null\n" +
+                        "\n" +
+                        "@param value the numeric wire value to set\n" +
+                        "@return this"))
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(int.class, "value", Modifier.FINAL)
                 .returns(info.getParentType())
@@ -582,6 +628,9 @@ public class FieldGenerator {
 
     protected void generateTryGetMethod(TypeSpec.Builder type) {
         MethodSpec.Builder tryGet = MethodSpec.methodBuilder(info.getTryGetName())
+                .addJavadoc(Javadoc.forMessageField(info)
+                        .add("\n@return the value of $L if it is set, or empty if not", info.getFieldName())
+                        .build())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getOptionalReturnType());
@@ -597,6 +646,9 @@ public class FieldGenerator {
 
     protected void generateGetMethods(TypeSpec.Builder type) {
         MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
+                .addJavadoc(Javadoc.forMessageField(info)
+                        .add("\n@return the $L", info.getFieldName())
+                        .build())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .addCode(enforceHasCheck)
@@ -617,17 +669,21 @@ public class FieldGenerator {
         }
 
         if (info.isRepeated() || info.isMessageOrGroup() || info.isBytes()) {
-            getter.addJavadoc(named("" +
-                    "This method returns the internal storage object without modifying any has state.\n" +
-                    "The returned object should not be modified and be treated as read-only.\n" +
-                    "\n" +
-                    "Use {@link #$getMutableMethod:N()} if you want to modify it.\n"));
+            getter.addJavadoc(Javadoc.forMessageField(info).add(named("\n\n" +
+                            "This method returns the internal storage object without modifying any has state.\n" +
+                            "The returned object should not be modified and be treated as read-only.\n" +
+                            "\n" +
+                            "Use {@link #$getMutableMethod:N()} if you want to modify it.\n" +
+                            "\n" +
+                            "@return internal storage object for reading"))
+                    .build());
 
             MethodSpec mutableGetter = MethodSpec.methodBuilder(info.getMutableGetterName())
-                    .addJavadoc(named("" +
+                    .addJavadoc(Javadoc.forMessageField(info).add(named("\n\n" +
                             "This method returns the internal storage object and sets the corresponding\n" +
                             "has state. The returned object will become part of this message and its\n" +
-                            "contents may be modified as long as the has state is not cleared.\n"))
+                            "contents may be modified as long as the has state is not cleared.\n" +
+                            "@return internal storage object for modifications")).build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
@@ -647,6 +703,10 @@ public class FieldGenerator {
         if (!info.isRepeated() && info.isString()) {
 
             type.addMethod(MethodSpec.methodBuilder(info.getGetterName() + "Bytes")
+                    .addJavadoc(Javadoc.forMessageField(info)
+                            .add("\n@return internal {@code $T} representation of $L for reading",
+                                    RuntimeClasses.StringType, info.getFieldName())
+                            .build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
@@ -656,6 +716,10 @@ public class FieldGenerator {
                     .build());
 
             type.addMethod(MethodSpec.methodBuilder(info.getMutableGetterName() + "Bytes")
+                    .addJavadoc(Javadoc.forMessageField(info)
+                            .add("\n@return internal {@code $T} representation of $L for modifications",
+                                    RuntimeClasses.StringType, info.getFieldName())
+                            .build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(storeType)
@@ -671,6 +735,9 @@ public class FieldGenerator {
 
     protected void generateClearMethod(TypeSpec.Builder type) {
         MethodSpec.Builder method = MethodSpec.methodBuilder(info.getClearName())
+                .addJavadoc(Javadoc.forMessageField(info)
+                        .add("\n@return this")
+                        .build())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getParentType())
@@ -710,12 +777,11 @@ public class FieldGenerator {
         m.put("field", info.getFieldName());
         m.put("default", info.getDefaultValue());
         if (info.isEnum()) {
-          m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + "_VALUE" : "0");
-          m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
-          m.put("protoEnum", info.getTypeName());
-		}
+            m.put("default", info.hasDefaultValue() ? info.getTypeName() + "." + info.getDefaultValue() + "_VALUE" : "0");
+            m.put("defaultEnumValue", info.getTypeName() + "." + info.getDefaultValue());
+            m.put("protoEnum", info.getTypeName());
+        }
         m.put("storeType", storeType);
-        m.put("commentLine", info.getJavadoc());
         m.put("getMutableMethod", info.getMutableGetterName());
         m.put("lazyInitMethod", info.getLazyInitName());
         m.put("getMethod", info.getGetterName());

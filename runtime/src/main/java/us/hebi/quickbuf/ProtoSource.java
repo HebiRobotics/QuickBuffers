@@ -1008,7 +1008,7 @@ public abstract class ProtoSource {
     /**
      * Resets the current size counter to zero (see {@link #setSizeLimit(int)}). Only valid for {@link
      * InputStream}-backed streams.
-     * @return
+     * @return this
      */
     public ProtoSource resetSizeCounter() {
         throw new UnsupportedOperationException("Only valid for stream backed sources");

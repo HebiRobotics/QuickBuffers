@@ -24,7 +24,6 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Label;
 
 import java.util.Comparator;
-import java.util.Locale;
 
 /**
  * @author Florian Enner
@@ -166,33 +165,6 @@ class FieldUtil {
             default:
                 throw new IllegalStateException("Unexpected value: " + descriptor.getType());
         }
-    }
-
-    static String getProtoDefinitionLine(FieldDescriptorProto descriptor) {
-        // optional int32 my_field = 2 [default = 1];
-        final String label = descriptor.getLabel().toString()
-                .substring("LABEL_".length())
-                .toLowerCase(Locale.US);
-        String type = descriptor.getTypeName();
-        if (type.isEmpty()) {
-            type = descriptor.getType().toString()
-                    .substring("TYPE_".length())
-                    .toLowerCase(Locale.US);
-        }
-        String definition = String.format("%s %s %s = %d", label, type, descriptor.getName(), descriptor.getNumber());
-        String options = "";
-        if (descriptor.hasDefaultValue()) {
-            String defaultValue = descriptor.getDefaultValue();
-            if (defaultValue.contains("*/")) {
-                defaultValue = defaultValue.replaceAll("\\*/", "*\\\\/");
-            }
-            options = " [default = " + defaultValue + "]";
-        } else if (descriptor.getOptions().hasPacked()) {
-            options = " [packed = " + descriptor.getOptions().getPacked() + "]";
-        }
-
-        String line = definition + options + ";";
-        return !descriptor.hasExtendee() ? line : "extend {\n  " + line + "\n}";
     }
 
     private static int getWireType(FieldDescriptorProto.Type type) {
