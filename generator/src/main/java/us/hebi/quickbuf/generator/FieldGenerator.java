@@ -646,9 +646,6 @@ public class FieldGenerator {
 
     protected void generateGetMethods(TypeSpec.Builder type) {
         MethodSpec.Builder getter = MethodSpec.methodBuilder(info.getGetterName())
-                .addJavadoc(Javadoc.forMessageField(info)
-                        .add("\n@return the $L", info.getFieldName())
-                        .build())
                 .addAnnotations(info.getMethodAnnotations())
                 .addModifiers(Modifier.PUBLIC)
                 .addCode(enforceHasCheck)
@@ -682,7 +679,7 @@ public class FieldGenerator {
                     .addJavadoc(Javadoc.forMessageField(info).add(named("\n\n" +
                             "This method returns the internal storage object and sets the corresponding\n" +
                             "has state. The returned object will become part of this message and its\n" +
-                            "contents may be modified as long as the has state is not cleared.\n" +
+                            "contents may be modified as long as the has state is not cleared.\n\n" +
                             "@return internal storage object for modifications")).build())
                     .addAnnotations(info.getMethodAnnotations())
                     .addModifiers(Modifier.PUBLIC)
@@ -696,7 +693,10 @@ public class FieldGenerator {
             type.addMethod(getter.build());
             type.addMethod(mutableGetter);
         } else {
-            type.addMethod(getter.build());
+            type.addMethod(getter.addJavadoc(Javadoc.forMessageField(info)
+                    .add("\n@return the $L", info.getFieldName())
+                    .build())
+                    .build());
         }
 
         // Add an overload for Strings that let users get the backing Utf8Bytes
