@@ -918,7 +918,6 @@ public class ProtoTests {
         }
         byte[] lotsOfNestedMessages = msg.toByteArray();
 
-
         try {
             ProtoSource source = ProtoSource.newInstance(lotsOfNestedMessages);
             LazyMessage.parseFrom(source);
