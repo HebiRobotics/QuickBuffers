@@ -36,7 +36,7 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 
 ```xml
 <properties>
-  <quickbuf.version>1.2</quickbuf.version>
+  <quickbuf.version>1.3.1</quickbuf.version>
   <quickbuf.options>indent=4,allocation=lazy,extensions=embedded</quickbuf.options>
 </properties>
 ```
@@ -106,6 +106,7 @@ The generator features several options that can be supplied as a comma-separated
 | **allocation**           | **eager**, lazy, lazymsg   | changes the allocation strategy for nested types. `eager` allocates up-front and results in fewer runtime-allocations, but it may be wasteful and prohibits recursive type declarations. `lazy` waits until the field is actually needed. `lazymsg` acts lazy for nested messages, and eager for everything else. |
 | **extensions**           | **disabled**, embedded     | `embedded` adds extensions from within a single protoc call directly to the extended message. This requires extensions to be known at generation time. Some plugins may do a separate request per file, so it may require an import to combine multiple files.                                                    |
 | **java8_optional**       | **false**, true            | creates `tryGet` methods that are short for `return if(hasField()) ? Optional.of(getField()) : Optional.absent()`. Requires a runtime with Java 8 or higher.                                                                                                                                                      |                               
+| **gen_descriptors**      | **false**, true            | creates `getDescriptorProtoBytes` methods for integrating with reflection in existing tools                                                                                                                                                                                                                       
 
 ## Reading and writing messages
 
@@ -351,6 +352,7 @@ message SimpleMessage {
 ```Java
 // simplified generated code
 public final class SimpleMessage {
+    public SimpleMessage setOptionalString(Utf8String value);
     public SimpleMessage setOptionalString(CharSequence value);
     public SimpleMessage clearOptionalString(); // sets length = 0
     public boolean hasOptionalString();

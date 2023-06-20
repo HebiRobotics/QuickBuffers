@@ -39,6 +39,10 @@ public final class Utf8String {
         return newEmptyInstance().copyFrom(initialValue);
     }
 
+    public static Utf8String newEncodedInstance(CharSequence initialValue) {
+        return newEmptyInstance().copyFrom(initialValue).ensureSerialized();
+    }
+
     /**
      * Internal backing array. Only call after
      * size() or setSize().
