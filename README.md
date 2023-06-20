@@ -36,7 +36,7 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 
 ```xml
 <properties>
-  <quickbuf.version>1.3</quickbuf.version>
+  <quickbuf.version>1.3.1</quickbuf.version>
   <quickbuf.options>indent=4,allocation=lazy,extensions=embedded</quickbuf.options>
 </properties>
 ```
