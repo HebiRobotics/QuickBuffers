@@ -251,9 +251,9 @@
                 <jdk>(11,)</jdk>
             </activation>
             <properties>
-                <!-- increase language level for jdk11+ to allow compiling. Release with 8 or 11 -->
-                <maven.compiler.source>7</maven.compiler.source>
-                <maven.compiler.target>7</maven.compiler.target>
+                <!-- increase language level for recent jdks to allow compiling. Release with 8 -->
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
             </properties>
         </profile>
     </profiles>
