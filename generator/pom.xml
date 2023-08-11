@@ -260,6 +260,7 @@
                                 <param>${project.build.directory}/${finalName}.jar</param>
                             </classpath>
                             <buildArgs>
+                                <arg>-march=compatibility</arg> <!-- support older processors (see #54) -->
                                 <arg>--no-fallback</arg>
                                 <arg>--verbose</arg>
                                 <arg>${native.staticArg}</arg>
