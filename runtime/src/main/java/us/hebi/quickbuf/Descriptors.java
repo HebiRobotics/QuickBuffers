@@ -19,6 +19,7 @@
  */
 package us.hebi.quickbuf;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,6 @@ import java.util.List;
  * @since 20 Sep 2023
  */
 public final class Descriptors {
-
 
     public abstract static class GenericDescriptor {
 
@@ -57,6 +57,11 @@ public final class Descriptors {
             this.length = length;
         }
 
+        @Override
+        public String toString() {
+            return "descriptor{" + fullName + "}";
+        }
+
         final String fullName;
         final String name;
         final RepeatedByte bytes;
@@ -67,14 +72,14 @@ public final class Descriptors {
 
     public static class FileDescriptor extends GenericDescriptor {
 
-        public FileDescriptor(String fileName, String protoPackage, RepeatedByte bytes, FileDescriptor... dependencies) {
-            super(fileName, fileName, bytes, 0, bytes.length());
-            this.protoPackage = protoPackage;
-            this.dependencies = Collections.unmodifiableList(Arrays.asList(dependencies));
+        public static FileDescriptor internalBuildGeneratedFileFrom(String name, String protoPackage, RepeatedByte bytes, FileDescriptor... dependencies) {
+            return new FileDescriptor(name, protoPackage, bytes, Arrays.asList(dependencies));
         }
 
-        public List<FileDescriptor> getDependencies() {
-            return dependencies;
+        public Descriptor internalContainedType(int offset, int length, String name, String fullName) {
+            Descriptor type = new Descriptor(fullName, name, this, bytes, offset, length);
+            containedTypes.add(type);
+            return type;
         }
 
         public String getPackage() {
@@ -85,14 +90,47 @@ public final class Descriptors {
             return this;
         }
 
+        public List<FileDescriptor> getDependencies() {
+            return Collections.unmodifiableList(dependencies);
+        }
+
+        /**
+         * @return descriptors for all message and nested types contained in this file
+         */
+        public List<Descriptor> getAllContainedTypes() {
+            return Collections.unmodifiableList(containedTypes);
+        }
+
+        /**
+         * @return descriptors for all types in this file and its dependencies
+         */
+        public List<Descriptor> getAllKnownTypes() {
+            return getAllKnownTypes(this, new ArrayList<Descriptor>());
+        }
+
+        private static List<Descriptor> getAllKnownTypes(FileDescriptor file, List<Descriptor> list) {
+            for (FileDescriptor dependency : file.dependencies) {
+                getAllKnownTypes(dependency, list);
+            }
+            list.addAll(file.containedTypes);
+            return list;
+        }
+
+        private FileDescriptor(String fileName, String protoPackage, RepeatedByte bytes, List<FileDescriptor> dependencies) {
+            super(fileName, fileName, bytes, 0, bytes.length());
+            this.protoPackage = protoPackage;
+            this.dependencies = dependencies;
+        }
+
         final String protoPackage;
         final List<FileDescriptor> dependencies;
+        final List<Descriptor> containedTypes = new ArrayList<Descriptor>();
 
     }
 
     public static class Descriptor extends GenericDescriptor {
 
-        public Descriptor(String fullName, String name, FileDescriptor file, RepeatedByte bytes, int offset, int length) {
+        private Descriptor(String fullName, String name, FileDescriptor file, RepeatedByte bytes, int offset, int length) {
             super(fullName, name, bytes, offset, length);
             this.file = file;
         }
@@ -106,7 +144,7 @@ public final class Descriptors {
 
     }
 
-    private Descriptors(){
+    private Descriptors() {
     }
 
 }

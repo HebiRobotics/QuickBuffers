@@ -37,7 +37,7 @@ import java.util.HashMap;
 class DescriptorGenerator {
 
     static String getDescriptorBytesFieldName() {
-        return "descriptorBytes";
+        return "descriptorData";
     }
 
     static String getFileDescriptorFieldName() {
@@ -45,9 +45,9 @@ class DescriptorGenerator {
     }
 
     static String getDescriptorFieldName(RequestInfo.MessageInfo info) {
-        // unique name that matches the protobuf-java convention
-        String name = info.getTypeId().replaceAll("\\.", "_");
-        return "internal_static" + name + "_descriptor";
+        // uniquely identifiable descriptor name. Similar to protobuf-java
+        // but without the "internal_static_" prefix.
+        return info.getFullName().replaceAll("\\.", "_") + "_descriptor";
     }
 
     public void generate(TypeSpec.Builder type) {
@@ -60,7 +60,7 @@ class DescriptorGenerator {
 
         // field for the main file descriptor
         CodeBlock.Builder initBlock = CodeBlock.builder();
-        initBlock.add("new $T($S, $S, $N", RuntimeClasses.FileDescriptor,
+        initBlock.add("$T.internalBuildGeneratedFileFrom($S, $S, $N", RuntimeClasses.FileDescriptor,
                 info.getDescriptor().getName(),
                 info.getDescriptor().getPackage(),
                 getDescriptorBytesFieldName());
@@ -106,13 +106,12 @@ class DescriptorGenerator {
 
         type.addField(FieldSpec.builder(RuntimeClasses.MessageDescriptor, getDescriptorFieldName(message))
                 .addModifiers(Modifier.STATIC, Modifier.FINAL)
-                .initializer("new $T($S, $S, $N, $N, $L, $L)", RuntimeClasses.MessageDescriptor,
-                        message.getFullName(),
-                        msgDesc.getName(),
+                .initializer("$N.internalContainedType($L, $L, $S, $S)",
                         getFileDescriptorFieldName(),
-                        getDescriptorBytesFieldName(),
                         offset,
-                        length)
+                        length,
+                        msgDesc.getName(),
+                        message.getFullName())
                 .build());
 
         // Recursively add nested messages

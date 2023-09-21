@@ -36,6 +36,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -959,7 +961,35 @@ public class ProtoTests {
         assertEquals(CompatibilityTest.getTestAllDescriptor().getFile().getFullName(), TestAllTypes.getDescriptor().getFile().getFullName());
         assertEquals(CompatibilityTest.getTestAllDescriptor().getFile().getName(), TestAllTypes.getDescriptor().getFile().getName());
         assertEquals(CompatibilityTest.getTestAllDescriptor().getFile().getPackage(), TestAllTypes.getDescriptor().getFile().getPackage());
+    }
 
+    @Test
+    public void testDescriptorContainedTypeMap() throws IOException {
+        Map<String, Descriptors.Descriptor> map = new HashMap<>();
+        for (Descriptors.FileDescriptor file : TestAllTypes.getDescriptor().getFile().getDependencies()) {
+            for (Descriptors.Descriptor type : file.getAllContainedTypes()) {
+                map.put(type.getFullName(), type);
+            }
+        }
+        for (Descriptors.Descriptor type : TestAllTypes.getDescriptor().getFile().getAllContainedTypes()) {
+            map.put(type.getFullName(), type);
+        }
+        map.values().forEach(val-> System.out.println(val.getFullName()));
+
+        assertEquals(13, map.size());
+        assertEquals(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
+        assertEquals(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
+    }
+
+    @Test
+    public void testDescriptorKnownTypeMap() throws IOException {
+        Map<String, Descriptors.Descriptor> map = new HashMap<>();
+        for (Descriptors.Descriptor type : TestAllTypes.getDescriptor().getFile().getAllKnownTypes()) {
+            map.put(type.getFullName(), type);
+        }
+        assertEquals(13, map.size());
+        assertEquals(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
+        assertEquals(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
     }
 
     @Ignore // Protobuf-java does some symbol stripping, so it's not equivalent
