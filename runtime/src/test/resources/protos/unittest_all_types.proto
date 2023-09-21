@@ -154,7 +154,7 @@ message TestAllTypes { // comment post message
   optional double missing_fields = 302;
   optional double unknown_bytes = 303;
   optional double quick = 304;
-  optional string descriptor_proto = 305;
+  // optional string descriptor = 305; // Note: this actually breaks protobuf-java
 
   // Collisions with inherited methods
   optional double class = 310;

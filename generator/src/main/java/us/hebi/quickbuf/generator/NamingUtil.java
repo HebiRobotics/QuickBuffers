@@ -161,7 +161,7 @@ class NamingUtil {
             "unknown_bytes",// getUnknownFields
             "serialized_size", // getSerializedSize
             "cached_size", // getSerializedSize
-            "descriptor_proto", "descriptor_proto_bytes" // getDescriptorProtoBytes
+            "descriptor" // getDescriptor
     );
 
     private static HashSet<String> withCamelCaseNames(String... fieldNames) {

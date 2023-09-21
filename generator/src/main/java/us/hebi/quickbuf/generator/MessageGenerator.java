@@ -842,76 +842,14 @@ class MessageGenerator {
     }
 
     private void generateDescriptors(TypeSpec.Builder type) {
-        // Inspired by Protoc's SharedCodeGenerator::GenerateDescriptors:
-        //
-        // Embed the descriptor.  We simply serialize the entire FileDescriptorProto
-        // and embed it as a string literal, which is parsed and built into real
-        // descriptors at initialization time.  We unfortunately have to put it in
-        // a string literal, not a byte array, because apparently using a literal
-        // byte array causes the Java compiler to generate *instructions* to
-        // initialize each and every byte of the array, e.g. as if you typed:
-        //   b[0] = 123; b[1] = 456; b[2] = 789;
-        // This makes huge bytecode files and can easily hit the compiler's internal
-        // code size limits (error "code to large").  String literals are apparently
-        // embedded raw, which is what we want.
-
-        // Note: Protobuf uses escaped ISO_8859_1 strings, but for now we use Base64
-
-        // Every block of bytes, start a new string literal, in order to avoid the
-        // 64k length limit. Note that this value needs to be <64k.
-        final int charsPerLine = 80; // should be a multiple of 4
-        final int linesPerPart = 20;
-        final int charsPerPart = linesPerPart * charsPerLine;
-        final int bytesPerPart = charsPerPart * 3 / 4; // 3x 8 bit => 4x 6 bit
-
-        // Construct bytes from individual base64 String sections
-        final byte[] descriptor = stripSerializedDescriptor(info.getDescriptor()).toByteArray();
-        CodeBlock.Builder initBlock = CodeBlock.builder();
-        initBlock.addNamed("$abstractMessage:T.parseDescriptorBase64(", m).add("$L$>", descriptor.length);
-
-        for (int partIx = 0; partIx < descriptor.length; partIx += bytesPerPart) {
-            byte[] part = Arrays.copyOfRange(descriptor, partIx, Math.min(descriptor.length, partIx + bytesPerPart));
-            String block = Base64.getEncoder().encodeToString(part);
-
-            String line = block.substring(0, Math.min(charsPerLine, block.length()));
-            initBlock.add(",\n$S", line);
-            for (int blockIx = line.length(); blockIx < block.length(); blockIx += charsPerLine) {
-                line = block.substring(blockIx, Math.min(blockIx + charsPerLine, block.length()));
-                initBlock.add(" + \n$S", line);
-            }
-
-        }
-        initBlock.add(")$<");
-
-        // Store the descriptor in a separate class to avoid initializing unused ones
-        String wrapperClassName = "DescriptorHolder";
-        String fieldName = "serializedProtoBytes";
-        TypeSpec descriptorClass = TypeSpec.classBuilder(wrapperClassName)
-                .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                .addField(FieldSpec.builder(RuntimeClasses.BytesType, fieldName)
-                        .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                        .initializer(initBlock.build()).build())
-                .build();
-        type.addType(descriptorClass);
-
-        // Add static access method
-        type.addMethod(MethodSpec.methodBuilder("getDescriptorProtoBytes")
-                .addJavadoc("@return the serialized proto representation of this type's descriptor.")
+        ClassName descriptorClass = info.getParentFile().getOuterClassName();
+        String fieldName = DescriptorGenerator.getDescriptorFieldName(info);
+        type.addMethod(MethodSpec.methodBuilder("getDescriptor")
+                .addJavadoc("@return this type's descriptor.")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(byte[].class)
-                .addStatement("return $L.$L.toArray()", wrapperClassName, fieldName)
+                .returns(RuntimeClasses.MessageDescriptor)
+                .addStatement("return $T.$N", descriptorClass, fieldName)
                 .build());
-
-    }
-
-    /**
-     * The Protobuf-Java descriptor does some symbol stripping (e.g. jsonName only appears if it was specified),
-     * so serializing the raw descriptor does not produce binary compatibility. I don't know whether it's worth
-     * implementing it, so for now we leave it empty. See
-     * https://github.com/protocolbuffers/protobuf/blob/209accaf6fb91aa26e6086e73626e1884ddfb737/src/google/protobuf/compiler/retention.cc#L105-L116
-     */
-    private static DescriptorProtos.DescriptorProto stripSerializedDescriptor(DescriptorProtos.DescriptorProto descriptor) {
-        return descriptor;
     }
 
     MessageGenerator(MessageInfo info) {
