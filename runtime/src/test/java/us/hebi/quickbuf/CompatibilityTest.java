@@ -20,10 +20,9 @@
 
 package us.hebi.quickbuf;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
+import com.google.protobuf.*;
 import com.google.protobuf.util.JsonFormat;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -85,6 +84,10 @@ public class CompatibilityTest {
 
     public static byte[] getDescriptorBytes() {
         return TestAllTypes.getDescriptor().toProto().toByteArray();
+    }
+
+    public static Descriptors.Descriptor getTestAllDescriptor() {
+        return TestAllTypes.getDescriptor();
     }
 
     public static String printDescriptor(byte[] bytes) {

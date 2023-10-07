@@ -96,8 +96,12 @@ public class CompilerPlugin {
                 list.accept(new MessageGenerator(type).generate());
             }
 
+            if (file.isGenerateDescriptors()) {
+                new DescriptorGenerator(file).generate(outerClassSpec);
+            }
+
             // Omitt completely empty outer classes
-            if (!file.isGenerateMultipleFiles()) {
+            if (file.isGenerateDescriptors() || !file.isGenerateMultipleFiles()) {
                 topLevelTypes.add(outerClassSpec.build());
             }
 

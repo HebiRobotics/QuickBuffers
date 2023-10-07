@@ -60,7 +60,7 @@
             <!-- Add scripts that can be executed by protoc -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>copy-plugin-scripts</id>
@@ -69,7 +69,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <!-- Windows Script-->
                                 <mkdir dir="target"/>
                                 <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
@@ -81,7 +81,7 @@
                                 <replace file="target/${protocPluginName}" token="{jarfile}" value="${finalName}"/>
                                 <fixcrlf file="target/${protocPluginName}" eol="unix"/>
                                 <chmod file="target/${protocPluginName}" perm="775" type="file"/>
-                            </tasks>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>

@@ -149,7 +149,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.22</version>
+                <version>1.18.30</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
@@ -168,19 +168,11 @@
 
     <build>
 
-        <!-- Plugins required for publishing to Maven Central -->
+        <!-- Plugins that run for all modules -->
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
             </plugin>
         </plugins>
 
@@ -300,6 +292,26 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <!-- Plugins required for publishing to Maven Central -->
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>license-maven-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>platform-windows</id>
             <activation>
