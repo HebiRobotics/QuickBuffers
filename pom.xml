@@ -7,7 +7,7 @@
     <groupId>us.hebi.quickbuf</groupId>
     <artifactId>quickbuf-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.4-SNAPSHOT</version>
+    <version>1.3.2</version>
 
     <name>QuickBuffers</name>
     <url>https://github.com/HebiRobotics/QuickBuffers</url>
@@ -83,7 +83,7 @@
         <proto.dir>${project.basedir}/../runtime/src/test/resources/protos</proto.dir>
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
 
-        <graalvm.tools.version>0.9.24</graalvm.tools.version>
+        <graalvm.tools.version>0.9.27</graalvm.tools.version>
         <native.staticArg>--static</native.staticArg>
         <native.extension>.exe</native.extension>
         <protoc.os>determined-via-profile</protoc.os>
