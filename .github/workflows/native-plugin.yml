@@ -26,7 +26,7 @@ jobs:
         java-version: '21'
         set-java-home: 'true'
         components: 'native-image'
-        cache: 'maven'
+        cache: '' # disabled to avoid uploading cache of self-hosted runners
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build native image
