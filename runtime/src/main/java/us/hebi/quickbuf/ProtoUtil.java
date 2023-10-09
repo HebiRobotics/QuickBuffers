@@ -40,6 +40,24 @@ public final class ProtoUtil {
     }
 
     /**
+     * Parses binary data from base64 encoded String segments. Byte arrays are stored very
+     * inefficiently in class files, so it is better to store binary data (e.g. descriptors)
+     * in string form and parse it at runtime. String literals are limited to 64K,
+     * so the data may be split into multiple parts.
+     *
+     * @param expectedSize size hint for allocating the initial array
+     * @param parts binary parts encoded as base64 strings
+     * @return the byte representation of the descriptor
+     */
+    public static RepeatedByte decodeBase64(int expectedSize, String... parts) {
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance().reserve(expectedSize);
+        for (String part : parts) {
+            bytes.addAll(Base64.decode(part));
+        }
+        return bytes;
+    }
+
+    /**
      * Hash code for JSON field name lookup. Any changes need to be
      * synchronized between FieldUtil::hash32 and ProtoUtil::hash32.
      */

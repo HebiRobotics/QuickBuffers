@@ -36,6 +36,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -933,7 +935,7 @@ public class ProtoTests {
 
     @Test
     public void testDescriptorContent() throws IOException {
-        byte[] bytes = LazyMessage.NestedMessage.getDescriptorProtoBytes();
+        byte[] bytes = LazyMessage.NestedMessage.getDescriptor().toProtoBytes();
         String content = CompatibilityTest.printDescriptor(bytes);
         assertEquals("" +
                 "name: \"NestedMessage\"\n" +
@@ -952,13 +954,49 @@ public class ProtoTests {
                 "  type_name: \".quickbuf_unittest.LazyMessage\"\n" +
                 "  json_name: \"recursiveMessage\"\n" +
                 "}\n", content);
+
+        assertEquals(CompatibilityTest.getTestAllDescriptor().getFullName(), TestAllTypes.getDescriptor().getFullName());
+        assertEquals(CompatibilityTest.getTestAllDescriptor().getName(), TestAllTypes.getDescriptor().getName());
+
+        assertEquals(CompatibilityTest.getTestAllDescriptor().getFile().getFullName(), TestAllTypes.getDescriptor().getFile().getFullName());
+        assertEquals(CompatibilityTest.getTestAllDescriptor().getFile().getName(), TestAllTypes.getDescriptor().getFile().getName());
+        assertEquals(CompatibilityTest.getTestAllDescriptor().getFile().getPackage(), TestAllTypes.getDescriptor().getFile().getPackage());
+    }
+
+    @Test
+    public void testDescriptorContainedTypeMap() throws IOException {
+        Map<String, Descriptors.Descriptor> map = new HashMap<>();
+        for (Descriptors.FileDescriptor file : TestAllTypes.getDescriptor().getFile().getDependencies()) {
+            for (Descriptors.Descriptor type : file.getAllContainedTypes()) {
+                map.put(type.getFullName(), type);
+            }
+        }
+        for (Descriptors.Descriptor type : TestAllTypes.getDescriptor().getFile().getAllContainedTypes()) {
+            map.put(type.getFullName(), type);
+        }
+        map.values().forEach(val-> System.out.println(val.getFullName()));
+
+        assertEquals(13, map.size());
+        assertEquals(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
+        assertEquals(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
+    }
+
+    @Test
+    public void testDescriptorKnownTypeMap() throws IOException {
+        Map<String, Descriptors.Descriptor> map = new HashMap<>();
+        for (Descriptors.Descriptor type : TestAllTypes.getDescriptor().getFile().getAllKnownTypes()) {
+            map.put(type.getFullName(), type);
+        }
+        assertEquals(13, map.size());
+        assertEquals(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
+        assertEquals(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
     }
 
     @Ignore // Protobuf-java does some symbol stripping, so it's not equivalent
     @Test
     public void testDescriptorBinaryForm() throws IOException {
         byte[] expected = CompatibilityTest.getDescriptorBytes();
-        byte[] actual = TestAllTypes.getDescriptorProtoBytes();
+        byte[] actual = TestAllTypes.getDescriptor().toProtoBytes();
 
         // Compare string representations to check what fields are different
         assertEquals("Descriptor content",

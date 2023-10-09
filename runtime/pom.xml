@@ -70,6 +70,7 @@
 
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
                 <executions>
 
                     <!-- Replace Java9+ sources with pre-compiled class files -->
@@ -80,9 +81,9 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <copy file="src/java9/JdkMethods.class" tofile="${project.build.outputDirectory}/us/hebi/quickbuf/JdkMethods.class" overwrite="true" />
-                            </tasks>
+                            </target>
                         </configuration>
                     </execution>
 
@@ -94,7 +95,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <mkdir dir="${copyToDir}"/>
 
                                 <copy file="${copyFromDir}/RepeatedFloat.java" tofile="${copyToDir}/RepeatedDouble.java" />
@@ -125,7 +126,7 @@
                                     <fileset file="src/test/resources/concat/RepeatedByte.txt" />
                                 </concat>
 
-                            </tasks>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -251,9 +252,9 @@
                 <jdk>(11,)</jdk>
             </activation>
             <properties>
-                <!-- increase language level for jdk11+ to allow compiling. Release with 8 or 11 -->
-                <maven.compiler.source>7</maven.compiler.source>
-                <maven.compiler.target>7</maven.compiler.target>
+                <!-- increase language level for recent jdks to allow compiling. Release with 8 -->
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
             </properties>
         </profile>
     </profiles>

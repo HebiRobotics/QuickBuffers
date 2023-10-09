@@ -48,6 +48,10 @@ class RuntimeClasses {
     static final ClassName FieldName = ClassName.get(API_PACKAGE, "FieldName");
     static final ClassName ProtoEnum = ClassName.get(API_PACKAGE, "ProtoEnum");
     static final ClassName EnumConverter = ProtoEnum.nestedClass("EnumConverter");
+    static final ClassName FileDescriptor = ClassName.get(API_PACKAGE, "Descriptors")
+            .nestedClass("FileDescriptor");
+    static final ClassName MessageDescriptor = ClassName.get(API_PACKAGE, "Descriptors")
+            .nestedClass("Descriptor");
 
     static final String unknownBytesField = "unknownBytes";
     static final String unknownBytesFieldName = "unknownBytesFieldName";

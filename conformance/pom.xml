@@ -143,6 +143,7 @@
                                 <param>${project.build.directory}/${finalName}.jar</param>
                             </classpath>
                             <buildArgs>
+                                <arg>-march=compatibility</arg>
                                 <arg>--no-fallback</arg>
                                 <arg>--verbose</arg>
                             </buildArgs>

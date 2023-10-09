@@ -397,24 +397,6 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
     }
 
     /**
-     * Parses descriptor data from a base64 encoded string representation.
-     * Byte arrays are stored very inefficiently in class files, so we
-     * store the binary data in string form and parse it at runtime. String
-     * literals are limited to 64K, so the data may be split into parts.
-     *
-     * @param expectedSize size hint for allocating the initial array
-     * @param parts binary parts encoded as base64 strings. Each part must be shorter than 64K.
-     * @return the byte representation of the descriptor
-     */
-    protected static RepeatedByte parseDescriptorBase64(int expectedSize, String... parts) {
-        RepeatedByte bytes = RepeatedByte.newEmptyInstance().reserve(expectedSize);
-        for (String part : parts) {
-            bytes.addAll(Base64.decode(part));
-        }
-        return bytes;
-    }
-
-    /**
      * @return binary representation of all fields with tags that could not be parsed
      */
     public RepeatedByte getUnknownBytes() {

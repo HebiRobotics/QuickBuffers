@@ -69,6 +69,15 @@ public class RequestInfo {
                 .collect(Collectors.toList());
     }
 
+    public FileInfo getInfoForFile(String fileName) {
+        for (FileInfo file : this.files) {
+            if (file.getFileName().matches(fileName)) {
+                return file;
+            }
+        }
+        throw new IllegalArgumentException("File was not found in this request: " + fileName);
+    }
+
     public boolean shouldEnumUseArrayLookup(int lowestNumber, int highestNumber) {
         return lowestNumber >= 0 && highestNumber < 50; // parameter?
     }
@@ -101,6 +110,7 @@ public class RequestInfo {
 
             DescriptorProtos.FileOptions options = descriptor.getOptions();
             generateMultipleFiles = options.hasJavaMultipleFiles() && options.getJavaMultipleFiles();
+            generateDescriptors = parentRequest.getPluginOptions().isGenerateDescriptors();
             deprecated = options.hasDeprecated() && options.getDeprecated();
 
             // The first message appends a '.', so we omit it to not have two '.' in the default package
@@ -125,6 +135,7 @@ public class RequestInfo {
         private final String baseTypeId;
         private final String fileName;
         private final boolean generateMultipleFiles;
+        private final boolean generateDescriptors;
         private final Map<String, SourceCodeInfo.Location> sourceMap;
 
         private final ClassName outerClassName;
@@ -148,6 +159,7 @@ public class RequestInfo {
             this.typeName = isNested ? parentType.nestedClass(name) : parentType.peerClass(name);
             this.fieldNamesClass = this.typeName.nestedClass("FieldNames");
             this.typeId = parentTypeId + "." + name;
+            this.fullName = typeId.startsWith(".") ? typeId.substring(1) : typeId;
             this.isNested = isNested;
             this.sourceLocation = getParentFile().getSourceLocation(typeId);
         }
@@ -155,6 +167,7 @@ public class RequestInfo {
         private final FileInfo parentFile;
         protected final boolean isNested;
         protected final String typeId;
+        protected final String fullName;
         protected final ClassName typeName;
         protected final ClassName fieldNamesClass;
         private final SourceCodeInfo.Location sourceLocation;

@@ -25,7 +25,7 @@ Given that Maven releases can only be released once, we decided to add some manu
 * cd into `generator/native-release`
 * copy the workflow artifact executables into `bin/`
 * set the appropriate `<version>` in the `pom.xml`
-* `mvn clean deploy`
+* `mvn clean deploy -Prelease`
 
 ### Releasing to Github
 
