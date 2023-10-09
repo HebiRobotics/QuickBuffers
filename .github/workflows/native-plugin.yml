@@ -10,7 +10,7 @@ jobs:
   build-images:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-11, [self-hosted, linux-aarch64]]
+        os: [ubuntu-20.04, windows-latest, macos-11, [self-hosted, linux-aarch64], [self-hosted, macos-aarch64]]
 
     timeout-minutes: 20
     runs-on: ${{ matrix.os }}
@@ -51,18 +51,6 @@ jobs:
     - uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: 3.9.1
-
-    - name: Build macos-aarch64 image
-      run: |
-        export JAVA_HOME=${GRAALVM_HOME}
-        mvn clean package -Pnative --projects generator -am
-      
-    - name: Upload macos-aarch64 build
-      uses: actions/upload-artifact@v3
-      with:
-        name: native-images
-        path: generator/target/*.exe
-        retention-days: 10
 
     - name: Download native builds
       uses: actions/download-artifact@v3
