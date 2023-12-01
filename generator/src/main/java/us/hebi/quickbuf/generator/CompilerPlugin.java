@@ -32,7 +32,9 @@ import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -80,7 +82,13 @@ public class CompilerPlugin {
         // optionals, so that feature is actually supported.
         response.setSupportedFeatures(Feature.FEATURE_PROTO3_OPTIONAL_VALUE);
 
+        Set<String> filesToGenerate = new HashSet<>(requestProto.getFileToGenerateList());
         for (FileInfo file : request.getFiles()) {
+
+            // Only generate files that were specifically selected (see issue #62)
+            if (!filesToGenerate.contains(file.getFileName())) {
+                continue;
+            }
 
             // Generate type specifications
             List<TypeSpec> topLevelTypes = new ArrayList<>();
