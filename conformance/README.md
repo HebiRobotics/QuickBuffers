@@ -10,7 +10,7 @@ After encountering issues with Java wrapper scripts, we decided to compile the J
 
 ```shell
 # 1) build a native image of the generator
-mvn clean package --projects parser,generator -am -Pnative
+mvn clean package --projects parser,generator -am -Pshade,native
 
 # 2) test the native generator and build the conformance executable
 mvn clean package --projects runtime,compat,conformance -am -Pnative -PuseNativeGen

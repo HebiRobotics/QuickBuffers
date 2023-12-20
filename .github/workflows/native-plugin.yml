@@ -33,7 +33,7 @@ jobs:
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        mvn clean package -Pnative --projects generator -am
+        mvn clean package -Pshade,native --projects generator -am
 
     - name: Upload build
       uses: actions/upload-artifact@v3

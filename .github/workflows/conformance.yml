@@ -24,7 +24,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build generator
-      run: mvn clean package --projects parser,generator -am -Pnative
+      run: mvn clean package --projects parser,generator -am -Pshade,native
 
     - name: Build conformance executable
       run: |
