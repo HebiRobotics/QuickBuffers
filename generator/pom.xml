@@ -12,6 +12,10 @@
     <artifactId>quickbuf-generator</artifactId>
 
     <properties>
+        <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+
         <protocPluginName>protoc-gen-quickbuf</protocPluginName>
         <finalName>${protocPluginName}-${project.version}</finalName>
         <protoc.fileName>protoc-${protobuf.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
@@ -151,87 +155,113 @@
                 </executions>
             </plugin>
 
-            <!-- Create uber-jar that we can call as a plugin -->
+            <!-- Plugins required for publishing to Maven Central -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>${finalName}</finalName>
-                            <minimizeJar>true</minimizeJar>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>us.hebi.quickbuf.generator.CompilerPlugin</mainClass>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
+                <artifactId>maven-jar-plugin</artifactId>
             </plugin>
-
-            <!-- Add scripts that can be executed by protoc -->
             <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>copy-plugin-scripts</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <!-- Windows Script-->
-                                <mkdir dir="target"/>
-                                <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
-                                <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${finalName}"/>
-                                <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
-
-                                <!-- Unix Script -->
-                                <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
-                                <replace file="target/${protocPluginName}" token="{jarfile}" value="${finalName}"/>
-                                <fixcrlf file="target/${protocPluginName}" eol="unix"/>
-                                <chmod file="target/${protocPluginName}" perm="775" type="file"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <!-- It's hard to add the real replaced java file because the source-plugin
+                requires things to be added as sources that then would also get compiled -->
             </plugin>
-
-            <!-- Create zip file that contains executable scripts -->
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/main/assembly/protoc-gen-quickbuf.xml</descriptor>
-                    </descriptors>
-                    <finalName>${finalName}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
 
         </plugins>
     </build>
 
     <profiles>
+        <profile>
+            <id>shade</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- Create uber-jar that we can call as a plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.2.1</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <finalName>${finalName}</finalName>
+                                    <minimizeJar>true</minimizeJar>
+                                    <transformers>
+                                        <transformer
+                                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>us.hebi.quickbuf.generator.CompilerPlugin</mainClass>
+                                        </transformer>
+                                    </transformers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Add scripts that can be executed by protoc -->
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>copy-plugin-scripts</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <!-- Windows Script-->
+                                        <mkdir dir="target"/>
+                                        <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
+                                        <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${finalName}"/>
+                                        <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
+
+                                        <!-- Unix Script -->
+                                        <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
+                                        <replace file="target/${protocPluginName}" token="{jarfile}" value="${finalName}"/>
+                                        <fixcrlf file="target/${protocPluginName}" eol="unix"/>
+                                        <chmod file="target/${protocPluginName}" perm="775" type="file"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Create zip file that contains executable scripts -->
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/main/assembly/protoc-gen-quickbuf.xml</descriptor>
+                            </descriptors>
+                            <finalName>${finalName}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>native</id>
             <build>
