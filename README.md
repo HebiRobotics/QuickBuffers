@@ -270,9 +270,9 @@ Note that the built-in JsonSink has been optimized quite a bit, but the JsonSour
 
 The project can be built with `mvn package` using jdk 8 through jdk 20.
 
-`mvn clean package --projects generator,runtime -am` omits building the benchmarks.
+`mvn clean package --projects protoc-gen-quickbuf,quickbuf-runtime -am` omits building the benchmarks.
 
-Note that the `package` goal is always required, and that `mvn clean test` is not enough to work. This limitation is introduced by the plugin mechanism of `protoc`, which exchanges information with plugins via protobuf messages on `std::in` and `std::out`. Using `std::in` makes it comparatively easy to get schema information, but it is quite difficult to set up unit tests and debug plugins during development. To enable standard tests, the `parser` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded during testing and development of the actual generator plugin. This makes the `generator` module dependent on the packaged output of the `parser` module.
+Note that the `package` goal is always required, and that `mvn clean test` is not enough to work. This limitation is introduced by the plugin mechanism of `protoc`, which exchanges information with plugins via protobuf messages on `std::in` and `std::out`. Using `std::in` makes it comparatively easy to get schema information, but it is quite difficult to set up unit tests and debug plugins during development. To enable standard tests, the `protoc-gen-request` module contains a tiny protoc-plugin that stores the raw request from `std::in` inside a file that can be loaded during testing and development of the actual generator plugin. This makes the `protoc-gen-quickbuf` module dependent on the packaged output of the `protoc-gen-request` module.
 
 ## Detailed accessors for different types
 

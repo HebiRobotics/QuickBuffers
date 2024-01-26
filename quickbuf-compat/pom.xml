@@ -84,7 +84,7 @@
                                 <outputTarget>
                                     <!-- Linux finds absolute file, Windows finds it via executing PATH -->
                                     <pluginPath>
-                                        ${project.parent.basedir}/generator/target/protoc-gen-quickbuf${protoc.pluginExt}
+                                        ${project.parent.basedir}/protoc-gen-quickbuf/target/protoc-gen-quickbuf${protoc.pluginExt}
                                     </pluginPath>
                                     <type>quickbuf</type>
                                     <outputOptions>

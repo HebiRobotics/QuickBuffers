@@ -12,7 +12,7 @@
     <artifactId>protoc-gen-request</artifactId>
 
     <properties>
-        <protocPluginName>${artifactId}</protocPluginName>
+        <protocPluginName>${project.artifactId}</protocPluginName>
         <finalName>${protocPluginName}-${project.version}-shaded</finalName>
         <javaModuleName>us.hebi.quickbuf.parser</javaModuleName>
     </properties>
@@ -44,7 +44,8 @@
                         </goals>
                         <configuration>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedArtifactId>${artifactId}</shadedArtifactId>
+                            <shadedArtifactId>${project.artifactId}</shadedArtifactId>
+                            <minimizeJar>true</minimizeJar>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>us.hebi.quickbuf.parser.SaveRequestPlugin</mainClass>

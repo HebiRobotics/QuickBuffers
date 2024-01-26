@@ -22,7 +22,7 @@ Given that Maven releases can only be released once, we decided to add some manu
 
 ### Releasing to Maven Central
 
-* cd into `generator/native-release`
+* cd into `protoc-gen-quickbuf/native-release`
 * copy the workflow artifact executables into `bin/`
 * set the appropriate `<version>` in the `pom.xml`
 * `mvn clean deploy -Prelease`

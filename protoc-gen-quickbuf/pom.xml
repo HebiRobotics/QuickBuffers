@@ -12,21 +12,16 @@
     <artifactId>protoc-gen-quickbuf</artifactId>
 
     <properties>
+        <protocPluginName>${project.artifactId}</protocPluginName>
+        <finalName>${protocPluginName}-${project.version}-shaded</finalName>
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
 
-        <protocPluginName>protoc-gen-quickbuf</protocPluginName>
-        <finalName>${protocPluginName}-${project.version}</finalName>
         <protoc.fileName>protoc-${protobuf.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
         <protoc.path>${project.basedir}/../.protoc</protoc.path>
         <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
-        <protoc.pluginDir>${project.basedir}/../parser/target</protoc.pluginDir>
+        <protoc.pluginDir>${project.basedir}/../protoc-gen-request/target</protoc.pluginDir>
         <protoc.pluginFile>${protoc.pluginDir}/protoc-gen-request${protoc.pluginExt}</protoc.pluginFile>
         <protoc.outputDir>${project.build.directory}/test-classes/us/hebi/quickbuf/generator</protoc.outputDir>
-        <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
-        <maven.deploy.skip>true</maven.deploy.skip>
-        <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
         <proto.dir.unsupported>${project.basedir}/src/test/resources/protos/unsupported</proto.dir.unsupported>
     </properties>
 
@@ -194,7 +189,8 @@
                                     <goal>shade</goal>
                                 </goals>
                                 <configuration>
-                                    <finalName>${finalName}</finalName>
+                                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                                    <shadedArtifactId>${project.artifactId}</shadedArtifactId>
                                     <minimizeJar>true</minimizeJar>
                                     <transformers>
                                         <transformer

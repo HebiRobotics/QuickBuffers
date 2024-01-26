@@ -79,7 +79,7 @@
         <maven.compiler.testTarget>8</maven.compiler.testTarget>
         <protobuf.version>3.21.12</protobuf.version>
         <protoc.jar.version>3.11.4</protoc.jar.version>
-        <proto.dir>${project.basedir}/../runtime/src/test/resources/protos</proto.dir>
+        <proto.dir>${project.basedir}/../quickbuf-runtime/src/test/resources/protos</proto.dir>
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
 
         <graalvm.tools.version>0.9.27</graalvm.tools.version>
