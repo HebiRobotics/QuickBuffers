@@ -193,7 +193,7 @@
                                     <transformers>
                                         <transformer
                                                 implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                            <mainClass>us.hebi.quickbuf.generator.CompilerPlugin</mainClass>
+                                            <mainClass>us.hebi.quickbuf.generator.QuickbufPlugin</mainClass>
                                         </transformer>
                                     </transformers>
                                 </configuration>

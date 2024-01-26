@@ -38,18 +38,18 @@ import static org.junit.Assert.*;
  * @author Florian Enner
  * @since 05 Aug 2019
  */
-public class CompilerPluginTest {
+public class QuickbufPluginTest {
 
     @Test
     public void testRequiredRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getRequiredRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test
     public void testImportRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getImportRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
 
         Set<String> generatedFiles = response.getFileList().stream()
                 .map(CodeGeneratorResponse.File::getName)
@@ -71,53 +71,53 @@ public class CompilerPluginTest {
     @Test
     public void testAllTypesEagerRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getAllTypesEagerRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test
     public void testAllTypesLazyRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getAllTypesLazyRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test
     public void testRepeatedPackablesRequest() {
         CodeGeneratorRequest request = TestRequestLoader.getRepeatedPackablesRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test
     public void testUnsupportedMapTest() {
         // Generates a valid repeated<Entry> list instead
         CodeGeneratorRequest request = TestRequestLoader.getUnsupportedMapRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test
     public void testUnsupportedExtensionTest() {
         // Can be safely ignored as there is just no API for it
         CodeGeneratorRequest request = TestRequestLoader.getUnsupportedExtensionRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test(expected = GeneratorException.class)
     public void testUnsupportedRecursionTest() {
         // Fails at runtime due to eager allocation
         CodeGeneratorRequest request = TestRequestLoader.getUnsupportedRecursionRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test
     public void testLazyRecursionTest() {
         CodeGeneratorRequest request = TestRequestLoader.getLazyRecursionRequest();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test
     public void testUnsupportedProto3Test() {
         // Things are semi-compatible, so we don't need to fail
         CodeGeneratorRequest request = TestRequestLoader.getUnsupportedProto3Request();
-        CodeGeneratorResponse response = CompilerPlugin.handleRequest(request);
+        CodeGeneratorResponse response = QuickbufPlugin.handleRequest(request);
     }
 
     @Test

@@ -44,7 +44,7 @@ import java.util.function.Consumer;
  * @author Florian Enner
  * @since 05 Aug 2019
  */
-public class CompilerPlugin {
+public class QuickbufPlugin {
 
     /**
      * The protoc-gen-plugin communicates via proto messages on System.in and System.out
