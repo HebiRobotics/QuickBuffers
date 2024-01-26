@@ -64,8 +64,8 @@
     </developers>
 
     <modules>
-        <module>parser</module>
-        <module>generator</module>
+        <module>protoc-gen-request</module>
+        <module>protoc-gen-quickbuf</module>
         <module>runtime</module>
         <module>compat</module>
         <module>conformance</module>
