@@ -32,7 +32,7 @@ import java.util.Map;
  * @author Florian Enner
  * @since 05 Aug 2019
  */
-public class ParserPlugin {
+public class SaveRequestPlugin {
 
     /**
      * A protoc-gen-plugin that communicates with protoc via messages on System.in and System.out

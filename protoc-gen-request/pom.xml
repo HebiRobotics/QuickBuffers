@@ -9,14 +9,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quickbuf-parser</artifactId>
+    <artifactId>protoc-gen-request</artifactId>
 
     <properties>
-        <protocPluginName>protoc-gen-request</protocPluginName>
-        <finalName>${protocPluginName}-${project.version}</finalName>
+        <protocPluginName>${artifactId}</protocPluginName>
+        <finalName>${protocPluginName}-${project.version}-shaded</finalName>
         <javaModuleName>us.hebi.quickbuf.parser</javaModuleName>
-        <maven.deploy.skip>true</maven.deploy.skip>
-        <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
     </properties>
 
     <dependencies>
@@ -45,11 +43,11 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>${finalName}</finalName>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedArtifactId>${artifactId}</shadedArtifactId>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>us.hebi.quickbuf.parser.ParserPlugin</mainClass>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>us.hebi.quickbuf.parser.SaveRequestPlugin</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -86,6 +84,8 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- TODO: create GraalVM native executable, maven release stuff -->
 
         </plugins>
     </build>

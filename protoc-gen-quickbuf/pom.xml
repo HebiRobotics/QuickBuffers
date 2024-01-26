@@ -35,7 +35,7 @@
         <!-- stores request input as binary that we can load in unit tests -->
         <dependency>
             <groupId>us.hebi.quickbuf</groupId>
-            <artifactId>quickbuf-parser</artifactId>
+            <artifactId>protoc-gen-request</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
