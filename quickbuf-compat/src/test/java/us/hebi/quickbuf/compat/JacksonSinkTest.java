@@ -20,22 +20,11 @@
 
 package us.hebi.quickbuf.compat;
 
-import org.junit.Assert;
-import org.junit.Test;
-import protos.test.quickbuf.ForeignEnum;
-import protos.test.quickbuf.TestAllTypes;
-import protos.test.quickbuf.external.ImportEnum;
-import us.hebi.quickbuf.CompatibilityTest;
 import us.hebi.quickbuf.JsonSink;
-import us.hebi.quickbuf.JsonSinkTest;
 import us.hebi.quickbuf.JsonSource;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Base64;
-import java.util.Random;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Florian Enner

@@ -66,8 +66,8 @@
     <modules>
         <module>protoc-gen-request</module>
         <module>protoc-gen-quickbuf</module>
-        <module>runtime</module>
-        <module>compat</module>
+        <module>quickbuf-runtime</module>
+        <module>quickbuf-compat</module>
         <module>conformance</module>
         <module>benchmarks</module>
     </modules>
