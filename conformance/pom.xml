@@ -70,7 +70,7 @@
                                 <outputTarget>
                                     <type>quickbuf</type>
                                     <!-- Plugin path must be absolute with the full name -->
-                                    <pluginPath>${project.basedir}/../protoc-gen-quickbuf/target/protoc-gen-quickbuf${protoc.pluginExt}</pluginPath>
+                                    <pluginPath>${protoc.quickbufPlugin}</pluginPath>
 <!--                                    <pluginArtifact>us.hebi.quickbuf:protoc-gen-quickbuf:${quickbuf.version}</pluginArtifact>-->
                                     <outputOptions>replace_package=protobuf=quickbuf,indent=4,input_order=number,output_order=number,store_unknown_fields=true,extensions=embedded,allocation=lazy</outputOptions>
                                     <outputDirectory>target/generated-sources/annotations/</outputDirectory>

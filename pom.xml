@@ -72,15 +72,22 @@
     </modules>
 
     <properties>
+        <!-- Default Java configuration -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <maven.compiler.testSource>8</maven.compiler.testSource>
         <maven.compiler.testTarget>8</maven.compiler.testTarget>
-        <protobuf.version>3.21.12</protobuf.version>
-        <protoc.jar.version>3.11.4</protoc.jar.version>
+
+        <!-- Common directories/plugins -->
         <proto.dir>${project.basedir}/../quickbuf-runtime/src/test/resources/protos</proto.dir>
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
+        <protoc.requestPlugin>${project.basedir}/../protoc-gen-request/target/protoc-gen-request${protoc.pluginExt}</protoc.requestPlugin>
+        <protoc.quickbufPlugin>${project.basedir}/../protoc-gen-quickbuf/target/protoc-gen-quickbuf${protoc.pluginExt}</protoc.quickbufPlugin>
+
+        <!-- Default settings -->
+        <protobuf.version>3.21.12</protobuf.version>
+        <protoc.jar.version>3.11.4</protoc.jar.version>
 
         <graalvm.tools.version>0.9.27</graalvm.tools.version>
         <native.staticArg>--static</native.staticArg>
@@ -88,8 +95,7 @@
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
 
-        <!-- Jigsaw module name -->
-        <javaModuleName />
+        <javaModuleName /> <!-- Jigsaw module name -->
         <gpg.keyname /> <!-- set via settings.xml to sign release artifacts-->
 
         <!-- License Headers (http://www.mojohaus.org/license-maven-plugin/update-file-header-mojo.html) -->
