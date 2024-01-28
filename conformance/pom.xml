@@ -12,7 +12,7 @@
     <artifactId>conformance</artifactId>
 
     <properties>
-        <mainName>ConformanceQuickbuf</mainName>
+        <mainClass>us.hebi.quickbuf.conformance.ConformanceQuickbuf</mainClass>
         <finalName>quickbuf-conformance-${project.version}</finalName>
         <license.skipUpdateLicense>true</license.skipUpdateLicense>
     </properties>
@@ -87,31 +87,6 @@
                 </executions>
             </plugin>
 
-            <!-- Create uber-jar that we can call as an executable -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.4.1</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>${finalName}</finalName>
-                            <minimizeJar>true</minimizeJar>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>us.hebi.quickbuf.conformance.${mainName}</mainClass>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
 
@@ -120,33 +95,19 @@
             <id>native</id>
             <build>
                 <plugins>
+
+                    <!-- Create uber-jar that we can call as an executable -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                    </plugin>
+
+                    <!-- Compile uber-jar into a native image -->
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <version>${graalvm.tools.version}</version>
-                        <extensions>true</extensions>
-                        <executions>
-                            <execution>
-                                <id>build-native</id>
-                                <goals>
-                                    <goal>compile-no-fork</goal>
-                                </goals>
-                                <phase>package</phase>
-                            </execution>
-                        </executions>
                         <configuration>
-                            <skip>false</skip>
-                            <skipNativeTests>true</skipNativeTests>
-                            <useArgFile>false</useArgFile>
-                            <imageName>${mainName}${native.extension}</imageName>
-                            <classpath>
-                                <param>${project.build.directory}/${finalName}.jar</param>
-                            </classpath>
-                            <buildArgs>
-                                <arg>-march=compatibility</arg>
-                                <arg>--no-fallback</arg>
-                                <arg>--verbose</arg>
-                            </buildArgs>
+                            <imageName>ConformanceQuickbuf${native.extension}</imageName>
                         </configuration>
                     </plugin>
                 </plugins>
