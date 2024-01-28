@@ -212,27 +212,6 @@
                         </executions>
                     </plugin>
 
-                    <!-- Create zip file that contains executable scripts -->
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assembly/protoc-gen-quickbuf.xml</descriptor>
-                            </descriptors>
-                            <finalName>${finalName}</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>make-assembly</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
