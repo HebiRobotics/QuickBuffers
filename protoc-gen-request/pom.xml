@@ -13,7 +13,6 @@
 
     <properties>
         <protocPluginName>${project.artifactId}</protocPluginName>
-        <finalName>${protocPluginName}-${project.version}-shaded</finalName>
         <javaModuleName>us.hebi.quickbuf.parser</javaModuleName>
         <mainClass>us.hebi.quickbuf.parser.SaveRequestPlugin</mainClass>
     </properties>
@@ -54,12 +53,12 @@
                                 <!-- Windows Script-->
                                 <mkdir dir="target"/>
                                 <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
-                                <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${finalName}"/>
+                                <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${shadedName}"/>
                                 <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
 
                                 <!-- Unix Script -->
                                 <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
-                                <replace file="target/${protocPluginName}" token="{jarfile}" value="${finalName}"/>
+                                <replace file="target/${protocPluginName}" token="{jarfile}" value="${shadedName}"/>
                                 <fixcrlf file="target/${protocPluginName}" eol="unix"/>
                                 <chmod file="target/${protocPluginName}" perm="775" type="file"/>
                             </target>
@@ -68,9 +67,21 @@
                 </executions>
             </plugin>
 
-            <!-- TODO: create GraalVM native executable, maven release stuff -->
-
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

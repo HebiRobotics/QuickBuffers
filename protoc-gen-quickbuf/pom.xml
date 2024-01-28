@@ -13,7 +13,6 @@
 
     <properties>
         <protocPluginName>${project.artifactId}</protocPluginName>
-        <finalName>${protocPluginName}-${project.version}-shaded</finalName>
         <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
         <mainClass>us.hebi.quickbuf.generator.QuickbufPlugin</mainClass>
 
@@ -199,12 +198,12 @@
                                         <!-- Windows Script-->
                                         <mkdir dir="target"/>
                                         <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
-                                        <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${finalName}"/>
+                                        <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${shadedName}"/>
                                         <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
 
                                         <!-- Unix Script -->
                                         <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
-                                        <replace file="target/${protocPluginName}" token="{jarfile}" value="${finalName}"/>
+                                        <replace file="target/${protocPluginName}" token="{jarfile}" value="${shadedName}"/>
                                         <fixcrlf file="target/${protocPluginName}" eol="unix"/>
                                         <chmod file="target/${protocPluginName}" perm="775" type="file"/>
                                     </target>
@@ -245,32 +244,6 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <version>${graalvm.tools.version}</version>
-                        <extensions>true</extensions>
-                        <executions>
-                            <execution>
-                                <id>build-native</id>
-                                <goals>
-                                    <goal>compile-no-fork</goal>
-                                </goals>
-                                <phase>package</phase>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <skip>false</skip>
-                            <skipNativeTests>true</skipNativeTests> <!-- TODO: change to junit platform >5.8 -->
-                            <useArgFile>false</useArgFile>
-                            <imageName>${finalName}-${protoc.os}-${protoc.arch}${native.extension}</imageName>
-                            <classpath>
-                                <param>${project.build.directory}/${finalName}.jar</param>
-                            </classpath>
-                            <buildArgs>
-                                <arg>-march=compatibility</arg> <!-- support older processors (see #54) -->
-                                <arg>--no-fallback</arg>
-                                <arg>--verbose</arg>
-                                <arg>${native.staticArg}</arg>
-                            </buildArgs>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

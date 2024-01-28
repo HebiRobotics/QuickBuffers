@@ -95,7 +95,8 @@
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
 
-        <!-- Empty defines that are used in parent configurations, but are actually set by modules -->
+        <!-- Common defines that are used here, but maybe set by modules -->
+        <shadedName>${project.artifactId}-${project.version}-shaded</shadedName>
         <javaModuleName /> <!-- Jigsaw module name -->
         <gpg.keyname /> <!-- set via settings.xml to sign release artifacts-->
         <mainClass /> <!-- executable main -->
@@ -316,6 +317,38 @@
                             </configuration>
                         </execution>
                     </executions>
+                </plugin>
+
+                <!-- Create a native image of the shaded uber-jars -->
+                <plugin>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>${graalvm.tools.version}</version>
+                    <extensions>true</extensions>
+                    <executions>
+                        <execution>
+                            <id>build-native</id>
+                            <goals>
+                                <goal>compile-no-fork</goal>
+                            </goals>
+                            <phase>package</phase>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <skip>false</skip>
+                        <skipNativeTests>true</skipNativeTests> <!-- TODO: change to junit platform >5.8 -->
+                        <useArgFile>false</useArgFile>
+                        <imageName>${project.artifactId}-${project.version}-${protoc.os}-${protoc.arch}${native.extension}</imageName>
+                        <classpath>
+                            <param>${project.build.directory}/${shadedName}.jar</param>
+                        </classpath>
+                        <buildArgs>
+                            <arg>-march=compatibility</arg> <!-- support older processors (see #54) -->
+                            <arg>--no-fallback</arg>
+                            <arg>--verbose</arg>
+                            <arg>${native.staticArg}</arg>
+                        </buildArgs>
+                    </configuration>
                 </plugin>
 
             </plugins>
