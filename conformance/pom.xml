@@ -50,6 +50,12 @@
                 <artifactId>maven-shade-plugin</artifactId>
             </plugin>
 
+            <!-- Create wrapper scripts -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+            </plugin>
+
             <!-- Downloads protoc w/ plugin and generates messages -->
             <!-- Default settings expect .proto files to be in src/main/protobuf -->
             <plugin>

@@ -84,6 +84,7 @@
         <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
         <protoc.requestPlugin>${project.basedir}/../protoc-gen-request/target/protoc-gen-request${protoc.pluginExt}</protoc.requestPlugin>
         <protoc.quickbufPlugin>${project.basedir}/../protoc-gen-quickbuf/target/protoc-gen-quickbuf${protoc.pluginExt}</protoc.quickbufPlugin>
+        <scriptsDir>${project.basedir}/../protoc-gen-quickbuf/src/main/scripts</scriptsDir>
 
         <!-- Default settings -->
         <protobuf.version>3.21.12</protobuf.version>
@@ -226,15 +227,15 @@
                                         <then>
                                             <!-- Windows Script-->
                                             <mkdir dir="target"/>
-                                            <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
-                                            <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${shadedName}"/>
-                                            <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
+                                            <copy file="${scriptsDir}/windows.bat" tofile="${project.build.directory}/${protocPluginName}.bat"/>
+                                            <replace file="${project.build.directory}/${protocPluginName}.bat" token="{jarfile}" value="${shadedName}"/>
+                                            <fixcrlf file="${project.build.directory}/${protocPluginName}.bat" eol="dos"/>
 
                                             <!-- Unix Script -->
-                                            <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
-                                            <replace file="target/${protocPluginName}" token="{jarfile}" value="${shadedName}"/>
-                                            <fixcrlf file="target/${protocPluginName}" eol="unix"/>
-                                            <chmod file="target/${protocPluginName}" perm="775" type="file"/>
+                                            <copy file="${scriptsDir}/unix.sh" tofile="${project.build.directory}/${protocPluginName}"/>
+                                            <replace file="${project.build.directory}/${protocPluginName}" token="{jarfile}" value="${shadedName}"/>
+                                            <fixcrlf file="${project.build.directory}/${protocPluginName}" eol="unix"/>
+                                            <chmod file="${project.build.directory}/${protocPluginName}" perm="775" type="file"/>
 
                                             <!-- Fix executable permissions of native executables:
                                             The native executables are built on different CI systems and then placed in
