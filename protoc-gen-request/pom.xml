@@ -37,42 +37,25 @@
                 <artifactId>maven-shade-plugin</artifactId>
             </plugin>
 
-            <!-- Add scripts that can be executed by protoc -->
+            <!-- Create wrapper scripts -->
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>copy-plugin-scripts</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <!-- Windows Script-->
-                                <mkdir dir="target"/>
-                                <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
-                                <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${shadedName}"/>
-                                <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
+            </plugin>
 
-                                <!-- Unix Script -->
-                                <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
-                                <replace file="target/${protocPluginName}" token="{jarfile}" value="${shadedName}"/>
-                                <fixcrlf file="target/${protocPluginName}" eol="unix"/>
-                                <chmod file="target/${protocPluginName}" perm="775" type="file"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
+            <!-- Add native image artifacts (not in -Pnative because the artifacts get copied from CI) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
             </plugin>
 
         </plugins>
     </build>
 
     <profiles>
+        <!-- Compile the uber-jar as a native image -->
         <profile>
-            <id>native</id>
+            <id>makeNative</id>
             <build>
                 <plugins>
                     <plugin>

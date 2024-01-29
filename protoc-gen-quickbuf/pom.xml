@@ -17,7 +17,7 @@
         <mainClass>us.hebi.quickbuf.generator.QuickbufPlugin</mainClass>
 
         <protoc.fileName>protoc-${protobuf.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
-        <protoc.path>${project.basedir}/../.protoc</protoc.path>
+        <protoc.path>${project.build.directory}/protoc</protoc.path>
         <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
         <protoc.outputDir>${project.build.directory}/test-classes/us/hebi/quickbuf/generator</protoc.outputDir>
         <proto.dir.unsupported>${project.basedir}/src/test/resources/protos/unsupported</proto.dir.unsupported>
@@ -57,7 +57,66 @@
     <build>
         <plugins>
 
-            <!-- Generate sample compiler plugin requests that we can work with in unit tests -->
+            <!-- Create uber-jar that we can call as a plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+
+            <!-- Download protoc executables from Maven central. We specify all operating systems,
+            so we can package the binaries with conveyor -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>linux-x86_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>windows-x86_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>osx-x86_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>osx-aarch_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Create wrapper scripts (inherited), and generate sample compiler plugin requests that we can work with in unit tests -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.1.0</version>
@@ -68,12 +127,10 @@
                         <configuration>
                             <target>
 
-                                <!-- download proto compiler if needed -->
-                                <mkdir dir="${protoc.path}"/>
-                                <get src="https://repo.maven.apache.org/maven2/com/google/protobuf/protoc/${protobuf.version}/${protoc.fileName}"
-                                     dest="${protoc.executable}" skipexisting="true" verbose="on"/>
-                                <chmod file="${protoc.executable}" perm="775" type="file"/>
+                                <!-- fix permissions of protoc executable -->
+                                <chmod dir="${protoc.path}" perm="775" includes="**/*.exe"/>
 
+                                <!-- call -->
                                 <mkdir dir="${protoc.outputDir}"/>
                                 <exec executable="${protoc.executable}">
                                     <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
@@ -148,76 +205,19 @@
                 </executions>
             </plugin>
 
-            <!-- Create uber-jar that we can call as a plugin -->
+            <!-- Add native image artifacts (not in -Pnative because the artifacts get copied from CI) -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-            </plugin>
-
-            <!-- Plugins required for publishing to Maven Central -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <!-- It's hard to add the real replaced java file because the source-plugin
-                requires things to be added as sources that then would also get compiled -->
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
             </plugin>
 
         </plugins>
     </build>
 
     <profiles>
+        <!-- Compile the uber-jar as a native image -->
         <profile>
-            <id>shade</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-
-                    <!-- Add scripts that can be executed by protoc -->
-                    <plugin>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <executions>
-                            <execution>
-                                <id>copy-plugin-scripts</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <target>
-                                        <!-- Windows Script-->
-                                        <mkdir dir="target"/>
-                                        <copy file="src/main/scripts/windows.bat" tofile="target/${protocPluginName}.bat"/>
-                                        <replace file="target/${protocPluginName}.bat" token="{jarfile}" value="${shadedName}"/>
-                                        <fixcrlf file="target/${protocPluginName}.bat" eol="dos"/>
-
-                                        <!-- Unix Script -->
-                                        <copy file="src/main/scripts/unix.sh" tofile="target/${protocPluginName}"/>
-                                        <replace file="target/${protocPluginName}" token="{jarfile}" value="${shadedName}"/>
-                                        <fixcrlf file="target/${protocPluginName}" eol="unix"/>
-                                        <chmod file="target/${protocPluginName}" perm="775" type="file"/>
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>native</id>
+            <id>makeNativePlugin</id>
             <build>
                 <plugins>
                     <plugin>

@@ -152,7 +152,7 @@
                 </executions>
             </plugin>
 
-            <!-- Generate sources via plugin -->
+            <!-- Generate test sources via protobuf-plugin -->
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
@@ -228,29 +228,17 @@
                 </executions>
             </plugin>
 
-            <!-- Other plugins required for publishing to Maven Central -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <!-- It's hard to add the real replaced java file because the source-plugin
-                requires things to be added as sources that then would also get compiled -->
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-
         </plugins>
     </build>
 
     <profiles>
+        <!-- Increases the language level for recent jdks to allow compiling. Release with jdk 8 -->
         <profile>
             <id>jdk17compat</id>
             <activation>
                 <jdk>(11,)</jdk>
             </activation>
             <properties>
-                <!-- increase language level for recent jdks to allow compiling. Release with 8 -->
                 <maven.compiler.source>8</maven.compiler.source>
                 <maven.compiler.target>8</maven.compiler.target>
             </properties>

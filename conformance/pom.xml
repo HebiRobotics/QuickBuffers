@@ -13,8 +13,9 @@
 
     <properties>
         <mainClass>us.hebi.quickbuf.conformance.ConformanceQuickbuf</mainClass>
-        <finalName>quickbuf-conformance-${project.version}</finalName>
         <license.skipUpdateLicense>true</license.skipUpdateLicense>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
     </properties>
 
     <dependencies>
@@ -41,6 +42,13 @@
 
     <build>
         <plugins>
+
+            <!-- Create uber-jar that we can call as an executable -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+
             <!-- Downloads protoc w/ plugin and generates messages -->
             <!-- Default settings expect .proto files to be in src/main/protobuf -->
             <plugin>
@@ -70,8 +78,7 @@
                                 <outputTarget>
                                     <type>quickbuf</type>
                                     <!-- Plugin path must be absolute with the full name -->
-                                    <pluginPath>${protoc.quickbufPlugin}</pluginPath>
-<!--                                    <pluginArtifact>us.hebi.quickbuf:protoc-gen-quickbuf:${quickbuf.version}</pluginArtifact>-->
+                                    <pluginPath>${protoc.quickbufPlugin}</pluginPath> <!-- <pluginArtifact>us.hebi.quickbuf:protoc-gen-quickbuf:${quickbuf.version}</pluginArtifact>-->
                                     <outputOptions>replace_package=protobuf=quickbuf,indent=4,input_order=number,output_order=number,store_unknown_fields=true,extensions=embedded,allocation=lazy</outputOptions>
                                     <outputDirectory>target/generated-sources/annotations/</outputDirectory>
                                 </outputTarget>
@@ -92,23 +99,13 @@
 
     <profiles>
         <profile>
-            <id>native</id>
+            <id>makeNative</id>
             <build>
                 <plugins>
-
-                    <!-- Create uber-jar that we can call as an executable -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                    </plugin>
-
-                    <!-- Compile uber-jar into a native image -->
+                    <!-- Compile the uber-jar as a native image -->
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <configuration>
-                            <imageName>ConformanceQuickbuf${native.extension}</imageName>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
