@@ -12,7 +12,8 @@
     <artifactId>conformance</artifactId>
 
     <properties>
-        <mainClass>us.hebi.quickbuf.conformance.ConformanceQuickbuf</mainClass>
+        <javaModuleName>us.hebi.quickbuf.conformance</javaModuleName>
+        <mainClass>${javaModuleName}.ConformanceQuickbuf</mainClass>
         <license.skipUpdateLicense>true</license.skipUpdateLicense>
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
