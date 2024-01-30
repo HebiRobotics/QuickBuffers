@@ -10,11 +10,10 @@ jobs:
   build-images:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-11, [self-hosted, linux-aarch64], [self-hosted, macos-aarch64]]
-
+        os: [ubuntu-20.04, windows-2022, macos-11, macos-13-xlarge, [self-hosted, linux-aarch64]]
     timeout-minutes: 20
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
+    continue-on-error: false
     steps:
     - uses: actions/checkout@v3
     - uses: stCarolas/setup-maven@v4.5
@@ -29,45 +28,58 @@ jobs:
         cache: '' # disabled to avoid uploading cache of self-hosted runners
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build native image
+    - name: Build native plugins
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        mvn clean package -Pshade,native --projects generator -am
+        mvn clean package -PmakeNative,useNative --projects protoc-gen-quickbuf -am
 
-    - name: Upload build
+    - name: Upload native images
       uses: actions/upload-artifact@v3
       with:
         name: native-images
-        path: generator/target/*.exe
+        path: "protoc-gen-*/target/*.exe"
         retention-days: 10
 
   conveyor-site:
     needs: [build-images]
-    runs-on: [self-hosted, macos-aarch64]
+    runs-on: [self-hosted, Linux]
     timeout-minutes: 20
     steps:
     - uses: actions/checkout@v3
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 8
     - uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: 3.9.1
 
-    - name: Download native builds
+    - name: Build artifacts
+      run: mvn clean package --projects protoc-gen-quickbuf,quickbuf-compat -am
+
+    - name: Download pre-built native images
       uses: actions/download-artifact@v3
       with:
         name: native-images
-        path: generator/native-release/bin/
-        
-    - name: Conveyor site
-      working-directory: ./generator/native-release
+        path: .
+
+    - name: Conveyor setup
       run: |
-        mvn clean package
-        conveyor make site
-      
+        wget https://downloads.hydraulic.dev/conveyor/hydraulic-conveyor_13.0_amd64.deb -O conveyor.deb
+        sudo apt install ./conveyor.deb
+
+    - name: Conveyor site
+      run: conveyor make site
+
     - name: Upload site
       uses: actions/upload-artifact@v3
       with:
         name: conveyor-site
-        path: generator/native-release/output/*
+        path: output/*
         retention-days: 10
+        # TODO: publish to Github releases
       
+    - name: Publish artifacts to Maven Central
+      run: mvn package -PuseNative --projects protoc-gen-quickbuf,quickbuf-compat -am
+      # TODO: setup keys etc.
