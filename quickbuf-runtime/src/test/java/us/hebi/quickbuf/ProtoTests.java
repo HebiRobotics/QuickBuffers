@@ -31,6 +31,8 @@ import protos.test.quickbuf.TestEnumsMessage.EnumAllowingAlias;
 import protos.test.quickbuf.UnittestFieldOrder.MessageWithMultibyteNumbers;
 import protos.test.quickbuf.UnittestRequired.TestAllTypesRequired;
 import protos.test.quickbuf.external.ImportEnum;
+import us.hebi.quickbuf.Descriptors.Descriptor;
+import us.hebi.quickbuf.Descriptors.GenericDescriptor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,6 +40,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -156,7 +159,7 @@ public class ProtoTests {
         assertEquals(-0x7FFFFFFFFFFFFFFFL, msg.getSmallInt64());
         assertEquals(-0x80000000, msg.getReallySmallInt32());
         assertEquals(-0x8000000000000000L, msg.getReallySmallInt64());
-        assertEquals(new String("\341\210\264" .getBytes(ISO_8859_1), UTF_8), msg.getUtf8String());
+        assertEquals(new String("\341\210\264".getBytes(ISO_8859_1), UTF_8), msg.getUtf8String());
 
         assertTrue(ProtoUtil.isEqual(0f, msg.getZeroFloat()));
         assertTrue(ProtoUtil.isEqual(1f, msg.getOneFloat()));
@@ -455,7 +458,7 @@ public class ProtoTests {
 
     @Test
     public void testBytes() throws IOException {
-        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9" .getBytes(UTF_8);
+        byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];
         new Random(0).nextBytes(randomBytes);
 
@@ -483,8 +486,8 @@ public class ProtoTests {
     public void testRepeatedBytes() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedBytes());
         assertEquals(2, msg.getRepeatedBytes().length());
-        assertArrayEquals("ascii" .getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
-        assertArrayEquals("utf8\uD83D\uDCA9" .getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
+        assertArrayEquals("ascii".getBytes(UTF_8), msg.getRepeatedBytes().get(0).toArray());
+        assertArrayEquals("utf8\uD83D\uDCA9".getBytes(UTF_8), msg.getRepeatedBytes().get(1).toArray());
         TestAllTypes actual = TestAllTypes.parseFrom(TestAllTypes.newInstance().copyFrom(msg).toByteArray());
         assertEquals(msg, actual);
     }
@@ -965,31 +968,37 @@ public class ProtoTests {
 
     @Test
     public void testDescriptorContainedTypeMap() throws IOException {
-        Map<String, Descriptors.Descriptor> map = new HashMap<>();
+        Map<String, Descriptor> map = new HashMap<>();
         for (Descriptors.FileDescriptor file : TestAllTypes.getDescriptor().getFile().getDependencies()) {
-            for (Descriptors.Descriptor type : file.getAllContainedTypes()) {
+            for (Descriptor type : file.getAllContainedTypes()) {
                 map.put(type.getFullName(), type);
             }
         }
-        for (Descriptors.Descriptor type : TestAllTypes.getDescriptor().getFile().getAllContainedTypes()) {
+        for (Descriptor type : TestAllTypes.getDescriptor().getFile().getAllContainedTypes()) {
             map.put(type.getFullName(), type);
         }
-        map.values().forEach(val-> System.out.println(val.getFullName()));
+        map.values().forEach(val -> System.out.println(val.getFullName()));
 
         assertEquals(13, map.size());
-        assertEquals(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
-        assertEquals(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
+        assertEqualsDescriptor(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
+        assertEqualsDescriptor(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
     }
 
     @Test
     public void testDescriptorKnownTypeMap() throws IOException {
-        Map<String, Descriptors.Descriptor> map = new HashMap<>();
-        for (Descriptors.Descriptor type : TestAllTypes.getDescriptor().getFile().getAllKnownTypes()) {
-            map.put(type.getFullName(), type);
+        Map<String, Descriptor> map = new HashMap<>();
+        for (Descriptor descriptor : TestAllTypes.getDescriptor().getFile().getAllKnownTypes()) {
+            map.put(descriptor.getFullName(), descriptor);
         }
         assertEquals(13, map.size());
-        assertEquals(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
-        assertEquals(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
+        assertEqualsDescriptor(ForeignMessage.getDescriptor(), map.get(ForeignMessage.getDescriptor().getFullName()));
+        assertEqualsDescriptor(TestAllTypes.getDescriptor(), map.get(TestAllTypes.getDescriptor().getFullName()));
+    }
+
+    private void assertEqualsDescriptor(GenericDescriptor expected, GenericDescriptor actual) {
+        if (Objects.equals(expected, actual)) return;
+        assertEquals(expected.getFullName(), actual.getFullName());
+        assertArrayEquals(expected.getFullName(), expected.toProtoBytes(), actual.toProtoBytes());
     }
 
     @Ignore // Protobuf-java does some symbol stripping, so it's not equivalent
