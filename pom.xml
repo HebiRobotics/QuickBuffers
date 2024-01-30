@@ -297,49 +297,11 @@
                     </configuration>
                 </plugin>
 
-                <!-- Add native image executables as project artifacts -->
+                <!-- Add native image executables as project artifacts. Can't be shared here because runtime uses the same plugin -->
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.3.0</version>
-                    <executions>
-                        <execution>
-                            <id>attach-artifacts</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>attach-artifact</goal>
-                            </goals>
-                            <configuration>
-                                <artifacts>
-                                    <artifact>
-                                        <file>${project.build.directory}/${finalName}-windows-x86_64.exe</file>
-                                        <classifier>windows-x86_64</classifier>
-                                        <type>exe</type>
-                                    </artifact>
-                                    <artifact>
-                                        <file>${project.build.directory}/${finalName}-linux-x86_64.exe</file>
-                                        <classifier>linux-x86_64</classifier>
-                                        <type>exe</type>
-                                    </artifact>
-                                    <artifact>
-                                        <file>${project.build.directory}/${finalName}-linux-aarch_64.exe</file>
-                                        <classifier>linux-aarch_64</classifier>
-                                        <type>exe</type>
-                                    </artifact>
-                                    <artifact>
-                                        <file>${project.build.directory}/${finalName}-osx-x86_64.exe</file>
-                                        <classifier>osx-x86_64</classifier>
-                                        <type>exe</type>
-                                    </artifact>
-                                    <artifact>
-                                        <file>${project.build.directory}/${finalName}-osx-aarch_64.exe</file>
-                                        <classifier>osx-aarch_64</classifier>
-                                        <type>exe</type>
-                                    </artifact>
-                                </artifacts>
-                            </configuration>
-                        </execution>
-                    </executions>
+                    <version>3.4.0</version>
                 </plugin>
 
             </plugins>

@@ -71,7 +71,7 @@ jobs:
       with:
         maven-version: 3.9.1
 
-    - name: Build artifacts # Also tests the Java wrappers
+    - name: Test Java Wrappers
       run: mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am
 
     - name: Download pre-built native plugins
@@ -80,13 +80,19 @@ jobs:
         name: native-plugins
         path: .
 
+    - name: Publish artifacts to Maven Central # Tests the native wrapper one more time
+      run: mvn install -P"useNative" --projects "protoc-gen-quickbuf,quickbuf-compat" -am # "add -Prelease" for signing etc.
+      # TODO: setup keys etc.
+
     - name: Conveyor setup
       run: |
         wget https://downloads.hydraulic.dev/conveyor/hydraulic-conveyor_13.0_amd64.deb -O conveyor.deb
         sudo apt install ./conveyor.deb
 
     - name: Conveyor site
-      run: conveyor make site
+      run: |
+        chmod +x */target/**.exe
+        conveyor make site
 
     - name: Upload site
       uses: actions/upload-artifact@v3
@@ -96,6 +102,4 @@ jobs:
         retention-days: 10
         # TODO: publish to Github releases
       
-    - name: Publish artifacts to Maven Central # Tests the native wrapper one more time
-      run: mvn package -PuseNative --projects "protoc-gen-quickbuf,quickbuf-compat" -am
-      # TODO: setup keys etc.
+

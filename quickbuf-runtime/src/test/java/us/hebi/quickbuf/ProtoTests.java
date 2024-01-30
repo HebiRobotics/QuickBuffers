@@ -996,6 +996,7 @@ public class ProtoTests {
     }
 
     private void assertEqualsDescriptor(GenericDescriptor expected, GenericDescriptor actual) {
+        // TODO: implement a proper equals/hashCode method for descriptors
         if (Objects.equals(expected, actual)) return;
         assertEquals(expected.getFullName(), actual.getFullName());
         assertArrayEquals(expected.getFullName(), expected.toProtoBytes(), actual.toProtoBytes());
