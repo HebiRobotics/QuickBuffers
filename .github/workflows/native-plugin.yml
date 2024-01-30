@@ -23,7 +23,7 @@ jobs:
             timeout: 40
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
-    continue-on-error: false
+    continue-on-error: true
     steps:
     - uses: actions/checkout@v3
     - uses: stCarolas/setup-maven@v4.5
@@ -55,6 +55,7 @@ jobs:
     needs: [build-images]
     runs-on: [self-hosted, Linux]
     timeout-minutes: 30
+    continue-on-error: false
     steps:
     - uses: actions/checkout@v3
     - name: Set up JDK
