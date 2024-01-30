@@ -17,18 +17,18 @@ jobs:
     - uses: graalvm/setup-graalvm@v1
       with:
         version: 'latest'
-        java-version: '17'
+        java-version: '21'
         set-java-home: 'true'
         components: 'native-image'
         cache: 'maven'
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build generator
-      run: mvn clean package --projects parser,generator -am -Pshade,native
+    - name: Build protoc plugins
+      run: mvn clean package --projects protoc-gen-request,protoc-gen-quickbuf -am -PmakeNative,useNative
 
     - name: Build conformance executable
       run: |
-        mvn clean package --projects runtime,compat,conformance -am -Pnative -PuseNativeGen
+        mvn clean package --projects quickbuf-runtime,quickbuf-compat,conformance -am -PmakeNative,useNative
         chmod +x conformance/target/ConformanceQuickbuf.exe
 
     - name: Conformance 3.20.2

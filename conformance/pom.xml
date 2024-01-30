@@ -113,6 +113,9 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
+                        <configuration>
+                            <imageName>ConformanceQuickbuf${native.extension}</imageName>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

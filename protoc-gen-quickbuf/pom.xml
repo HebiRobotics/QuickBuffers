@@ -217,7 +217,7 @@
     <profiles>
         <!-- Compile the uber-jar as a native image -->
         <profile>
-            <id>makeNativePlugin</id>
+            <id>makeNative</id>
             <build>
                 <plugins>
                     <plugin>
