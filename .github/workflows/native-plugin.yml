@@ -32,7 +32,7 @@ jobs:
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        mvn clean package -PmakeNative,useNative --projects protoc-gen-quickbuf -am
+        mvn clean package -P"makeNative,useNative" --projects protoc-gen-quickbuf -am
 
     - name: Upload native images
       uses: actions/upload-artifact@v3
@@ -56,7 +56,7 @@ jobs:
         maven-version: 3.9.1
 
     - name: Build artifacts
-      run: mvn clean package --projects protoc-gen-quickbuf,quickbuf-compat -am
+      run: mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am
 
     - name: Download pre-built native images
       uses: actions/download-artifact@v3
@@ -81,5 +81,5 @@ jobs:
         # TODO: publish to Github releases
       
     - name: Publish artifacts to Maven Central
-      run: mvn package -PuseNative --projects protoc-gen-quickbuf,quickbuf-compat -am
+      run: mvn package -PuseNative --projects "protoc-gen-quickbuf,quickbuf-compat" -am
       # TODO: setup keys etc.
