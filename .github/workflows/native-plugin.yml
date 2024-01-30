@@ -13,17 +13,22 @@ jobs:
         include:
           - runner: windows-2022
             timeout: 15
+            cache: 'maven'
           - runner: macos-11
             timeout: 15
+            cache: 'maven'
           - runner: macos-13-xlarge
             timeout: 10
+            cache: 'maven'
           - runner: ubuntu-20.04
             timeout: 15
+            cache: 'maven'
           - runner: [ self-hosted, linux-aarch64 ]
             timeout: 40
+            cache: '' # disable upload
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
-    continue-on-error: true
+    continue-on-error: true # continue to check if an issue is limited to one platform
     steps:
     - uses: actions/checkout@v3
     - uses: stCarolas/setup-maven@v4.5
@@ -35,7 +40,7 @@ jobs:
         java-version: '21'
         set-java-home: 'true'
         native-image-job-reports: 'true'
-        cache: '' # disabled to avoid uploading cache of self-hosted runners
+        cache: ${{ matrix.cache }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build native plugins # also builds dependencies to the output
