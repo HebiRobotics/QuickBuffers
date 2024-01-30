@@ -10,9 +10,19 @@ jobs:
   build-images:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2022, macos-11, macos-13-xlarge, [self-hosted, linux-aarch64]]
-    timeout-minutes: 20
-    runs-on: ${{ matrix.os }}
+        include:
+          - runner: windows-2022
+            timeout: 15
+          - runner: macos-11
+            timeout: 15
+          - runner: macos-13-xlarge
+            timeout: 10
+          - runner: ubuntu-20.04
+            timeout: 15
+          - runner: [ self-hosted, linux-aarch64 ]
+            timeout: 40
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.timeout }}
     continue-on-error: false
     steps:
     - uses: actions/checkout@v3
@@ -28,23 +38,23 @@ jobs:
         cache: '' # disabled to avoid uploading cache of self-hosted runners
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build native plugins
+    - name: Build native plugins # also builds dependencies to the output
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        mvn clean package -P"makeNative,useNative" --projects protoc-gen-quickbuf -am
+        mvn clean package -P"makeNative,useNative" --projects "protoc-gen-quickbuf,quickbuf-compat" -am
 
-    - name: Upload native images
+    - name: Upload native plugins
       uses: actions/upload-artifact@v3
       with:
-        name: native-images
+        name: native-plugins
         path: "protoc-gen-*/target/*.exe"
         retention-days: 10
 
   conveyor-site:
     needs: [build-images]
     runs-on: [self-hosted, Linux]
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@v3
     - name: Set up JDK
@@ -55,13 +65,13 @@ jobs:
       with:
         maven-version: 3.9.1
 
-    - name: Build artifacts
+    - name: Build artifacts # Also tests the Java wrappers
       run: mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am
 
-    - name: Download pre-built native images
+    - name: Download pre-built native plugins
       uses: actions/download-artifact@v3
       with:
-        name: native-images
+        name: native-plugins
         path: .
 
     - name: Conveyor setup
@@ -80,6 +90,6 @@ jobs:
         retention-days: 10
         # TODO: publish to Github releases
       
-    - name: Publish artifacts to Maven Central
+    - name: Publish artifacts to Maven Central # Tests the native wrapper one more time
       run: mvn package -PuseNative --projects "protoc-gen-quickbuf,quickbuf-compat" -am
       # TODO: setup keys etc.

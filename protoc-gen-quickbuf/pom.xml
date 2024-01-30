@@ -90,7 +90,7 @@
                                     <groupId>com.google.protobuf</groupId>
                                     <artifactId>protoc</artifactId>
                                     <version>${protobuf.version}</version>
-                                    <classifier>windows-x86_64</classifier>
+                                    <classifier>linux-aarch_64</classifier>
                                     <type>exe</type>
                                     <outputDirectory>${protoc.path}</outputDirectory>
                                 </artifactItem>
@@ -107,6 +107,14 @@
                                     <artifactId>protoc</artifactId>
                                     <version>${protobuf.version}</version>
                                     <classifier>osx-aarch_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>windows-x86_64</classifier>
                                     <type>exe</type>
                                     <outputDirectory>${protoc.path}</outputDirectory>
                                 </artifactItem>
