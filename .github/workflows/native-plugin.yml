@@ -58,7 +58,7 @@ jobs:
 
   conveyor-site:
     needs: [build-images]
-    runs-on: [self-hosted, Linux]
+    runs-on: [self-hosted, linux-amd64]
     timeout-minutes: 30
     continue-on-error: false
     steps:
