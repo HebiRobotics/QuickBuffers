@@ -18,6 +18,10 @@ on:
         description: "Conveyor Site"
         type: boolean
         default: true
+      skipTests:
+        description: "Skip Tests"
+        type: boolean
+        default: false
 
 jobs:
   native-plugins:
@@ -64,7 +68,10 @@ jobs:
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        mvn clean package -P"makeNative,useNative" --projects "protoc-gen-quickbuf,quickbuf-compat" -am
+        mvn clean package \
+          -P"makeNative,useNative" \
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+          -DskipTests="${{ github.event.inputs.skipTests }}"
 
     - name: Upload native plugins
       uses: actions/upload-artifact@v3
@@ -92,7 +99,6 @@ jobs:
 
     - name: Import GPG Key
       uses: crazy-max/ghaction-import-gpg@v5.0.0
-      if: ${{ github.event.inputs.releaseMavenArtifacts == 'true' }}
       with:
         gpg_private_key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
@@ -108,24 +114,27 @@ jobs:
 
     - name: Test Native Plugins
       run: |
-        mvn -B -U package\
+        mvn -B -U package \
           -P"release,useNative" \
-          --projects "protoc-gen-quickbuf,quickbuf-compat" -am
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+          -DskipTests="${{ github.event.inputs.skipTests }}"
 
     - name: Deploy Maven Artifacts
       env:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        GPG_KEYNAME: ${{ secrets.MAVEN_GPG_KEYNAME }}
+        GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       run: |
         echo "export mavenGoal: ${{ github.event.inputs.mavenGoal }}" 
         echo "export makeConveyorSite: ${{ github.event.inputs.makeConveyorSite }}" 
         echo GPG_TTY=$(tty) >> $GITHUB_ENV
-        mvn -B -U -X ${{ github.event.inputs.mavenGoal }} \
+        mvn -B -U ${{ github.event.inputs.mavenGoal }} \
           -s settings.xml \
-          -Dgpg.passphrase="${{ secrets.MAVEN_GPG_PASSPHRASE }}" \
           -DautoReleaseAfterClose=true \
           -P"release" \
-          --projects "protoc-gen-quickbuf,quickbuf-compat" -am
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+          -DskipTests="${{ github.event.inputs.skipTests }}"
 
     - name: Conveyor setup
       if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
