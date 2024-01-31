@@ -46,8 +46,7 @@
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
-            </url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
@@ -64,24 +63,33 @@
     </developers>
 
     <modules>
-        <module>parser</module>
-        <module>generator</module>
-        <module>runtime</module>
-        <module>compat</module>
+        <module>protoc-gen-request</module>
+        <module>protoc-gen-quickbuf</module>
+        <module>quickbuf-runtime</module>
+        <module>quickbuf-compat</module>
         <module>conformance</module>
         <module>benchmarks</module>
     </modules>
 
     <properties>
+        <!-- Default Java configuration -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <maven.compiler.testSource>8</maven.compiler.testSource>
         <maven.compiler.testTarget>8</maven.compiler.testTarget>
+
+        <!-- Common directories/plugins -->
+        <proto.dir>${project.basedir}/../quickbuf-runtime/src/test/resources/protos</proto.dir>
+        <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
+        <protoc.requestPlugin>${project.basedir}/../protoc-gen-request/target/protoc-gen-request${protoc.pluginExt}</protoc.requestPlugin>
+        <protoc.quickbufPlugin>${project.basedir}/../protoc-gen-quickbuf/target/protoc-gen-quickbuf${protoc.pluginExt}</protoc.quickbufPlugin>
+        <scriptsDir>${project.basedir}/../protoc-gen-quickbuf/src/main/scripts</scriptsDir>
+
+        <!-- Default settings -->
         <protobuf.version>3.21.12</protobuf.version>
         <protoc.jar.version>3.11.4</protoc.jar.version>
-        <proto.dir>${project.basedir}/../runtime/src/test/resources/protos</proto.dir>
-        <protoc.pluginExt><!-- empty for macOS/linux --></protoc.pluginExt>
+        <autoReleaseAfterClose>true</autoReleaseAfterClose>
 
         <graalvm.tools.version>0.9.27</graalvm.tools.version>
         <native.staticArg>--static</native.staticArg>
@@ -89,9 +97,13 @@
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
 
-        <!-- Jigsaw module name -->
-        <javaModuleName />
+        <!-- Common defines that are used here, but maybe set by modules -->
+        <protocPluginName>${project.artifactId}</protocPluginName>
+        <finalName>${protocPluginName}-${project.version}</finalName>
+        <shadedName>${finalName}-shaded</shadedName>
+        <javaModuleName /> <!-- Jigsaw module name -->
         <gpg.keyname /> <!-- set via settings.xml to sign release artifacts-->
+        <mainClass /> <!-- executable main -->
 
         <!-- License Headers (http://www.mojohaus.org/license-maven-plugin/update-file-header-mojo.html) -->
         <license.licenseName>apache_v2</license.licenseName>
@@ -168,150 +180,265 @@
 
     <build>
 
-        <!-- Plugins that run for all modules -->
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-
-        <!-- Configuration for plugins required for publishing to Maven Central -->
+        <!-- Common plugin configurations -->
         <pluginManagement>
             <plugins>
 
-                <!-- Add licenses to files -->
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>license-maven-plugin</artifactId>
-                    <version>2.0.0</version>
-                    <executions>
-                        <execution>
-                            <id>first</id>
-                            <goals>
-                                <goal>update-file-header</goal>
-                            </goals>
-                            <phase>process-sources</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <!-- Optional: ensure the manifest contains artifact version information: -->
+                <!-- Shade plugins as uber-jars, so we can call them without dependencies -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
-                    <configuration>
-                        <archive>
-                            <manifest>
-                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                            </manifest>
-                            <manifestEntries>
-                                <Automatic-Module-Name>${javaModuleName}</Automatic-Module-Name>
-                            </manifestEntries>
-                        </archive>
-                    </configuration>
-                </plugin>
-
-                <!-- Required: Source Jar -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.2.1</version>
                     <executions>
                         <execution>
-                            <id>attach-sources</id>
                             <phase>package</phase>
                             <goals>
-                                <goal>jar-no-fork</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <!-- Required: Javadoc Jar -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.0.1</version>
-                    <executions>
-                        <execution>
-                            <id>attach-javadoc</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <!-- Required: Sign Artifacts -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.6</version>
-                    <executions>
-                        <execution>
-                            <id>sign-artifacts</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>sign</goal>
+                                <goal>shade</goal>
                             </goals>
                             <configuration>
-                                <keyname>${gpg.keyname}</keyname>
-                                <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                                <shadedArtifactAttached>true</shadedArtifactAttached>
+                                <shadedArtifactId>${project.artifactId}</shadedArtifactId>
+                                <minimizeJar>true</minimizeJar>
+                                <transformers>
+                                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                        <mainClass>${mainClass}</mainClass>
+                                    </transformer>
+                                </transformers>
                             </configuration>
                         </execution>
                     </executions>
                 </plugin>
 
-                <!-- Deploy selected modules -->
+                <!-- Add scripts that call the uber-jar and look like a protoc plugin -->
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.0.0-M1</version>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>3.1.0</version>
+                    <executions>
+                        <execution>
+                            <id>copy-plugin-scripts</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                            <configuration>
+                                <target>
+                                    <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpathref="maven.plugin.classpath"/>
+                                    <if>
+                                        <available file="${project.build.directory}/${shadedName}.jar"/>
+                                        <then>
+                                            <!-- Windows Script-->
+                                            <mkdir dir="target"/>
+                                            <copy file="${scriptsDir}/windows.bat" tofile="${project.build.directory}/${protocPluginName}.bat"/>
+                                            <replace file="${project.build.directory}/${protocPluginName}.bat" token="{jarfile}" value="${shadedName}"/>
+                                            <fixcrlf file="${project.build.directory}/${protocPluginName}.bat" eol="dos"/>
+
+                                            <!-- Unix Script -->
+                                            <copy file="${scriptsDir}/unix.sh" tofile="${project.build.directory}/${protocPluginName}"/>
+                                            <replace file="${project.build.directory}/${protocPluginName}" token="{jarfile}" value="${shadedName}"/>
+                                            <fixcrlf file="${project.build.directory}/${protocPluginName}" eol="unix"/>
+                                            <chmod file="${project.build.directory}/${protocPluginName}" perm="775" type="file"/>
+
+                                            <!-- Fix executable permissions of native executables:
+                                            The native executables are built on different CI systems and then placed in
+                                            the projects before building, and we need to ensure executable bits before
+                                            packaging them with Conveyor. It's a bit of an odd place to place this with the
+                                            scripts, but it seems like a waste to create a whole new task configuration for
+                                            one line. -->
+                                            <chmod dir="${project.build.directory}" perm="775" includes="**/*.exe"/>
+                                        </then>
+                                    </if>
+                                </target>
+                            </configuration>
+                        </execution>
+                    </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>ant-contrib</groupId>
+                            <artifactId>ant-contrib</artifactId>
+                            <version>1.0b3</version>
+                            <exclusions>
+                                <exclusion>
+                                    <groupId>ant</groupId>
+                                    <artifactId>ant</artifactId>
+                                </exclusion>
+                            </exclusions>
+                        </dependency>
+                    </dependencies>
                 </plugin>
 
-                <!-- Nexus Staging -->
+                <!-- Create a native image of the shaded uber-jar -->
                 <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.13</version>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>${graalvm.tools.version}</version>
                     <extensions>true</extensions>
+                    <executions>
+                        <execution>
+                            <id>build-native</id>
+                            <goals>
+                                <goal>compile-no-fork</goal>
+                            </goals>
+                            <phase>package</phase>
+                        </execution>
+                    </executions>
                     <configuration>
-                        <serverId>ossrh</serverId>
-                        <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        <skip>false</skip>
+                        <skipNativeTests>true</skipNativeTests> <!-- TODO: change to junit platform >5.8 -->
+                        <useArgFile>false</useArgFile>
+                        <imageName>${finalName}-${protoc.os}-${protoc.arch}${native.extension}</imageName>
+                        <classpath>
+                            <param>${project.build.directory}/${shadedName}.jar</param>
+                        </classpath>
+                        <buildArgs>
+                            <arg>-march=compatibility</arg> <!-- support older processors (see #54) -->
+                            <arg>--no-fallback</arg>
+                            <arg>--verbose</arg>
+                            <arg>${native.staticArg}</arg>
+                        </buildArgs>
                     </configuration>
+                </plugin>
+
+                <!-- Add native image executables as project artifacts. Can't be shared here because runtime uses the same plugin -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.4.0</version>
                 </plugin>
 
             </plugins>
         </pluginManagement>
 
+        <!-- Plugins that run for all modules -->
+        <plugins>
+
+            <!-- Add licenses to files -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <executions>
+                    <execution>
+                        <id>first</id>
+                        <goals>
+                            <goal>update-file-header</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Optional: ensure the manifest contains artifact version information: -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Automatic-Module-Name>${javaModuleName}</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+        </plugins>
+
     </build>
 
     <profiles>
+
+        <!-- Other plugins required for publishing to Maven Central -->
         <profile>
             <id>release</id>
             <build>
-                <!-- Plugins required for publishing to Maven Central -->
                 <plugins>
+
+                    <!-- Required: Source Jar -->
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>license-maven-plugin</artifactId>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
+
+                    <!-- Required: Javadoc Jar -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.6.3</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadoc</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Required: Sign Artifacts -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <keyname>${gpg.keyname}</keyname>
+                                    <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                                    <gpgArguments>
+                                        <!-- Prevent gpg from using pinentry programs -->
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
+
+                    <!-- Deploy selected modules -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>3.0.0-M1</version>
+                    </plugin>
+
+                    <!-- Nexus Staging -->
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.13</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>${autoReleaseAfterClose}</autoReleaseAfterClose>
+                        </configuration>
                     </plugin>
+
                 </plugins>
             </build>
         </profile>
+
+        <!-- OS specific properties -->
         <profile>
             <id>platform-windows</id>
             <activation>
@@ -359,12 +486,15 @@
                 <protoc.arch>aarch_64</protoc.arch>
             </properties>
         </profile>
+
+        <!-- uses the generated native generator -->
         <profile>
-            <id>useNativeGen</id>
+            <id>useNative</id>
             <properties>
                 <protoc.pluginExt>-${project.version}-${protoc.os}-${protoc.arch}.exe</protoc.pluginExt>
             </properties>
         </profile>
+
     </profiles>
 
 </project>

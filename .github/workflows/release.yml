@@ -1,0 +1,203 @@
+name: Release Native Plugins
+
+on:
+  push:
+    branches: [ release/native-plugins ]
+  workflow_dispatch:
+    inputs:
+      mavenGoal:
+        type: choice
+        description: "Maven Goal"
+        default: 'deploy'
+        options:
+          - 'package'
+          - 'verify'
+          - 'deploy'
+      skipTests:
+        description: "Skip Tests"
+        type: boolean
+        default: false
+      makeConveyorSite:
+        description: "Conveyor Site"
+        type: boolean
+        default: true
+      conveyorRevision:
+        description: "Conveyor Revision"
+        default: '0'
+
+jobs:
+  native-plugins:
+    strategy:
+      matrix:
+        include:
+          - runner: windows-2022
+            timeout: 15
+            cache: 'maven'
+          - runner: macos-11
+            timeout: 15
+            cache: 'maven'
+          - runner: macos-13-xlarge
+            timeout: 10
+            cache: 'maven'
+          - runner: ubuntu-20.04
+            timeout: 15
+            cache: 'maven'
+          - runner: [ self-hosted, linux-aarch64 ]
+            timeout: 40
+            cache: '' # disable upload
+#        - runner: [ self-hosted, linux-amd64 ]
+#          timeout: 15
+#          cache: ''
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.timeout }}
+    continue-on-error: true # continue to check if an issue is limited to one platform
+    steps:
+    - uses: actions/checkout@v3
+    - uses: stCarolas/setup-maven@v4.5
+      with:
+        maven-version: 3.9.1
+    - uses: graalvm/setup-graalvm@v1
+      with:
+        distribution: 'graalvm'
+        version: 'latest'
+        java-version: '21'
+        set-java-home: 'true'
+        native-image-job-reports: 'true'
+        cache: ${{ matrix.cache }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build native plugins # also builds dependencies to the output
+      run: |
+        echo "GRAALVM_HOME: $GRAALVM_HOME"
+        echo "JAVA_HOME: $JAVA_HOME"
+        mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am -P"makeNative,useNative" -DskipTests="${{ github.event.inputs.skipTests }}"
+
+    - name: Upload native plugins
+      uses: actions/upload-artifact@v3
+      with:
+        name: native-plugins
+        path: "protoc-gen-*/target/*.exe"
+        retention-days: 10
+
+  maven-artifacts:
+    needs: [native-plugins]
+    runs-on: [ubuntu-latest]
+    timeout-minutes: 30
+    continue-on-error: false
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 8
+        server-id: ossrh
+    - uses: stCarolas/setup-maven@v4.5
+      with:
+        maven-version: 3.9.1
+
+    - name: Import GPG Key
+      uses: crazy-max/ghaction-import-gpg@v5.0.0
+      with:
+        gpg_private_key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+    - name: Clean Workspace
+      run: mvn clean
+
+    - name: Download pre-built native plugins
+      uses: actions/download-artifact@v3
+      with:
+        name: native-plugins
+        path: .
+
+    - name: Test Native Plugins
+      run: |
+        chmod +x */target/**.exe
+        mvn -B -U package \
+          -P"release,useNative" \
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+          -DskipTests="${{ github.event.inputs.skipTests }}"
+
+    - name: Deploy Maven Artifacts
+      env:
+        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        GPG_KEYNAME: ${{ secrets.MAVEN_GPG_KEYNAME }}
+        GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      run: |
+        echo GPG_TTY=$(tty) >> $GITHUB_ENV
+        mvn -B -U ${{ github.event.inputs.mavenGoal }} \
+          -s settings.xml \
+          -DautoReleaseAfterClose=true \
+          -P"release" \
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+          -DskipTests="${{ github.event.inputs.skipTests }}"
+
+  conveyor-site:
+    needs: [native-plugins]
+    runs-on: [ubuntu-latest]
+    timeout-minutes: 30
+    continue-on-error: false
+    if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: zulu
+          java-version: 8
+          server-id: ossrh
+          cache: maven
+      - uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.9.1
+
+      - name: Clean Workspace
+        run: mvn clean
+
+      - name: Download pre-built native plugins
+        uses: actions/download-artifact@v3
+        with:
+          name: native-plugins
+          path: .
+
+      - name: Test Native Plugins
+        run: |
+          chmod +x */target/**.exe
+          mvn -B -U package \
+            -P"release,useNative" \
+            --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+            -DskipTests="${{ github.event.inputs.skipTests }}"
+
+      - name: Create DigiCert auth cert
+        id: auth_cert
+        uses: timheuer/base64-to-file@v1.2
+        with:
+          fileName: 'DigiCert_auth.p12'
+          encodedString: ${{ secrets.DIGICERT_AUTH_CERT_BASE64 }}
+
+      - name: Conveyor Site
+        uses: hydraulic-software/conveyor/actions/build@v13.1
+        env:
+          APPLE_APP_ID: ${{secrets.APPLE_APP_ID}}
+          APPLE_APP_TEAM_ID: ${{secrets.APPLE_APP_TEAM_ID}}
+          APPLE_APP_PASSWORD: ${{secrets.APPLE_APP_PASSWORD}}
+          SIGNING_KEY: ${{secrets.CONVEYOR_SIGNING_KEY}}
+          DIGICERT_AUTH_CERT: ${{steps.auth_cert.outputs.filePath}}
+          DIGICERT_AUTH_PW: ${{secrets.DIGICERT_AUTH_PW}}
+          DIGICERT_API_KEY: ${{secrets.DIGICERT_API_KEY}}
+          DIGICERT_SIGNING_KEY_ALIAS: ${{secrets.DIGICERT_SIGNING_KEY_ALIAS}}
+        with:
+          signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}
+          agree_to_license: 1
+          command: make site
+          extra_flags: -Kapp.revision="${{ github.event.inputs.conveyorRevision }}" -f conveyor-ci.conf
+
+      - name: Upload site
+        uses: actions/upload-artifact@v3
+        with:
+          name: conveyor
+          path: output/*
+          retention-days: 10
+          # TODO: publish to Github releases directly?

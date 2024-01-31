@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quickbuf-parent</artifactId>
+        <groupId>us.hebi.quickbuf</groupId>
+        <version>1.4-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>protoc-gen-quickbuf</artifactId>
+
+    <properties>
+        <protocPluginName>${project.artifactId}</protocPluginName>
+        <javaModuleName>us.hebi.quickbuf.generator</javaModuleName>
+        <mainClass>us.hebi.quickbuf.generator.QuickbufPlugin</mainClass>
+
+        <protoc.fileName>protoc-${protobuf.version}-${protoc.os}-${protoc.arch}.exe</protoc.fileName>
+        <protoc.path>${project.build.directory}/protoc</protoc.path>
+        <protoc.executable>${protoc.path}/${protoc.fileName}</protoc.executable>
+        <protoc.outputDir>${project.build.directory}/test-classes/us/hebi/quickbuf/generator</protoc.outputDir>
+        <proto.dir.unsupported>${project.basedir}/src/test/resources/protos/unsupported</proto.dir.unsupported>
+    </properties>
+
+    <dependencies>
+
+        <!-- stores request input as binary that we can load in unit tests -->
+        <dependency>
+            <groupId>us.hebi.quickbuf</groupId>
+            <artifactId>protoc-gen-request</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup</groupId>
+            <artifactId>javapoet</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!-- Create uber-jar that we can call as a plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+
+            <!-- Download protoc executables from Maven central. We specify all operating systems,
+            so we can package the binaries with conveyor -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>linux-x86_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>linux-aarch_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>osx-x86_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>osx-aarch_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.protobuf</groupId>
+                                    <artifactId>protoc</artifactId>
+                                    <version>${protobuf.version}</version>
+                                    <classifier>windows-x86_64</classifier>
+                                    <type>exe</type>
+                                    <outputDirectory>${protoc.path}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Create wrapper scripts (inherited), and generate sample compiler plugin requests that we can work with in unit tests -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <configuration>
+                            <target>
+
+                                <!-- fix permissions of protoc executable -->
+                                <chmod dir="${protoc.path}" perm="775" includes="**/*.exe"/>
+
+                                <!-- call -->
+                                <mkdir dir="${protoc.outputDir}"/>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=required.request,indent=tab,input_order=quickbuf,enforce_has_checks=true:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/unittest_required.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=import.request,indent=2,input_order=number:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/namespaces.proto"/>
+                                    <arg value="${proto.dir}/namespaces_import.proto"/>
+                                    <arg value="${proto.dir}/unittest_default_package_imports.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=allTypes_eager.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true,allocation=eager:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/namespaces.proto"/>
+                                    <arg value="${proto.dir}/unittest_all_types.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=allTypes_lazy.request,replace_package=(protobuf)=quickbuf,input_order=none,store_unknown_fields=true,allocation=lazy:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/namespaces.proto"/>
+                                    <arg value="${proto.dir}/unittest_all_types.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=repeatedPackables.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir}/"/>
+                                    <arg value="${proto.dir}/unittest_repeated_packables.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=unsupported_extension.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/extension.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=unsupported_map.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/map.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=unsupported_recursion.request,replace_package=(protobuf)=quickbuf:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/recursion.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=lazy_recursion.request,replace_package=(protobuf)=quickbuf,allocation=lazy:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/recursion.proto"/>
+                                </exec>
+                                <exec executable="${protoc.executable}">
+                                    <arg value="--plugin=protoc-gen-request=${protoc.requestPlugin}"/>
+                                    <arg value="--request_out=request_file=unsupported_proto3.request,replace_package=(protobuf)=quickbuf,allocation=lazy:${protoc.outputDir}"/>
+                                    <arg value="--proto_path=${proto.dir.unsupported}/"/>
+                                    <arg value="${proto.dir.unsupported}/proto3.proto"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Add native image artifacts (not in -Pnative because the artifacts get copied from CI) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-linux-x86_64.exe</file>
+                                    <classifier>linux-x86_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-linux-aarch_64.exe</file>
+                                    <classifier>linux-aarch_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-osx-x86_64.exe</file>
+                                    <classifier>osx-x86_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-osx-aarch_64.exe</file>
+                                    <classifier>osx-aarch_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/${finalName}-windows-x86_64.exe</file>
+                                    <classifier>windows-x86_64</classifier>
+                                    <type>exe</type>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Compile the uber-jar as a native image -->
+        <profile>
+            <id>makeNative</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>
