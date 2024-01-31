@@ -236,21 +236,21 @@
                                     <classifier>linux-x86_64</classifier>
                                     <type>exe</type>
                                 </artifact>
-                                <artifact>
+<!--                                <artifact>
                                     <file>${project.build.directory}/${finalName}-linux-aarch_64.exe</file>
                                     <classifier>linux-aarch_64</classifier>
                                     <type>exe</type>
-                                </artifact>
+                                </artifact>-->
                                 <artifact>
                                     <file>${project.build.directory}/${finalName}-osx-x86_64.exe</file>
                                     <classifier>osx-x86_64</classifier>
                                     <type>exe</type>
                                 </artifact>
-                                <artifact>
+<!--                                <artifact>
                                     <file>${project.build.directory}/${finalName}-osx-aarch_64.exe</file>
                                     <classifier>osx-aarch_64</classifier>
                                     <type>exe</type>
-                                </artifact>
+                                </artifact>-->
                             </artifacts>
                         </configuration>
                     </execution>
