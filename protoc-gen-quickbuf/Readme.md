@@ -9,7 +9,7 @@ Releasing to Maven Central as well as Conveyor packaging happen automatically in
 ### Release procedure
 
 * Update version
-  * `versions:set -DprocessAllModules -DnewVersion=${NEW_VERSION}`
+  * `mvn versions:set -DprocessAllModules -DnewVersion=${NEW_VERSION}`
   * update `app.version` in `../conveyor.conf`
   * update version in `../Readme.md`
 * Create a tag

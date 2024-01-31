@@ -2,7 +2,7 @@ name: Release Native Plugins
 
 on:
   push:
-    branches: [ release/native-plugins ]
+    branches: [ release/native-plugins ] # note that branch triggers have no inputs, not even defaults
   workflow_dispatch:
     inputs:
       mavenGoal:
