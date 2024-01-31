@@ -1,8 +1,8 @@
-name: Native Plugin
+name: Release Native Plugins
 
 on:
   push:
-    branches: [ release/native-gen ]
+    branches: [ release/native-plugins ]
   workflow_dispatch:
     inputs:
       mavenGoal:
