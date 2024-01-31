@@ -28,24 +28,24 @@ jobs:
     strategy:
       matrix:
         include:
-#          - runner: windows-2022
-#            timeout: 15
-#            cache: 'maven'
-#          - runner: macos-11
-#            timeout: 15
-#            cache: 'maven'
-#          - runner: macos-13-xlarge
-#            timeout: 10
-#            cache: 'maven'
-#          - runner: ubuntu-20.04
-#            timeout: 15
-#            cache: 'maven'
-#          - runner: [ self-hosted, linux-aarch64 ]
-#            timeout: 40
-#            cache: '' # disable upload
-        - runner: [ self-hosted, linux-amd64 ]
-          timeout: 15
-          cache: ''
+          - runner: windows-2022
+            timeout: 15
+            cache: 'maven'
+          - runner: macos-11
+            timeout: 15
+            cache: 'maven'
+          - runner: macos-13-xlarge
+            timeout: 10
+            cache: 'maven'
+          - runner: ubuntu-20.04
+            timeout: 15
+            cache: 'maven'
+          - runner: [ self-hosted, linux-aarch64 ]
+            timeout: 40
+            cache: '' # disable upload
+#        - runner: [ self-hosted, linux-amd64 ]
+#          timeout: 15
+#          cache: ''
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
     continue-on-error: true # continue to check if an issue is limited to one platform
@@ -68,10 +68,7 @@ jobs:
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        mvn clean package \
-          -P"makeNative,useNative" \
-          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
-          -DskipTests="${{ github.event.inputs.skipTests }}"
+        mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am -P"makeNative,useNative" -DskipTests="${{ github.event.inputs.skipTests }}"
 
     - name: Upload native plugins
       uses: actions/upload-artifact@v3
