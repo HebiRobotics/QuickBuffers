@@ -55,7 +55,7 @@ The message generator `protoc-gen-quickbuf` is set up as a plugin for the protoc
 protoc-quickbuf --quickbuf_out=${options>:<outputDir> <protoFiles>
 ```
 
-or use a [protoc-gen-quickbuf-${version}-${arch}.exe](https://github.com/HebiRobotics/QuickBuffers/releases) plugin binary with an absolute `pluginPath`:
+or use a [protoc-gen-quickbuf-${version}-${arch}.exe](https://repo1.maven.org/maven2/us/hebi/quickbuf/protoc-gen-quickbuf/) plugin binary with an absolute `pluginPath`:
 
 ```sh
 protoc --plugin-protoc-gen-quickbuf=${exePath} --quickbuf_out=${options>:<outputDir> <protoFiles>

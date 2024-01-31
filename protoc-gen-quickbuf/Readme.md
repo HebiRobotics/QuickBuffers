@@ -4,7 +4,7 @@ In order to support the `pluginArtifact` parameter (`"us.hebi.quickbuf:protoc-ge
 
 The Java bytecode can be compiled to a standalone native executable using [GraalVM](https://www.graalvm.org/). This also gets rid of requiring an installed Java runtime and significantly speeds up execution due to ahead of time compilation and faster startup time. The caveat is that the images need to be compiled on each supported platform, which currently requires a self-hosted runner for linux-aarch64.
 
-Releasing to Maven Central as well as Conveyor packaging happen automatically in a Github action. It can be triggered manually in the action interface, or by pushing to `release/native-plugins`.
+Releasing to Maven Central as well as Conveyor packaging happen automatically in a Github action. It can be triggered manually in the action interface.
 
 ### Release procedure
 
@@ -13,7 +13,7 @@ Releasing to Maven Central as well as Conveyor packaging happen automatically in
   * update `app.version` in `../conveyor.conf`
   * update version in `../Readme.md`
 * Create a tag
-* Push to `release/native-plugins`
+* [Trigger Github Action](https://github.com/HebiRobotics/QuickBuffers/actions)
 * Upload `conveyor-site` contents to a Github release
 * Copy the `icon.png` and `download.html` site to `../docs/`
 

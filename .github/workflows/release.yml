@@ -76,6 +76,7 @@ jobs:
   maven-artifacts:
     needs: [native-plugins]
     runs-on: [ubuntu-latest]
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     timeout-minutes: 30
     continue-on-error: false
     steps:
