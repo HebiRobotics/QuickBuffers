@@ -5,9 +5,21 @@ on:
     branches: [ release/native-gen ]
   workflow_dispatch:
     inputs:
+      mavenGoal:
+        type: choice
+        description: "Maven Deploy Goal"
+        default: 'deploy'
+        options:
+          - 'package'
+          - 'verify'
+          - 'deploy'
+      makeConveyorSite:
+        description: "Conveyor Site"
+        type: boolean
+        default: true
 
 jobs:
-  build-images:
+  native-plugins:
     strategy:
       matrix:
         include:
@@ -56,23 +68,31 @@ jobs:
         path: "protoc-gen-*/target/*.exe"
         retention-days: 10
 
-  conveyor-site:
-    needs: [build-images]
-    runs-on: [self-hosted, linux-amd64]
+  release:
+    needs: [native-plugins]
+    runs-on: [ubuntu-latest]
     timeout-minutes: 30
     continue-on-error: false
     steps:
     - uses: actions/checkout@v3
     - name: Set up JDK
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v3
       with:
         java-version: 8
+        server-id: ossrh
     - uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: 3.9.1
 
-    - name: Test Java Wrappers
-      run: mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am
+    - name: Import GPG Key
+      uses: crazy-max/ghaction-import-gpg@v5.0.0
+      if: ${{ github.event.inputs.releaseMavenArtifacts == 'true' }}
+      with:
+        gpg_private_key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+    - name: Clean Workspace
+      run: mvn clean
 
     - name: Download pre-built native plugins
       uses: actions/download-artifact@v3
@@ -80,21 +100,41 @@ jobs:
         name: native-plugins
         path: .
 
-    - name: Publish artifacts to Maven Central # Tests the native wrapper one more time
-      run: mvn install -P"useNative" --projects "protoc-gen-quickbuf,quickbuf-compat" -am # "add -Prelease" for signing etc.
-      # TODO: setup keys etc.
+    - name: Test Native Plugins
+      run: |
+        mvn -B -U \
+          -P"release,useNative" \
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am
+          package
+
+    - name: Deploy Maven Artifacts
+      env:
+        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+      run: |
+        echo GPG_TTY=$(tty) >> $GITHUB_ENV
+        mvn -B -U \
+          -P"release" \
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+          -s settings.xml \
+          -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }} \
+          -DautoReleaseAfterClose=true
+          ${{ github.event.inputs.mavenGoal }}
 
     - name: Conveyor setup
+      if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
       run: |
         wget https://downloads.hydraulic.dev/conveyor/hydraulic-conveyor_13.0_amd64.deb -O conveyor.deb
         sudo apt install ./conveyor.deb
 
     - name: Conveyor site
+      if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
       run: |
         chmod +x */target/**.exe
         conveyor make site
 
     - name: Upload site
+      if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
       uses: actions/upload-artifact@v3
       with:
         name: conveyor-site
