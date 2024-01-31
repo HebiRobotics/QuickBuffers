@@ -10,13 +10,13 @@ After encountering issues with Java wrapper scripts, we decided to compile the J
 
 ```shell
 # 1) build a native image of the generator
-mvn clean package --projects parser,generator -am -Pshade,native
+mvn clean package --projects "protoc-gen-quickbuf" -am -P"makeNative,useNative"
 
 # 2) test the native generator and build the conformance executable
-mvn clean package --projects runtime,compat,conformance -am -Pnative -PuseNativeGen
+mvn clean package --projects quickbuf-runtime,conformance -am -P"makeNative,useNative"
 
 # (note) native compilation without any prior packaging
-mvn native:compile-no-fork -pl conformance -Pnative
+mvn native:compile-no-fork -pl conformance -PmakeNative
 ```
 
 The generated executable is in `${quickbufDir}/conformance/target/ConformanceQuickbuf.exe`
