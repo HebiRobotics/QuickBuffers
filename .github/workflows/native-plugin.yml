@@ -12,6 +12,7 @@ on:
         options:
           - 'package'
           - 'verify'
+          - 'install'
           - 'deploy'
       makeConveyorSite:
         description: "Conveyor Site"
@@ -51,6 +52,7 @@ jobs:
         maven-version: 3.9.1
     - uses: graalvm/setup-graalvm@v1
       with:
+        distribution: 'graalvm'
         version: 'latest'
         java-version: '21'
         set-java-home: 'true'
@@ -115,11 +117,12 @@ jobs:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
       run: |
+        echo "export mavenGoal: ${{ github.event.inputs.mavenGoal }}" 
+        echo "export makeConveyorSite: ${{ github.event.inputs.makeConveyorSite }}" 
         echo GPG_TTY=$(tty) >> $GITHUB_ENV
-        echo "GOAL ${{ github.event.inputs.mavenGoal }}"
-        mvn -B -U ${{ github.event.inputs.mavenGoal }} \
+        mvn -B -U -X ${{ github.event.inputs.mavenGoal }} \
           -s settings.xml \
-          -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }} \
+          -Dgpg.passphrase="${{ secrets.MAVEN_GPG_PASSPHRASE }}" \
           -DautoReleaseAfterClose=true \
           -P"release" \
           --projects "protoc-gen-quickbuf,quickbuf-compat" -am
