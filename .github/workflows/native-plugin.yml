@@ -114,6 +114,7 @@ jobs:
 
     - name: Test Native Plugins
       run: |
+        chmod +x */target/**.exe
         mvn -B -U package \
           -P"release,useNative" \
           --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
@@ -136,25 +137,39 @@ jobs:
           --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
           -DskipTests="${{ github.event.inputs.skipTests }}"
 
-    - name: Conveyor setup
+    - name: Create DigiCert auth cert
       if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
-      run: |
-        wget https://downloads.hydraulic.dev/conveyor/hydraulic-conveyor_13.0_amd64.deb -O conveyor.deb
-        sudo apt install ./conveyor.deb
+      id: auth_cert
+      uses: timheuer/base64-to-file@v1.2
+      with:
+        fileName: 'DigiCert_auth.p12'
+        encodedString: ${{ secrets.DIGICERT_AUTH_CERT_BASE64 }}
 
-    - name: Conveyor site
+    - name: Conveyor Site
       if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
-      run: |
-        chmod +x */target/**.exe
-        conveyor make site
+      uses: hydraulic-software/conveyor/actions/build@v13.1
+      env:
+        APPLE_APP_PASSWORD: ${{secrets.APPLE_APP_PASSWORD}}
+        APPLE_APP_ID: ${{secrets.APPLE_APP_ID}}
+        APPLE_APP_TEAM_ID: ${{secrets.APPLE_APP_TEAM_ID}}
+        SIGNING_KEY: ${{secrets.CONVEYOR_SIGNING_KEY}}
+        DIGICERT_AUTH_CERT: ${{steps.auth_cert.outputs.filePath}}
+        DIGICERT_AUTH_PW: ${{secrets.DIGICERT_AUTH_PW}}
+        DIGICERT_API_KEY: ${{secrets.DIGICERT_API_KEY}}
+        DIGICERT_SIGNING_KEY_ALIAS: ${{secrets.DIGICERT_SIGNING_KEY_ALIAS}}
+      with:
+        signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}
+        agree_to_license: 1
+        command: make site
+        extra_flags: -f conveyor-ci.conf
 
     - name: Upload site
       if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
       uses: actions/upload-artifact@v3
       with:
-        name: conveyor-site
+        name: conveyor
         path: output/*
         retention-days: 10
-        # TODO: publish to Github releases
+        # TODO: publish to Github releases directly?
       
 
