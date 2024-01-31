@@ -32,12 +32,15 @@ jobs:
 #          - runner: macos-13-xlarge
 #            timeout: 10
 #            cache: 'maven'
-          - runner: ubuntu-20.04
-            timeout: 15
-            cache: 'maven'
+#          - runner: ubuntu-20.04
+#            timeout: 15
+#            cache: 'maven'
 #          - runner: [ self-hosted, linux-aarch64 ]
 #            timeout: 40
 #            cache: '' # disable upload
+        - runner: [ self-hosted, linux-amd64 ]
+          timeout: 15
+          cache: ''
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
     continue-on-error: true # continue to check if an issue is limited to one platform
@@ -103,10 +106,9 @@ jobs:
 
     - name: Test Native Plugins
       run: |
-        mvn -B -U \
+        mvn -B -U package\
           -P"release,useNative" \
-          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
-          package
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am
 
     - name: Deploy Maven Artifacts
       env:
@@ -114,13 +116,13 @@ jobs:
         MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
       run: |
         echo GPG_TTY=$(tty) >> $GITHUB_ENV
-        mvn -B -U \
-          -P"release" \
-          --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
+        echo "GOAL ${{ github.event.inputs.mavenGoal }}"
+        mvn -B -U ${{ github.event.inputs.mavenGoal }} \
           -s settings.xml \
           -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }} \
           -DautoReleaseAfterClose=true \
-          ${{ github.event.inputs.mavenGoal }}
+          -P"release" \
+          --projects "protoc-gen-quickbuf,quickbuf-compat" -am
 
     - name: Conveyor setup
       if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
