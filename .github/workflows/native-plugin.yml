@@ -7,21 +7,23 @@ on:
     inputs:
       mavenGoal:
         type: choice
-        description: "Maven Deploy Goal"
+        description: "Maven Goal"
         default: 'deploy'
         options:
           - 'package'
           - 'verify'
-          - 'install'
           - 'deploy'
-      makeConveyorSite:
-        description: "Conveyor Site"
-        type: boolean
-        default: true
       skipTests:
         description: "Skip Tests"
         type: boolean
         default: false
+      makeConveyorSite:
+        description: "Conveyor Site"
+        type: boolean
+        default: true
+      conveyorRevision:
+        description: "Conveyor Revision"
+        default: '0'
 
 jobs:
   native-plugins:
@@ -190,7 +192,7 @@ jobs:
           signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}
           agree_to_license: 1
           command: make site
-          extra_flags: -f conveyor-ci.conf
+          extra_flags: -Kapp.revision="${{ github.event.inputs.conveyorRevision }}" -f conveyor-ci.conf
 
       - name: Upload site
         uses: actions/upload-artifact@v3
