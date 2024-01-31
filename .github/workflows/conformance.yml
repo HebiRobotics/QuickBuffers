@@ -20,7 +20,7 @@ jobs:
         java-version: '21'
         set-java-home: 'true'
         components: 'native-image'
-        cache: 'maven'
+        cache: ''
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build protoc plugins

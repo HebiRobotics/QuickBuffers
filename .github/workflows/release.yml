@@ -32,22 +32,16 @@ jobs:
         include:
           - runner: windows-2022
             timeout: 15
-            cache: 'maven'
           - runner: macos-11
             timeout: 15
-            cache: 'maven'
           - runner: macos-13-xlarge
             timeout: 10
-            cache: 'maven'
           - runner: ubuntu-20.04
             timeout: 15
-            cache: 'maven'
           - runner: [ self-hosted, linux-aarch64 ]
             timeout: 40
-            cache: '' # disable upload
 #        - runner: [ self-hosted, linux-amd64 ]
 #          timeout: 15
-#          cache: ''
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
     continue-on-error: true # continue to check if an issue is limited to one platform
@@ -63,7 +57,7 @@ jobs:
         java-version: '21'
         set-java-home: 'true'
         native-image-job-reports: 'true'
-        cache: ${{ matrix.cache }}
+        cache: '' # takes longer than building from scratch
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build native plugins # also builds dependencies to the output
@@ -189,6 +183,7 @@ jobs:
           DIGICERT_API_KEY: ${{secrets.DIGICERT_API_KEY}}
           DIGICERT_SIGNING_KEY_ALIAS: ${{secrets.DIGICERT_SIGNING_KEY_ALIAS}}
         with:
+          cache: ''
           signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}
           agree_to_license: 1
           command: make site
