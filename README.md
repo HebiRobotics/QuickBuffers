@@ -27,7 +27,7 @@ QuickBuffers passes all [proto2 conformance tests](./conformance) and is compati
 
 * [Services](https://developers.google.com/protocol-buffers/docs/proto#services) are not implemented
 * [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) are embedded directly into the extended message, so support is limited to generation time.
-* [Well-known proto3 types](https://developers.google.com/protocol-buffers/docs/proto3) such as Timestamp and Duration are not special cased in JSON marshalling
+* The [proto files](https://github.com/protocolbuffers/protobuf/tree/main/src/google/protobuf) for [well-known proto3 types](https://protobuf.dev/reference/protobuf/google.protobuf/) such as `timestamp.proto` or `duration.proto`need to be included manually. Their special cased JSON representations are not implemented.
 * Unsigned integer types are JSON encoded as signed integer numbers
 
 ## Getting started
