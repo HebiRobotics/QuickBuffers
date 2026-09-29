@@ -308,6 +308,22 @@ public class JsonReaderTest {
     }
 
     @Test
+    public void testSkipValueAcrossRefills() throws IOException {
+        byte[] json = "[{\"a\":\"x\\\"y\\/z\",\"b\":[12345.5e1,true,null,\"long string value\"]},\"c\"]".getBytes(Charsets.UTF_8);
+        for (int maxChunk = 1; maxChunk <= 3; maxChunk++) {
+            for (boolean lenient : new boolean[]{false, true}) {
+                JsonReader reader = JsonReader.newInstance(new SlowInputStream(json, maxChunk));
+                reader.lenient = lenient;
+                reader.beginArray().skipValue();
+                assertEquals("c", reader.readString());
+                reader.endArray();
+            }
+        }
+        assertError("Unescaped control character 0x0a in string at offset 8",
+                () -> JsonReader.newInstance(new SlowInputStream("[\"abcdef\n\"]".getBytes(Charsets.UTF_8), 2)).skipValue());
+    }
+
+    @Test
     public void testLenientMode() throws IOException {
         JsonReader reader = JsonReader.newInstance("[\"a\tb\",{\"x\":[NaN,+1,tru,1x,\"\\q\"]},\"c\"]");
         reader.lenient = true;

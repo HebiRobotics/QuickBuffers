@@ -572,7 +572,7 @@ public final class JsonReader implements Closeable {
 
     private void skipUnquoted(int peeked) throws IOException {
         if (lenient) {
-            readUnquotedBytes(value);
+            skipUnquotedBytes();
         } else if (peeked == PEEKED_NUMBER) {
             readNumberBytes(value);
         } else if (peeked == PEEKED_BOOLEAN) {
@@ -649,6 +649,21 @@ public final class JsonReader implements Closeable {
             int i = pos;
             while (i < end && !IS_DELIMITER[buf[i] & 0xFF]) {
                 output.add(buf[i++]);
+            }
+            pos = i;
+            if (i < end) {
+                return;
+            }
+        } while (fill());
+    }
+
+    private void skipUnquotedBytes() throws IOException {
+        do {
+            final byte[] buf = buffer;
+            final int end = limit;
+            int i = pos;
+            while (i < end && !IS_DELIMITER[buf[i] & 0xFF]) {
+                i++;
             }
             pos = i;
             if (i < end) {
@@ -797,6 +812,13 @@ public final class JsonReader implements Closeable {
 
     private void skipQuoted() throws IOException {
         while (true) {
+            final byte[] buf = buffer;
+            final int end = limit;
+            int i = pos;
+            while (i < end && !IS_STRING_SPECIAL[buf[i] & 0xFF]) {
+                i++;
+            }
+            pos = i;
             final int c = readByte();
             if (c == '"') {
                 return;
