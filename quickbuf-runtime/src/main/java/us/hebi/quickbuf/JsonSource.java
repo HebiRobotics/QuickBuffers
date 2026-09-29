@@ -423,6 +423,11 @@ public abstract class JsonSource implements Closeable {
 
     // ==================== Implementation ====================
 
+    InvalidJsonException outOfRange(String type, Object value) {
+        String atField = (currentField == null ? "" : " for field '" + currentField + "'");
+        return new InvalidJsonException("Value out of range for " + type + ": " + value + atField);
+    }
+
     // Note: proto3 json accepts base64 with and without padding
     protected static void decodeBase64(String input, RepeatedByte output) throws InvalidJsonException {
         final byte[] bytes = input.getBytes(ISO_8859_1); // other chars become an ignored '?'
@@ -500,7 +505,11 @@ public abstract class JsonSource implements Closeable {
 
         @Override
         public int readInt32() throws IOException {
-            return (int) this.readInt64();
+            final long value = this.readInt64();
+            if ((int) value != value) {
+                throw outOfRange("int32", value);
+            }
+            return (int) value;
         }
 
         @Override

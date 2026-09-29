@@ -153,6 +153,19 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testIntegersOutOfRange() throws Exception {
+        for (String json : new String[]{
+                "{\"optionalInt32\":2147483648}",
+                "{\"optionalInt32\":4294967297}"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on out of range value: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
         assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());
