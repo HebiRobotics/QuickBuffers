@@ -52,6 +52,7 @@ package us.hebi.quickbuf;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
@@ -1419,7 +1420,7 @@ public abstract class ProtoSink {
 
         @Override
         public ProtoSink reset() {
-            buffer.position(initialPosition);
+            ((Buffer) buffer).position(initialPosition); // the covariant ByteBuffer::position(int) only exists on jdk9+
             return this;
         }
 

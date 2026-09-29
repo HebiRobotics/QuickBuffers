@@ -53,6 +53,7 @@ package us.hebi.quickbuf;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.Buffer;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
@@ -1350,7 +1351,7 @@ public abstract class ProtoSource {
 
         @Override
         public void rewindTo(int totalBytesRead) {
-            buffer.position(totalBytesRead);
+            ((Buffer) buffer).position(totalBytesRead); // the covariant ByteBuffer::position(int) only exists on jdk9+
         }
 
         @Override
@@ -1367,7 +1368,7 @@ public abstract class ProtoSource {
             if (buffer.remaining() < size) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
-            buffer.position(buffer.position() + size);
+            ((Buffer) buffer).position(buffer.position() + size);
         }
 
         @Override
