@@ -67,8 +67,19 @@ public class Base64Test {
         }
     }
 
-    private byte[] decodeBase64(CharSequence input) {
-        return us.hebi.quickbuf.Base64.decodeFast(input.toString());
+    @Test
+    public void testDecodeBase64_keepsInput() throws Exception {
+        RepeatedByte input = RepeatedByte.newEmptyInstance().addAll(new byte[]{'A', 'Q', 'I'});
+        RepeatedByte output = RepeatedByte.newEmptyInstance();
+        JsonSource.decodeBase64(input, output);
+        assertArrayEquals(new byte[]{1, 2}, output.toArray());
+        assertArrayEquals(new byte[]{'A', 'Q', 'I'}, input.toArray());
+    }
+
+    private byte[] decodeBase64(CharSequence input) throws InvalidJsonException {
+        RepeatedByte output = RepeatedByte.newEmptyInstance();
+        JsonSource.decodeBase64(input.toString(), output);
+        return output.toArray();
     }
 
 

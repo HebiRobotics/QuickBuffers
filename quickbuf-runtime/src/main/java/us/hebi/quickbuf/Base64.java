@@ -369,7 +369,7 @@ class Base64
      * @param sOff The starting position in the source array.
      * @param sLen The number of bytes to decode from the source array. Length 0 will return an empty array.
      * @return The decoded array of bytes. May be of length 0. Will be <code>null</code> if the legal characters
-     * (including '=') isn't divideable by 4. (I.e. definitely corrupted).
+     * (including '=') leave a remainder of 1 when divided by 4. (I.e. definitely corrupted).
      */
     public static byte[] decode(byte[] sArr, int sOff, int sLen)
     {
@@ -380,8 +380,8 @@ class Base64
             if (IA[sArr[sOff + i] & 0xff] < 0)
                 sepCnt++;
 
-        // Check so that legal chars (including '=') are evenly divideable by 4 as specified in RFC 2045.
-        if ((sLen - sepCnt) % 4 != 0)
+        // MODIFIED (ennerf): accept missing padding as allowed by proto3 json. A single remaining char can't encode a byte.
+        if ((sLen - sepCnt) % 4 == 1)
             return null;
 
         int pad = 0;
@@ -390,13 +390,16 @@ class Base64
                 pad++;
 
         int len = ((sLen - sepCnt) * 6 >> 3) - pad;
+        if (len < 0) // MODIFIED (ennerf): more padding than content
+            return null;
 
         byte[] dArr = new byte[len];       // Preallocate byte[] of exact length
 
         for (int s = 0, d = 0; d < len;) {
             // Assemble three bytes into an int from four "valid" characters.
             int i = 0;
-            for (int j = 0; j < 4; j++) {   // j only increased if a valid char was found.
+            // MODIFIED (ennerf): unpadded input ends within the last group
+            for (int j = 0; j < 4 && s < sLen; j++) {   // j only increased if a valid char was found.
                 int c = IA[sArr[sOff + s++] & 0xff];
                 if (c >= 0)
                     i |= c << (18 - j * 6);

@@ -39,6 +39,10 @@ public class InvalidJsonException extends InvalidProtocolBufferException {
                         "input has been truncated or that the input is invalid.");
     }
 
+    static InvalidJsonException invalidBase64() {
+        return new InvalidJsonException("Invalid base64 value.");
+    }
+
     static InvalidJsonException illegalNumberFormat() {
         return new InvalidJsonException("Illegal number format.");
     }
