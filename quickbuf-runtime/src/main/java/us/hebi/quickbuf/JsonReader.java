@@ -228,8 +228,8 @@ public final class JsonReader implements Closeable {
     // ==================== Values ====================
 
     /**
-     * Reads a string value and decodes escapes into the UTF-8 store. Raw
-     * UTF-8 content is copied as is without validation.
+     * Reads a string value and decodes escapes into the UTF-8 store. Invalid
+     * UTF-8 content is rejected like in the other string reads.
      */
     public void readString(Utf8String store) throws IOException {
         consume(PEEKED_STRING, "a string");
@@ -690,12 +690,13 @@ public final class JsonReader implements Closeable {
 
     private void readQuotedUtf8(RepeatedByte output) throws IOException {
         output.clear();
+        final boolean[] special = lenient ? IS_STRING_SPECIAL : IS_STRING_SPECIAL_OR_UTF8;
         while (true) {
             final byte[] buf = buffer;
             final int start = pos;
             final int end = limit;
             int i = start;
-            while (i < end && !IS_STRING_SPECIAL[buf[i] & 0xFF]) {
+            while (i < end && !special[buf[i] & 0xFF]) {
                 i++;
             }
             output.addAll(buf, start, i - start);
@@ -705,10 +706,12 @@ public final class JsonReader implements Closeable {
                 return;
             } else if (c == '\\') {
                 readEscapedUtf8(output);
-            } else if (c < 0x20 && !lenient) {
+            } else if (lenient || (c >= 0x20 && c < 0x80)) {
+                output.add((byte) c); // regular byte after a refill
+            } else if (c < 0x20) {
                 throw controlCharacter(c);
             } else {
-                output.add((byte) c); // regular byte after a refill
+                writeUtf8(output, readCodePoint(c));
             }
         }
     }
@@ -720,19 +723,22 @@ public final class JsonReader implements Closeable {
             return;
         }
         final int c = readHexChar();
-        if (c < 0x80) {
-            output.add((byte) c);
-        } else if (c < 0x800) {
+        writeUtf8(output, c < Character.MIN_SURROGATE || c > Character.MAX_SURROGATE ? c : readLowSurrogate(c));
+    }
+
+    private static void writeUtf8(RepeatedByte output, int codePoint) {
+        if (codePoint < 0x80) {
+            output.add((byte) codePoint);
+        } else if (codePoint < 0x800) {
             final int offset = output.addLength(2);
-            output.array[offset] = (byte) (0xC0 | (c >>> 6));
-            output.array[offset + 1] = (byte) (0x80 | (0x3F & c));
-        } else if (c < Character.MIN_SURROGATE || c > Character.MAX_SURROGATE) {
+            output.array[offset] = (byte) (0xC0 | (codePoint >>> 6));
+            output.array[offset + 1] = (byte) (0x80 | (0x3F & codePoint));
+        } else if (codePoint < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
             final int offset = output.addLength(3);
-            output.array[offset] = (byte) (0xE0 | (c >>> 12));
-            output.array[offset + 1] = (byte) (0x80 | (0x3F & (c >>> 6)));
-            output.array[offset + 2] = (byte) (0x80 | (0x3F & c));
+            output.array[offset] = (byte) (0xE0 | (codePoint >>> 12));
+            output.array[offset + 1] = (byte) (0x80 | (0x3F & (codePoint >>> 6)));
+            output.array[offset + 2] = (byte) (0x80 | (0x3F & codePoint));
         } else {
-            final int codePoint = readLowSurrogate(c);
             final int offset = output.addLength(4);
             output.array[offset] = (byte) (0xF0 | (codePoint >>> 18));
             output.array[offset + 1] = (byte) (0x80 | (0x3F & (codePoint >>> 12)));
@@ -779,27 +785,37 @@ public final class JsonReader implements Closeable {
                 } else {
                     throw controlCharacter(c);
                 }
-            } else if (c < 0xC2) {
-                throw invalidUtf8();
-            } else if (c < 0xE0) {
-                output.append((char) (((c & 0x1F) << 6) | readContinuationByte()));
-            } else if (c < 0xF0) {
-                c = ((c & 0x0F) << 12) | (readContinuationByte() << 6) | readContinuationByte();
-                if (c < 0x800 || (c >= Character.MIN_SURROGATE && c <= Character.MAX_SURROGATE)) {
-                    throw invalidUtf8();
-                }
+            } else if ((c = readCodePoint(c)) < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
                 output.append((char) c);
-            } else if (c < 0xF5) {
-                c = ((c & 0x07) << 18) | (readContinuationByte() << 12) | (readContinuationByte() << 6) | readContinuationByte();
-                if (c < Character.MIN_SUPPLEMENTARY_CODE_POINT || c > Character.MAX_CODE_POINT) {
-                    throw invalidUtf8();
-                }
+            } else {
                 output.append(Utf8.DecodeUtil.highSurrogate(c));
                 output.append(Utf8.DecodeUtil.lowSurrogate(c));
-            } else {
-                throw invalidUtf8();
             }
         }
+    }
+
+    /**
+     * Decodes a multi-byte sequence and rejects overlong encodings, surrogates, and code points above U+10FFFF
+     */
+    private int readCodePoint(int c) throws IOException {
+        if (c < 0xC2) {
+            throw invalidUtf8();
+        } else if (c < 0xE0) {
+            return ((c & 0x1F) << 6) | readContinuationByte();
+        } else if (c < 0xF0) {
+            c = ((c & 0x0F) << 12) | (readContinuationByte() << 6) | readContinuationByte();
+            if (c < 0x800 || (c >= Character.MIN_SURROGATE && c <= Character.MAX_SURROGATE)) {
+                throw invalidUtf8();
+            }
+            return c;
+        } else if (c < 0xF5) {
+            c = ((c & 0x07) << 18) | (readContinuationByte() << 12) | (readContinuationByte() << 6) | readContinuationByte();
+            if (c < Character.MIN_SUPPLEMENTARY_CODE_POINT || c > Character.MAX_CODE_POINT) {
+                throw invalidUtf8();
+            }
+            return c;
+        }
+        throw invalidUtf8();
     }
 
     private int readContinuationByte() throws IOException {
@@ -961,6 +977,7 @@ public final class JsonReader implements Closeable {
     private static final byte[] VALUE_TYPES = new byte[256];
     private static final boolean[] IS_DELIMITER = new boolean[256];
     private static final boolean[] IS_STRING_SPECIAL = new boolean[256];
+    private static final boolean[] IS_STRING_SPECIAL_OR_UTF8 = new boolean[256];
 
     static {
         Arrays.fill(VALUE_TYPES, (byte) PEEKED_UNQUOTED);
@@ -986,6 +1003,9 @@ public final class JsonReader implements Closeable {
         }
         IS_STRING_SPECIAL['"'] = true;
         IS_STRING_SPECIAL['\\'] = true;
+        for (int i = 0; i < 256; i++) {
+            IS_STRING_SPECIAL_OR_UTF8[i] = IS_STRING_SPECIAL[i] || i >= 0x80;
+        }
     }
 
     private final byte[] buffer;
@@ -995,8 +1015,9 @@ public final class JsonReader implements Closeable {
     private long bufferOffset;
 
     /**
-     * Accepts unescaped control characters and skips values without checking their
-     * contents, which JsonSource has always allowed and keeps allowing.
+     * Accepts unescaped control characters, copies raw bytes of strings read as UTF-8 without
+     * validation, and skips values without checking their contents, which JsonSource has
+     * always allowed and keeps allowing.
      */
     boolean lenient = false;
 

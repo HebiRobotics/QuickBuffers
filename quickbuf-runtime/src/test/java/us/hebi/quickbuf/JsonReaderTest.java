@@ -168,6 +168,45 @@ public class JsonReaderTest {
     }
 
     @Test
+    public void testInvalidUtf8() throws IOException {
+        byte[][] inputs = {
+                {'"', 'a', (byte) 0xE4, (byte) 0xB8, '"'},
+                {'"', (byte) 0x80, '"'},
+                {'"', (byte) 0xC0, (byte) 0x80, '"'},
+                {'"', (byte) 0xE0, (byte) 0x9F, (byte) 0xBF, '"'},
+                {'"', (byte) 0xED, (byte) 0xA0, (byte) 0x80, '"'},
+                {'"', (byte) 0xF0, (byte) 0x8F, (byte) 0xBF, (byte) 0xBF, '"'},
+                {'"', (byte) 0xF4, (byte) 0x90, (byte) 0x80, (byte) 0x80, '"'},
+                {'"', (byte) 0xF5, (byte) 0x80, (byte) 0x80, (byte) 0x80, '"'},
+                {'"', (byte) 0xFF, '"'},
+        };
+        for (byte[] input : inputs) {
+            String error = getError(() -> JsonReader.newInstance(input).readString());
+            assertTrue(error, error.startsWith("Invalid UTF-8 in string"));
+            assertEquals(error, getError(() -> JsonReader.newInstance(input).readString(Utf8String.newEmptyInstance())));
+            assertEquals(error, getError(() -> JsonReader.newInstance(new SlowInputStream(input, 1)).readString(Utf8String.newEmptyInstance())));
+
+            // lenient mode copies raw bytes like JsonSource always did
+            JsonReader reader = JsonReader.newInstance(input);
+            reader.lenient = true;
+            RepeatedByte raw = RepeatedByte.newEmptyInstance();
+            reader.readString(raw);
+            assertArrayEquals(Arrays.copyOfRange(input, 1, input.length - 1), raw.toArray());
+        }
+
+        String valid = new StringBuilder("a").appendCodePoint(0x7F).appendCodePoint(0x80).appendCodePoint(0x7FF).appendCodePoint(0x800)
+                .appendCodePoint(0xD7FF).appendCodePoint(0xE000).appendCodePoint(0xFFFF).appendCodePoint(0x10000).appendCodePoint(0x10FFFF).toString();
+        byte[] json = ("[\"" + valid + "\",\"" + valid + "\"]").getBytes(Charsets.UTF_8);
+        for (int maxChunk = 1; maxChunk <= 3; maxChunk++) {
+            JsonReader reader = JsonReader.newInstance(new SlowInputStream(json, maxChunk)).beginArray();
+            Utf8String utf8 = Utf8String.newEmptyInstance();
+            reader.readString(utf8);
+            assertEquals(valid, utf8.getString());
+            assertEquals(valid, reader.readString());
+        }
+    }
+
+    @Test
     public void testNumbers() throws IOException {
         assertEquals(Double.doubleToLongBits(-0.0), Double.doubleToLongBits(JsonReader.newInstance("-0").readDouble()));
         assertEquals(Float.floatToIntBits(-0f), Float.floatToIntBits(JsonReader.newInstance("-0.0").readFloat()));
