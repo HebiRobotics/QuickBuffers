@@ -48,6 +48,28 @@ public class JsonSinkTest {
     }
 
     @Test
+    public void testUnsignedIntegers() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance()
+                .setOptionalUint32(-1)
+                .setOptionalFixed32(Integer.MIN_VALUE)
+                .setOptionalUint64(-1L)
+                .setOptionalFixed64(Long.MIN_VALUE);
+        msg.getMutableRepeatedUint32().addAll(new int[]{0, -1});
+        msg.getMutableRepeatedFixed64().addAll(new long[]{1, Long.MIN_VALUE + 1});
+
+        String json = JsonSink.newInstance().writeMessage(msg).toString();
+        for (String expected : new String[]{
+                "\"optionalUint32\":4294967295",
+                "\"optionalFixed32\":2147483648",
+                "\"optionalUint64\":18446744073709551615",
+                "\"optionalFixed64\":9223372036854775808",
+                "\"repeatedUint32\":[0,4294967295]",
+                "\"repeatedFixed64\":[1,9223372036854775809]"}) {
+            assertTrue(json, json.contains(expected));
+        }
+    }
+
+    @Test
     public void testEnumNumbers() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.setOptionalNestedEnumValue(NestedEnum.BAR_VALUE);

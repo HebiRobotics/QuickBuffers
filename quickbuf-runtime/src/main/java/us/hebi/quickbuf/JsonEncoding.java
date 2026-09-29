@@ -282,6 +282,17 @@ class JsonEncoding {
             }
         }
 
+        public static void writeUnsignedLong(final long value, final RepeatedByte output) {
+            if (value >= 0) {
+                writeLong(value, output);
+            } else {
+                // write all but the last digit as a signed value
+                final long quotient = (value >>> 1) / 5;
+                writeLong(quotient, output);
+                output.add((byte) ('0' + (value - quotient * 10)));
+            }
+        }
+
         private static int writePositiveInt(final int q10, final byte[] buf, int pos) {
             final int q7, q4, q1; // highest N digits
             if ((q7 = q10 / pow3) == 0) {

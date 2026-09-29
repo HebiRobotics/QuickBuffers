@@ -122,6 +122,24 @@ public class JsonEncodingTest {
     }
 
     @Test
+    public void testUnsignedLongEncoding() throws Exception {
+        long[] values = new long[n + 5];
+        for (int i = 0; i < n; i++) {
+            values[i] = rnd.nextLong();
+        }
+        values[n] = -1;
+        values[n + 1] = Long.MIN_VALUE;
+        values[n + 2] = Long.MIN_VALUE + 1;
+        values[n + 3] = Long.MAX_VALUE;
+        values[n + 4] = 0;
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+        for (long value : values) {
+            NumberEncoding.writeUnsignedLong(value, bytes.clear());
+            assertEquals(Long.toUnsignedString(value), new String(bytes.toArray(), Charsets.ASCII));
+        }
+    }
+
+    @Test
     public void testLongDigits() throws Exception {
         long value = 0;
         for (int i = 0; i <= 19; i++) {
