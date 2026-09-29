@@ -72,6 +72,17 @@ public class JsonSourceTest {
 
     }
 
+    @Test(timeout = 5000)
+    public void testSkippingTruncatedInput() throws Exception {
+        for (String json : new String[]{"{\"unknown\":[1", "{\"unknown\":{\"a\":1"}) {
+            try {
+                ForeignMessage.newInstance().mergeFrom(newJsonSource(json).setIgnoreUnknownFields(true));
+                fail("expected to fail on truncated input: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
     @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);

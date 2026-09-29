@@ -581,6 +581,8 @@ public abstract class JsonSource implements Closeable {
                     case INT_RBRACKET:
                         level--;
                         break;
+                    case INT_EOF:
+                        throw InvalidJsonException.truncatedMessage();
                 }
             }
         }
@@ -599,6 +601,8 @@ public abstract class JsonSource implements Closeable {
                     case INT_RCURLY:
                         level--;
                         break;
+                    case INT_EOF:
+                        throw InvalidJsonException.truncatedMessage();
                 }
             }
         }
