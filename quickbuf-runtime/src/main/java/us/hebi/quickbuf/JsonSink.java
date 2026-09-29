@@ -21,15 +21,12 @@
 package us.hebi.quickbuf;
 
 import us.hebi.quickbuf.JsonEncoding.Base64Encoding;
-import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
 import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
-import us.hebi.quickbuf.JsonEncoding.StringEncoding;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Prints proto messages in a JSON compatible format
@@ -48,7 +45,7 @@ public abstract class JsonSink implements Closeable, Flushable {
      * should have an appropriate initial size and be reused.
      */
     public static JsonSink newInstance(RepeatedByte output) {
-        return new DefaultJsonSink().setOutput(output);
+        return new DefaultJsonSink(JsonWriter.newInstance(output));
     }
 
     /**
@@ -512,208 +509,133 @@ public abstract class JsonSink implements Closeable, Flushable {
     private RepeatedByte tmpBytes = null;
 
     /**
-     * Json output using a custom encoder that does not require
-     * any intermediate memory allocations.
+     * Maps protobuf messages onto the generic JsonWriter, which does
+     * not require any intermediate memory allocations.
      */
-    static class DefaultJsonSink extends JsonSink {
+    static final class DefaultJsonSink extends JsonSink {
+
+        DefaultJsonSink(JsonWriter writer) {
+            this.writer = writer;
+        }
 
         // ==================== Extra API ====================
 
         @Override
         public JsonSink setOutput(RepeatedByte output) {
-            if (output == null)
-                throw new NullPointerException();
-            this.output = output;
+            writer.setOutput(output);
             return this;
         }
 
         @Override
         public JsonSink clear() {
-            this.output.clear();
+            writer.clear();
             return this;
         }
 
         @Override
         public JsonSink setPrettyPrinting(boolean prettyPrinting) {
-            this.pretty = prettyPrinting;
+            writer.setPrettyPrinting(prettyPrinting);
             return this;
         }
 
         @Override
         public JsonSink reserve(int length) {
-            output.reserve(length);
+            writer.reserve(length);
             return this;
         }
 
         @Override
         public RepeatedByte getBytes() {
-            return output;
+            return writer.getBytes();
         }
 
         @Override
         public CharSequence getChars() {
-            return toString();
+            return writer.getChars();
         }
 
         @Override
         public String toString() {
-            return new String(output.array, 0, output.length, Charsets.UTF_8);
-        }
-
-        public JsonSink writeRepeatedMessage(RepeatedMessage<?> value) throws IOException {
-            super.writeRepeatedMessage(value);
-            removeTrailingComma();
-            return this;
+            return writer.toString();
         }
 
         // ==================== Encoding Implementations ====================
 
         @Override
         protected void writeFieldName(final FieldName name) {
-            removeTrailingSpace();
-            writeNewline();
-            final byte[] key = !preserveProtoFieldNames ? name.getJsonKeyBytes() : name.getProtoKeyBytes();
-            final int pos = output.addLength(key.length);
-            System.arraycopy(key, 0, output.array, pos, key.length);
-            writeSpaceBeforeValue();
+            writer.name(!preserveProtoFieldNames ? name.getJsonKeyBytes() : name.getProtoKeyBytes());
         }
 
         @Override
         protected void writeNumber(double value) {
-            floatEncoder.writeDouble(value, output);
-            writeMore();
+            writer.value(value);
         }
 
         @Override
         protected void writeNumber(float value) {
-            floatEncoder.writeFloat(value, output);
-            writeMore();
+            writer.value(value);
         }
 
         @Override
         protected void writeNumber(long value) {
-            NumberEncoding.writeLong(value, output);
-            writeMore();
+            writer.value(value);
         }
 
         @Override
         protected void writeNumber(int value) {
-            NumberEncoding.writeInt(value, output);
-            writeMore();
+            writer.value(value);
         }
 
         @Override
         protected void writeUnsignedNumber(long value) {
-            NumberEncoding.writeUnsignedLong(value, output);
-            writeMore();
+            writer.unsignedValue(value);
         }
 
         @Override
         protected void writeBoolean(boolean value) {
-            BooleanEncoding.writeBoolean(value, output);
-            writeMore();
+            writer.value(value);
         }
 
         @Override
         protected void writeString(Utf8String value) {
-            if (value.hasBytes()) {
-                StringEncoding.writeQuotedUtf8(value, output);
-            } else {
-                StringEncoding.writeQuotedUtf8(value.getString(), output);
-            }
-            writeMore();
+            writer.value(value);
         }
 
         @Override
         protected void writeString(CharSequence value) {
-            StringEncoding.writeQuotedUtf8(value, output);
-            writeMore();
+            writer.value(value);
         }
 
         @Override
         protected void writeBinary(RepeatedByte value) {
-            Base64Encoding.writeQuotedBase64(value.array, value.length, output);
-            writeMore();
+            writer.base64Value(value);
         }
 
         @Override
         public void writeMessageValue(ProtoMessage<?> value) throws IOException {
             value.writeTo(this);
-            writeMore();
         }
 
         @Override
         public JsonSink beginObject() {
-            writeChar('{');
-            indentLevel++;
-            trailingComma = 0;
-            trailingSpace = 0;
+            writer.beginObject();
             return this;
         }
 
         @Override
         public JsonSink endObject() {
-            removeTrailingComma();
-            indentLevel--;
-            writeNewline();
-            writeChar('}');
+            writer.endObject();
             return this;
         }
 
         @Override
         protected void beginArray() {
-            writeChar('[');
-            trailingComma = 0;
-            trailingSpace = 0;
+            writer.beginArray();
         }
 
         @Override
         protected void endArray() {
-            removeTrailingComma();
-            writeChar(']');
-            writeMore();
-        }
-
-        // ==================== Utilities ====================
-
-        private void writeMore() {
-            writeChar(',');
-            trailingComma = 1;
-            writeSpaceBeforeValue();
-        }
-
-        private void removeTrailingComma() {
-            // Called after at least one character, so no need to check bounds
-            output.length -= trailingSpace + trailingComma;
-            trailingSpace = 0;
-            trailingComma = 0;
-        }
-
-        private void removeTrailingSpace() {
-            output.length -= trailingSpace;
-            trailingSpace = 0;
-            trailingComma = 1;
-        }
-
-        private void writeSpaceBeforeValue() {
-            if (pretty) {
-                writeChar(' ');
-                trailingSpace = 1;
-            }
-        }
-
-        private void writeNewline() {
-            if (pretty) {
-                final int numSpaces = indentLevel * SPACES_PER_LEVEL;
-                int pos = output.addLength(numSpaces + 1);
-                output.array[pos++] = '\n';
-                Arrays.fill(output.array, pos, output.length, (byte) ' ');
-            }
-        }
-
-        private void writeChar(char c) {
-            final int pos = output.addLength(1);
-            output.array[pos] = (byte) c;
+            writer.endArray();
         }
 
         @Override
@@ -725,16 +647,7 @@ public abstract class JsonSink implements Closeable, Flushable {
         public void flush() {
         }
 
-        protected DefaultJsonSink() {
-        }
-
-        protected RepeatedByte output;
-        protected boolean pretty = false;
-        protected int indentLevel = 0;
-        protected int trailingComma = 0;
-        protected int trailingSpace = 0;
-        private static final int SPACES_PER_LEVEL = 2;
-        private final JsonEncoding.FloatEncoder floatEncoder = JsonEncoding.getFloatEncoder();
+        private final JsonWriter writer;
 
     }
 }
