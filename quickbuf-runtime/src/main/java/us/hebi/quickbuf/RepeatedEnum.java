@@ -91,8 +91,9 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
 
     @Override
     public void addAll(RepeatedEnum<E> values) {
-        int pos = addLength(values.length);
-        System.arraycopy(values.array, 0, array, pos, values.length);
+        final int count = values.length; // values may be this
+        final int pos = addLength(count);
+        System.arraycopy(values.array, 0, array, pos, count);
     }
 
     public int getValue(int index) {
