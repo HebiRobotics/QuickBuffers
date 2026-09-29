@@ -29,6 +29,8 @@ import us.hebi.quickbuf.JsonSourceTest;
 import java.io.IOException;
 import java.io.StringReader;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Florian Enner
  * @since 07 Sep 2020
@@ -49,6 +51,14 @@ public class JacksonSourceTest extends JsonSourceTest {
                 " at [Source: (StringReader); line: 1, column: 22]");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
+    }
+
+    @Test
+    public void testUnsignedIntegralDecimals() throws IOException {
+        // older versions read uint64 via getValueAsLong()
+        assertEquals(1, parseJson("{\"optionalUint64\":1.0}").getOptionalUint64());
+        assertEquals(1000, parseJson("{\"optionalUint64\":1e3}").getOptionalUint64());
+        assertEquals(1, parseJson("{\"optionalUint64\":\"1.0\"}").getOptionalUint64());
     }
 
     @Override

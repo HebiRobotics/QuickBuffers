@@ -153,10 +153,35 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testUnsignedIntegers() throws Exception {
+        TestAllTypes msg = parseJson("{" +
+                "\"optionalUint32\":4294967295," +
+                "\"optionalFixed32\":\"2147483648\"," +
+                "\"optionalUint64\":18446744073709551615," +
+                "\"optionalFixed64\":\"9223372036854775808\"," +
+                "\"repeatedUint32\":[0,4294967295]," +
+                "\"repeatedFixed64\":[1,\"9223372036854775809\"]}");
+        assertEquals(-1, msg.getOptionalUint32());
+        assertEquals(Integer.MIN_VALUE, msg.getOptionalFixed32());
+        assertEquals(-1L, msg.getOptionalUint64());
+        assertEquals(Long.MIN_VALUE, msg.getOptionalFixed64());
+        assertArrayEquals(new int[]{0, -1}, msg.getRepeatedUint32().toArray());
+        assertArrayEquals(new long[]{1, Long.MIN_VALUE + 1}, msg.getRepeatedFixed64().toArray());
+
+        // signed values written by older versions
+        msg = parseJson("{\"optionalUint32\":-1,\"optionalUint64\":-1}");
+        assertEquals(-1, msg.getOptionalUint32());
+        assertEquals(-1L, msg.getOptionalUint64());
+    }
+
+    @Test
     public void testIntegersOutOfRange() throws Exception {
         for (String json : new String[]{
                 "{\"optionalInt32\":2147483648}",
-                "{\"optionalInt32\":4294967297}"}) {
+                "{\"optionalInt32\":4294967297}",
+                "{\"optionalUint32\":4294967296}",
+                "{\"optionalUint32\":-2147483649}",
+                "{\"optionalUint64\":18446744073709551616}"}) {
             try {
                 parseJson(json);
                 fail("expected to fail on out of range value: " + json);

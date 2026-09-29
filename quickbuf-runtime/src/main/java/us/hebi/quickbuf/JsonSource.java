@@ -186,24 +186,25 @@ public abstract class JsonSource implements Closeable {
     }
 
     /**
-     * Read a {@code uint64} field value from the source.
+     * Read a {@code uint64} field value from the source. Negative values
+     * written by older versions represent the same bits.
      */
     public long readUInt64() throws IOException {
-        return this.readInt64(); // TODO: read unsigned 64
+        return this.readInt64(); // implementations should override to support values beyond Long.MAX_VALUE
     }
 
     /**
      * Read a {@code fixed64} field value from the source.
      */
     public long readFixed64() throws IOException {
-        return this.readInt64(); // TODO: read unsigned 64
+        return this.readUInt64();
     }
 
     /**
      * Read a {@code fixed32} field value from the source.
      */
     public int readFixed32() throws IOException {
-        return this.readInt32(); // TODO: read unsigned 32
+        return this.readUInt32();
     }
 
     /**
@@ -214,10 +215,15 @@ public abstract class JsonSource implements Closeable {
     }
 
     /**
-     * Read a {@code uint32} field value from the source.
+     * Read a {@code uint32} field value from the source. Negative values
+     * written by older versions represent the same bits.
      */
     public int readUInt32() throws IOException {
-        return this.readInt32(); // TODO: read unsigned 32
+        final long value = this.readInt64();
+        if (value < Integer.MIN_VALUE || value > 0xFFFFFFFFL) {
+            throw outOfRange("uint32", value);
+        }
+        return (int) value;
     }
 
     /**
@@ -249,7 +255,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedFixed64(final RepeatedLong value) throws IOException {
-        readRepeatedInt64(value); // TODO: read unsigned 64
+        readRepeatedUInt64(value);
     }
 
     public void readRepeatedSFixed64(final RepeatedLong value) throws IOException {
@@ -257,7 +263,11 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedUInt64(final RepeatedLong value) throws IOException {
-        readRepeatedInt64(value); // TODO: read unsigned 64
+        beginArray();
+        while (!isAtEnd()) {
+            value.add(readUInt64());
+        }
+        endArray();
     }
 
     public void readRepeatedSInt64(final RepeatedLong value) throws IOException {
@@ -265,7 +275,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedFixed32(final RepeatedInt value) throws IOException {
-        readRepeatedInt32(value); // TODO: read unsigned 32
+        readRepeatedUInt32(value);
     }
 
     public void readRepeatedSFixed32(final RepeatedInt value) throws IOException {
@@ -273,7 +283,11 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedUInt32(final RepeatedInt value) throws IOException {
-        readRepeatedInt32(value); // TODO: read unsigned 32
+        beginArray();
+        while (!isAtEnd()) {
+            value.add(readUInt32());
+        }
+        endArray();
     }
 
     public void readRepeatedSInt32(final RepeatedInt value) throws IOException {
@@ -428,6 +442,16 @@ public abstract class JsonSource implements Closeable {
         return new InvalidJsonException("Value out of range for " + type + ": " + value + atField);
     }
 
+    /** Parses the text of a {@code uint64} value, see {@link #readUInt64()}. */
+    protected long parseUInt64(String value) throws InvalidJsonException {
+        final byte[] bytes = value.getBytes(ASCII);
+        try {
+            return JsonDecoding.Numbers.readUnsignedLong(bytes, 0, bytes.length);
+        } catch (InvalidJsonException invalid) {
+            throw outOfRange("uint64", value);
+        }
+    }
+
     // Note: proto3 json accepts base64 with and without padding
     protected static void decodeBase64(String input, RepeatedByte output) throws InvalidJsonException {
         final byte[] bytes = input.getBytes(ISO_8859_1); // other chars become an ignored '?'
@@ -516,6 +540,12 @@ public abstract class JsonSource implements Closeable {
         public long readInt64() throws IOException {
             getValueAsBytes(buffer);
             return JsonDecoding.Numbers.readLong(buffer.array, 0, buffer.length);
+        }
+
+        @Override
+        public long readUInt64() throws IOException {
+            getValueAsBytes(buffer);
+            return JsonDecoding.Numbers.readUnsignedLong(buffer.array, 0, buffer.length);
         }
 
         @Override

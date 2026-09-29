@@ -77,6 +77,21 @@ public class GsonSource extends JsonSource {
     }
 
     @Override
+    public long readUInt64() throws IOException {
+        final String value = reader.nextString();
+        try {
+            return parseUInt64(value);
+        } catch (InvalidJsonException notUnsigned) {
+            // same as nextLong(), which also accepts integral decimals such as 1.0 or 1e3
+            final double asDouble = Double.parseDouble(value);
+            if ((long) asDouble != asDouble) {
+                throw notUnsigned;
+            }
+            return (long) asDouble;
+        }
+    }
+
+    @Override
     public boolean readBool() throws IOException {
         return reader.nextBoolean();
     }

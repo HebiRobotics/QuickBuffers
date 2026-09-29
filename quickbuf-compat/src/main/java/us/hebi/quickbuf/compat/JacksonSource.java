@@ -88,6 +88,16 @@ public class JacksonSource extends JsonSource {
     }
 
     @Override
+    public long readUInt64() throws IOException {
+        next();
+        try {
+            return parseUInt64(reader.getText());
+        } catch (InvalidJsonException notUnsigned) {
+            return reader.getValueAsLong(); // also accepts integral decimals such as 1.0 or 1e3
+        }
+    }
+
+    @Override
     public boolean readBool() throws IOException {
         next();
         return reader.getValueAsBoolean();

@@ -48,6 +48,14 @@ public class GsonSourceTest extends JsonSourceTest {
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
     }
 
+    @Test
+    public void testUnsignedIntegralDecimals() throws IOException {
+        // older versions read uint64 via nextLong()
+        assertEquals(1, parseJson("{\"optionalUint64\":1.0}").getOptionalUint64());
+        assertEquals(1000, parseJson("{\"optionalUint64\":1e3}").getOptionalUint64());
+        assertEquals(1, parseJson("{\"optionalUint64\":\"1.0\"}").getOptionalUint64());
+    }
+
     @Override
     public void testInvalidUnquotedValues() {
         // not run: Gson throws unchecked NumberFormatExceptions for invalid numbers

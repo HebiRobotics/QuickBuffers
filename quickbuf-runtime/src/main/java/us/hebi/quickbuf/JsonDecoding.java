@@ -334,6 +334,26 @@ class JsonDecoding {
             return Double.parseDouble(str);
         }
 
+        static long readUnsignedLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
+            if (tokenEnd <= tokenStart || buffer[tokenStart] == INT_MINUS) {
+                return readLong(buffer, tokenStart, tokenEnd);
+            }
+            int i = buffer[tokenStart] == INT_PLUS ? tokenStart + 1 : tokenStart;
+            if (i == tokenEnd) {
+                throw InvalidJsonException.illegalNumberFormat();
+            }
+            long result = 0;
+            for (; i < tokenEnd; i++) {
+                final int digit = (buffer[i] & 0xFF) - INT_0;
+                if (digit < 0 || digit > 9 || result < 0 || result > MAX_UINT64_DIV_10
+                        || (result == MAX_UINT64_DIV_10 && digit > MAX_UINT64_LAST_DIGIT)) {
+                    throw InvalidJsonException.illegalNumberFormat();
+                }
+                result = result * 10 + digit;
+            }
+            return result;
+        }
+
         static long readLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
             boolean negative = false;
             int i = 0;
@@ -401,6 +421,8 @@ class JsonDecoding {
                 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
                 1000000000, 10000000000L, 100000000000L, 1000000000000L,
                 10000000000000L, 100000000000000L, 1000000000000000L};
+        private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
+        private static final int MAX_UINT64_LAST_DIGIT = 5; // 18446744073709551615 % 10
 
         static {
             for (int i = 0; i < floatDigits.length; i++) {
