@@ -20,6 +20,9 @@
 
 package us.hebi.quickbuf;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 /**
  * @author Florian Enner
  * @since 09 Aug 2019
@@ -67,6 +70,18 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
             array[i].clearQuick();
         }
         length = 0;
+        return this;
+    }
+
+    /**
+     * Reorders the message instances in place without copying, so
+     * spare instances past the length stay put.
+     *
+     * @param comparator determines the order of the messages
+     * @return this
+     */
+    public final RepeatedMessage<MessageType> sort(Comparator<? super MessageType> comparator) {
+        Arrays.sort(array, 0, length, comparator);
         return this;
     }
 
