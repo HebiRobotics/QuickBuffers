@@ -23,6 +23,7 @@ package us.hebi.quickbuf;
 import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.ForeignMessage;
+import protos.test.quickbuf.LazyTypes.LazyMessage;
 import protos.test.quickbuf.TestAllTypes;
 
 import java.io.ByteArrayInputStream;
@@ -127,6 +128,15 @@ public class JsonSourceTest {
         }
         msg.clear().mergeFrom(source.setInput("{\"optionalInt32\":3}"));
         assertEquals(3, msg.getOptionalInt32());
+
+        source.setRecursionLimit(1);
+        try {
+            msg.clear().mergeFrom(source.setInput("{\"optionalNestedMessage\":{\"bb\":"));
+            fail("expected truncated input to fail");
+        } catch (IOException expected) {
+        }
+        msg.clear().mergeFrom(source.setInput("{\"optionalNestedMessage\":{\"bb\":4}}"));
+        assertEquals(4, msg.getOptionalNestedMessage().getBb());
     }
 
     @Test
@@ -295,6 +305,30 @@ public class JsonSourceTest {
         msg.getMutableRepeatedUint64().addAll(new long[]{0, -1L, Long.MIN_VALUE, Long.MAX_VALUE});
         msg.getMutableRepeatedFixed32().addAll(new int[]{0, -1, Integer.MIN_VALUE});
         testRoundTrip(msg);
+    }
+
+    @Test
+    public void testRecursionLimit() throws Exception {
+        LazyMessage msg = LazyMessage.newInstance();
+        LazyMessage nested = msg;
+        for (int i = 0; i < 32; i++) { // 64 levels of nested messages
+            nested = nested.getMutableOptionalNestedMessage().getMutableRecursiveMessage();
+        }
+        String json = JsonSink.newInstance().writeMessage(msg).toString();
+        assertEquals(msg, LazyMessage.newInstance().mergeFrom(newJsonSource(json)));
+
+        String deeper = "{\"optionalNestedMessage\":{\"recursiveMessage\":" + json + "}}";
+        try {
+            LazyMessage.newInstance().mergeFrom(newJsonSource(deeper));
+            fail("expected to fail above the recursion limit");
+        } catch (InvalidJsonException e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("setRecursionLimit"));
+        }
+
+        JsonSource source = newJsonSource(deeper);
+        assertEquals(64, source.setRecursionLimit(66));
+        assertEquals(66, source.setRecursionLimit(66));
+        LazyMessage.newInstance().mergeFrom(source);
     }
 
     @Test

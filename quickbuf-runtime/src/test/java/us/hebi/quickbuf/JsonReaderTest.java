@@ -134,6 +134,7 @@ public class JsonReaderTest {
         assertError("Exceeded the nesting limit of 3 at offset 15", reader::beginArray);
         assertError("Exceeded the nesting limit of 1 at offset 1", () -> JsonReader.newInstance("[[1]]").setNestingLimit(1).skipValue());
         assertError("Exceeded the nesting limit of 0 at offset 0", () -> JsonReader.newInstance("{}").setNestingLimit(0).beginObject());
+        assertError("Exceeded the nesting limit of 1000 at offset 1000", () -> JsonReader.newInstance(String.join("", Collections.nCopies(1001, "["))).skipValue());
     }
 
     @Test
@@ -177,7 +178,7 @@ public class JsonReaderTest {
         for (int i = 0; i < 100000; i++) {
             json.append(']');
         }
-        Object value = JsonReader.newInstance(json.toString()).readValue();
+        Object value = JsonReader.newInstance(json.toString()).setNestingLimit(Integer.MAX_VALUE).readValue();
         for (int i = 1; i < 100000; i++) {
             assertEquals(1, ((List<?>) value).size());
             value = ((List<?>) value).get(0);

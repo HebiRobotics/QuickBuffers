@@ -164,8 +164,8 @@ public final class JsonReader implements Closeable {
     }
 
     /**
-     * Limits how deeply objects and arrays may be nested, including inside skipped values. There
-     * is no limit by default.
+     * Limits how deeply objects and arrays may be nested, including inside skipped values. The
+     * default limit is 1000.
      */
     public JsonReader setNestingLimit(int limit) {
         if (limit < 0) {
@@ -1310,6 +1310,7 @@ public final class JsonReader implements Closeable {
     }
 
     private static final int STREAM_BUFFER_SIZE = 8 * 1024;
+    private static final int DEFAULT_NESTING_LIMIT = 1000;
     private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
     private static final int MAX_EXPONENT = 100000000; // saturates, as larger exponents round to zero or infinity anyway
 
@@ -1391,7 +1392,7 @@ public final class JsonReader implements Closeable {
     private long[] path = new long[16]; // per level: offset of the last name in objects, index in arrays
     private long nameOffset = -1; // offset of the name that is decoded in the name buffer
     private int depth = 0;
-    private int nestingLimit = Integer.MAX_VALUE;
+    private int nestingLimit = DEFAULT_NESTING_LIMIT;
 
     private final CharBuffer name = new CharBuffer();
     private final CharBuffer chars = new CharBuffer();
