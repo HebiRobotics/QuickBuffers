@@ -57,7 +57,7 @@ public class JsonEncodingTest {
         for (int i = 0; i < 100; i++) {
             byte[] expected = new byte[i];
             rnd.nextBytes(expected);
-            Base64Encoding.writeQuotedBase64(expected, expected.length, bytes.setLength(0));
+            Base64Encoding.writeQuotedBase64(expected, 0, expected.length, bytes.setLength(0));
             String result = new String(bytes.array, 1, bytes.length - 2, Charsets.UTF_8); // without quotes
             byte[] actual = java.util.Base64.getDecoder().decode(result); // IntelliJ complains, but works in Maven (test sources 8)
             assertArrayEquals(result, expected, actual);

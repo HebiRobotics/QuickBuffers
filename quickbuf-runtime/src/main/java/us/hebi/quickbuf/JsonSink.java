@@ -464,7 +464,7 @@ public abstract class JsonSink implements Closeable, Flushable {
             tmpBytes = RepeatedByte.newEmptyInstance();
         }
         tmpBytes.clear();
-        Base64Encoding.writeQuotedBase64(value.array, value.length, tmpBytes); // "<content>"
+        Base64Encoding.writeQuotedBase64(value.array, 0, value.length, tmpBytes); // "<content>"
         String str = new String(tmpBytes.array, 1, tmpBytes.length - 2, Charsets.ASCII); // <content>
         writeString(str);
     }
@@ -596,7 +596,7 @@ public abstract class JsonSink implements Closeable, Flushable {
 
         @Override
         protected void writeBinary(RepeatedByte value) {
-            Base64Encoding.writeQuotedBase64(value.array, value.length, output);
+            Base64Encoding.writeQuotedBase64(value.array, 0, value.length, output);
             writeMore();
         }
 

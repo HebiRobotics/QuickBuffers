@@ -44,7 +44,7 @@ class JsonEncoding {
         /**
          * RFC4648
          */
-        static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
+        static void writeQuotedBase64(final byte[] bytes, final int offset, final int length, RepeatedByte output) {
 
             // Size output buffer
             final int encodedLength = ((length + 2) / 3) << 2;
@@ -55,7 +55,8 @@ class JsonEncoding {
             // Encode 24-bit blocks
             int i;
             final int blockableLength = (length / 3) * 3;
-            for (i = 0; i < blockableLength; i += 3, pos += 4) {
+            final int blockableEnd = offset + blockableLength;
+            for (i = offset; i < blockableEnd; i += 3, pos += 4) {
                 // Copy next three bytes into lower 24 bits of int
                 final int bits = (bytes[i] & 0xff) << 16 | (bytes[i + 1] & 0xff) << 8 | (bytes[i + 2] & 0xff);
 
@@ -99,8 +100,10 @@ class JsonEncoding {
         }
 
         static void writeQuotedUtf8(Utf8String sequence, RepeatedByte output) {
-            final int numBytes = sequence.size();
-            final byte[] utf8 = sequence.bytes();
+            writeQuotedUtf8(sequence.bytes(), 0, sequence.size(), output);
+        }
+
+        static void writeQuotedUtf8(final byte[] utf8, final int start, final int numBytes, RepeatedByte output) {
             int i = 0;
 
             // Fast-path: no escape support
@@ -111,7 +114,7 @@ class JsonEncoding {
                 out[offset - 1] = '"';
 
                 for (; i < numBytes; i++) {
-                    final byte c = utf8[i];
+                    final byte c = utf8[start + i];
                     if (CAN_DIRECT_WRITE_UTF8[c & 0xFF]) {
                         out[offset + i] = c;
                     } else {
@@ -126,7 +129,7 @@ class JsonEncoding {
 
             // Slow-path: with escape support
             for (; i < numBytes; i++) {
-                final byte c = utf8[i];
+                final byte c = utf8[start + i];
                 if (CAN_DIRECT_WRITE_UTF8[c & 0xFF]) {
                     final int offset = output.addLength(1);
                     output.array[offset] = c;
