@@ -489,6 +489,15 @@ public abstract class JsonSource implements Closeable {
         return bytes;
     }
 
+    static void decodeBase64(byte[] input, int length, RepeatedByte output) throws InvalidJsonException {
+        final int decodedLength = Base64.decodedLength(input, 0, length);
+        if (decodedLength < 0) {
+            throw InvalidJsonException.invalidBase64();
+        }
+        final int offset = output.addLength(decodedLength);
+        Base64.decode(input, 0, length, output.array, offset, decodedLength);
+    }
+
     private static byte[] decodeBase64Unchecked(byte[] input, int length) {
         final byte[] bytes = Base64.decode(input, 0, length);
         if (bytes == null) {
@@ -586,7 +595,7 @@ public abstract class JsonSource implements Closeable {
         public void readBytes(RepeatedByte store) throws IOException {
             readEscapedString();
             store.clear();
-            store.addAll(decodeBase64(buffer.array, buffer.length));
+            decodeBase64(buffer.array, buffer.length, store);
         }
 
         @Override
