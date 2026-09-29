@@ -182,6 +182,23 @@ ProtoSink.newInstance(new ByteArrayOutputStream());
 ProtoSource.newInstance(new ByteArrayInputStream(bytes));
 ```
 
+A `RepeatedByte` output grows as needed, so the size does not need to be known up front. Together with the length delimited form it can hold a stream of multiple messages.
+
+```Java
+// Write multiple messages to a growing buffer
+RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+ProtoSink sink = ProtoSink.newInstance(bytes);
+for (RootMessage msg : messages) {
+    msg.writeDelimitedTo(sink);
+}
+
+// Read them back one at a time
+ProtoSource source = ProtoSource.newInstance(bytes);
+while (!source.isAtEnd()) {
+    result.clearQuick().mergeDelimitedFrom(source);
+}
+```
+
 Keep in mind that mutability comes at the cost of thread-safety, so contents should be cloned with `ProtoMessage::clone` or copied with `ProtoMessage::copyFrom` before being passed to another thread.
 
 **Direct Source/Sink**

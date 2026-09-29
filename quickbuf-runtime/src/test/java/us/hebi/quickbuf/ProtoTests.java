@@ -758,6 +758,26 @@ public class ProtoTests {
     }
 
     @Test
+    public void testDelimitedStreamInGrowingBuffer() throws IOException {
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+        ProtoSink sink = ProtoSink.newInstance(bytes);
+        for (int i = 0; i < 100; i++) {
+            TestAllTypes.newInstance().setOptionalInt32(i).setOptionalString("value " + i).writeDelimitedTo(sink);
+        }
+
+        ProtoSource source = ProtoSource.newInstance(bytes);
+        TestAllTypes result = TestAllTypes.newInstance();
+        int count = 0;
+        while (!source.isAtEnd()) {
+            result.clearQuick().mergeDelimitedFrom(source);
+            assertEquals(count, result.getOptionalInt32());
+            assertEquals("value " + count, result.getOptionalString());
+            count++;
+        }
+        assertEquals(100, count);
+    }
+
+    @Test
     public void testCollidingFieldNames() throws IOException {
         TestAllTypes expected = TestAllTypes.newInstance()
                 .setSerializedSize300(0)
