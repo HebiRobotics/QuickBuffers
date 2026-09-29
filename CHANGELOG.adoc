@@ -7,6 +7,7 @@
 * changed `JsonSource` errors to include the byte offset
 * changed `JsonSource` to accept a leading UTF-8 byte order mark
 * changed `JsonSource` to read input streams through a buffer, so it may read past the end of the root value
+* fixed `JsonSource` rounding float values twice, which was off by one bit in rare cases
 
 == 1.5 (unreleased)
 

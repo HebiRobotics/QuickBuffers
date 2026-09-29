@@ -496,6 +496,15 @@ public abstract class JsonSource implements Closeable {
         }
 
         @Override
+        public float readFloat() throws IOException {
+            readValueRange();
+            if (isValueNumber()) {
+                return reader.toFloat(reader.valueArray, reader.valueStart, reader.valueEnd);
+            }
+            return (float) JsonDecoding.Numbers.readDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
+        }
+
+        @Override
         public int readInt32() throws IOException {
             final long value = this.readInt64();
             if ((int) value != value) {

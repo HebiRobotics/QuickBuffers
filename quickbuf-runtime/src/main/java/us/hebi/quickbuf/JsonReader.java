@@ -53,9 +53,10 @@ import static us.hebi.quickbuf.ProtoUtil.*;
  * only at the real end of the input and whitespace separated root values can be read
  * one after another.
  * <p>
- * Nothing gets allocated in steady state except for {@link #readString()} and the number
- * parsing in {@link #readDouble()} and {@link #readFloat()}. Names and strings are read
- * into reused buffers, and input streams are read through a fixed internal buffer.
+ * Nothing gets allocated in steady state except for {@link #readString()} and rare numbers
+ * that fall back to the JDK parsers, e.g., with more than 19 significant digits. Names and
+ * strings are read into reused buffers, and input streams are read through an internal
+ * buffer that only grows for unquoted values that do not fit.
  *
  * @author Florian Enner
  * @since 29 Sep 2026
@@ -270,7 +271,7 @@ public final class JsonReader implements Closeable {
 
     public float readFloat() throws IOException {
         final int start = readNumber(false);
-        return Float.parseFloat(new String(buffer, start, pos - start, Charsets.ASCII));
+        return toFloat(buffer, start, pos);
     }
 
     /**
@@ -695,6 +696,19 @@ public final class JsonReader implements Closeable {
             }
         }
         return Double.parseDouble(new String(text, start, end - start, Charsets.ASCII));
+    }
+
+    /**
+     * Converts the last parsed number, or its text if it can not be converted exactly
+     */
+    float toFloat(byte[] text, int start, int end) {
+        if (numberDigits <= 19) {
+            final float value = JsonDecoding.Numbers.toFloat(numberNegative, numberMantissa, numberExponent);
+            if (!Float.isNaN(value)) {
+                return value;
+            }
+        }
+        return Float.parseFloat(new String(text, start, end - start, Charsets.ASCII));
     }
 
     /**

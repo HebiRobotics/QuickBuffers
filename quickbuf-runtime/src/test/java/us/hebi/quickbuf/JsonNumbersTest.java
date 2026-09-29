@@ -23,6 +23,8 @@ package us.hebi.quickbuf;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -101,6 +103,39 @@ public class JsonNumbersTest {
             }
             assertDouble(text.append('e').append(rnd.nextInt(141) - 70).toString());
         }
+    }
+
+    @Test
+    public void testFloats() throws IOException {
+        for (String text : new String[]{"0", "1", "0.1", "16777216", "16777217", "1e10", "1e11", "1.5e-10", "3.4028235e38",
+                "3.4028236e38", "3.40282357e38", "1e39", "1.17549435e-38", "1.1754942e-38", "1.4e-45", "7e-46", "7.1e-46", "1e-50",
+                "1.000000059604644775", "1.000000059604644776", "1.0000000596046447753", "0.30000000000000004", "123456789012345678901"}) {
+            assertFloat(text);
+            assertFloat("-" + text);
+        }
+
+        Random rnd = new Random(0);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 200000; i++) {
+            text.setLength(0);
+            if (i % 2 == 0) {
+                text.append(Float.intBitsToFloat(rnd.nextInt()));
+            } else {
+                // just above or below a float midpoint that the double sits on
+                float value = Float.intBitsToFloat(rnd.nextInt() & 0x7EFFFFFF);
+                double midpoint = ((double) value + (double) Math.nextUp(value)) / 2;
+                text.append(new BigDecimal(midpoint).round(new MathContext(19)));
+            }
+            if (!text.toString().contains("N") && !text.toString().contains("I")) {
+                assertFloat(text.toString());
+            }
+        }
+    }
+
+    private static void assertFloat(String text) throws IOException {
+        int expected = Float.floatToIntBits(Float.parseFloat(text));
+        assertEquals(text, expected, Float.floatToIntBits(JsonReader.newInstance(text).readFloat()));
+        assertEquals(text, expected, Float.floatToIntBits(newJsonSource(text).readFloat()));
     }
 
     private static void assertDoubles(double[] expected, byte[] json) throws IOException {

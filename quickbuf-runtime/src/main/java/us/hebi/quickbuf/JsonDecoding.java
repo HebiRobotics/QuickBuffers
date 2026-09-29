@@ -134,6 +134,26 @@ class JsonDecoding {
         }
 
         /**
+         * Converts w * 10^q with Clinger's fast path in float arithmetic, or by rounding the
+         * correctly rounded double, which is only wrong if it sits exactly between two floats.
+         *
+         * @param w unsigned mantissa with at most 19 digits
+         * @return NaN if the result may be off by double rounding
+         */
+        static float toFloat(boolean negative, long w, int q) {
+            if (w > 0 && w <= MAX_EXACT_FLOAT && q >= -10 && q <= 10) {
+                final float value = q < 0 ? w / EXACT_FLOAT_POW10[-q] : w * EXACT_FLOAT_POW10[q];
+                return negative ? -value : value;
+            }
+            final double value = toDouble(negative, w, q);
+            final long bits = Double.doubleToRawLongBits(value);
+            if ((bits & FLOAT_ROUNDING_BITS) == FLOAT_MIDPOINT || (value != 0 && Math.abs(value) < Float.MIN_NORMAL)) {
+                return Float.NaN; // float subnormals have fewer bits, so their midpoints differ
+            }
+            return (float) value;
+        }
+
+        /**
          * Eisel-Lemire as in fast_float's decimal_to_binary.h (Apache-2.0 / MIT, Copyright Daniel Lemire),
          * https://github.com/fastfloat/fast_float/blob/v8.0.2/include/fast_float/decimal_to_binary.h
          * The truncated 128 bit powers of five are always precise enough for 19 digits, see
@@ -327,6 +347,10 @@ class JsonDecoding {
         private static final double[] EXACT_POW10 = {
                 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
                 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
+        private static final long MAX_EXACT_FLOAT = 1L << 24;
+        private static final float[] EXACT_FLOAT_POW10 = {1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f};
+        private static final long FLOAT_ROUNDING_BITS = (1L << 29) - 1; // double bits below the float mantissa
+        private static final long FLOAT_MIDPOINT = 1L << 28;
         private static final int MIN_POW10 = -342; // 19 digits * 10^-343 round to zero
         private static final int MAX_POW10 = 308; // 1 * 10^309 rounds to infinity
         private static final long INFINITY_BITS = Double.doubleToRawLongBits(Double.POSITIVE_INFINITY);
