@@ -23,6 +23,7 @@ package us.hebi.quickbuf;
 import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.ForeignMessage;
+import protos.test.quickbuf.LazyTypes.LazyMessage;
 import protos.test.quickbuf.TestAllTypes;
 
 import java.io.IOException;
@@ -188,6 +189,30 @@ public class JsonSourceTest {
             } catch (IOException expected) {
             }
         }
+    }
+
+    @Test
+    public void testRecursionLimit() throws Exception {
+        LazyMessage msg = LazyMessage.newInstance();
+        LazyMessage nested = msg;
+        for (int i = 0; i < 32; i++) { // 64 levels of nested messages
+            nested = nested.getMutableOptionalNestedMessage().getMutableRecursiveMessage();
+        }
+        String json = JsonSink.newInstance().writeMessage(msg).toString();
+        assertEquals(msg, LazyMessage.newInstance().mergeFrom(newJsonSource(json)));
+
+        String deeper = "{\"optionalNestedMessage\":{\"recursiveMessage\":" + json + "}}";
+        try {
+            LazyMessage.newInstance().mergeFrom(newJsonSource(deeper));
+            fail("expected to fail above the recursion limit");
+        } catch (InvalidJsonException e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("setRecursionLimit"));
+        }
+
+        JsonSource source = newJsonSource(deeper);
+        assertEquals(64, source.setRecursionLimit(66));
+        assertEquals(66, source.setRecursionLimit(66));
+        LazyMessage.newInstance().mergeFrom(source);
     }
 
     @Test

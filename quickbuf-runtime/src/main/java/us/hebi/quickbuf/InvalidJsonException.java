@@ -39,6 +39,12 @@ public class InvalidJsonException extends InvalidProtocolBufferException {
                         "input has been truncated or that the input is invalid.");
     }
 
+    static InvalidJsonException recursionLimitExceeded() {
+        return new InvalidJsonException(
+                "JSON message had too many levels of nesting.  May be malicious.  " +
+                        "Use JsonSource.setRecursionLimit() to increase the depth limit.");
+    }
+
     static InvalidJsonException invalidBase64() {
         return new InvalidJsonException("Invalid base64 value.");
     }
