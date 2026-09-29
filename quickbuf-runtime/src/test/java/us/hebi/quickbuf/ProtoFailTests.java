@@ -536,6 +536,12 @@ public class ProtoFailTests {
         }
     }
 
+    @Test
+    public void testPackedLengthNotMultipleOfElementSize() throws IOException {
+        // packed repeated double field 42 with a length of 5 followed by a string field 14
+        assertInvalidForAllSources(new byte[]{(byte) 0xD2, 0x02, 0x05, 1, 2, 3, 4, 5, 0x72, 0x01, 0x61});
+    }
+
     private static void assertInvalidForAllSources(byte[] bytes) throws IOException {
         for (ProtoSource source : newSources(bytes)) {
             try {

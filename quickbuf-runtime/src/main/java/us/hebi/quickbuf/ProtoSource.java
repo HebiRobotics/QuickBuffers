@@ -1393,6 +1393,9 @@ public abstract class ProtoSource {
 
         @Override
         public byte readRawByte() throws IOException {
+            if (buffer.position() == currentLimit) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
             try {
                 return buffer.get();
             } catch (BufferUnderflowException truncated) {
@@ -1402,21 +1405,22 @@ public abstract class ProtoSource {
 
         @Override
         protected void requireRemaining(int numBytes) throws IOException {
-            if (numBytes > buffer.remaining()) {
+            if (numBytes < 0) {
+                throw InvalidProtocolBufferException.negativeSize();
+            } else if (numBytes > buffer.remaining() || numBytes > currentLimit - buffer.position()) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
         }
 
         @Override
         public void skipRawBytes(int size) throws IOException {
-            if (buffer.remaining() < size) {
-                throw InvalidProtocolBufferException.truncatedMessage();
-            }
+            requireRemaining(size);
             ((Buffer) buffer).position(buffer.position() + size);
         }
 
         @Override
         public void readRawBytes(byte[] values, int offset, int length) throws IOException {
+            requireRemaining(length);
             try {
                 buffer.get(values, offset, length);
             } catch (BufferUnderflowException truncated) {
