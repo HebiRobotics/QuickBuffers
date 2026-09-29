@@ -291,6 +291,31 @@ public class JsonReaderTest {
     }
 
     @Test
+    public void testNumbersAcrossRefills() throws IOException {
+        char[] zeros = new char[20000];
+        Arrays.fill(zeros, '0');
+        String longNumber = "1." + new String(zeros);
+        byte[] json = ("[12345678901234567890123,-0.000123e-5,9223372036854775807,-2147483648,0.5," + longNumber + "]").getBytes(Charsets.UTF_8);
+        List<String> expected = tokens(JsonReader.newInstance(json));
+        assertEquals("number:1.0", expected.get(expected.size() - 2));
+        for (int maxChunk = 1; maxChunk <= 3; maxChunk++) {
+            assertEquals(expected, tokens(JsonReader.newInstance(new SlowInputStream(json, maxChunk))));
+        }
+        assertEquals(expected, tokens(JsonReader.newInstance(new ByteArrayInputStream(json))));
+
+        JsonReader reader = JsonReader.newInstance(new SlowInputStream(json, 2)).beginArray();
+        reader.skipValue();
+        reader.skipValue();
+        assertEquals(Long.MAX_VALUE, reader.readLong());
+        assertEquals(Integer.MIN_VALUE, reader.readInt());
+
+        byte[] invalid = ("[" + longNumber + "x]").getBytes(Charsets.UTF_8);
+        String error = getError(() -> tokens(JsonReader.newInstance(invalid)));
+        assertEquals("Invalid number '" + longNumber + "x' at offset 1", error);
+        assertEquals(error, getError(() -> tokens(JsonReader.newInstance(new SlowInputStream(invalid, 3)))));
+    }
+
+    @Test
     public void testInvalidNumbers() throws IOException {
         assertError("Invalid number '01' at offset 1", () -> JsonReader.newInstance("[01]").beginArray().readDouble());
         assertError("Invalid number '01' at offset 1", () -> JsonReader.newInstance("[01]").skipValue());
@@ -301,6 +326,7 @@ public class JsonReaderTest {
         assertError("Invalid exponent in number '1e+' at offset 0", () -> JsonReader.newInstance("1e+").readDouble());
         assertError("Invalid number '1x' at offset 0", () -> JsonReader.newInstance("1x").readDouble());
         assertError("Invalid number '1d' at offset 0", () -> JsonReader.newInstance("1d").readFloat());
+        assertError("Invalid number '1\u00e9' at offset 0", () -> JsonReader.newInstance("1\u00e9").readDouble());
         assertError("Expected a number but got '.' at offset 0", () -> JsonReader.newInstance(".5").readDouble());
         assertError("Expected a value but got '+' at offset 0", () -> JsonReader.newInstance("+1").peek());
         assertError("Expected a number but got 'N' at offset 1", () -> JsonReader.newInstance("[NaN]").beginArray().readDouble());

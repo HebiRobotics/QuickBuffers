@@ -36,6 +36,7 @@ class JsonDecoding {
     static class IntChar {
 
         public final static int INT_0 = '0';
+        public final static int INT_9 = '9';
         public final static int INT_MINUS = '-';
         public final static int INT_PLUS = '+';
 
@@ -141,37 +142,11 @@ class JsonDecoding {
                 tokenStart++;
             }
             for (int i = tokenStart; i < tokenEnd; i++) {
-                if (buffer[i] < 0 || intDigits[buffer[i]] < 0) {
+                if (buffer[i] < INT_0 || buffer[i] > INT_9) {
                     return false;
                 }
             }
             return true;
-        }
-
-        final static int[] intDigits = new int[127];
-        final static int[] floatDigits = new int[127];
-        final static int END_OF_NUMBER = -2;
-        final static int DOT_IN_NUMBER = -3;
-        final static int INVALID_CHAR_FOR_NUMBER = -1;
-        static final long POW10[] = {
-                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-                1000000000, 10000000000L, 100000000000L, 1000000000000L,
-                10000000000000L, 100000000000000L, 1000000000000000L};
-
-        static {
-            for (int i = 0; i < floatDigits.length; i++) {
-                floatDigits[i] = INVALID_CHAR_FOR_NUMBER;
-                intDigits[i] = INVALID_CHAR_FOR_NUMBER;
-            }
-            for (int i = '0'; i <= '9'; ++i) {
-                floatDigits[i] = (i - '0');
-                intDigits[i] = (i - '0');
-            }
-            floatDigits[','] = END_OF_NUMBER;
-            floatDigits[']'] = END_OF_NUMBER;
-            floatDigits['}'] = END_OF_NUMBER;
-            floatDigits[' '] = END_OF_NUMBER;
-            floatDigits['.'] = DOT_IN_NUMBER;
         }
 
     }
