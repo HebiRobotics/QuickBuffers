@@ -14,8 +14,6 @@
 
     <properties>
         <javaModuleName>us.hebi.quickbuf.compat</javaModuleName>
-        <maven.compiler.source>6</maven.compiler.source>
-        <maven.compiler.target>6</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -120,19 +118,5 @@
 
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>jdk17compat</id>
-            <activation>
-                <jdk>(11,)</jdk>
-            </activation>
-            <properties>
-                <!-- increase language level for recent jdks to allow compiling. Release with 8 -->
-                <maven.compiler.source>8</maven.compiler.source>
-                <maven.compiler.target>8</maven.compiler.target>
-            </properties>
-        </profile>
-    </profiles>
 
 </project>
