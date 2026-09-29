@@ -22,7 +22,7 @@ package us.hebi.quickbuf;
 
 /**
  * @author Florian Enner
- * @since 18 Mär 2022
+ * @since 18 Mar 2022
  */
 public class InvalidJsonException extends InvalidProtocolBufferException {
 

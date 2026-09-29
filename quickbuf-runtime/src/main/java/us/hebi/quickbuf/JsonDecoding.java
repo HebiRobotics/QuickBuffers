@@ -35,7 +35,7 @@ import static us.hebi.quickbuf.ProtoUtil.*;
  * but a basic version is working.
  *
  * @author Florian Enner
- * @since 17 Mär 2022
+ * @since 17 Mar 2022
  */
 class JsonDecoding {
 

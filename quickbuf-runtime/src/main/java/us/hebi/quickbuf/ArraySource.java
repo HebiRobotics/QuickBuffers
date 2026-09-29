@@ -31,9 +31,9 @@ import static us.hebi.quickbuf.WireFormat.*;
  * Source that reads from a flat array
  *
  * @author Florian Enner
- * @since 06 Mär 2022
+ * @since 06 Mar 2022
  */
-class ArraySource extends ProtoSource{
+class ArraySource extends ProtoSource {
 
     private int bufferSizeAfterLimit;
     protected int offset;

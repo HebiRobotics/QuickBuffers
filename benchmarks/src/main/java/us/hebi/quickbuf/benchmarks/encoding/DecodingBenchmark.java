@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * DecodingBenchmark.skipRawVarint    thrpt   10  260,887 ± 3,749  ops/us
  *
  * @author Florian Enner
- * @since 07 Mär 2022
+ * @since 07 Mar 2022
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
