@@ -489,7 +489,12 @@ public abstract class JsonSource implements Closeable {
     }
 
     protected static void decodeBase64(RepeatedByte input, RepeatedByte output) throws InvalidJsonException {
-        output.addAll(decodeBase64(input.array, input.length));
+        final int length = Base64.decodedLength(input.array, 0, input.length);
+        if (length < 0) {
+            throw InvalidJsonException.invalidBase64();
+        }
+        final int offset = output.addLength(length);
+        Base64.decode(input.array, 0, input.length, output.array, offset, length);
     }
 
     static byte[] decodeBase64(byte[] input, int length) throws InvalidJsonException {

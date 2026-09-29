@@ -23,6 +23,7 @@ package us.hebi.quickbuf;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Random;
@@ -79,6 +80,12 @@ public class Base64Test {
     private byte[] decodeBase64(CharSequence input) throws InvalidJsonException {
         RepeatedByte output = RepeatedByte.newEmptyInstance();
         JsonSource.decodeBase64(input.toString(), output);
+
+        // decoding in place appends like the copying version
+        RepeatedByte inPlace = RepeatedByte.newEmptyInstance().addAll(new byte[]{7});
+        JsonSource.decodeBase64(RepeatedByte.newEmptyInstance().addAll(input.toString().getBytes(ProtoUtil.Charsets.ISO_8859_1)), inPlace);
+        assertEquals(7, inPlace.get(0));
+        assertArrayEquals(output.toArray(), Arrays.copyOfRange(inPlace.toArray(), 1, inPlace.length()));
         return output.toArray();
     }
 

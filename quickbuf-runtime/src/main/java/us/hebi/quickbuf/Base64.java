@@ -373,6 +373,18 @@ class Base64
      */
     public static byte[] decode(byte[] sArr, int sOff, int sLen)
     {
+        int len = decodedLength(sArr, sOff, sLen);
+        if (len < 0)
+            return null;
+        byte[] dArr = new byte[len];       // Preallocate byte[] of exact length
+        decode(sArr, sOff, sLen, dArr, 0, len);
+        return dArr;
+    }
+
+    // MODIFIED (ennerf): split into length and decoding, so bytes can be decoded into existing arrays
+    /** @return the number of decoded bytes, or -1 if the input is definitely corrupted */
+    static int decodedLength(byte[] sArr, int sOff, int sLen)
+    {
         // Count illegal characters (including '\r', '\n') to know what size the returned array will be,
         // so we don't have to reallocate & copy it later.
         int sepCnt = 0; // Number of separator characters. (Actually illegal characters, but that's a bonus...)
@@ -382,7 +394,7 @@ class Base64
 
         // MODIFIED (ennerf): accept missing padding as allowed by proto3 json. A single remaining char can't encode a byte.
         if ((sLen - sepCnt) % 4 == 1)
-            return null;
+            return -1;
 
         int pad = 0;
         for (int i = sLen; i > 1 && IA[sArr[sOff + --i] & 0xff] <= 0;)
@@ -390,12 +402,13 @@ class Base64
                 pad++;
 
         int len = ((sLen - sepCnt) * 6 >> 3) - pad;
-        if (len < 0) // MODIFIED (ennerf): more padding than content
-            return null;
+        return len < 0 ? -1 : len; // MODIFIED (ennerf): more padding than content
+    }
 
-        byte[] dArr = new byte[len];       // Preallocate byte[] of exact length
-
-        for (int s = 0, d = 0; d < len;) {
+    /** Decodes len bytes as determined by decodedLength into dArr at dOff */
+    static void decode(byte[] sArr, int sOff, int sLen, byte[] dArr, int dOff, int len)
+    {
+        for (int s = 0, d = dOff, end = dOff + len; d < end;) {
             // Assemble three bytes into an int from four "valid" characters.
             int i = 0;
             // MODIFIED (ennerf): unpadded input ends within the last group
@@ -409,14 +422,12 @@ class Base64
 
             // Add the bytes
             dArr[d++] = (byte) (i >> 16);
-            if (d < len) {
+            if (d < end) {
                 dArr[d++]= (byte) (i >> 8);
-                if (d < len)
+                if (d < end)
                     dArr[d++] = (byte) i;
             }
         }
-
-        return dArr;
     }
 
 
