@@ -1,5 +1,13 @@
 = QuickBuffers
 
+== Unreleased
+
+* added `JsonReader` and `JsonWriter` for reading and writing JSON without messages. `JsonSource` and `JsonSink` are now based on them
+* changed `JsonSource` to reject invalid JSON structure such as missing or trailing commas, missing colons or values, and mismatched brackets, including inside skipped unknown fields
+* changed `JsonSource` errors to include the byte offset
+* changed `JsonSource` to accept a leading UTF-8 byte order mark
+* changed `JsonSource` to read input streams through a buffer, so it may read past the end of the root value
+
 == 1.5 (unreleased)
 
 * raised the minimum Java version of the runtime from 6 to 8
