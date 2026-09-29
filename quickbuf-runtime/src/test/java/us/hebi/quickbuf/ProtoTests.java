@@ -490,6 +490,31 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedMessageShrinkingCopy() {
+        TestAllTypes[] values = new TestAllTypes[]{
+                TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),
+                TestAllTypes.newInstance().setOptionalInt32(3).setOptionalInt64(4)
+        };
+        RepeatedMessage<TestAllTypes> shorter = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        shorter.add(values[0]);
+
+        // reused elements past the new length must not keep old values
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        messages.addAll(values);
+        messages.copyFrom(shorter);
+        messages.clear();
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+
+        messages.clear();
+        messages.addAll(values);
+        messages.copyFrom(new TestAllTypes[]{values[0]});
+        messages.clear();
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+    }
+
+    @Test
     public void testBytes() throws IOException {
         byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];

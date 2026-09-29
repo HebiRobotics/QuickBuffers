@@ -72,18 +72,31 @@ abstract class RepeatedObject<SubType extends RepeatedObject<SubType, STORE, IN,
     }
 
     public final void copyFrom(IN[] buffer, int offset, int length) {
+        if (length < this.length) {
+            clearElementsFrom(length);
+        }
         this.length = 0;
         addAll(buffer, offset, length);
     }
 
     @Override
     public final void copyFrom(SubType other) {
+        if (other.length < length) {
+            clearElementsFrom(other.length);
+        }
         if (other.length > length) {
             extendCapacityTo(other.length);
         }
         length = other.length;
         for (int i = 0; i < length; i++) {
             copyFrom0(array[i], other.array[i]);
+        }
+    }
+
+    /** Elements past the length get reused by next(), so they need to be cleared when the length shrinks */
+    private void clearElementsFrom(int newLength) {
+        for (int i = newLength; i < length; i++) {
+            clearIndex0(i);
         }
     }
 
