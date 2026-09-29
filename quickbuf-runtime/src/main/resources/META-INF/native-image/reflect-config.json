@@ -1,9 +1,11 @@
 [
 {
+  "condition":{"typeReachable":"us.hebi.quickbuf.UnsafeAccess$BufferAccess"},
   "name":"java.nio.Buffer",
   "fields":[{"name":"address"}]
 },
 {
+  "condition":{"typeReachable":"us.hebi.quickbuf.UnsafeAccess$BufferAccess"},
   "name":"java.nio.ByteBuffer",
   "fields":[
     {"name":"hb"}, 
@@ -11,6 +13,7 @@
   ]
 },
 {
+  "condition":{"typeReachable":"us.hebi.quickbuf.UnsafeAccess"},
   "name":"sun.misc.Unsafe",
   "allDeclaredFields":true,
   "queriedMethods":[
