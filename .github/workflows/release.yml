@@ -28,36 +28,37 @@ on:
 jobs:
   native-plugins:
     strategy:
+      fail-fast: false # keep going to see whether a failure is platform specific
       matrix:
         include:
-          - runner: windows-2022
+          - runner: windows-2025
+            platform: windows-x86_64
             timeout: 15
-          - runner: macos-11
+          - runner: macos-15-intel
+            platform: osx-x86_64
             timeout: 15
-          - runner: macos-13-xlarge
+          - runner: macos-15
+            platform: osx-aarch_64
             timeout: 10
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04 # statically linked against musl
+            platform: linux-x86_64
             timeout: 15
-          - runner: [ self-hosted, linux-aarch64 ]
-            timeout: 40
-#        - runner: [ self-hosted, linux-amd64 ]
-#          timeout: 15
+          - runner: ubuntu-22.04-arm # dynamically linked against glibc 2.35
+            platform: linux-aarch_64
+            timeout: 15
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
-    continue-on-error: true # continue to check if an issue is limited to one platform
     steps:
-    - uses: actions/checkout@v3
-    - uses: stCarolas/setup-maven@v4.5
+    - uses: actions/checkout@v7
+    - uses: stCarolas/setup-maven@v5.1
       with:
-        maven-version: 3.9.1
+        maven-version: 3.9.11
     - uses: graalvm/setup-graalvm@v1
       with:
         distribution: 'graalvm'
-        version: 'latest'
-        java-version: '21'
-        set-java-home: 'true'
+        version: '25.4'
+        native-image-musl: ${{ matrix.platform == 'linux-x86_64' }}
         native-image-job-reports: 'true'
-        cache: '' # takes longer than building from scratch
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build native plugins # also builds dependencies to the output
@@ -67,9 +68,9 @@ jobs:
         mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am -P"makeNative,useNative" -DskipTests="${{ github.event.inputs.skipTests }}"
 
     - name: Upload native plugins
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
-        name: native-plugins
+        name: native-plugins-${{ matrix.platform }}
         path: "protoc-gen-*/target/*.exe"
         retention-days: 10
 
@@ -80,18 +81,18 @@ jobs:
     timeout-minutes: 30
     continue-on-error: false
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
     - name: Set up JDK
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v6
       with:
         distribution: zulu
         java-version: 8
-    - uses: stCarolas/setup-maven@v4.5
+    - uses: stCarolas/setup-maven@v5.1
       with:
-        maven-version: 3.9.1
+        maven-version: 3.9.11
 
     - name: Import GPG Key
-      uses: crazy-max/ghaction-import-gpg@v5.0.0
+      uses: crazy-max/ghaction-import-gpg@v7
       with:
         gpg_private_key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
@@ -100,9 +101,10 @@ jobs:
       run: mvn clean
 
     - name: Download pre-built native plugins
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v8
       with:
-        name: native-plugins
+        pattern: native-plugins-*
+        merge-multiple: true
         path: .
 
     - name: Test Native Plugins
@@ -135,24 +137,25 @@ jobs:
     continue-on-error: false
     if: ${{ github.event.inputs.makeConveyorSite == 'true' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: 8
           cache: maven
-      - uses: stCarolas/setup-maven@v4.5
+      - uses: stCarolas/setup-maven@v5.1
         with:
-          maven-version: 3.9.1
+          maven-version: 3.9.11
 
       - name: Clean Workspace
         run: mvn clean
 
       - name: Download pre-built native plugins
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v8
         with:
-          name: native-plugins
+          pattern: native-plugins-*
+          merge-multiple: true
           path: .
 
       - name: Test Native Plugins
@@ -189,7 +192,7 @@ jobs:
           extra_flags: -Kapp.revision="${{ github.event.inputs.conveyorRevision }}" -f conveyor-ci.conf
 
       - name: Upload site
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: conveyor
           path: output/*
