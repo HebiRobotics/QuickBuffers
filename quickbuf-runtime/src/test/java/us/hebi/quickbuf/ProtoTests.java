@@ -500,6 +500,14 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedEnumsAddSelf() {
+        RepeatedEnum<NestedEnum> enums = RepeatedEnum.newEmptyInstance(NestedEnum.converter());
+        enums.addAll(NestedEnum.FOO, NestedEnum.BAR);
+        enums.addAll(enums);
+        assertEquals("[1, 2, 1, 2]", enums.toString());
+    }
+
+    @Test
     public void testRepeatedMessageShrinkingCopy() {
         TestAllTypes[] values = new TestAllTypes[]{
                 TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),
