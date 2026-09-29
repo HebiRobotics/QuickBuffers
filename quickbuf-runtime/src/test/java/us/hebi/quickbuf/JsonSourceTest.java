@@ -113,6 +113,17 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testInvalidUnquotedValues() throws Exception {
+        for (String json : new String[]{"{\"optionalInt32\":1" + (char) 0xE9 + "}", "{\"optionalInt32\":12a}", "{\"optionalInt32\":"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on invalid input: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
         assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());
