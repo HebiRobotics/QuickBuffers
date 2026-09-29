@@ -25,6 +25,7 @@ import org.junit.Test;
 import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
@@ -80,6 +81,62 @@ public class JsonSourceTest {
                 fail("expected to fail on truncated input: " + json);
             } catch (IOException expected) {
             }
+        }
+    }
+
+    @Test
+    public void testInvalidStructure() {
+        assertStructureError("{\"optionalInt32\":1,}", "Trailing comma before '}' at offset 19");
+        assertStructureError("{\"repeatedInt32\":[1,]}", "Trailing comma before ']' at offset 20");
+        assertStructureError("{\"optionalInt32\":1 \"optionalInt64\":2}", "Expected ',' or '}' but got '\"' at offset 19");
+        assertStructureError("{\"optionalInt32\":}", "Expected a value but got '}' at offset 17");
+        assertStructureError("{\"optionalInt32\" 1}", "Expected ':' but got '1' at offset 17");
+        assertStructureError("{\"repeatedInt32\":[1}", "Expected ',' or ']' but got '}' at offset 19");
+    }
+
+    private static void assertStructureError(String json, String error) {
+        try {
+            TestAllTypes.parseFrom(JsonSource.newInstance(json));
+            fail("expected error: " + error);
+        } catch (IOException e) {
+            assertEquals(error, e.getMessage());
+        }
+    }
+
+    @Test
+    public void testSkippingInvalidUnknownFields() throws Exception {
+        String json = "{\"unknown\":{\"a\":[1,],\"b\":,\"c\" 2},\"unknown2\":[{],\"optionalInt32\":1}";
+        TestAllTypes msg = TestAllTypes.parseFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(true));
+        assertEquals(1, msg.getOptionalInt32());
+    }
+
+    @Test
+    public void testReuse() throws IOException {
+        JsonSource source = JsonSource.newInstance().setIgnoreUnknownFields(true);
+        TestAllTypes msg = TestAllTypes.newInstance();
+        msg.clear().mergeFrom(source.setInput("{\"optionalInt32\":1,\"unknown\":{}}"));
+        assertEquals(1, msg.getOptionalInt32());
+
+        msg.clear().mergeFrom(source.setInput(new ByteArrayInputStream("{\"optionalInt32\":2}".getBytes(ProtoUtil.Charsets.UTF_8))));
+        assertEquals(2, msg.getOptionalInt32());
+
+        try {
+            msg.clear().mergeFrom(source.setInput("{\"optionalInt32\":"));
+            fail("expected truncated input to fail");
+        } catch (IOException expected) {
+        }
+        msg.clear().mergeFrom(source.setInput("{\"optionalInt32\":3}"));
+        assertEquals(3, msg.getOptionalInt32());
+    }
+
+    @Test
+    public void testInvalidUtf8InNames() {
+        byte[] json = {'{', '"', (byte) 0x80, '"', ':', '1', '}'};
+        try {
+            TestAllTypes.parseFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(true));
+            fail("expected invalid utf-8 to fail");
+        } catch (IOException e) {
+            assertEquals("Invalid UTF-8 in string at offset 2", e.getMessage());
         }
     }
 
@@ -204,11 +261,11 @@ public class JsonSourceTest {
 
     @Test
     public void testBadInputs() {
-        testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n'");
-        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '['");
-        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes'");
-        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' for field 'repeatedForeignMessage'");
-        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' for field 'optionalBool'");
+        testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n' at offset 0");
+        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '[' at offset 0");
+        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes' at offset 19");
+        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' at offset 28");
+        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' at offset 17");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
     }

@@ -247,6 +247,11 @@ public final class JsonReader implements Closeable {
             skipQuoted();
             p = peekValueAfterName();
         }
+        if (lenient && (p == PEEKED_BEGIN_OBJECT || p == PEEKED_BEGIN_ARRAY)) {
+            skipBrackets(p == PEEKED_BEGIN_OBJECT ? '{' : '[', p == PEEKED_BEGIN_OBJECT ? '}' : ']');
+            peeked = PEEKED_NONE;
+            return;
+        }
         int level = 0;
         while (true) {
             switch (p) {
@@ -302,6 +307,14 @@ public final class JsonReader implements Closeable {
         consume(PEEKED_STRING, "a string");
         readQuotedUtf8(value);
         store.copyFromUtf8(value.array, 0, value.length);
+    }
+
+    /**
+     * Reads a string value and decodes escapes into the UTF-8 output
+     */
+    void readString(RepeatedByte output) throws IOException {
+        consume(PEEKED_STRING, "a string");
+        readQuotedUtf8(output);
     }
 
     /**
@@ -434,6 +447,10 @@ public final class JsonReader implements Closeable {
 
     // ==================== Hooks for JsonSource ====================
 
+    boolean isAtName(String expected) {
+        return name.contentEquals(expected);
+    }
+
     boolean isAtNull() throws IOException {
         return (peeked == PEEKED_NONE ? doPeek() : peeked) == PEEKED_NULL;
     }
@@ -458,6 +475,40 @@ public final class JsonReader implements Closeable {
             return true;
         }
         throw expected("a value", p);
+    }
+
+    /**
+     * Same as readValueBytes, but unquoted values within the buffer are not copied. The bytes
+     * are available as valueArray[valueStart, valueEnd) until the next read.
+     *
+     * @return false without consuming anything if the value is null
+     */
+    boolean readValueRange() throws IOException {
+        final int p = peeked == PEEKED_NONE ? doPeek() : peeked;
+        if (p >= PEEKED_NUMBER && p <= PEEKED_UNQUOTED && p != PEEKED_NULL) {
+            final byte[] buf = buffer;
+            final int start = pos;
+            final int end = limit;
+            int i = start;
+            while (i < end && !IS_DELIMITER[buf[i] & 0xFF]) {
+                i++;
+            }
+            if (i < end || input == null) {
+                peeked = PEEKED_NONE;
+                pos = i;
+                valueArray = buf;
+                valueStart = start;
+                valueEnd = i;
+                return true;
+            }
+        }
+        if (!readValueBytes(value)) {
+            return false;
+        }
+        valueArray = value.array;
+        valueStart = 0;
+        valueEnd = value.length;
+        return true;
     }
 
     // ==================== Implementation ====================
@@ -637,7 +688,9 @@ public final class JsonReader implements Closeable {
     }
 
     private void skipUnquoted(int peeked) throws IOException {
-        if (peeked == PEEKED_NUMBER) {
+        if (lenient) {
+            readUnquotedBytes(value);
+        } else if (peeked == PEEKED_NUMBER) {
             readNumberBytes(value);
         } else if (peeked == PEEKED_BOOLEAN) {
             readLiteral(buffer[pos] == 't' ? TRUE : FALSE);
@@ -727,7 +780,7 @@ public final class JsonReader implements Closeable {
             final int c = readByte();
             if (c == '"') {
                 return;
-            } else if (c < 0x20) {
+            } else if (c < 0x20 && !lenient) {
                 throw controlCharacter(c);
             }
             output.add((byte) c);
@@ -754,7 +807,7 @@ public final class JsonReader implements Closeable {
                 return;
             } else if (c == '\\') {
                 readEscapedUtf8(output);
-            } else if (c < 0x20) {
+            } else if (c < 0x20 && !lenient) {
                 throw controlCharacter(c);
             } else {
                 output.add((byte) c); // regular byte after a refill
@@ -828,6 +881,8 @@ public final class JsonReader implements Closeable {
                         output.append(Utf8.DecodeUtil.highSurrogate(c));
                         output.append(Utf8.DecodeUtil.lowSurrogate(c));
                     }
+                } else if (lenient) {
+                    output.append((char) c);
                 } else {
                     throw controlCharacter(c);
                 }
@@ -869,13 +924,33 @@ public final class JsonReader implements Closeable {
                 return;
             } else if (c == '\\') {
                 final int escaped = readByte();
-                if (escaped == 'u') {
+                if (lenient) {
+                    continue;
+                } else if (escaped == 'u') {
                     readHexChar();
                 } else {
                     unescape(escaped);
                 }
-            } else if (c < 0x20) {
+            } else if (c < 0x20 && !lenient) {
                 throw controlCharacter(c);
+            }
+        }
+    }
+
+    /**
+     * Skips a container by only counting its own brackets outside of strings, as JsonSource
+     * did before the reader existed
+     */
+    private void skipBrackets(int open, int close) throws IOException {
+        int level = 1;
+        while (level != 0) {
+            final int c = readByte();
+            if (c == '"') {
+                skipQuoted();
+            } else if (c == open) {
+                level++;
+            } else if (c == close) {
+                level--;
             }
         }
     }
@@ -1034,6 +1109,12 @@ public final class JsonReader implements Closeable {
     private int limit;
     private long bufferOffset;
 
+    /**
+     * Accepts unescaped control characters and skips values without checking their
+     * contents, which JsonSource has always allowed and keeps allowing.
+     */
+    boolean lenient = false;
+
     private int peeked = PEEKED_NONE;
     private int scope = SCOPE_EMPTY_DOCUMENT;
     private int[] stack = new int[16];
@@ -1044,13 +1125,20 @@ public final class JsonReader implements Closeable {
     private final CharBuffer chars = new CharBuffer();
     private final RepeatedByte value = RepeatedByte.newEmptyInstance();
 
+    // range of the last readValueRange
+    byte[] valueArray;
+    int valueStart;
+    int valueEnd;
+
     /**
-     * Reused buffer for decoded strings that is cheaper to append to than a StringBuilder
+     * Reused buffer for decoded strings that also computes the String hash code,
+     * so hashing names for field lookups does not need a second pass.
      */
     static final class CharBuffer implements CharSequence {
 
         CharBuffer clear() {
             length = 0;
+            hash = 0;
             return this;
         }
 
@@ -1059,6 +1147,26 @@ public final class JsonReader implements Closeable {
                 array = Arrays.copyOf(array, length * 2);
             }
             array[length++] = c;
+            hash = 31 * hash + c;
+        }
+
+        /**
+         * @return the same value as String::hashCode
+         */
+        int hash() {
+            return hash;
+        }
+
+        boolean contentEquals(String other) {
+            if (other.length() != length) {
+                return false;
+            }
+            for (int i = 0; i < length; i++) {
+                if (array[i] != other.charAt(i)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         @Override
@@ -1086,6 +1194,7 @@ public final class JsonReader implements Closeable {
 
         char[] array = new char[16];
         int length = 0;
+        int hash = 0;
 
     }
 

@@ -20,14 +20,10 @@
 
 package us.hebi.quickbuf;
 
-import us.hebi.quickbuf.JsonDecoding.JsonLexer;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
-import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
 import static us.hebi.quickbuf.ProtoUtil.*;
 import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
 
@@ -41,20 +37,31 @@ import static us.hebi.quickbuf.ProtoUtil.Charsets.*;
  */
 public abstract class JsonSource implements Closeable {
 
+    /**
+     * Creates a source without input that can be reused via the setInput methods
+     */
+    public static JsonSource newInstance() {
+        return new DefaultJsonSource(JsonReader.newInstance());
+    }
+
     public static JsonSource newInstance(byte[] bytes) {
         return newInstance(bytes, 0, bytes.length);
     }
 
     public static JsonSource newInstance(byte[] bytes, int offset, int length) {
-        return new ArraySource(bytes, offset, length);
+        return new DefaultJsonSource(JsonReader.newInstance(bytes, offset, length));
     }
 
     public static JsonSource newInstance(RepeatedByte bytes) {
         return newInstance(bytes.array, 0, bytes.length);
     }
 
+    /**
+     * Reads from the stream through an internal buffer, so the stream may
+     * be read ahead past the end of the root value.
+     */
     public static JsonSource newInstance(InputStream inputStream) {
-        return new InputStreamSource(inputStream);
+        return new DefaultJsonSource(JsonReader.newInstance(inputStream));
     }
 
     public static JsonSource newInstance(String string) {
@@ -90,6 +97,34 @@ public abstract class JsonSource implements Closeable {
     public JsonSource setIgnoreUnknownFields(final boolean ignoreUnknownFields) {
         this.ignoreUnknownFields = ignoreUnknownFields;
         return this;
+    }
+
+    /**
+     * Changes the input and resets the state, so the source can be reused without
+     * allocations. Settings and internal buffers are kept.
+     */
+    public final JsonSource setInput(byte[] bytes) {
+        return setInput(bytes, 0, bytes.length);
+    }
+
+    public JsonSource setInput(byte[] bytes, int offset, int length) {
+        throw new UnsupportedOperationException("JsonSource does not support changing the input");
+    }
+
+    public final JsonSource setInput(RepeatedByte bytes) {
+        return setInput(bytes.array, 0, bytes.length);
+    }
+
+    public final JsonSource setInput(String string) {
+        return setInput(string.getBytes(UTF_8));
+    }
+
+    /**
+     * Reads from the stream through an internal buffer, so the stream may
+     * be read ahead past the end of the root value.
+     */
+    public JsonSource setInput(InputStream inputStream) {
+        throw new UnsupportedOperationException("JsonSource does not support changing the input");
     }
 
     protected boolean ignoreUnknownFields = false;
@@ -400,6 +435,9 @@ public abstract class JsonSource implements Closeable {
 
     public final int readFieldHash() throws IOException {
         currentField = readFieldName();
+        if (currentField instanceof JsonReader.CharBuffer) {
+            return ((JsonReader.CharBuffer) currentField).hash(); // computed while decoding
+        }
         return ProtoUtil.hash32(currentField);
     }
 
@@ -460,60 +498,35 @@ public abstract class JsonSource implements Closeable {
     }
 
 
-    static class ArraySource extends DefaultJsonSource {
+    /**
+     * Maps protobuf messages onto a lenient JsonReader. Scalars are read as raw bytes because
+     * the protobuf mapping also accepts quoted numbers and the strings NaN, Infinity and -Infinity.
+     */
+    static final class DefaultJsonSource extends JsonSource {
 
-        ArraySource(byte[] bytes, int offset, int length) {
-            ProtoUtil.checkBounds(bytes, offset, length);
-            this.bytes = bytes;
-            this.position = offset;
-            this.limit = offset + length;
+        DefaultJsonSource(JsonReader reader) {
+            this.reader = reader;
+            this.reader.lenient = true;
         }
 
         @Override
-        public int readRawByte() {
-            if (position == limit) {
-                return -1;
-            }
-            return bytes[position++] & 0xFF;
-        }
-
-        int position = 0;
-        final int limit;
-        final byte[] bytes;
-
-        @Override
-        public void close() throws IOException {
-        }
-
-    }
-
-
-    static class InputStreamSource extends DefaultJsonSource {
-
-        InputStreamSource(InputStream inputStream) {
-            this.inputStream = checkNotNull(inputStream);
+        public JsonSource setInput(byte[] bytes, int offset, int length) {
+            reader.setInput(bytes, offset, length);
+            currentField = null;
+            return this;
         }
 
         @Override
-        public int readRawByte() throws IOException {
-            return inputStream.read();
+        public JsonSource setInput(InputStream inputStream) {
+            reader.setInput(inputStream);
+            currentField = null;
+            return this;
         }
-
-        @Override
-        public void close() throws IOException {
-            inputStream.close();
-        }
-
-        final InputStream inputStream;
-
-    }
-
-    abstract static class DefaultJsonSource extends JsonSource implements JsonLexer {
 
         @Override
         public double readDouble() throws IOException {
-            getValueAsBytes(buffer);
-            return JsonDecoding.Numbers.readDouble(buffer.array, 0, buffer.length);
+            readValueRange();
+            return JsonDecoding.Numbers.readDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
         }
 
         @Override
@@ -527,28 +540,18 @@ public abstract class JsonSource implements Closeable {
 
         @Override
         public long readInt64() throws IOException {
-            getValueAsBytes(buffer);
-            return JsonDecoding.Numbers.readLong(buffer.array, 0, buffer.length);
+            readValueRange();
+            return JsonDecoding.Numbers.readLong(reader.valueArray, reader.valueStart, reader.valueEnd);
         }
 
         @Override
         public boolean readBool() throws IOException {
-            if (token == INT_t) {
-                readExpectedBytes(TRUE_VALUE);
-                readNextToken();
-                return true;
-            } else if (token == INT_f) {
-                readExpectedBytes(FALSE_VALUE);
-                readNextToken();
-                return false;
-            } else {
-                throw new InvalidJsonException("Unsupported boolean value");
-            }
+            return reader.readBoolean();
         }
 
         @Override
         public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
-            getValueAsBytes(buffer);
+            readValueBytes();
             if (JsonDecoding.Numbers.isInteger(buffer.array, 0, buffer.length)) {
                 return converter.forNumber((int) JsonDecoding.Numbers.readLong(buffer.array, 0, buffer.length));
             } else {
@@ -559,261 +562,104 @@ public abstract class JsonSource implements Closeable {
         @Override
         public void readString(Utf8String store) throws IOException {
             checkNotAtNull();
-            checkCurrentToken(INT_QUOTE);
-            JsonDecoding.StringDecoding.readQuotedUtf8(this, buffer);
-            store.copyFromUtf8(buffer.array, 0, buffer.length);
-            token = readNextToken();
+            reader.readString(store);
         }
 
         @Override
         public void readBytes(RepeatedByte store) throws IOException {
-            readUnescapedString(buffer);
+            readEscapedString();
             store.clear();
             store.addAll(decodeBase64(buffer.array, buffer.length));
         }
 
         @Override
         public ProtoSource readBytesAsSource() throws IOException {
-            readUnescapedString(buffer);
+            readEscapedString();
             return ProtoSource.newInstance(decodeBase64(buffer.array, buffer.length));
-        }
-
-        private void readUnescapedString(RepeatedByte buffer) throws IOException {
-            checkNotAtNull();
-            checkCurrentToken(INT_QUOTE);
-            JsonDecoding.StringDecoding.readQuotedUtf8(this, buffer);
-            token = readNextToken();
         }
 
         @Override
         public void skipValue() throws IOException {
-            switch (token) {
-                case INT_n:
-                    readExpectedBytes(NULL_VALUE);
-                    token = readNextToken();
-                    break;
-                case INT_QUOTE:
-                    skipString();
-                    token = readNextToken();
-                    break;
-                case INT_LBRACKET:
-                    skipArray();
-                    token = readNextToken();
-                    break;
-                case INT_LCURLY:
-                    skipObject();
-                    token = readNextToken();
-                    break;
-                default:
-                    token = readValueBytes(buffer, token);
-                    break;
-            }
-        }
-
-        private void skipArray() throws IOException {
-            checkCurrentToken(INT_LBRACKET);
-            int level = 1;
-            while (level != 0) {
-                switch (readNextToken()) {
-                    case INT_QUOTE:
-                        skipString();
-                        break;
-                    case INT_LBRACKET:
-                        level++;
-                        break;
-                    case INT_RBRACKET:
-                        level--;
-                        break;
-                    case INT_EOF:
-                        throw InvalidJsonException.truncatedMessage();
-                }
-            }
-        }
-
-        private void skipObject() throws IOException {
-            checkCurrentToken(INT_LCURLY);
-            int level = 1;
-            while (level != 0) {
-                switch (readNextToken()) {
-                    case INT_QUOTE:
-                        readStringBytes(buffer);
-                        break;
-                    case INT_LCURLY:
-                        level++;
-                        break;
-                    case INT_RCURLY:
-                        level--;
-                        break;
-                    case INT_EOF:
-                        throw InvalidJsonException.truncatedMessage();
-                }
-            }
+            reader.skipValue();
         }
 
         @Override
         public boolean beginObject() throws IOException {
-            // initialize on first call
-            if (token == INT_UNINITIALIZED) {
-                token = readNextToken();
-            }
-            checkCurrentToken(INT_LCURLY);
-            token = readNextToken();
+            reader.beginObject();
             return true;
         }
 
         @Override
         public void endObject() throws IOException {
-            checkCurrentToken(INT_RCURLY);
-            token = readNextToken();
+            reader.endObject();
         }
 
         @Override
         public void beginArray() throws IOException {
-            // in case we haven't read the first token yet
-            if (token == INT_UNINITIALIZED) {
-                token = readNextToken();
-            }
-            checkCurrentToken(INT_LBRACKET);
-            token = readNextToken();
+            reader.beginArray();
         }
 
         @Override
         public void endArray() throws IOException {
-            checkCurrentToken(INT_RBRACKET);
-            token = readNextToken();
+            reader.endArray();
         }
 
         @Override
         public boolean isAtEnd() throws IOException {
-            if (token == INT_COMMA) {
-                token = readNextToken();
-                return false;
-            }
-            return token == INT_RCURLY || token == INT_RBRACKET || token == INT_EOF;
+            return !reader.hasNext();
         }
 
         @Override
-        protected boolean isAtNull() {
-            return token == INT_n;
+        public boolean isAtField(FieldName fieldName) {
+            return reader.isAtName(fieldName.getJsonName()) || reader.isAtName(fieldName.getProtoName());
+        }
+
+        @Override
+        protected boolean isAtNull() throws IOException {
+            return reader.isAtNull();
         }
 
         @Override
         protected CharSequence readFieldName() throws IOException {
-            checkJson(token == INT_QUOTE, "Expected key quotes");
-            JsonDecoding.StringDecoding.readQuotedUtf8(this, key);
-            checkJson(readNextToken() == INT_COLON, "Expected colon after key name");
-            readNextToken();
-            return key;
-        }
-
-        private void getValueAsBytes(RepeatedByte buffer) throws IOException {
-            checkNotAtNull();
-            if (token == INT_QUOTE) {
-                readStringBytes(buffer);
-                token = readNextToken();
-            } else {
-                token = readValueBytes(buffer, token);
-            }
-        }
-
-        private int readValueBytes(RepeatedByte buffer, int ch) throws IOException {
-            buffer.clear();
-            while (!isBreak(ch)) {
-                buffer.add((byte) ch);
-                ch = readByte();
-            }
-            if (isWhitespace(ch)) {
-                ch = readNextToken();
-            }
-            return token = ch;
-        }
-
-        private void readStringBytes(RepeatedByte buffer) throws IOException {
-            checkNotAtNull();
-            buffer.clear();
-            for (int ch = readByte(); ch != INT_QUOTE; ch = readByte()) {
-                buffer.add((byte) ch);
-                if (ch == INT_BACKSLASH) {
-                    buffer.add((byte) readByte()); // handle escaped quotes
-                }
-            }
-        }
-
-        public void skipString() throws IOException {
-            for (int ch = readByte(); ch != INT_QUOTE; ch = readByte()) {
-                if (ch == INT_BACKSLASH) {
-                    readByte(); // handle escaped quotes
-                }
-            }
-        }
-
-        protected static void checkJson(boolean condition, String error) throws InvalidJsonException {
-            if (!condition) {
-                throw new InvalidJsonException(error);
-            }
-        }
-
-        protected void checkNotAtNull() throws InvalidJsonException {
-            if (isAtNull()) {
-                String atField = (currentField == null ? "" : " for field '" + currentField + "'");
-                throw new InvalidJsonException("Expected non-null value" + atField);
-            }
-        }
-
-        protected void checkExpected(boolean condition, String expected, String actual) throws InvalidJsonException {
-            if (!condition) {
-                String atField = (currentField == null ? "" : " for field '" + currentField + "'");
-                throw new InvalidJsonException("Expected '" + expected + "' but got '" + actual + "'" + atField);
-            }
-        }
-
-        protected void checkCurrentToken(int expectedToken) throws InvalidJsonException {
-            if (expectedToken != token) {
-                String atField = (currentField == null ? "" : " for field '" + currentField + "'");
-                throw new InvalidJsonException("Expected '" + ((char) expectedToken) + "' but got '" + ((char) token) + "'" + atField);
-            }
-        }
-
-        protected void readExpectedBytes(int[] expected) throws IOException {
-            for (int i = 1; i < expected.length; i++) {
-                int ch = readByte();
-                if (expected[i] != ch) {
-                    int[] actual = Arrays.copyOfRange(expected, 0, i + 1);
-                    actual[i] = ch;
-                    checkExpected(false, toCharString(expected), toCharString(actual));
-                }
-            }
-        }
-
-        private String toCharString(int... bytes) {
-            StringBuilder chars = new StringBuilder(bytes.length);
-            for (int b : bytes) {
-                chars.append((char) b);
-            }
-            return chars.toString();
+            return reader.readName();
         }
 
         @Override
-        public int readByte() throws IOException {
-            int value = readRawByte();
-            if (value == INT_EOF) {
-                throw InvalidJsonException.truncatedMessage();
-            }
-            return value;
+        public void close() throws IOException {
+            reader.close();
         }
 
-        @Override
-        public int readNextToken() throws IOException {
-            int ch = readRawByte();
-            while (isWhitespace(ch)) {
-                ch = readRawByte();
+        private void readValueBytes() throws IOException {
+            if (!reader.readValueBytes(buffer)) {
+                throw nullValue();
             }
-            return token = ch;
         }
 
-        private int token = INT_UNINITIALIZED;
+        private void readEscapedString() throws IOException {
+            checkNotAtNull();
+            reader.readString(buffer);
+        }
+
+        private void readValueRange() throws IOException {
+            if (!reader.readValueRange()) {
+                throw nullValue();
+            }
+        }
+
+        private void checkNotAtNull() throws IOException {
+            if (reader.isAtNull()) {
+                throw nullValue();
+            }
+        }
+
+        private InvalidJsonException nullValue() {
+            String atField = (currentField == null ? "" : " for field '" + currentField + "'");
+            final long offset = reader.getPosition();
+            return new InvalidJsonException("Expected non-null value" + atField, offset);
+        }
+
+        private final JsonReader reader;
         private final RepeatedByte buffer = RepeatedByte.newEmptyInstance();
-        private final StringBuilder key = new StringBuilder(16);
 
         private final CharSequence bufferViewAscii = new CharSequence() {
             @Override

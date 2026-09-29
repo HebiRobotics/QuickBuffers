@@ -416,6 +416,74 @@ public class JsonReaderTest {
     }
 
     @Test
+    public void testSkipValueAcrossRefills() throws IOException {
+        byte[] json = "[{\"a\":\"x\\\"y\\/z\",\"b\":[12345.5e1,true,null,\"long string value\"]},\"c\"]".getBytes(Charsets.UTF_8);
+        for (int maxChunk = 1; maxChunk <= 3; maxChunk++) {
+            for (boolean lenient : new boolean[]{false, true}) {
+                JsonReader reader = JsonReader.newInstance(new SlowInputStream(json, maxChunk));
+                reader.lenient = lenient;
+                reader.beginArray().skipValue();
+                assertEquals("c", reader.readString());
+                reader.endArray();
+            }
+        }
+        assertError("Unescaped control character 0x0A in string at offset 8",
+                () -> JsonReader.newInstance(new SlowInputStream("[\"abcdef\n\"]".getBytes(Charsets.UTF_8), 2)).skipValue());
+    }
+
+    @Test
+    public void testLenientMode() throws IOException {
+        JsonReader reader = JsonReader.newInstance("[\"a\tb\",{\"x\":[NaN,+1,tru,1x,\"\\q\"]},\"c\"]");
+        reader.lenient = true;
+        reader.beginArray();
+        assertEquals("a\tb", reader.readString());
+        reader.skipValue();
+        assertEquals("c", reader.readString());
+        reader.endArray();
+
+        reader = JsonReader.newInstance("[\"a\tb\"]");
+        reader.lenient = true;
+        Utf8String utf8 = Utf8String.newEmptyInstance();
+        reader.beginArray().readString(utf8);
+        assertEquals("a\tb", utf8.getString());
+
+        // skipped containers only get their brackets counted
+        reader = JsonReader.newInstance("[{\"x\":[NaN,],\"y\" 1 \"}\"},[[1 :]]]");
+        reader.lenient = true;
+        reader.beginArray().skipValue();
+        reader.skipValue();
+        reader.endArray().endDocument();
+
+        // the structure around them stays strict
+        JsonReader invalid = JsonReader.newInstance("[{},]");
+        invalid.lenient = true;
+        invalid.beginArray().skipValue();
+        assertError("Trailing comma before ']' at offset 4", invalid::hasNext);
+        assertError("Unexpected end of input at offset 7", () -> {
+            JsonReader truncated = JsonReader.newInstance("[{\"a\":[");
+            truncated.lenient = true;
+            truncated.beginArray().skipValue();
+        });
+    }
+
+    @Test
+    public void testValueRange() throws IOException {
+        byte[] json = "[12345, \"6\\\"7\", null, NaN]".getBytes(Charsets.UTF_8);
+        for (JsonReader reader : new JsonReader[]{JsonReader.newInstance(json), JsonReader.newInstance(new SlowInputStream(json, 2))}) {
+            reader.beginArray();
+            assertTrue(reader.readValueRange());
+            assertEquals("12345", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
+            assertTrue(reader.readValueRange());
+            assertEquals("6\\\"7", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
+            assertFalse(reader.readValueRange());
+            reader.readNull();
+            assertTrue(reader.readValueRange());
+            assertEquals("NaN", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
+            reader.endArray();
+        }
+    }
+
+    @Test
     public void testArraySlice() throws IOException {
         byte[] bytes = "xx[1,2]yy".getBytes(Charsets.UTF_8);
         JsonReader reader = JsonReader.newInstance(bytes, 2, 5);
@@ -509,6 +577,17 @@ public class JsonReaderTest {
         reader.setInput("[]");
         reader.beginArray().endArray().endDocument();
         assertEquals(2, reader.getPosition());
+    }
+
+    @Test
+    public void testNameHash() throws IOException {
+        for (String name : new String[]{"", "optionalInt32", "\u00e9t\u00e9", "\ud83d\ude00x"}) {
+            JsonReader.CharBuffer raw = (JsonReader.CharBuffer) JsonReader.newInstance("{\"" + name + "\":0}").beginObject().readName();
+            assertEquals(name, raw.toString());
+            assertEquals(name.hashCode(), raw.hash());
+        }
+        JsonReader.CharBuffer escaped = (JsonReader.CharBuffer) JsonReader.newInstance("{\"\\ud83d\\ude00x\":0}").beginObject().readName();
+        assertEquals("\ud83d\ude00x".hashCode(), escaped.hash());
     }
 
     @Test
