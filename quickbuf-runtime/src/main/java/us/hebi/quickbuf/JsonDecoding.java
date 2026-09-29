@@ -118,6 +118,7 @@ class JsonDecoding {
 
         private static final boolean[] breaks = new boolean[256];
         final static int[] sHexValues = new int[256];
+        final static int[] sEscapedValues = new int[256]; // char for the byte after a backslash, except 'u'
         final static int[] TRUE_VALUE = {INT_t, INT_r, INT_u, INT_e};
         final static int[] FALSE_VALUE = {INT_f, INT_a, INT_l, INT_s, INT_e};
         final static int[] NULL_VALUE = {INT_n, INT_u, INT_l, INT_l};
@@ -130,6 +131,16 @@ class JsonDecoding {
             breaks[','] = true;
             breaks['}'] = true;
             breaks[']'] = true;
+
+            Arrays.fill(sEscapedValues, -1);
+            sEscapedValues['"'] = '"';
+            sEscapedValues['\\'] = '\\';
+            sEscapedValues['/'] = '/';
+            sEscapedValues['b'] = '\b';
+            sEscapedValues['f'] = '\f';
+            sEscapedValues['n'] = '\n';
+            sEscapedValues['r'] = '\r';
+            sEscapedValues['t'] = '\t';
 
             Arrays.fill(sHexValues, -1);
             for (int i = 0; i < 10; ++i) {
