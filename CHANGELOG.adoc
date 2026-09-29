@@ -1,0 +1,31 @@
+= QuickBuffers
+
+== Unreleased
+
+* raised the minimum Java version of the runtime from 6 to 8
+* fixed `ByteBuffer` calls failing with `NoSuchMethodError` on Java 8 when the runtime was built on a newer JDK
+* fixed `addAll` and `copyFrom` ignoring the array offset of repeated strings, bytes, messages, and enums
+* fixed reused elements of repeated fields keeping old values after copying fewer elements
+* fixed an exception when adding a repeated enum field to itself
+* fixed an integer overflow when reading nested fields with lengths close to `Integer.MAX_VALUE`
+* fixed negative lengths causing exceptions or endless loops instead of parse errors
+* fixed large lengths allocating memory before checking the remaining input (stream sources need a limit via `setSizeLimit`)
+* fixed `ByteBuffer` sources reading past the end of nested fields
+* fixed JSON sources hanging when skipping truncated values of unknown fields
+* fixed unknown JSON enum values in repeated fields getting stored as zero instead of failing or being skipped
+* fixed JSON sources rejecting base64 without padding and escaped forward slashes
+* changed the protected `JsonSource::decodeBase64` helpers to throw `InvalidJsonException` on invalid input
+* fixed invalid characters in JSON numbers causing index exceptions or wrong values
+* fixed empty JSON numbers parsing as zero in the built-in JSON source
+* fixed out of range JSON values for `int32` fields getting truncated
+* fixed closing a `JsonSink` clearing the output buffer
+* added JSON encoding and decoding of unsigned integers, signed values written by older versions are still accepted
+* added copyless and `ByteBuffer` setters to `RepeatedBytes` and `RepeatedByte::addAll(ByteBuffer)` (fixes #72)
+* added in-place sorting of repeated messages via `RepeatedMessage::sort`
+* added `RepeatedMessage::addAll` and `RepeatedMessage::copyFrom` overloads that pack collections and arrays of other types via a lambda
+* added `ProtoUtil::encodedLengthUtf8` and `ProtoUtil::encodeUtf8`
+* made the `WireFormat` constants and tag helpers public
+* added reachability conditions to the GraalVM native image metadata of the runtime
+* changed the native `protoc-gen-quickbuf` plugins to GraalVM 25, optimized for size, and statically linked against musl on Linux x86_64
+* built the `linux-aarch_64` plugin on `ubuntu-22.04-arm` with `--static-nolibc`, so it needs glibc 2.35 or newer
+* updated the bundled `protoc` to 36.2 (protobuf 4.36.2)
