@@ -594,6 +594,27 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedMessagePacking() {
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        messages.addAll(Arrays.asList(1, 2), (msg, value) -> msg.setOptionalInt32(value));
+        messages.addAll(new Integer[]{3}, (msg, value) -> msg.setOptionalInt32(value));
+        assertEquals(3, messages.length());
+        assertEquals(1, messages.get(0).getOptionalInt32());
+        assertEquals(3, messages.get(2).getOptionalInt32());
+
+        // replaced elements must not keep fields the packer does not set
+        messages.get(0).setOptionalInt64(4);
+        messages.copyFrom(Arrays.asList(5, 6), (msg, value) -> msg.setOptionalInt32(value));
+        assertEquals(2, messages.length());
+        assertEquals(TestAllTypes.newInstance().setOptionalInt32(5), messages.get(0));
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+
+        messages.copyFrom(new Integer[]{7}, (msg, value) -> msg.setOptionalInt32(value));
+        assertEquals(1, messages.length());
+        assertEquals(7, messages.get(0).getOptionalInt32());
+    }
+
+    @Test
     public void testRepeatedMessageShrinkingCopy() {
         TestAllTypes[] values = new TestAllTypes[]{
                 TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),

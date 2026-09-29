@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 
 /**
@@ -83,6 +84,47 @@ public final class RepeatedMessage<MessageType extends ProtoMessage<MessageType>
     public final RepeatedMessage<MessageType> sort(Comparator<? super MessageType> comparator) {
         Arrays.sort(array, 0, length, comparator);
         return this;
+    }
+
+    /**
+     * Appends one message per value, e.g., {@code addAll(points, (msg, p) -> msg.setX(p.x))}.
+     * The packer writes each value into an empty message. Lambdas that
+     * capture nothing do not allocate.
+     *
+     * @param values values to be converted
+     * @param packer writes a value into a message
+     * @return this
+     */
+    public final <T> RepeatedMessage<MessageType> addAll(Collection<? extends T> values, Packer<? super MessageType, ? super T> packer) {
+        reserve(values.size());
+        for (T value : values) {
+            packer.pack(next(), value);
+        }
+        return this;
+    }
+
+    /** Appends one message per value, see {@link #addAll(Collection, Packer)}. */
+    public final <T> RepeatedMessage<MessageType> addAll(T[] values, Packer<? super MessageType, ? super T> packer) {
+        reserve(values.length);
+        for (T value : values) {
+            packer.pack(next(), value);
+        }
+        return this;
+    }
+
+    /** Replaces the contents with one message per value, see {@link #addAll(Collection, Packer)}. */
+    public final <T> RepeatedMessage<MessageType> copyFrom(Collection<? extends T> values, Packer<? super MessageType, ? super T> packer) {
+        return clear().addAll(values, packer);
+    }
+
+    /** Replaces the contents with one message per value, see {@link #addAll(Collection, Packer)}. */
+    public final <T> RepeatedMessage<MessageType> copyFrom(T[] values, Packer<? super MessageType, ? super T> packer) {
+        return clear().addAll(values, packer);
+    }
+
+    /** Writes a value into a message, e.g., a lambda or a method reference. */
+    public interface Packer<MessageType, T> {
+        void pack(MessageType message, T value);
     }
 
     /**
