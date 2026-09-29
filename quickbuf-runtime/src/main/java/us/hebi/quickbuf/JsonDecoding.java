@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
@@ -112,26 +113,108 @@ class JsonDecoding {
     static class Numbers {
 
         /**
-         * Converts w * 10^q via Clinger's fast path, where w and 10^|q| are exact doubles, so
-         * a single multiplication or division rounds correctly.
+         * Converts w * 10^q with correct rounding. Clinger's fast path covers w and 10^|q| that are
+         * exact doubles, so a single multiplication or division rounds correctly. Everything else
+         * goes through Eisel-Lemire.
          *
-         * @param w unsigned mantissa
-         * @return NaN if the result would not be exact
+         * @param w unsigned mantissa with at most 19 digits
          */
         static double toDouble(boolean negative, long w, int q) {
-            double value = Double.NaN;
+            final double value;
             if (w == 0) {
                 value = 0;
-            } else if (w > 0 && w <= MAX_EXACT_DOUBLE) {
-                if (q >= 0 && q <= 22) {
-                    value = w * EXACT_POW10[q];
-                } else if (q < 0 && q >= -22) {
-                    value = w / EXACT_POW10[-q];
-                } else if (q > 22 && q <= 22 + 15 && w <= MAX_EXACT_DOUBLE / (long) EXACT_POW10[q - 22]) {
-                    value = (w * (long) EXACT_POW10[q - 22]) * EXACT_POW10[22]; // e.g. 123e30 = 123000000000e22
-                }
+            } else if (w > 0 && w <= MAX_EXACT_DOUBLE && q >= -22 && q <= 22) {
+                value = q < 0 ? w / EXACT_POW10[-q] : w * EXACT_POW10[q];
+            } else if (w > 0 && q > 22 && q <= 22 + 15 && w <= MAX_EXACT_DOUBLE / (long) EXACT_POW10[q - 22]) {
+                value = (w * (long) EXACT_POW10[q - 22]) * EXACT_POW10[22]; // e.g. 123e30 = 123000000000e22
+            } else {
+                return Double.longBitsToDouble(eiselLemire(w, q) | (negative ? Long.MIN_VALUE : 0));
             }
             return negative ? -value : value;
+        }
+
+        /**
+         * Eisel-Lemire as in fast_float's decimal_to_binary.h (Apache-2.0 / MIT, Copyright Daniel Lemire),
+         * https://github.com/fastfloat/fast_float/blob/v8.0.2/include/fast_float/decimal_to_binary.h
+         * The truncated 128 bit powers of five are always precise enough for 19 digits, see
+         * Mushtak and Lemire, "Fast Number Parsing Without Fallback".
+         *
+         * @return the bits of the positive double closest to w * 10^q
+         */
+        private static long eiselLemire(long w, int q) {
+            if (q < MIN_POW10) {
+                return 0;
+            } else if (q > MAX_POW10) {
+                return INFINITY_BITS;
+            }
+            final int lz = Long.numberOfLeadingZeros(w);
+            w <<= lz;
+            final int index = 2 * (q - MIN_POW10);
+            long high = unsignedMultiplyHigh(w, POW5_128[index]);
+            long low = w * POW5_128[index];
+            if ((high & 0x1FF) == 0x1FF) {
+                final long secondHigh = unsignedMultiplyHigh(w, POW5_128[index + 1]);
+                low += secondHigh;
+                if (secondHigh + Long.MIN_VALUE > low + Long.MIN_VALUE) {
+                    high++;
+                }
+            }
+            final int upperBit = (int) (high >>> 63);
+            final int shift = upperBit + 64 - 52 - 3;
+            long mantissa = high >>> shift;
+            int power2 = (((152170 + 65536) * q) >> 16) + 63 + upperBit - lz + 1023;
+            if (power2 <= 0) { // subnormal
+                if (-power2 + 1 >= 64) {
+                    return 0;
+                }
+                mantissa >>>= -power2 + 1;
+                mantissa += mantissa & 1;
+                mantissa >>>= 1;
+                return mantissa; // rounding up to the smallest normal also sets the exponent bit
+            }
+            if ((low & ~1L) == 0 && q >= -4 && q <= 23 && (mantissa & 3) == 1 && (mantissa << shift) == high) {
+                mantissa &= ~1L; // exactly halfway, so round to even
+            }
+            mantissa += mantissa & 1;
+            mantissa >>>= 1;
+            if (mantissa >= (2L << 52)) {
+                mantissa = 1L << 52;
+                power2++;
+            }
+            if (power2 >= 0x7FF) {
+                return INFINITY_BITS;
+            }
+            return (mantissa & ~(1L << 52)) | ((long) power2 << 52);
+        }
+
+        private static long unsignedMultiplyHigh(long a, long b) {
+            return JdkMath.multiplyHigh(a, b) + ((a >> 63) & b) + ((b >> 63) & a);
+        }
+
+        /**
+         * 128 bit approximations of 5^q for q in [-342, 308] as pairs of high and low bits,
+         * generated like fast_float's script/table_generation.py
+         */
+        private static long[] computePowersOfFive() {
+            final long[] table = new long[2 * (MAX_POW10 - MIN_POW10 + 1)];
+            BigInteger pow5 = BigInteger.ONE;
+            for (int q = 0; q <= Math.max(-MIN_POW10, MAX_POW10); q++, pow5 = pow5.multiply(BigInteger.valueOf(5))) {
+                if (q <= MAX_POW10) {
+                    setPow5(table, q, pow5.shiftLeft(128 - pow5.bitLength())); // truncated
+                }
+                if (q > 0 && -q >= MIN_POW10) {
+                    final int z = pow5.bitLength();
+                    final int b = q <= 27 ? z + 127 : 2 * z + 128;
+                    final BigInteger c = BigInteger.ONE.shiftLeft(b).divide(pow5).add(BigInteger.ONE);
+                    setPow5(table, -q, c.shiftRight(Math.max(0, c.bitLength() - 128)));
+                }
+            }
+            return table;
+        }
+
+        private static void setPow5(long[] table, int q, BigInteger value) {
+            table[2 * (q - MIN_POW10)] = value.shiftRight(64).longValue();
+            table[2 * (q - MIN_POW10) + 1] = value.longValue();
         }
 
         static double readDouble(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
@@ -244,6 +327,10 @@ class JsonDecoding {
         private static final double[] EXACT_POW10 = {
                 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
                 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
+        private static final int MIN_POW10 = -342; // 19 digits * 10^-343 round to zero
+        private static final int MAX_POW10 = 308; // 1 * 10^309 rounds to infinity
+        private static final long INFINITY_BITS = Double.doubleToRawLongBits(Double.POSITIVE_INFINITY);
+        private static final long[] POW5_128 = computePowersOfFive();
     }
 
     private JsonDecoding() {

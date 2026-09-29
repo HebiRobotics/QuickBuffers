@@ -48,6 +48,72 @@ public class JsonNumbersTest {
         }
     }
 
+    @Test
+    public void testDoubleBoundaries() throws IOException {
+        for (String text : new String[]{
+                "2.2250738585072013e-308", "2.2250738585072011e-308", "2.2250738585072012e-308", "2.225073858507201e-308",
+                "4.9e-324", "4.9406564584124654e-324", "2.4703282292062328e-324", "2.4703282292062327e-324", "1e-324", "1e-400",
+                "1.7976931348623157e308", "1.7976931348623158e308", "1.7976931348623159e308", "1e309", "1e999999999",
+                "9007199254740993", "9007199254740995", "9223372036854775807", "9999999999999999999", "18446744073709551615",
+                "8.98846567431158e307", "0.30000000000000004", "1.00000000000000011102230246251565404236316680908203125",
+                "1.0000000000000001110", "7.2057594037927933e16", "1.448997445238699", "1e-342", "1e-343", "9999999999999999999e-343",
+                "5e-324", "7e22", "7e23", "123456789012345678e22", "12345678901234567890123", "0.00000000000000000000000000000001"}) {
+            assertDouble(text);
+            assertDouble("-" + text);
+        }
+    }
+
+    @Test
+    public void testShortestRoundTripDoubles() throws IOException {
+        Random rnd = new Random(0);
+        double[] values = new double[1000000];
+        JsonWriter writer = JsonWriter.newInstance().beginArray();
+        StringBuilder jdk = new StringBuilder("[");
+        for (int i = 0; i < values.length; i++) {
+            double value = Double.longBitsToDouble(rnd.nextLong());
+            if (i % 2 == 0 || Double.isNaN(value) || Double.isInfinite(value)) {
+                value = rnd.nextDouble() * SCALES[rnd.nextInt(SCALES.length)];
+            }
+            values[i] = value;
+            writer.value(value);
+            jdk.append(i == 0 ? "" : ",").append(value);
+        }
+        assertDoubles(values, writer.endArray().getBytes().toArray());
+        assertDoubles(values, jdk.append("]").toString().getBytes(ProtoUtil.Charsets.UTF_8));
+    }
+
+    @Test
+    public void testRandomMantissasAndExponents() throws IOException {
+        Random rnd = new Random(0);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 200000; i++) {
+            text.setLength(0);
+            int digits = 1 + rnd.nextInt(19);
+            text.append(1 + rnd.nextInt(9));
+            for (int d = 1; d < digits; d++) {
+                text.append(rnd.nextInt(10));
+            }
+            if (rnd.nextBoolean()) {
+                text.insert(1 + rnd.nextInt(digits), '.');
+                if (text.charAt(text.length() - 1) == '.') {
+                    text.append('0');
+                }
+            }
+            assertDouble(text.append('e').append(rnd.nextInt(141) - 70).toString());
+        }
+    }
+
+    private static void assertDoubles(double[] expected, byte[] json) throws IOException {
+        JsonReader reader = JsonReader.newInstance(json).beginArray();
+        for (double value : expected) {
+            double actual = reader.readDouble();
+            if (Double.doubleToLongBits(value) != Double.doubleToLongBits(actual)) {
+                fail("expected " + value + " but got " + actual);
+            }
+        }
+        reader.endArray();
+    }
+
     private static void assertDouble(String text) throws IOException {
         long expected = Double.doubleToLongBits(Double.parseDouble(text));
         assertEquals(text, expected, Double.doubleToLongBits(JsonReader.newInstance(text).readDouble()));
@@ -57,5 +123,7 @@ public class JsonNumbersTest {
     private static JsonSource newJsonSource(String text) {
         return new JsonSource.DefaultJsonSource(JsonReader.newInstance(text));
     }
+
+    private static final double[] SCALES = {1e-300, 1e-100, 1e-20, 1e-5, 1, 1e5, 1e20, 1e100, 1e300};
 
 }
