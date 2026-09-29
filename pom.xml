@@ -161,7 +161,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.30</version>
+                <version>1.18.48</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
@@ -183,6 +183,12 @@
         <!-- Common plugin configurations -->
         <pluginManagement>
             <plugins>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.16.0</version>
+                </plugin>
 
                 <!-- Shade plugins as uber-jars, so we can call them without dependencies -->
                 <plugin>
@@ -350,6 +356,17 @@
     </build>
 
     <profiles>
+
+        <!-- JDK 23+ no longer runs annotation processors (Lombok, JMH) from the classpath by default -->
+        <profile>
+            <id>jdk23proc</id>
+            <activation>
+                <jdk>[23,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.proc>full</maven.compiler.proc>
+            </properties>
+        </profile>
 
         <!-- Other plugins required for publishing to Maven Central -->
         <profile>
