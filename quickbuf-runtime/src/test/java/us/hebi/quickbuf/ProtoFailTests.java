@@ -509,20 +509,53 @@ public class ProtoFailTests {
         assertInvalidForAllSources(new byte[]{(byte) 0xC2, 0x3E, -11, -1, -1, -1, -1, -1, -1, -1, -1, 0x01});
     }
 
+    @Test
+    public void testLengthBeyondInput() throws IOException {
+        // string field 14, bytes field 15, and unknown field 1000 with a length of Integer.MAX_VALUE
+        assertInvalidForAllSources(new byte[]{0x72, -1, -1, -1, -1, 0x07});
+        assertInvalidForAllSources(new byte[]{0x7A, -1, -1, -1, -1, 0x07});
+        assertInvalidForAllSources(new byte[]{(byte) 0xC2, 0x3E, -1, -1, -1, -1, 0x07});
+    }
+
+    @Test
+    public void testPackedLengthBeyondInput() throws IOException {
+        // packed fixed32, fixed64, float, double, and bool fields 37, 38, 41, 42, 43 with a length of 0x7FFFFFF0
+        for (byte tag : new byte[]{(byte) 0xAA, (byte) 0xB2, (byte) 0xCA, (byte) 0xD2, (byte) 0xDA}) {
+            byte[] bytes = Arrays.copyOf(new byte[]{tag, 0x02, (byte) 0xF0, -1, -1, -1, 0x07}, 20);
+            for (ProtoSource source : newSources(bytes)) {
+                TestAllTypes msg = TestAllTypes.newInstance();
+                try {
+                    msg.mergeFrom(source);
+                    fail(source.getClass().getSimpleName() + " accepted invalid input");
+                } catch (InvalidProtocolBufferException expected) {
+                }
+                assertEquals(0, msg.getRepeatedFixed32().capacity() + msg.getRepeatedFixed64().capacity()
+                        + msg.getRepeatedFloat().capacity() + msg.getRepeatedDouble().capacity()
+                        + msg.getRepeatedBool().capacity());
+            }
+        }
+    }
+
     private static void assertInvalidForAllSources(byte[] bytes) throws IOException {
-        ProtoSource[] sources = new ProtoSource[]{
-                ProtoSource.newArraySource().setInput(bytes),
-                ProtoSource.newDirectSource().setInput(bytes),
-                ProtoSource.newStreamSource().setInput(new ByteArrayInputStream(bytes)),
-                ProtoSource.newBufferSource().setInput(ByteBuffer.wrap(bytes))
-        };
-        for (ProtoSource source : sources) {
+        for (ProtoSource source : newSources(bytes)) {
             try {
                 TestAllTypes.newInstance().mergeFrom(source);
                 fail(source.getClass().getSimpleName() + " accepted invalid input");
             } catch (InvalidProtocolBufferException expected) {
             }
         }
+    }
+
+    private static ProtoSource[] newSources(byte[] bytes) {
+        // streams don't know the remaining size, so they need a size limit to protect against large lengths
+        ProtoSource stream = ProtoSource.newStreamSource().setInput(new ByteArrayInputStream(bytes));
+        stream.setSizeLimit(bytes.length);
+        return new ProtoSource[]{
+                ProtoSource.newArraySource().setInput(bytes),
+                ProtoSource.newDirectSource().setInput(bytes),
+                stream,
+                ProtoSource.newBufferSource().setInput(ByteBuffer.wrap(bytes))
+        };
     }
 
 }

@@ -95,6 +95,7 @@ class ArraySource extends ProtoSource {
         this.position = offset + position;
     }
 
+    @Override
     protected void requireRemaining(final int numBytes) throws IOException {
         if (numBytes < 0) {
             throw InvalidProtocolBufferException.negativeSize();

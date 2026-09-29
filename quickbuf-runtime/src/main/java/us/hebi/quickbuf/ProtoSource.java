@@ -294,6 +294,7 @@ public abstract class ProtoSource {
             }
             case WireFormat.WIRETYPE_LENGTH_DELIMITED:{
                 int length = readLength();
+                requireRemaining(length);
                 ByteUtil.writeUInt32(unknownBytes, tag);
                 ByteUtil.writeUInt32(unknownBytes, length);
                 ByteUtil.writeBytes(unknownBytes, length, this);
@@ -358,6 +359,7 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code double} field value from the source. */
     public void readPackedDouble(RepeatedDouble store) throws IOException {
         final int length = readLength();
+        requireRemaining(length);
         final int limit = pushLimit(length);
         final int count = roundedCount64(length);
         final int offset = store.addLength(count);
@@ -390,6 +392,7 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code float} field value from the source. */
     public void readPackedFloat(RepeatedFloat store) throws IOException {
         final int length = readLength();
+        requireRemaining(length);
         final int limit = pushLimit(length);
         final int count =  roundedCount32(length);
         final int offset = store.addLength(count);
@@ -427,6 +430,7 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code fixed64} field value from the source. */
     public void readPackedFixed64(RepeatedLong store) throws IOException {
         final int length = readLength();
+        requireRemaining(length);
         final int limit = pushLimit(length);
         final int count =  roundedCount64(length);
         final int offset = store.addLength(count);
@@ -474,6 +478,7 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code fixed32} field value from the source. */
     public void readPackedFixed32(RepeatedInt store) throws IOException {
         final int length = readLength();
+        requireRemaining(length);
         final int limit = pushLimit(length);
         final int count =  roundedCount32(length);
         final int offset = store.addLength(count);
@@ -652,6 +657,7 @@ public abstract class ProtoSource {
     /** Read a repeated (packed) {@code bool} field value from the source. */
     public void readPackedBool(RepeatedBoolean store) throws IOException {
         final int length = readLength();
+        requireRemaining(length);
         final int limit = pushLimit(length);
         store.reserve(length / MIN_BOOL_SIZE);
         while (!isAtEnd()) {
@@ -728,6 +734,7 @@ public abstract class ProtoSource {
     /** Read a {@code string} field value from the source. */
     public void readString(final Utf8String store) throws IOException {
         final int length = readLength();
+        requireRemaining(length);
         store.setSize(length);
         readRawBytes(store.bytes(), 0, length);
     }
@@ -791,6 +798,7 @@ public abstract class ProtoSource {
     public void readBytes(RepeatedByte store) throws IOException {
         // note: bytes type gets replaced rather than merged
         final int length = readLength();
+        requireRemaining(length);
         store.setLength(length);
         readRawBytes(store.array, 0, length);
     }
@@ -1001,6 +1009,9 @@ public abstract class ProtoSource {
      * without harming your app's functionality. Note that size limits only apply when reading from an
      * {@code InputStream}, not when constructed around a raw byte array.
      *
+     * <p>A stream can't know how much input remains, so length prefixes are only checked against
+     * this limit before allocating storage. Untrusted streams should always set a limit.
+     *
      * <p>If you want to read several messages from a single CodedInputStream, you could call {@link
      * #resetSizeCounter()} after each one to avoid hitting the size limit.
      *
@@ -1135,6 +1146,17 @@ public abstract class ProtoSource {
      */
     protected void reserveRepeatedFieldCapacity(RepeatedField<?,?> store, int tag) throws IOException {
         // implement in child classes that support looking ahead
+    }
+
+    /**
+     * Checks that the source has enough remaining bytes before space for them gets
+     * allocated, so that corrupt lengths fail without allocating large arrays. Note
+     * that this can only be enforced if the source knows the remaining size.
+     *
+     * @param numBytes number of bytes that are about to be read
+     */
+    protected void requireRemaining(final int numBytes) throws IOException {
+        // implement in child classes that know the remaining size
     }
 
     /**
@@ -1307,6 +1329,16 @@ public abstract class ProtoSource {
             }
         }
 
+        @Override
+        protected void requireRemaining(int numBytes) throws IOException {
+            final int newPosition = position + numBytes;
+            if (newPosition - sizeLimit > 0) { // int overflow conscious
+                throw InvalidProtocolBufferException.sizeLimitExceeded();
+            } else if (newPosition - currentLimit > 0) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
         private void require(int size) throws IOException {
             final int newPosition = position + size;
             if (size < 0) {
@@ -1364,6 +1396,13 @@ public abstract class ProtoSource {
             try {
                 return buffer.get();
             } catch (BufferUnderflowException truncated) {
+                throw InvalidProtocolBufferException.truncatedMessage();
+            }
+        }
+
+        @Override
+        protected void requireRemaining(int numBytes) throws IOException {
+            if (numBytes > buffer.remaining()) {
                 throw InvalidProtocolBufferException.truncatedMessage();
             }
         }
