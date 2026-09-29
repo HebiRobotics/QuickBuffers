@@ -23,7 +23,7 @@ The main highlights are
  * **Improved order** for optimized [sequential memory access](order.md)
  * **Optional accessors** as an opt-in feature (java8)
 
-QuickBuffers passes all [proto2 conformance tests](./conformance) and is compatible with all Java versions from 6 through 20 as well as Android. Proto3 messages can be generated and are wire compatible, but so far the behavioral differences have not been explicitly added due to some [proto3 design decisions](proto3.md) that have kept us from using it. Current limitations include
+QuickBuffers passes all [proto2 conformance tests](./conformance) and is compatible with all Java versions from 8 through 27 as well as Android. Proto3 messages can be generated and are wire compatible, but so far the behavioral differences have not been explicitly added due to some [proto3 design decisions](proto3.md) that have kept us from using it. Current limitations include
 
 * [Services](https://developers.google.com/protocol-buffers/docs/proto#services) are not implemented
 * [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) are embedded directly into the extended message, so support is limited to generation time.
@@ -268,7 +268,7 @@ Note that the built-in JsonSink has been optimized quite a bit, but the JsonSour
 
 ## Building from source
 
-The project can be built with `mvn package` using jdk 8 through jdk 20.
+The project can be built with `mvn package` using jdk 8 through jdk 27.
 
 `mvn clean package --projects protoc-gen-quickbuf,quickbuf-runtime -am` omits building the benchmarks.
 
