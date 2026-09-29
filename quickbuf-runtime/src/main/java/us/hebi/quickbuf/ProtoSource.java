@@ -706,7 +706,11 @@ public abstract class ProtoSource {
 
     /** Read a length delimiter from the source. */
     public int readLength() throws IOException {
-        return readRawVarint32();
+        final int length = readRawVarint32();
+        if (length < 0) {
+            throw InvalidProtocolBufferException.negativeSize();
+        }
+        return length;
     }
 
     // ------------------------------ DELIMITED TYPES ------------------------------

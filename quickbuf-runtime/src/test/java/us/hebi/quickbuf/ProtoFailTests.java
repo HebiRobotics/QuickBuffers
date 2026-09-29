@@ -502,6 +502,13 @@ public class ProtoFailTests {
         assertInvalidForAllSources(new byte[]{(byte) 0x92, 0x01, -1, -1, -1, -1, 0x07});
     }
 
+    @Test(timeout = 5000)
+    public void testNegativeLength() throws IOException {
+        // bytes field 15 and unknown field 1000 with a length of -11
+        assertInvalidForAllSources(new byte[]{0x7A, -11, -1, -1, -1, -1, -1, -1, -1, -1, 0x01});
+        assertInvalidForAllSources(new byte[]{(byte) 0xC2, 0x3E, -11, -1, -1, -1, -1, -1, -1, -1, -1, 0x01});
+    }
+
     private static void assertInvalidForAllSources(byte[] bytes) throws IOException {
         ProtoSource[] sources = new ProtoSource[]{
                 ProtoSource.newArraySource().setInput(bytes),
