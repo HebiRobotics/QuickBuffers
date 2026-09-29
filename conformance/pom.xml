@@ -63,7 +63,7 @@
                 <artifactId>protoc-jar-maven-plugin</artifactId>
                 <version>${protoc.jar.version}</version>
                 <configuration>
-                    <protocVersion>${protobuf.version}</protocVersion>
+                    <protocVersion>3.21.12</protocVersion> <!-- matches the vendored protos and test runners -->
                 </configuration>
 
                 <executions>
