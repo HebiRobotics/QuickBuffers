@@ -64,7 +64,7 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
     public RepeatedEnum<E> addAll(final E[] buffer, final int offset, final int length) {
         final int pos = addLength(length);
         for (int i = 0; i < length; i++) {
-            array[pos + i] = buffer[i].getNumber();
+            array[pos + i] = buffer[offset + i].getNumber();
         }
         return this;
     }

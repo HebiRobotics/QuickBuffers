@@ -490,6 +490,16 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedEnumsWithOffset() {
+        NestedEnum[] values = new NestedEnum[]{NestedEnum.FOO, NestedEnum.BAR, NestedEnum.BAZ};
+        RepeatedEnum<NestedEnum> enums = RepeatedEnum.newEmptyInstance(NestedEnum.converter());
+        enums.addAll(values, 1, 2);
+        assertEquals("[2, 3]", enums.toString());
+        enums.copyFrom(values, 2, 1);
+        assertEquals("[3]", enums.toString());
+    }
+
+    @Test
     public void testRepeatedMessageShrinkingCopy() {
         TestAllTypes[] values = new TestAllTypes[]{
                 TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),
