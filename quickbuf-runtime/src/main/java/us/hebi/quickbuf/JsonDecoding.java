@@ -93,25 +93,9 @@ class JsonDecoding {
                     || ch == INT_TAB;
         }
 
-        public static boolean isBreak(int ch) {
-            return ch < 0 || breaks[ch]; // EOF also ends a value
-        }
-
-        private static final boolean[] breaks = new boolean[256];
         final static int[] sHexValues = new int[256];
-        final static int[] TRUE_VALUE = {INT_t, INT_r, INT_u, INT_e};
-        final static int[] FALSE_VALUE = {INT_f, INT_a, INT_l, INT_s, INT_e};
-        final static int[] NULL_VALUE = {INT_n, INT_u, INT_l, INT_l};
 
         static {
-            breaks[' '] = true;
-            breaks['\t'] = true;
-            breaks['\n'] = true;
-            breaks['\r'] = true;
-            breaks[','] = true;
-            breaks['}'] = true;
-            breaks[']'] = true;
-
             Arrays.fill(sHexValues, -1);
             for (int i = 0; i < 10; ++i) {
                 sHexValues['0' + i] = i;
@@ -224,41 +208,15 @@ class JsonDecoding {
                 tokenStart++;
             }
             for (int i = tokenStart; i < tokenEnd; i++) {
-                if (buffer[i] < 0 || intDigits[buffer[i]] < 0) {
+                if (buffer[i] < INT_0 || buffer[i] > INT_9) {
                     return false;
                 }
             }
             return true;
         }
 
-        final static int[] intDigits = new int[127];
-        final static int[] floatDigits = new int[127];
-        final static int END_OF_NUMBER = -2;
-        final static int DOT_IN_NUMBER = -3;
-        final static int INVALID_CHAR_FOR_NUMBER = -1;
-        static final long POW10[] = {
-                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-                1000000000, 10000000000L, 100000000000L, 1000000000000L,
-                10000000000000L, 100000000000000L, 1000000000000000L};
         private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
         private static final int MAX_UINT64_LAST_DIGIT = 5; // 18446744073709551615 % 10
-
-        static {
-            for (int i = 0; i < floatDigits.length; i++) {
-                floatDigits[i] = INVALID_CHAR_FOR_NUMBER;
-                intDigits[i] = INVALID_CHAR_FOR_NUMBER;
-            }
-            for (int i = '0'; i <= '9'; ++i) {
-                floatDigits[i] = (i - '0');
-                intDigits[i] = (i - '0');
-            }
-            floatDigits[','] = END_OF_NUMBER;
-            floatDigits[']'] = END_OF_NUMBER;
-            floatDigits['}'] = END_OF_NUMBER;
-            floatDigits[' '] = END_OF_NUMBER;
-            floatDigits['.'] = DOT_IN_NUMBER;
-        }
-
     }
 
     private JsonDecoding() {

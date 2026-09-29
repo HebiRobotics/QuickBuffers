@@ -264,38 +264,34 @@ public final class JsonReader implements Closeable {
     }
 
     public double readDouble() throws IOException {
-        readNumber(false);
-        return JsonDecoding.Numbers.readDouble(value.array, 0, value.length);
+        final int start = readNumber(false);
+        return Double.parseDouble(new String(buffer, start, pos - start, Charsets.ASCII));
     }
 
     public float readFloat() throws IOException {
-        readNumber(false);
-        return Float.parseFloat(new String(value.array, 0, value.length, Charsets.ASCII));
+        final int start = readNumber(false);
+        return Float.parseFloat(new String(buffer, start, pos - start, Charsets.ASCII));
     }
 
     /**
      * Reads an integer number. Fractions and exponents are rejected, even if the value is integral.
      */
     public long readLong() throws IOException {
-        readNumber(true);
-        try {
-            return JsonDecoding.Numbers.readLong(value.array, 0, value.length);
-        } catch (InvalidJsonException outOfRange) {
-            throw numberError("Value out of range for long");
+        final int start = readNumber(true);
+        if (numberDigits > 18 && (numberDigits > 19 || (numberMantissa < 0 && !(numberNegative && numberMantissa == Long.MIN_VALUE)))) {
+            throw numberError("Value out of range for long", start);
         }
+        return numberNegative ? -numberMantissa : numberMantissa;
     }
 
     /**
      * Reads an integer number. Fractions and exponents are rejected, even if the value is integral.
      */
     public int readInt() throws IOException {
-        readNumber(true);
-        if (value.length > 11) {
-            throw numberError("Value out of range for int");
-        }
-        final long result = JsonDecoding.Numbers.readLong(value.array, 0, value.length);
-        if ((int) result != result) {
-            throw numberError("Value out of range for int");
+        final int start = readNumber(true);
+        final long result = numberNegative ? -numberMantissa : numberMantissa;
+        if (numberDigits > 10 || (int) result != result) {
+            throw numberError("Value out of range for int", start);
         }
         return (int) result;
     }
@@ -363,7 +359,7 @@ public final class JsonReader implements Closeable {
     }
 
     /**
-     * Same as readValueBytes, but unquoted values within the buffer are not copied. The bytes
+     * Same as readValueBytes, but unquoted values are not copied. The bytes
      * are available as valueArray[valueStart, valueEnd) until the next read.
      *
      * @return false without consuming anything if the value is null
@@ -371,21 +367,12 @@ public final class JsonReader implements Closeable {
     boolean readValueRange() throws IOException {
         final int p = peeked == PEEKED_NONE ? doPeek() : peeked;
         if (p >= PEEKED_NUMBER && p <= PEEKED_UNQUOTED && p != PEEKED_NULL) {
-            final byte[] buf = buffer;
-            final int start = pos;
-            final int end = limit;
-            int i = start;
-            while (i < end && !IS_DELIMITER[buf[i] & 0xFF]) {
-                i++;
-            }
-            if (i < end || input == null) {
-                peeked = PEEKED_NONE;
-                pos = i;
-                valueArray = buf;
-                valueStart = start;
-                valueEnd = i;
-                return true;
-            }
+            peeked = PEEKED_NONE;
+            valueEnd = readUnquotedRange();
+            valueArray = buffer;
+            valueStart = pos;
+            pos = valueEnd;
+            return true;
         }
         if (!readValueBytes(value)) {
             return false;
@@ -539,24 +526,31 @@ public final class JsonReader implements Closeable {
     }
 
     /**
-     * Replaces the buffer contents with new data from the stream. Only
-     * called once all bytes in the buffer have been consumed.
+     * Moves the unread bytes from pos to the front and appends new data from the stream,
+     * so a value that starts at pos stays contiguous. The buffer only grows for values
+     * that do not fit.
      */
     private boolean fill() throws IOException {
         if (input == null) {
             return false;
         }
-        bufferOffset += limit;
+        final int kept = limit - pos;
+        if (kept == buffer.length) {
+            buffer = Arrays.copyOf(buffer, 2 * kept);
+        } else if (kept > 0 && pos > 0) {
+            System.arraycopy(buffer, pos, buffer, 0, kept);
+        }
+        bufferOffset += pos;
         pos = 0;
-        limit = 0;
+        limit = kept;
         int n;
         do {
-            n = input.read(buffer, 0, buffer.length);
+            n = input.read(buffer, kept, buffer.length - kept);
         } while (n == 0);
         if (n < 0) {
             return false;
         }
-        limit = n;
+        limit += n;
         return true;
     }
 
@@ -574,7 +568,7 @@ public final class JsonReader implements Closeable {
         if (lenient) {
             skipUnquotedBytes();
         } else if (peeked == PEEKED_NUMBER) {
-            readNumberBytes(value);
+            readNumberRange();
         } else if (peeked == PEEKED_BOOLEAN) {
             readLiteral(buffer[pos] == 't' ? TRUE : FALSE);
         } else {
@@ -582,79 +576,138 @@ public final class JsonReader implements Closeable {
         }
     }
 
-    private void readNumber(boolean integer) throws IOException {
+    /**
+     * @return the start of the number, which ends at pos
+     */
+    private int readNumber(boolean integer) throws IOException {
         final int p = peeked == PEEKED_NONE ? doPeek() : peeked;
         if (p != PEEKED_NUMBER) {
             throw expected("a number", p);
         }
         peeked = PEEKED_NONE;
-        if (readNumberBytes(value) && integer) {
-            throw numberError("Expected an integer but got");
+        final int start = readNumberRange();
+        if (numberFractional && integer) {
+            throw numberError("Expected an integer but got", start);
         }
+        return start;
     }
 
     /**
-     * Reads the text of a number and validates it against the JSON grammar
+     * Parses and validates the number at pos and moves pos to its end
      *
-     * @return true if the number has a fraction or exponent
+     * @return the start of the number
      */
-    private boolean readNumberBytes(RepeatedByte output) throws IOException {
-        readUnquotedBytes(output);
-        final byte[] bytes = output.array;
-        final int length = output.length;
-        int i = 0;
-        if (i < length && bytes[i] == '-') {
-            i++;
+    private int readNumberRange() throws IOException {
+        int end = parseNumber(buffer, pos, limit);
+        if (end == limit && input != null) {
+            final int valueEnd = readUnquotedRange();
+            end = parseNumber(buffer, pos, valueEnd);
         }
-        if (i < length && bytes[i] == '0') {
-            i++;
-        } else {
-            i = skipDigits(bytes, i, length, "Invalid number");
+        if (numberError != null || (end < limit && !IS_DELIMITER[buffer[end] & 0xFF])) {
+            final int valueEnd = readUnquotedRange();
+            final int start = pos;
+            pos = valueEnd;
+            throw numberError(numberError != null ? numberError : "Invalid number", start);
         }
-        boolean fractional = false;
-        if (i < length && bytes[i] == '.') {
-            i = skipDigits(bytes, i + 1, length, "Invalid fraction in number");
-            fractional = true;
-        }
-        if (i < length && (bytes[i] == 'e' || bytes[i] == 'E')) {
-            i++;
-            if (i < length && (bytes[i] == '+' || bytes[i] == '-')) {
-                i++;
-            }
-            i = skipDigits(bytes, i, length, "Invalid exponent in number");
-            fractional = true;
-        }
-        if (i != length) {
-            throw numberError("Invalid number");
-        }
-        return fractional;
+        final int start = pos;
+        pos = end;
+        return start;
     }
 
-    private int skipDigits(byte[] bytes, int i, int length, String error) throws InvalidJsonException {
-        final int start = i;
-        while (i < length && bytes[i] >= '0' && bytes[i] <= '9') {
+    /**
+     * Parses a JSON number in a single pass. The first 19 significant digits get accumulated
+     * into an unsigned mantissa, and further digits only adjust the decimal exponent.
+     *
+     * @return the index after the number, or the index at which the number is invalid
+     */
+    int parseNumber(final byte[] buf, int i, final int end) {
+        numberError = null;
+        numberFractional = false;
+        numberNegative = i < end && buf[i] == '-';
+        if (numberNegative) {
             i++;
         }
-        if (i == start) {
-            throw numberError(error);
+        long mantissa = 0;
+        int digits = 0;
+        int exponent = 0;
+        int d;
+        if (i < end && buf[i] == '0') {
+            i++;
+        } else if (i < end && (d = buf[i] - '0') >= 0 && d <= 9) {
+            do {
+                if (digits++ < 19) {
+                    mantissa = 10 * mantissa + d;
+                } else {
+                    exponent++;
+                }
+            } while (++i < end && (d = buf[i] - '0') >= 0 && d <= 9);
+        } else {
+            numberError = "Invalid number";
+            return i;
         }
+        if (i < end && buf[i] == '.') {
+            numberFractional = true;
+            if (++i == end || (d = buf[i] - '0') < 0 || d > 9) {
+                numberError = "Invalid fraction in number";
+                return i;
+            }
+            do {
+                if (digits == 0 && d == 0) {
+                    exponent--; // leading zeros are not significant
+                } else if (digits++ < 19) {
+                    mantissa = 10 * mantissa + d;
+                    exponent--;
+                }
+            } while (++i < end && (d = buf[i] - '0') >= 0 && d <= 9);
+        }
+        if (i < end && (buf[i] | 0x20) == 'e') {
+            numberFractional = true;
+            final boolean negativeExponent = ++i < end && buf[i] == '-';
+            if (i < end && (buf[i] == '-' || buf[i] == '+')) {
+                i++;
+            }
+            if (i == end || (d = buf[i] - '0') < 0 || d > 9) {
+                numberError = "Invalid exponent in number";
+                return i;
+            }
+            int value = 0;
+            do {
+                if (value < MAX_EXPONENT) {
+                    value = 10 * value + d;
+                }
+            } while (++i < end && (d = buf[i] - '0') >= 0 && d <= 9);
+            exponent += negativeExponent ? -value : value;
+        }
+        numberMantissa = mantissa;
+        numberDigits = digits;
+        numberExponent = exponent;
         return i;
     }
 
-    private void readUnquotedBytes(RepeatedByte output) throws IOException {
-        output.clear();
-        do {
+    /**
+     * @return the end of the unquoted value at pos, which stays contiguous across refills
+     */
+    private int readUnquotedRange() throws IOException {
+        int i = pos;
+        while (true) {
             final byte[] buf = buffer;
             final int end = limit;
-            int i = pos;
             while (i < end && !IS_DELIMITER[buf[i] & 0xFF]) {
-                output.add(buf[i++]);
+                i++;
             }
-            pos = i;
-            if (i < end) {
-                return;
+            final int length = i - pos;
+            if (i < end || !fill()) {
+                return pos + length;
             }
-        } while (fill());
+            i = pos + length;
+        }
+    }
+
+    private void readUnquotedBytes(RepeatedByte output) throws IOException {
+        final int end = readUnquotedRange();
+        output.clear();
+        output.addAll(buffer, pos, end - pos);
+        pos = end;
     }
 
     private void skipUnquotedBytes() throws IOException {
@@ -922,9 +975,9 @@ public final class JsonReader implements Closeable {
         return error("Trailing comma before '" + (char) c + "'", getPosition() - 1);
     }
 
-    private InvalidJsonException numberError(String message) {
-        final String number = new String(value.array, 0, value.length, Charsets.ISO_8859_1);
-        return error(message + " '" + number + "'", getPosition() - value.length);
+    private InvalidJsonException numberError(String message, int start) {
+        final String number = new String(buffer, start, pos - start, Charsets.ISO_8859_1);
+        return error(message + " '" + number + "'", bufferOffset + start);
     }
 
     private InvalidJsonException controlCharacter(int c) {
@@ -944,6 +997,7 @@ public final class JsonReader implements Closeable {
     }
 
     private static final int STREAM_BUFFER_SIZE = 8 * 1024;
+    private static final int MAX_EXPONENT = 100000000; // saturates, as larger exponents round to zero or infinity anyway
 
     // ordered so that ranges can be checked with a single comparison
     private static final int PEEKED_NONE = 0;
@@ -1008,7 +1062,7 @@ public final class JsonReader implements Closeable {
         }
     }
 
-    private final byte[] buffer;
+    private byte[] buffer;
     private final InputStream input;
     private int pos;
     private int limit;
@@ -1034,6 +1088,14 @@ public final class JsonReader implements Closeable {
     byte[] valueArray;
     int valueStart;
     int valueEnd;
+
+    // result of the last parseNumber
+    String numberError;
+    boolean numberNegative;
+    boolean numberFractional;
+    long numberMantissa;
+    int numberDigits;
+    int numberExponent;
 
     /**
      * Reused buffer for decoded strings that also computes the String hash code,
