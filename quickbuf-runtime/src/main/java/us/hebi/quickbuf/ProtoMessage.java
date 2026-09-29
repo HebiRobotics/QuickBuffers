@@ -127,6 +127,10 @@ public abstract class ProtoMessage<MessageType extends ProtoMessage<?>> {
      * Computes the number of bytes required to encode this message.
      * The size is cached and the cached result can be retrieved
      * using getCachedSize().
+     * <p>
+     * Computing the size also encodes string fields to utf8 and caches
+     * the result, so calling this ahead of time removes the encoding
+     * cost from subsequent writes of unmodified strings.
      *
      * @return the size of the serialized proto form
      */
