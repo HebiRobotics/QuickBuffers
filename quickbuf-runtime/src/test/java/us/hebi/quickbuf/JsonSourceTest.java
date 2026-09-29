@@ -104,6 +104,15 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testEscapedSolidus() throws Exception {
+        assertEquals("a/b", parseJson("{\"optionalString\":\"a\\/b\"}").getOptionalString());
+
+        // PHP escapes forward slashes in base64 values
+        assertArrayEquals(new byte[]{(byte) 0xAB, (byte) 0xFF}, parseJson("{\"optionalBytes\":\"q\\/8=\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{(byte) 0xAB, (byte) 0xFF}, parseJson("{\"optionalBytes\":\"q\\/8\"}").getOptionalBytes().toArray());
+    }
+
+    @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
         assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());
