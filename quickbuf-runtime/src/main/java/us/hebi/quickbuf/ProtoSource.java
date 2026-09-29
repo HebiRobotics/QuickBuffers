@@ -1054,10 +1054,11 @@ public abstract class ProtoSource {
         if (byteLimit < 0) {
             throw InvalidProtocolBufferException.negativeSize();
         }
-        byteLimit += getTotalBytesRead();
-        if (byteLimit > currentLimit) {
+        final int totalBytesRead = getTotalBytesRead();
+        if (byteLimit > currentLimit - totalBytesRead) {
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+        byteLimit += totalBytesRead;
         final int oldLimit = currentLimit;
         currentLimit = byteLimit;
         return oldLimit;

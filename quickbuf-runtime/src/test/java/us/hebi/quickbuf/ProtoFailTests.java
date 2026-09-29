@@ -496,4 +496,26 @@ public class ProtoFailTests {
 
     }
 
+    @Test
+    public void testLimitOverflow() throws IOException {
+        // nested message with a length of Integer.MAX_VALUE after the tag
+        assertInvalidForAllSources(new byte[]{(byte) 0x92, 0x01, -1, -1, -1, -1, 0x07});
+    }
+
+    private static void assertInvalidForAllSources(byte[] bytes) throws IOException {
+        ProtoSource[] sources = new ProtoSource[]{
+                ProtoSource.newArraySource().setInput(bytes),
+                ProtoSource.newDirectSource().setInput(bytes),
+                ProtoSource.newStreamSource().setInput(new ByteArrayInputStream(bytes)),
+                ProtoSource.newBufferSource().setInput(ByteBuffer.wrap(bytes))
+        };
+        for (ProtoSource source : sources) {
+            try {
+                TestAllTypes.newInstance().mergeFrom(source);
+                fail(source.getClass().getSimpleName() + " accepted invalid input");
+            } catch (InvalidProtocolBufferException expected) {
+            }
+        }
+    }
+
 }
