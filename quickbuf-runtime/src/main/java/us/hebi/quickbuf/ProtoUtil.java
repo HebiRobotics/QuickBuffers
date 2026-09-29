@@ -40,6 +40,27 @@ public final class ProtoUtil {
     }
 
     /**
+     * Computes the number of bytes that are required to encode a character sequence as utf8.
+     *
+     * @throws IllegalArgumentException if the sequence contains unpaired surrogates
+     */
+    public static int encodedLengthUtf8(CharSequence sequence) {
+        return Utf8.encodedLength(sequence);
+    }
+
+    /**
+     * Encodes a character sequence as utf8 into a range of a byte array. The required
+     * space can be computed via {@link #encodedLengthUtf8(CharSequence)}.
+     *
+     * @return the position after the last written byte, i.e., offset + number of written bytes
+     * @throws IllegalArgumentException       if the sequence contains unpaired surrogates
+     * @throws ArrayIndexOutOfBoundsException if the encoded sequence does not fit into the range
+     */
+    public static int encodeUtf8(CharSequence sequence, byte[] bytes, int offset, int length) {
+        return Utf8.encodeArray(sequence, bytes, offset, length);
+    }
+
+    /**
      * Parses binary data from base64 encoded String segments. Byte arrays are stored very
      * inefficiently in class files, so it is better to store binary data (e.g. descriptors)
      * in string form and parse it at runtime. String literals are limited to 64K,
