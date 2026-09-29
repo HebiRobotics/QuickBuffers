@@ -57,7 +57,7 @@ abstract class RepeatedObject<SubType extends RepeatedObject<SubType, STORE, IN,
 
     public final void addAll(IN[] buffer, int offset, int length) {
         reserve(length);
-        for (int i = offset; i < length; i++) {
+        for (int i = offset; i < offset + length; i++) {
             add(buffer[i]);
         }
     }
