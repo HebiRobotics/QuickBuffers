@@ -271,6 +271,8 @@ class JsonDecoding {
                     return '\\';
                 case '"':
                     return '"';
+                case '/':
+                    return '/';
                 case 'b':
                     return '\b';
                 case 't':
