@@ -48,6 +48,13 @@ public class JsonSinkTest {
     }
 
     @Test
+    public void testConsecutiveMessagesWithoutSeparator() throws IOException {
+        TestAllTypes msg = TestAllTypes.newInstance().setOptionalInt32(1);
+        assertEquals("{\"optionalInt32\":1}{\"optionalInt32\":1}",
+                JsonSink.newInstance().writeMessage(msg).writeMessage(msg).toString());
+    }
+
+    @Test
     public void testEnumNumbers() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.setOptionalNestedEnumValue(NestedEnum.BAR_VALUE);
