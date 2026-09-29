@@ -1,6 +1,6 @@
 = QuickBuffers
 
-== Unreleased
+== 1.5 (unreleased)
 
 * raised the minimum Java version of the runtime from 6 to 8
 * fixed `ByteBuffer` calls failing with `NoSuchMethodError` on Java 8 when the runtime was built on a newer JDK
