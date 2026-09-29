@@ -51,52 +51,46 @@
 package us.hebi.quickbuf;
 
 /**
- * This class is used internally by the Protocol Buffer library and generated
- * message implementations.  It is public only because those generated messages
- * do not reside in the {@code protobuf} package.  Others should not use this
- * class directly.
- * <p>
- * This class contains constants and helper functions useful for dealing with
- * the Protocol Buffer wire format.
+ * Constants and helper functions for the Protocol Buffer wire format.
  *
  * @author kenton@google.com Kenton Varda
  */
-final class WireFormat {
+public final class WireFormat {
 
     // Do not allow instantiation.
     private WireFormat() {
     }
 
-    static final int WIRETYPE_VARINT = 0;
-    static final int WIRETYPE_FIXED64 = 1;
-    static final int WIRETYPE_LENGTH_DELIMITED = 2;
-    static final int WIRETYPE_START_GROUP = 3;
-    static final int WIRETYPE_END_GROUP = 4;
-    static final int WIRETYPE_FIXED32 = 5;
+    public static final int WIRETYPE_VARINT = 0;
+    public static final int WIRETYPE_FIXED64 = 1;
+    public static final int WIRETYPE_LENGTH_DELIMITED = 2;
+    public static final int WIRETYPE_START_GROUP = 3;
+    public static final int WIRETYPE_END_GROUP = 4;
+    public static final int WIRETYPE_FIXED32 = 5;
 
-    static final int TAG_TYPE_BITS = 3;
-    static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
+    public static final int TAG_TYPE_BITS = 3;
+    public static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
 
-    static final int MIN_BOOL_SIZE = 1;
-    static final int FIXED_16_SIZE = 2;
-    static final int FIXED_32_SIZE = 4;
-    static final int FIXED_64_SIZE = 8;
-    static final int MAX_VARINT32_SIZE = 5;
-    static final int MAX_VARINT64_SIZE = 10;
-    static final int MAX_VARINT_SIZE = 10;
+    public static final int MIN_BOOL_SIZE = 1;
+    public static final int FIXED_16_SIZE = 2;
+    public static final int FIXED_32_SIZE = 4;
+    public static final int FIXED_64_SIZE = 8;
+    public static final int MAX_VARINT32_SIZE = 5;
+    public static final int MAX_VARINT64_SIZE = 10;
+    public static final int MAX_VARINT_SIZE = 10;
 
     /** Given a tag value, determines the wire type (the lower 3 bits). */
-    static int getTagWireType(final int tag) {
+    public static int getTagWireType(final int tag) {
         return tag & TAG_TYPE_MASK;
     }
 
     /** Given a tag value, determines the field number (the upper 29 bits). */
-    static int getTagFieldNumber(final int tag) {
+    public static int getTagFieldNumber(final int tag) {
         return tag >>> TAG_TYPE_BITS;
     }
 
     /** Makes a tag value given a field number and wire type. */
-    static int makeTag(final int fieldNumber, final int wireType) {
+    public static int makeTag(final int fieldNumber, final int wireType) {
         return (fieldNumber << TAG_TYPE_BITS) | wireType;
     }
 
