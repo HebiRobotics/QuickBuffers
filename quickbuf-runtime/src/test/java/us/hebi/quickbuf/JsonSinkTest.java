@@ -39,6 +39,15 @@ import static org.junit.Assert.*;
 public class JsonSinkTest {
 
     @Test
+    public void testCloseKeepsOutput() throws IOException {
+        RepeatedByte output = RepeatedByte.newEmptyInstance();
+        try (JsonSink sink = JsonSink.newInstance().setOutput(output)) {
+            sink.writeMessage(TestAllTypes.newInstance().setOptionalInt32(1));
+        }
+        assertEquals("{\"optionalInt32\":1}", new String(output.toArray(), "UTF-8"));
+    }
+
+    @Test
     public void testEnumNumbers() throws IOException {
         TestAllTypes msg = TestAllTypes.newInstance();
         msg.setOptionalNestedEnumValue(NestedEnum.BAR_VALUE);
