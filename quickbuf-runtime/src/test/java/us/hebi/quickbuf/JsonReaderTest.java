@@ -226,6 +226,17 @@ public class JsonReaderTest {
         assertEquals(Long.MIN_VALUE, JsonReader.newInstance("-9223372036854775808").readLong());
         assertEquals(Integer.MAX_VALUE, JsonReader.newInstance("2147483647").readInt());
         assertEquals(Integer.MIN_VALUE, JsonReader.newInstance("-2147483648").readInt());
+
+        // integral values with fractions or exponents like protobuf's JsonFormat
+        assertEquals(1, JsonReader.newInstance("1.0").readInt());
+        assertEquals(1000, JsonReader.newInstance("1e3").readInt());
+        assertEquals(1500, JsonReader.newInstance("1.500e3").readLong());
+        assertEquals(-120, JsonReader.newInstance("-1200E-1").readLong());
+        assertEquals(0, JsonReader.newInstance("-0.0").readInt());
+        assertEquals(0, JsonReader.newInstance("0e999999999").readInt());
+        assertEquals(Integer.MIN_VALUE, JsonReader.newInstance("-2.147483648e9").readInt());
+        assertEquals(Long.MIN_VALUE, JsonReader.newInstance("-9.223372036854775808e18").readLong());
+        assertEquals(Long.MAX_VALUE, JsonReader.newInstance("922337203685477580.7e1").readLong());
     }
 
     @Test
@@ -273,8 +284,12 @@ public class JsonReaderTest {
     @Test
     public void testIntegerRanges() throws IOException {
         assertError("Expected an integer but got '1.5' at offset 1", () -> JsonReader.newInstance("[1.5]").beginArray().readInt());
-        assertError("Expected an integer but got '1.0' at offset 0", () -> JsonReader.newInstance("1.0").readLong());
-        assertError("Expected an integer but got '1e2' at offset 0", () -> JsonReader.newInstance("1e2").readInt());
+        assertError("Expected an integer but got '1e-1' at offset 0", () -> JsonReader.newInstance("1e-1").readLong());
+        assertError("Expected an integer but got '1.00000000000000000001' at offset 0", () -> JsonReader.newInstance("1.00000000000000000001").readLong());
+        assertError("Value out of range for int '2147483648.0' at offset 0", () -> JsonReader.newInstance("2147483648.0").readInt());
+        assertError("Value out of range for int '1e10' at offset 0", () -> JsonReader.newInstance("1e10").readInt());
+        assertError("Value out of range for long '9.3e18' at offset 0", () -> JsonReader.newInstance("9.3e18").readLong());
+        assertError("Value out of range for long '1e999999999' at offset 0", () -> JsonReader.newInstance("1e999999999").readLong());
         assertError("Value out of range for int '2147483648' at offset 0", () -> JsonReader.newInstance("2147483648").readInt());
         assertError("Value out of range for int '-2147483649' at offset 0", () -> JsonReader.newInstance("-2147483649").readInt());
         assertError("Value out of range for int '123456789012345678901' at offset 0", () -> JsonReader.newInstance("123456789012345678901").readInt());

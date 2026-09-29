@@ -120,13 +120,15 @@ public abstract class JsonSource implements Closeable {
 
     /**
      * Read an {@code int32} field value from the source.
-     * Either numbers or strings are accepted.
+     * Either numbers or strings are accepted. The built-in source also accepts integral
+     * values with a fraction or exponent, e.g., 1.0 or 1e3, like protobuf's JsonFormat.
      */
     public abstract int readInt32() throws IOException;
 
     /**
      * Read an {@code int64} field value from the source.
-     * Either numbers or strings are accepted.
+     * Either numbers or strings are accepted. The built-in source also accepts integral
+     * values with a fraction or exponent, e.g., 1.0 or 1e3, like protobuf's JsonFormat.
      */
     public abstract long readInt64() throws IOException;
 
@@ -516,12 +518,18 @@ public abstract class JsonSource implements Closeable {
         @Override
         public long readInt64() throws IOException {
             readValueRange();
+            if (isValueInteger() && (reader.numberMantissa >= 0 || (reader.numberNegative && reader.numberMantissa == Long.MIN_VALUE))) {
+                return reader.numberNegative ? -reader.numberMantissa : reader.numberMantissa;
+            }
             return JsonDecoding.Numbers.readLong(reader.valueArray, reader.valueStart, reader.valueEnd);
         }
 
         @Override
         public long readUInt64() throws IOException {
             readValueRange();
+            if (isValueInteger() && (!reader.numberNegative || reader.numberMantissa >= 0)) {
+                return reader.numberNegative ? -reader.numberMantissa : reader.numberMantissa;
+            }
             return JsonDecoding.Numbers.readUnsignedLong(reader.valueArray, reader.valueStart, reader.valueEnd);
         }
 
@@ -634,6 +642,14 @@ public abstract class JsonSource implements Closeable {
         private boolean isValueNumber() {
             return reader.parseNumber(reader.valueArray, reader.valueStart, reader.valueEnd) == reader.valueEnd
                     && reader.numberError == null;
+        }
+
+        /**
+         * Parses the value range if it is an integral JSON number, e.g., 1, 1.0 or 1e3, into
+         * the unsigned magnitude of the reader
+         */
+        private boolean isValueInteger() {
+            return isValueNumber() && (!reader.numberFractional || reader.scaleToInteger()) && reader.numberDigits <= 19;
         }
 
         private void checkNotAtNull() throws IOException {

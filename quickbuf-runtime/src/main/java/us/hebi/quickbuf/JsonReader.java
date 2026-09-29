@@ -275,7 +275,7 @@ public final class JsonReader implements Closeable {
     }
 
     /**
-     * Reads an integer number. Fractions and exponents are rejected, even if the value is integral.
+     * Reads an integer number. Fractions and exponents are accepted if the value is integral, e.g., 1.0 or 1e3.
      */
     public long readLong() throws IOException {
         final int start = readNumber(true);
@@ -286,12 +286,12 @@ public final class JsonReader implements Closeable {
     }
 
     /**
-     * Reads an integer number. Fractions and exponents are rejected, even if the value is integral.
+     * Reads an integer number. Fractions and exponents are accepted if the value is integral, e.g., 1.0 or 1e3.
      */
     public int readInt() throws IOException {
         final int start = readNumber(true);
         final long result = numberNegative ? -numberMantissa : numberMantissa;
-        if (numberDigits > 10 || (int) result != result) {
+        if (numberDigits > 19 || numberMantissa < 0 || (int) result != result) {
             throw numberError("Value out of range for int", start);
         }
         return (int) result;
@@ -587,10 +587,43 @@ public final class JsonReader implements Closeable {
         }
         peeked = PEEKED_NONE;
         final int start = readNumberRange();
-        if (numberFractional && integer) {
+        if (integer && numberFractional && !scaleToInteger()) {
             throw numberError("Expected an integer but got", start);
         }
         return start;
+    }
+
+    /**
+     * Scales the mantissa of the last parsed number to the integer it represents, e.g., for
+     * 1.0 or 1e3 like protobuf's JsonFormat. Integers beyond 64 bits get more than 19 digits.
+     *
+     * @return false if the number has a fraction
+     */
+    boolean scaleToInteger() {
+        if (numberDigits > 19) {
+            return false; // could be integral, e.g., 1.00000000000000000000, but is not worth supporting
+        }
+        long value = numberMantissa;
+        if (value == 0) {
+            return true;
+        }
+        for (int q = numberExponent; q < 0; q++) {
+            final long quotient = (value >>> 1) / 5; // unsigned division by 10
+            if (value != 10 * quotient) {
+                return false;
+            }
+            value = quotient;
+        }
+        for (int q = numberExponent; q > 0; q--) {
+            if (value + Long.MIN_VALUE > MAX_UINT64_DIV_10 + Long.MIN_VALUE) {
+                numberDigits = 20;
+                return true;
+            }
+            value *= 10;
+        }
+        numberMantissa = value;
+        numberDigits = 19; // the unsigned magnitude needs the full range check
+        return true;
     }
 
     /**
@@ -1024,6 +1057,7 @@ public final class JsonReader implements Closeable {
     }
 
     private static final int STREAM_BUFFER_SIZE = 8 * 1024;
+    private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
     private static final int MAX_EXPONENT = 100000000; // saturates, as larger exponents round to zero or infinity anyway
 
     // ordered so that ranges can be checked with a single comparison

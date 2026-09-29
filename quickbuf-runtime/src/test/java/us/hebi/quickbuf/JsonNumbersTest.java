@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import org.junit.Test;
+import protos.test.quickbuf.TestAllTypes;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -136,6 +137,37 @@ public class JsonNumbersTest {
         int expected = Float.floatToIntBits(Float.parseFloat(text));
         assertEquals(text, expected, Float.floatToIntBits(JsonReader.newInstance(text).readFloat()));
         assertEquals(text, expected, Float.floatToIntBits(newJsonSource(text).readFloat()));
+    }
+
+    @Test
+    public void testIntegralFieldValues() throws IOException {
+        TestAllTypes msg = TestAllTypes.parseFrom(JsonSource.newInstance("{" +
+                "\"optionalInt32\":1.0," +
+                "\"optionalInt64\":\"-1.5e3\"," +
+                "\"optionalUint32\":4.294967295e9," +
+                "\"optionalUint64\":1.8446744073709551e19," +
+                "\"optionalSfixed32\":-0," +
+                "\"repeatedInt32\":[1e1,\"2.00\",30E-1]}"));
+        assertEquals(1, msg.getOptionalInt32());
+        assertEquals(-1500, msg.getOptionalInt64());
+        assertEquals(-1, msg.getOptionalUint32());
+        assertEquals(-616, msg.getOptionalUint64()); // 18446744073709551000 as unsigned
+        assertEquals(0, msg.getOptionalSfixed32());
+        assertArrayEquals(new int[]{10, 2, 3}, msg.getRepeatedInt32().toArray());
+
+        for (String json : new String[]{
+                "{\"optionalInt32\":1.5}",
+                "{\"optionalInt32\":\"1e-1\"}",
+                "{\"optionalInt32\":1e10}",
+                "{\"optionalInt64\":1e19}",
+                "{\"optionalInt64\":1e999999999}",
+                "{\"optionalUint64\":1e20}"}) {
+            try {
+                TestAllTypes.parseFrom(JsonSource.newInstance(json));
+                fail("expected to fail on non-integral or out of range value: " + json);
+            } catch (InvalidJsonException expected) {
+            }
+        }
     }
 
     private static void assertDoubles(double[] expected, byte[] json) throws IOException {
