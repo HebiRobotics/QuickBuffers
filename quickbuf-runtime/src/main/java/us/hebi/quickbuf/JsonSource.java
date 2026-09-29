@@ -203,7 +203,7 @@ public abstract class JsonSource implements Closeable {
      * Read a {@code fixed32} field value from the source.
      */
     public int readFixed32() throws IOException {
-        return this.readInt32(); // TODO: read unsigned 32
+        return this.readUInt32();
     }
 
     /**
@@ -214,10 +214,15 @@ public abstract class JsonSource implements Closeable {
     }
 
     /**
-     * Read a {@code uint32} field value from the source.
+     * Read a {@code uint32} field value from the source. Negative values
+     * written by older versions represent the same bits.
      */
     public int readUInt32() throws IOException {
-        return this.readInt32(); // TODO: read unsigned 32
+        final long value = this.readInt64();
+        if (value < Integer.MIN_VALUE || value > 0xFFFFFFFFL) {
+            throw outOfRange("uint32", value);
+        }
+        return (int) value;
     }
 
     /**
@@ -265,7 +270,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedFixed32(final RepeatedInt value) throws IOException {
-        readRepeatedInt32(value); // TODO: read unsigned 32
+        readRepeatedUInt32(value);
     }
 
     public void readRepeatedSFixed32(final RepeatedInt value) throws IOException {
@@ -273,7 +278,11 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedUInt32(final RepeatedInt value) throws IOException {
-        readRepeatedInt32(value); // TODO: read unsigned 32
+        beginArray();
+        while (!isAtEnd()) {
+            value.add(readUInt32());
+        }
+        endArray();
     }
 
     public void readRepeatedSInt32(final RepeatedInt value) throws IOException {
@@ -419,6 +428,11 @@ public abstract class JsonSource implements Closeable {
 
     // ==================== Implementation ====================
 
+    InvalidJsonException outOfRange(String type, Object value) {
+        String atField = (currentField == null ? "" : " for field '" + currentField + "'");
+        return new InvalidJsonException("Value out of range for " + type + ": " + value + atField);
+    }
+
     // Note: proto3 json accepts base64 with and without padding
     protected static void decodeBase64(String input, RepeatedByte output) {
         final byte[] bytes = input.getBytes(ISO_8859_1); // other chars become an ignored '?'
@@ -504,7 +518,11 @@ public abstract class JsonSource implements Closeable {
 
         @Override
         public int readInt32() throws IOException {
-            return (int) this.readInt64();
+            final long value = this.readInt64();
+            if ((int) value != value) {
+                throw outOfRange("int32", value);
+            }
+            return (int) value;
         }
 
         @Override
