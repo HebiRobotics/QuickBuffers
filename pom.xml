@@ -91,8 +91,9 @@
         <protoc.jar.version>3.11.4</protoc.jar.version>
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
 
-        <graalvm.tools.version>0.9.27</graalvm.tools.version>
-        <native.staticArg>--static</native.staticArg>
+        <graalvm.tools.version>1.1.14</graalvm.tools.version>
+        <native.staticArg>--verbose</native.staticArg> <!-- set via profiles -->
+        <native.libcArg>--verbose</native.libcArg> <!-- set via profiles -->
         <native.extension>.exe</native.extension>
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
@@ -300,6 +301,7 @@
                             <arg>--no-fallback</arg>
                             <arg>--verbose</arg>
                             <arg>${native.staticArg}</arg>
+                            <arg>${native.libcArg}</arg>
                         </buildArgs>
                     </configuration>
                 </plugin>
@@ -478,6 +480,8 @@
             </activation>
             <properties>
                 <protoc.os>linux</protoc.os>
+                <native.staticArg>--static</native.staticArg> <!-- only supported on linux -->
+                <native.libcArg>--libc=musl</native.libcArg> <!-- fully static glibc is no longer supported -->
             </properties>
         </profile>
         <profile>
@@ -489,7 +493,6 @@
             </activation>
             <properties>
                 <protoc.os>osx</protoc.os>
-                <native.staticArg>--verbose</native.staticArg> <!-- unsupported on osx -->
             </properties>
         </profile>
         <profile>
@@ -501,6 +504,19 @@
             </activation>
             <properties>
                 <protoc.arch>aarch_64</protoc.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>platform-linux-aarch64</id>
+            <activation>
+                <os>
+                    <name>linux</name>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.staticArg>--static-nolibc</native.staticArg> <!-- graal rejects musl on aarch64 -->
+                <native.libcArg>--verbose</native.libcArg> <!-- no-op, replaces musl from the linux profile -->
             </properties>
         </profile>
 
