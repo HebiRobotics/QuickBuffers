@@ -193,9 +193,15 @@ public class JsonSourceTest {
             fail("expected error: " + error);
         } catch (IOException ioe) {
             if (error != null) {
-                assertEquals(error, ioe.getMessage());
+                assertEquals(firstLine(error), firstLine(ioe.getMessage()));
             }
         }
+    }
+
+    /** Third party libraries append varying details such as source locations after the first line */
+    protected static String firstLine(String message) {
+        int index = message.indexOf('\n');
+        return index < 0 ? message : message.substring(0, index);
     }
 
     private final JsonSink minimized = JsonSink.newInstance();

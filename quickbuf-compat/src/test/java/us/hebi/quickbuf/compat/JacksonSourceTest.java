@@ -45,7 +45,7 @@ public class JacksonSourceTest extends JsonSourceTest {
                 " at [Source: (StringReader); line: 1, column: 24]");
         testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected { but was VALUE_NULL\n" +
                 " at [Source: (StringReader); line: 1, column: 29]");
-        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Unrecognized token 'fals': was expecting (JSON String, Number (or 'NaN'/'INF'/'+INF'), Array, Object or token 'null', 'true' or 'false')\n" +
+        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Unrecognized token 'fals': was expecting (JSON String, Number (or 'NaN'/'+INF'/'-INF'), Array, Object or token 'null', 'true' or 'false')\n" +
                 " at [Source: (StringReader); line: 1, column: 22]");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
