@@ -20,6 +20,8 @@
 
 package us.hebi.quickbuf;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author Florian Enner
  * @since 09 Aug 2019
@@ -31,6 +33,26 @@ public class RepeatedBytes extends RepeatedObject<RepeatedBytes, RepeatedByte, b
     }
 
     private RepeatedBytes() {
+    }
+
+    /**
+     * Adds an element with the remaining bytes of the buffer and advances its position.
+     *
+     * @param value source buffer
+     */
+    public final void add(ByteBuffer value) {
+        next().addAll(value);
+    }
+
+    /**
+     * Sets an element to the remaining bytes of the buffer and advances its position.
+     *
+     * @param index index of the element
+     * @param value source buffer
+     */
+    public final void set(int index, ByteBuffer value) {
+        checkIndex(index);
+        array[index].clear().addAll(value);
     }
 
     @Override

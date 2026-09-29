@@ -508,6 +508,27 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedBytesFromBuffers() {
+        for (ByteBuffer buffer : new ByteBuffer[]{ByteBuffer.allocate(4), ByteBuffer.allocateDirect(4)}) {
+            buffer.put(new byte[]{1, 2, 3, 4});
+            RepeatedBytes bytes = RepeatedBytes.newEmptyInstance();
+
+            buffer.position(1);
+            bytes.add(buffer);
+            assertEquals(4, buffer.position());
+            assertArrayEquals(new byte[]{2, 3, 4}, bytes.get(0).toArray());
+
+            buffer.position(3);
+            bytes.set(0, buffer);
+            assertArrayEquals(new byte[]{4}, bytes.get(0).toArray());
+
+            buffer.position(0);
+            bytes.get(0).addAll(buffer);
+            assertArrayEquals(new byte[]{4, 1, 2, 3, 4}, bytes.get(0).toArray());
+        }
+    }
+
+    @Test
     public void testRepeatedMessageShrinkingCopy() {
         TestAllTypes[] values = new TestAllTypes[]{
                 TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),

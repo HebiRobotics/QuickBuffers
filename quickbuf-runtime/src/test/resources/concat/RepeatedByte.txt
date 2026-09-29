@@ -13,4 +13,18 @@
         return this;
     }
 
+    /**
+     * Appends the remaining bytes of the buffer and advances its position.
+     * Works for heap and direct buffers.
+     *
+     * @param buffer source buffer
+     * @return this
+     */
+    public RepeatedByte addAll(java.nio.ByteBuffer buffer) {
+        final int count = buffer.remaining();
+        final int pos = addLength(count);
+        buffer.get(array, pos, count);
+        return this;
+    }
+
 } // RepeatedByte
