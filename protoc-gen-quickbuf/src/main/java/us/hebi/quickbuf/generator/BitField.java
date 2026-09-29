@@ -143,7 +143,7 @@ class BitField {
      * @param hasBitIndex
      * @return
      */
-    @Deprecated // used for testing whether
+    @Deprecated // unused, kept to document the experiment
     private static String oneOrZeroBit(int hasBitIndex) {
         int intSlot = hasBitIndex / BITS_PER_FIELD;
         int indexInSlot = hasBitIndex - (intSlot * BITS_PER_FIELD);
