@@ -523,10 +523,27 @@ public abstract class JsonSource implements Closeable {
             return this;
         }
 
+        /** Values beyond the double range become infinite like 1.4, the JsonReader rejects them */
         @Override
         public double readDouble() throws IOException {
             readValueRange();
+            if (isValueNumber()) {
+                return reader.toDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
+            }
             return JsonDecoding.Numbers.readDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
+        }
+
+        /**
+         * Rounds once, unlike 1.4 which cast the double. Values beyond the float range become
+         * infinite like 1.4, the JsonReader rejects them.
+         */
+        @Override
+        public float readFloat() throws IOException {
+            readValueRange();
+            if (isValueNumber()) {
+                return reader.toFloat(reader.valueArray, reader.valueStart, reader.valueEnd);
+            }
+            return (float) JsonDecoding.Numbers.readDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
         }
 
         @Override
@@ -644,6 +661,15 @@ public abstract class JsonSource implements Closeable {
             if (!reader.readValueRange()) {
                 throw nullValue();
             }
+        }
+
+        /**
+         * Parses the value range if it is a JSON number. Other forms that earlier versions
+         * accepted, e.g., NaN or leading zeros, take the slower paths.
+         */
+        private boolean isValueNumber() {
+            return reader.parseNumber(reader.valueArray, reader.valueStart, reader.valueEnd) == reader.valueEnd
+                    && reader.numberErrorText == null;
         }
 
         private void checkNotAtNull() throws IOException {

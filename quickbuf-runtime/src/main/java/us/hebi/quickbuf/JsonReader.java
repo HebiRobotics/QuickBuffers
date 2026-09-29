@@ -54,10 +54,11 @@ import static us.hebi.quickbuf.ProtoUtil.*;
  * The typed reads only accept standard JSON, e.g., {@link #readInt()} rejects quoted numbers.
  * The protobuf mapping with its quoted numbers and special values is read by a {@link JsonSource}.
  * <p>
- * Nothing allocates in steady state except {@link #readString()} and number parsing. Names
- * and strings are read into reused buffers, and input streams are read through an internal
- * buffer that only grows for unquoted values that do not fit. A reader can be reused for new
- * input via {@link #setInput(byte[])}.
+ * Nothing allocates in steady state except {@link #readString()} and rare numbers that fall
+ * back to the JDK parsers, e.g., with more than 19 significant digits. Names and strings are
+ * read into reused buffers, and input streams are read through an internal buffer that only
+ * grows for unquoted values that do not fit. A reader can be reused for new input via
+ * {@link #setInput(byte[])}.
  *
  * @author Florian Enner
  * @since 29 Sep 2026
@@ -343,7 +344,7 @@ public final class JsonReader implements Closeable {
      */
     public double readDouble() throws IOException {
         final int start = readNumber(false);
-        final double result = Double.parseDouble(new String(buffer, start, pos - start, Charsets.ASCII));
+        final double result = toDouble(buffer, start, pos);
         if (Double.isInfinite(result)) {
             throw numberError("Value out of range for double", start);
         }
@@ -356,7 +357,7 @@ public final class JsonReader implements Closeable {
      */
     public float readFloat() throws IOException {
         final int start = readNumber(false);
-        final float result = Float.parseFloat(new String(buffer, start, pos - start, Charsets.ASCII));
+        final float result = toFloat(buffer, start, pos);
         if (Float.isInfinite(result)) {
             throw numberError("Value out of range for float", start);
         }
@@ -801,6 +802,29 @@ public final class JsonReader implements Closeable {
         numberDigits = digits;
         numberExponent = exponent;
         return i;
+    }
+
+    /**
+     * Converts the last parsed number, or its text if it has more than 19 digits
+     */
+    double toDouble(byte[] text, int start, int end) {
+        if (numberDigits <= 19) {
+            return JsonDecoding.Numbers.toDouble(numberNegative, numberMantissa, numberExponent);
+        }
+        return Double.parseDouble(new String(text, start, end - start, Charsets.ASCII));
+    }
+
+    /**
+     * Converts the last parsed number, or its text if it can not be converted exactly
+     */
+    float toFloat(byte[] text, int start, int end) {
+        if (numberDigits <= 19) {
+            final float value = JsonDecoding.Numbers.toFloat(numberNegative, numberMantissa, numberExponent);
+            if (!Float.isNaN(value)) {
+                return value;
+            }
+        }
+        return Float.parseFloat(new String(text, start, end - start, Charsets.ASCII));
     }
 
     /**
