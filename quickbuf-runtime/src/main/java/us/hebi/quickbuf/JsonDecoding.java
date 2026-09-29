@@ -308,7 +308,10 @@ class JsonDecoding {
 
     static class Numbers {
 
-        static double readDouble(byte[] buffer, int tokenStart, int tokenEnd) {
+        static double readDouble(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
+            if (tokenEnd <= tokenStart) {
+                throw InvalidJsonException.illegalNumberFormat();
+            }
             int first = buffer[tokenStart];
             if (first == '-') {
                 return -readDouble(buffer, tokenStart + 1, tokenEnd);
@@ -337,7 +340,7 @@ class JsonDecoding {
             int len = tokenEnd - tokenStart;
             long limit = -9223372036854775807L;
             if (len <= 0) {
-                return 0;
+                throw InvalidJsonException.illegalNumberFormat();
             } else {
                 int firstChar = buffer[tokenStart] & 0xFF;
                 if (firstChar < INT_0) {

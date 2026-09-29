@@ -139,6 +139,20 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testEmptyNumbers() throws Exception {
+        for (String field : new String[]{"optionalInt32", "optionalInt64", "optionalUint64", "optionalFixed64", "optionalDouble"}) {
+            for (String value : new String[]{",\"optionalBool\":true}", "}", "\"\"}"}) {
+                String json = "{\"" + field + "\":" + value;
+                try {
+                    parseJson(json);
+                    fail("expected to fail on empty number: " + json);
+                } catch (IOException expected) {
+                }
+            }
+        }
+    }
+
+    @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
         assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());
