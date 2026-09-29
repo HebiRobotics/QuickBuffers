@@ -174,7 +174,7 @@ jobs:
           encodedString: ${{ secrets.DIGICERT_AUTH_CERT_BASE64 }}
 
       - name: Conveyor Site
-        uses: hydraulic-software/conveyor/actions/build@v13.1
+        uses: hydraulic-software/conveyor/actions/build@v22.3
         env:
           APPLE_APP_ID: ${{secrets.APPLE_APP_ID}}
           APPLE_APP_TEAM_ID: ${{secrets.APPLE_APP_TEAM_ID}}
@@ -185,7 +185,7 @@ jobs:
           DIGICERT_API_KEY: ${{secrets.DIGICERT_API_KEY}}
           DIGICERT_SIGNING_KEY_ALIAS: ${{secrets.DIGICERT_SIGNING_KEY_ALIAS}}
         with:
-          cache: ''
+          conveyor_version: '22.3'
           signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}
           agree_to_license: 1
           command: make site
