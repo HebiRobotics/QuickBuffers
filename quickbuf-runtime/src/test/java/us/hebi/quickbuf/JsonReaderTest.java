@@ -308,6 +308,45 @@ public class JsonReaderTest {
     }
 
     @Test
+    public void testLenientMode() throws IOException {
+        JsonReader reader = JsonReader.newInstance("[\"a\tb\",{\"x\":[NaN,+1,tru,1x,\"\\q\"]},\"c\"]");
+        reader.lenient = true;
+        reader.beginArray();
+        assertEquals("a\tb", reader.readString());
+        reader.skipValue();
+        assertEquals("c", reader.readString());
+        reader.endArray();
+
+        reader = JsonReader.newInstance("[\"a\tb\"]");
+        reader.lenient = true;
+        Utf8String utf8 = Utf8String.newEmptyInstance();
+        reader.beginArray().readString(utf8);
+        assertEquals("a\tb", utf8.getString());
+
+        // structure stays strict
+        JsonReader invalid = JsonReader.newInstance("{\"x\":[NaN,]}");
+        invalid.lenient = true;
+        assertError("Trailing comma before ']' at offset 10", invalid::skipValue);
+    }
+
+    @Test
+    public void testValueRange() throws IOException {
+        byte[] json = "[12345, \"6\\\"7\", null, NaN]".getBytes(Charsets.UTF_8);
+        for (JsonReader reader : new JsonReader[]{JsonReader.newInstance(json), JsonReader.newInstance(new SlowInputStream(json, 2))}) {
+            reader.beginArray();
+            assertTrue(reader.readValueRange());
+            assertEquals("12345", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
+            assertTrue(reader.readValueRange());
+            assertEquals("6\\\"7", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
+            assertFalse(reader.readValueRange());
+            reader.readNull();
+            assertTrue(reader.readValueRange());
+            assertEquals("NaN", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
+            reader.endArray();
+        }
+    }
+
+    @Test
     public void testArraySlice() throws IOException {
         byte[] bytes = "xx[1,2]yy".getBytes(Charsets.UTF_8);
         JsonReader reader = JsonReader.newInstance(bytes, 2, 5);

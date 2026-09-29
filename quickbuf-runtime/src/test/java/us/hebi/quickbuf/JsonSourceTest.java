@@ -245,11 +245,11 @@ public class JsonSourceTest {
 
     @Test
     public void testBadInputs() {
-        testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n'");
-        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '['");
-        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes'");
-        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' for field 'repeatedForeignMessage'");
-        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' for field 'optionalBool'");
+        testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n' at offset 0");
+        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '[' at offset 0");
+        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes' at offset 19");
+        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' at offset 28");
+        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' at offset 17");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
     }

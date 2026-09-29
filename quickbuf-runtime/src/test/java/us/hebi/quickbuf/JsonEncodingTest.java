@@ -22,13 +22,10 @@ package us.hebi.quickbuf;
 
 import org.junit.Before;
 import org.junit.Test;
-import us.hebi.quickbuf.JsonDecoding.JsonLexer;
-import us.hebi.quickbuf.JsonDecoding.StringDecoding;
 import us.hebi.quickbuf.JsonEncoding.Base64Encoding;
 import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
 import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
-import us.hebi.quickbuf.JsonSource.ArraySource;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.io.IOException;
@@ -339,17 +336,15 @@ public class JsonEncodingTest {
 
         {
             // compare post-replacement utf8 input
-            RepeatedByte utf8 = RepeatedByte.newEmptyInstance();
-            JsonLexer lexer = new ArraySource(bytes.array, 1, length - 1);
-            StringDecoding.readQuotedUtf8(lexer, utf8);
-            assertEquals(input, new String(utf8.array, 0, utf8.length, Charsets.UTF_8));
+            Utf8String utf8 = Utf8String.newEmptyInstance();
+            JsonReader.newInstance(bytes.array, 0, length).readString(utf8);
+            assertEquals(input, new String(utf8.bytes(), 0, utf8.size(), Charsets.UTF_8));
         }
 
         {
             // compare fully decoded input
             StringBuilder builder = new StringBuilder(length);
-            JsonLexer lexer = new ArraySource(bytes.array, 1, length - 1);
-            StringDecoding.readQuotedUtf8(lexer, builder);
+            JsonReader.newInstance(bytes.array, 0, length).readString(builder);
             assertEquals(input, builder.toString());
         }
 
