@@ -38,6 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -438,6 +439,22 @@ public class ProtoTests {
         }));
         assertEquals("customString", actual.getDecoder()); // test caching
 
+    }
+
+    @Test
+    public void testUtf8Helpers() {
+        for (String value : new String[]{"", "ascii", "umlauts \u00e4\u00f6\u00fc", "emoji \uD83D\uDCA9"}) {
+            byte[] expected = value.getBytes(UTF_8);
+            assertEquals(expected.length, ProtoUtil.encodedLengthUtf8(value));
+
+            byte[] actual = new byte[expected.length + 2];
+            assertEquals(expected.length + 1, ProtoUtil.encodeUtf8(value, actual, 1, expected.length));
+            assertArrayEquals(expected, Arrays.copyOfRange(actual, 1, expected.length + 1));
+
+            StringBuilder decoded = new StringBuilder();
+            ProtoUtil.decodeUtf8(actual, 1, expected.length, decoded);
+            assertEquals(value, decoded.toString());
+        }
     }
 
     @Test
