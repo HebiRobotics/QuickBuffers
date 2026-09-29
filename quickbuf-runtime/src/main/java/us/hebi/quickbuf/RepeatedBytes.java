@@ -20,6 +20,8 @@
 
 package us.hebi.quickbuf;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author Florian Enner
  * @since 09 Aug 2019
@@ -31,6 +33,48 @@ public class RepeatedBytes extends RepeatedObject<RepeatedBytes, RepeatedByte, b
     }
 
     private RepeatedBytes() {
+    }
+
+    /**
+     * Adds an element that uses the given array as its internal storage
+     * rather than a copy. See {@link RepeatedByte#setInternalArray(byte[])}.
+     *
+     * @param value array with valid data from zero to length
+     */
+    public final void addInternalArray(byte[] value) {
+        next().setInternalArray(value);
+    }
+
+    /**
+     * Sets an element to use the given array as its internal storage
+     * rather than a copy. See {@link RepeatedByte#setInternalArray(byte[])}.
+     *
+     * @param index index of the element
+     * @param value array with valid data from zero to length
+     */
+    public final void setInternalArray(int index, byte[] value) {
+        checkIndex(index);
+        array[index].setInternalArray(value);
+    }
+
+    /**
+     * Adds an element with the remaining bytes of the buffer and advances its position.
+     *
+     * @param value source buffer
+     */
+    public final void add(ByteBuffer value) {
+        next().addAll(value);
+    }
+
+    /**
+     * Sets an element to the remaining bytes of the buffer and advances its position.
+     *
+     * @param index index of the element
+     * @param value source buffer
+     */
+    public final void set(int index, ByteBuffer value) {
+        checkIndex(index);
+        array[index].clear().addAll(value);
     }
 
     @Override
