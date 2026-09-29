@@ -84,6 +84,26 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testUnpaddedBase64() throws Exception {
+        assertArrayEquals(new byte[]{1}, parseJson("{\"optionalBytes\":\"AQ\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2}, parseJson("{\"optionalBytes\":\"AQI\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2, 3}, parseJson("{\"optionalBytes\":\"AQID\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2}, parseJson("{\"optionalBytes\":\"AQI=\"}").getOptionalBytes().toArray());
+
+        // escapes get decoded first, so escaped line breaks get ignored like other illegal chars
+        assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6}, parseJson("{\"optionalBytes\":\"AQID\\r\\nBAUG\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2}, parseJson("{\"optionalBytes\":\"\\u0041QI\"}").getOptionalBytes().toArray());
+
+        for (String json : new String[]{"{\"optionalBytes\":\"A\"}", "{\"optionalBytes\":\"AQIDB\"}"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on invalid base64 length: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
         assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());

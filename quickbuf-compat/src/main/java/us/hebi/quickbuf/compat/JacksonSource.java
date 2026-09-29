@@ -20,6 +20,8 @@
 
 package us.hebi.quickbuf.compat;
 
+import com.fasterxml.jackson.core.Base64Variant;
+import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -113,7 +115,7 @@ public class JacksonSource extends JsonSource {
     @Override
     public void readBytes(RepeatedByte store) throws IOException {
         next();
-        store.copyFrom(reader.getBinaryValue());
+        store.copyFrom(reader.getBinaryValue(BASE64));
     }
 
     @Override
@@ -121,7 +123,7 @@ public class JacksonSource extends JsonSource {
         if (next() == JsonToken.VALUE_NULL) {
             return ProtoSource.newArraySource();
         }
-        return ProtoSource.newInstance(reader.getBinaryValue());
+        return ProtoSource.newInstance(reader.getBinaryValue(BASE64));
     }
 
     @Override
@@ -237,5 +239,9 @@ public class JacksonSource extends JsonSource {
     }
 
     JsonToken peekToken = null;
+
+    // proto3 json accepts base64 with and without padding
+    private static final Base64Variant BASE64 = Base64Variants.MIME_NO_LINEFEEDS
+            .withReadPadding(Base64Variant.PaddingReadBehaviour.PADDING_ALLOWED);
 
 }

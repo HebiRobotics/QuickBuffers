@@ -419,12 +419,30 @@ public abstract class JsonSource implements Closeable {
 
     // ==================== Implementation ====================
 
+    // Note: proto3 json accepts base64 with and without padding
     protected static void decodeBase64(String input, RepeatedByte output) {
-        output.addAll(Base64.decodeFast(input));
+        final byte[] bytes = input.getBytes(ISO_8859_1); // other chars become an ignored '?'
+        output.addAll(decodeBase64Unchecked(bytes, bytes.length));
     }
 
     protected static void decodeBase64(RepeatedByte input, RepeatedByte output) {
-        output.addAll(Base64.decode(input.array, 0, input.length));
+        output.addAll(decodeBase64Unchecked(input.array, input.length));
+    }
+
+    static byte[] decodeBase64(byte[] input, int length) throws InvalidJsonException {
+        final byte[] bytes = Base64.decode(input, 0, length);
+        if (bytes == null) {
+            throw InvalidJsonException.invalidBase64();
+        }
+        return bytes;
+    }
+
+    private static byte[] decodeBase64Unchecked(byte[] input, int length) {
+        final byte[] bytes = Base64.decode(input, 0, length);
+        if (bytes == null) {
+            throw new IllegalArgumentException("Invalid base64 value.");
+        }
+        return bytes;
     }
 
 
@@ -531,15 +549,22 @@ public abstract class JsonSource implements Closeable {
 
         @Override
         public void readBytes(RepeatedByte store) throws IOException {
-            getValueAsBytes(buffer);
+            readUnescapedString(buffer);
             store.clear();
-            decodeBase64(buffer, store);
+            store.addAll(decodeBase64(buffer.array, buffer.length));
         }
 
         @Override
         public ProtoSource readBytesAsSource() throws IOException {
-            getValueAsBytes(buffer);
-            return ProtoSource.newInstance(Base64.decode(buffer.array, 0, buffer.length));
+            readUnescapedString(buffer);
+            return ProtoSource.newInstance(decodeBase64(buffer.array, buffer.length));
+        }
+
+        private void readUnescapedString(RepeatedByte buffer) throws IOException {
+            checkNotAtNull();
+            checkCurrentToken(INT_QUOTE);
+            JsonDecoding.StringDecoding.readQuotedUtf8(this, buffer);
+            token = readNextToken();
         }
 
         @Override
