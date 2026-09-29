@@ -281,7 +281,42 @@ msg.clearQuick()
 
 The default implementation encodes the minimal representation accepted by the protobuf spec, i.e., floating point numbers do not append a trailing zero, and long integers are encoded without quotes. Alternative implementations based on GSON and Jackson can be found in the `quickbuf-compat` artifact.
 
-Note that the built-in JsonSink has been optimized quite a bit, but the JsonSource is very barebones due to a lack of an internal use case for JSON decoding.
+**Raw JSON**
+
+The built-in `JsonSink` and `JsonSource` are based on a `JsonWriter` and `JsonReader` that also work without messages, e.g., for formats that don't have a `.proto` definition. Both keep their internal buffers, so reusing them via `clear()` and `setInput(...)` does not allocate in steady state.
+
+```Java
+// Write raw JSON
+JsonWriter writer = JsonWriter.newInstance()
+    .beginObject()
+    .writeName("id").writeInt(42)
+    .writeName("tags").beginArray().writeString("a").writeString("b").endArray()
+    .endObject();
+RepeatedByte bytes = writer.getBytes(); // {"id":42,"tags":["a","b"]}
+
+// Read it back one token at a time
+JsonReader reader = JsonReader.newInstance().setInput(bytes);
+StringBuilder tag = new StringBuilder();
+reader.beginObject();
+while (reader.hasNext()) {
+    CharSequence name = reader.readName();
+    if ("id".contentEquals(name)) {
+        int id = reader.readInt();
+    } else if ("tags".contentEquals(name)) {
+        reader.beginArray();
+        while (reader.hasNext()) {
+            tag.setLength(0);
+            reader.readString(tag); // or readString() for a new String
+        }
+        reader.endArray();
+    } else {
+        reader.skipValue();
+    }
+}
+reader.endObject();
+```
+
+The reader checks the structure strictly according to RFC 8259 and reports errors with the byte offset. Names and strings can be read into reused buffers. Like the `JsonSink`, the pretty printing puts each object member on a new line and keeps arrays on one line.
 
 ## Building from source
 
