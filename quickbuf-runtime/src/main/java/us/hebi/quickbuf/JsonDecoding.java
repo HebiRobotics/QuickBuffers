@@ -111,6 +111,29 @@ class JsonDecoding {
 
     static class Numbers {
 
+        /**
+         * Converts w * 10^q via Clinger's fast path, where w and 10^|q| are exact doubles, so
+         * a single multiplication or division rounds correctly.
+         *
+         * @param w unsigned mantissa
+         * @return NaN if the result would not be exact
+         */
+        static double toDouble(boolean negative, long w, int q) {
+            double value = Double.NaN;
+            if (w == 0) {
+                value = 0;
+            } else if (w > 0 && w <= MAX_EXACT_DOUBLE) {
+                if (q >= 0 && q <= 22) {
+                    value = w * EXACT_POW10[q];
+                } else if (q < 0 && q >= -22) {
+                    value = w / EXACT_POW10[-q];
+                } else if (q > 22 && q <= 22 + 15 && w <= MAX_EXACT_DOUBLE / (long) EXACT_POW10[q - 22]) {
+                    value = (w * (long) EXACT_POW10[q - 22]) * EXACT_POW10[22]; // e.g. 123e30 = 123000000000e22
+                }
+            }
+            return negative ? -value : value;
+        }
+
         static double readDouble(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
             if (tokenEnd <= tokenStart) {
                 throw InvalidJsonException.illegalNumberFormat();
@@ -217,6 +240,10 @@ class JsonDecoding {
 
         private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
         private static final int MAX_UINT64_LAST_DIGIT = 5; // 18446744073709551615 % 10
+        private static final long MAX_EXACT_DOUBLE = 1L << 53;
+        private static final double[] EXACT_POW10 = {
+                1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
+                1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
     }
 
     private JsonDecoding() {

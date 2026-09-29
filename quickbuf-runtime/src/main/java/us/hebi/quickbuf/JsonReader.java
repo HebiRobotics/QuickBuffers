@@ -265,7 +265,7 @@ public final class JsonReader implements Closeable {
 
     public double readDouble() throws IOException {
         final int start = readNumber(false);
-        return Double.parseDouble(new String(buffer, start, pos - start, Charsets.ASCII));
+        return toDouble(buffer, start, pos);
     }
 
     public float readFloat() throws IOException {
@@ -682,6 +682,19 @@ public final class JsonReader implements Closeable {
         numberDigits = digits;
         numberExponent = exponent;
         return i;
+    }
+
+    /**
+     * Converts the last parsed number, or its text if it can not be converted exactly
+     */
+    double toDouble(byte[] text, int start, int end) {
+        if (numberDigits <= 19) {
+            final double value = JsonDecoding.Numbers.toDouble(numberNegative, numberMantissa, numberExponent);
+            if (!Double.isNaN(value)) {
+                return value;
+            }
+        }
+        return Double.parseDouble(new String(text, start, end - start, Charsets.ASCII));
     }
 
     /**
