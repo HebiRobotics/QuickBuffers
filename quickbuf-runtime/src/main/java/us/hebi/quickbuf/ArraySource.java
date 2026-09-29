@@ -53,10 +53,10 @@ class ArraySource extends ProtoSource {
         if (byteLimit < 0) {
             throw InvalidProtocolBufferException.negativeSize();
         }
-        byteLimit += position;
-        if (byteLimit > limit) { // limit is always Math.min(limit, currentLimit)
+        if (byteLimit > limit - position) { // limit is always Math.min(limit, currentLimit)
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+        byteLimit += position;
         final int oldLimit = currentLimit;
         currentLimit = byteLimit;
         recomputeBufferSizeAfterLimit();
