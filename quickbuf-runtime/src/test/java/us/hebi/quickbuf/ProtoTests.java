@@ -457,6 +457,39 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedObjectsWithOffset() {
+        RepeatedString strings = RepeatedString.newEmptyInstance();
+        strings.addAll(new String[]{"a", "b", "c", "d"}, 1, 2);
+        assertEquals("[b, c]", strings.toString());
+        strings.copyFrom(new String[]{"a", "b", "c", "d"}, 2, 2);
+        assertEquals("[c, d]", strings.toString());
+
+        RepeatedBytes bytes = RepeatedBytes.newEmptyInstance();
+        bytes.addAll(new byte[][]{{1}, {2}, {3}, {4}}, 1, 2);
+        assertEquals(2, bytes.length());
+        assertArrayEquals(new byte[]{2}, bytes.get(0).toArray());
+        assertArrayEquals(new byte[]{3}, bytes.get(1).toArray());
+        bytes.copyFrom(new byte[][]{{1}, {2}, {3}, {4}}, 2, 2);
+        assertEquals(2, bytes.length());
+        assertArrayEquals(new byte[]{3}, bytes.get(0).toArray());
+        assertArrayEquals(new byte[]{4}, bytes.get(1).toArray());
+
+        TestAllTypes[] values = new TestAllTypes[4];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = TestAllTypes.newInstance().setOptionalInt32(i);
+        }
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        messages.addAll(values, 1, 2);
+        assertEquals(2, messages.length());
+        assertEquals(values[1], messages.get(0));
+        assertEquals(values[2], messages.get(1));
+        messages.copyFrom(values, 2, 2);
+        assertEquals(2, messages.length());
+        assertEquals(values[2], messages.get(0));
+        assertEquals(values[3], messages.get(1));
+    }
+
+    @Test
     public void testBytes() throws IOException {
         byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];
