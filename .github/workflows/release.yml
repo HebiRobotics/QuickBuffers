@@ -86,7 +86,6 @@ jobs:
       with:
         distribution: zulu
         java-version: 8
-        server-id: ossrh
     - uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: 3.9.1
@@ -116,15 +115,15 @@ jobs:
 
     - name: Deploy Maven Artifacts
       env:
-        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }} # Central Portal user token
+        MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN }}
         GPG_KEYNAME: ${{ secrets.MAVEN_GPG_KEYNAME }}
         GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       run: |
         echo GPG_TTY=$(tty) >> $GITHUB_ENV
         mvn -B -U ${{ github.event.inputs.mavenGoal }} \
           -s settings.xml \
-          -DautoReleaseAfterClose=true \
+          -DautoPublish=true \
           -P"release" \
           --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
           -DskipTests="${{ github.event.inputs.skipTests }}"
@@ -142,7 +141,6 @@ jobs:
         with:
           distribution: zulu
           java-version: 8
-          server-id: ossrh
           cache: maven
       - uses: stCarolas/setup-maven@v4.5
         with:

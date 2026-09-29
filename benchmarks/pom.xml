@@ -14,7 +14,6 @@
     <properties>
         <javaModuleName>us.hebi.quickbuf.benchmarks</javaModuleName>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <skipNexusStagingDeployMojo>${maven.deploy.skip}</skipNexusStagingDeployMojo>
     </properties>
 
     <dependencies>
