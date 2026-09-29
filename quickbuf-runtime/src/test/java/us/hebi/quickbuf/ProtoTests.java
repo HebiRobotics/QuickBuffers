@@ -563,6 +563,20 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedMessageSort() {
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        for (int value : new int[]{3, 1, 2}) {
+            messages.next().setOptionalInt32(value);
+        }
+        TestAllTypes three = messages.get(0);
+        messages.sort((a, b) -> Integer.compare(a.getOptionalInt32(), b.getOptionalInt32()));
+        assertEquals(1, messages.get(0).getOptionalInt32());
+        assertEquals(2, messages.get(1).getOptionalInt32());
+        assertEquals(3, messages.get(2).getOptionalInt32());
+        assertSame(three, messages.get(2));
+    }
+
+    @Test
     public void testRepeatedMessageShrinkingCopy() {
         TestAllTypes[] values = new TestAllTypes[]{
                 TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),
