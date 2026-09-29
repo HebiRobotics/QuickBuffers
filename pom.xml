@@ -299,6 +299,7 @@
                         <buildArgs>
                             <arg>-march=compatibility</arg> <!-- support older processors (see #54) -->
                             <arg>--no-fallback</arg>
+                            <arg>-Os</arg> <!-- optimize for download size -->
                             <arg>--verbose</arg>
                             <arg>${native.staticArg}</arg>
                             <arg>${native.libcArg}</arg>
