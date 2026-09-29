@@ -337,7 +337,11 @@ public abstract class JsonSource implements Closeable {
         beginArray();
         while (!isAtEnd()) {
             E val = readEnum(converter);
-            value.addValue(val == null ? 0 : val.getNumber());
+            if (val != null) {
+                value.addValue(val.getNumber());
+            } else {
+                skipUnknownEnumValue();
+            }
         }
         endArray();
     }

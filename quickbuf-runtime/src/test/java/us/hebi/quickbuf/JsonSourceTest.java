@@ -84,6 +84,21 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testUnknownRepeatedEnum() throws Exception {
+        String json = "{\"repeatedNestedEnum\":[\"FOO\",\"BOGUS\",\"BAR\"]}";
+        TestAllTypes msg = TestAllTypes.newInstance();
+        try {
+            msg.mergeFrom(newJsonSource(json));
+            fail("expected to fail on unknown enum value");
+        } catch (IOException e) {
+            assertEquals("Encountered unknown enum value on field: 'repeatedNestedEnum'", e.getMessage());
+        }
+
+        msg = TestAllTypes.newInstance().mergeFrom(newJsonSource(json).setIgnoreUnknownFields(true));
+        assertEquals("[1, 2]", msg.getRepeatedNestedEnum().toString());
+    }
+
+    @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
         assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());
