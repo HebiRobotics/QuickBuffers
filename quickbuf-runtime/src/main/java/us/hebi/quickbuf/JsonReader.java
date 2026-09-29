@@ -876,14 +876,7 @@ public final class JsonReader implements Closeable {
 
     private void readQuotedChars(CharBuffer output) throws IOException {
         while (true) {
-            final byte[] buf = buffer;
-            final int end = limit;
-            int i = pos;
-            for (int b; i < end && (b = buf[i]) >= 0x20 && b != '"' && b != '\\'; i++) {
-                output.append((char) b);
-            }
-            pos = i;
-
+            pos = output.appendAscii(buffer, pos, limit);
             int c = readByte();
             if (c < 0x80) {
                 if (!IS_STRING_SPECIAL[c]) {
@@ -1176,6 +1169,29 @@ public final class JsonReader implements Closeable {
             }
             array[length++] = c;
             hash = 31 * hash + c;
+        }
+
+        /**
+         * Appends and hashes plain ASCII until a quote, backslash, control character, or non-ASCII
+         * byte. Working on locals is faster than appending one char at a time.
+         *
+         * @return the index of the first byte that was not appended
+         */
+        int appendAscii(byte[] bytes, int start, int end) {
+            char[] chars = array;
+            int n = length;
+            int h = hash;
+            int i = start;
+            for (int b; i < end && (b = bytes[i]) >= 0x20 && b != '"' && b != '\\'; i++) {
+                if (n == chars.length) {
+                    chars = array = Arrays.copyOf(chars, n * 2);
+                }
+                chars[n++] = (char) b;
+                h = 31 * h + b;
+            }
+            length = n;
+            hash = h;
+            return i;
         }
 
         /**
