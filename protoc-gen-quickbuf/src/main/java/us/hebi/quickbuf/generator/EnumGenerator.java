@@ -25,6 +25,8 @@ import us.hebi.quickbuf.generator.RequestInfo.EnumInfo;
 import us.hebi.quickbuf.generator.RequestInfo.EnumValueInfo;
 
 import javax.lang.model.element.Modifier;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.IntConsumer;
 
 import static javax.lang.model.element.Modifier.*;
@@ -204,19 +206,23 @@ class EnumGenerator {
                 .returns(info.getTypeName())
                 .addParameter(CharSequence.class, "value", FINAL);
 
-        int[] cases = info.getValues().stream()
+        // aliases are valid names too, e.g., in JSON
+        List<EnumValueInfo> names = new ArrayList<>(info.getValues());
+        names.addAll(info.getAliases());
+
+        int[] cases = names.stream()
                 .map(EnumValueInfo::getName)
                 .mapToInt(String::length)
                 .distinct()
                 .sorted().toArray();
 
         IntConsumer createCaseIfs = len -> {
-            info.getValues().stream()
+            names.stream()
                     .filter(value -> value.getName().length() == len)
                     .forEach(value -> {
                         forName.beginControlFlow("if ($T.isEqual($S, value))",
                                         RuntimeClasses.ProtoUtil, value.getName())
-                                .addStatement("return $N", NamingUtil.filterKeyword(value.getName()))
+                                .addStatement("return $N", NamingUtil.filterKeyword(info.findAliasedValue(value).getName()))
                                 .endControlFlow();
                     });
         };

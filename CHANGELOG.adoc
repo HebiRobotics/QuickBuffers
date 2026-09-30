@@ -11,6 +11,7 @@
 * changed `JsonSource` to accept integral values with a fraction or exponent for integer fields, e.g., `1.0` or `1e3`, like protobuf's `JsonFormat`
 * added a recursion limit to JSON sources, `JsonSource::setRecursionLimit` with a default of 64 like `ProtoSource`
 * changed repeated scalar fields of proto3 files to be written packed by default like protobuf. An explicit `[packed = false]` is still honored
+* fixed enum alias names being rejected when parsing enums by name, e.g., in JSON
 
 == 1.5 (unreleased)
 

@@ -1237,12 +1237,8 @@ public class ProtoTests {
                 msg.clearQuick().setField(EnumAllowingAlias.EAA_RUNNING).toString());
 
         assertEquals(EnumAllowingAlias.EAA_STARTED, TestEnumsMessage.parseFrom(JsonSource.newInstance("{\"field\":\"EAA_STARTED\"}")).getField());
-
-        try {
-            // I'm not sure why JSON decoding shouldn't work for aliases, but when in doubt stick to Protobuf behavior
-            assertEquals(EnumAllowingAlias.EAA_STARTED, TestEnumsMessage.parseFrom(JsonSource.newInstance("{\"field\":\"EAA_PROCESSING\"}")).getField());
-        } catch (Exception expected) {
-        }
+        assertEquals(EnumAllowingAlias.EAA_STARTED, TestEnumsMessage.parseFrom(JsonSource.newInstance("{\"field\":\"EAA_RUNNING\"}")).getField());
+        assertEquals(EnumAllowingAlias.EAA_STARTED, EnumAllowingAlias.converter().forName("EAA_RUNNING"));
     }
 
 }
