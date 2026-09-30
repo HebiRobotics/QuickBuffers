@@ -106,7 +106,7 @@ public class ConformanceQuickbuf {
                 JsonSource source = JsonSource.newInstance(request.getJsonPayload()).setIgnoreUnknownFields(ignoreUnknown);
                 testMessage.mergeFrom(source).checkInitialized();
             } catch (Throwable e) {
-                return response.setSerializeError(e.getMessage());
+                return response.setParseError(e.getMessage());
             }
 
         } else {
