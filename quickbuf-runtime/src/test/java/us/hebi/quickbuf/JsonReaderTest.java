@@ -85,6 +85,16 @@ public class JsonReaderTest {
     }
 
     @Test
+    public void testNestingLimit() throws IOException {
+        JsonReader reader = JsonReader.newInstance("[{\"a\":[1]}] [[[[]]]]").setNestingLimit(3);
+        reader.skipValue();
+        reader.beginArray().beginArray().beginArray();
+        assertError("Exceeded the nesting limit of 3 at offset 15", reader::beginArray);
+        assertError("Exceeded the nesting limit of 1 at offset 1", () -> JsonReader.newInstance("[[1]]").setNestingLimit(1).skipValue());
+        assertError("Exceeded the nesting limit of 0 at offset 0", () -> JsonReader.newInstance("{}").setNestingLimit(0).beginObject());
+    }
+
+    @Test
     public void testTopLevelValues() throws IOException {
         assertTokens("1", "number:1.0");
         assertTokens("\"s\"", "string:s");

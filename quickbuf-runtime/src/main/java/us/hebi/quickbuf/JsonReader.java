@@ -112,6 +112,21 @@ public final class JsonReader implements Closeable {
         this.input = input;
     }
 
+    /**
+     * Limits how deeply objects and arrays may be nested, including inside skipped values. There
+     * is no limit by default, since the reader does not recurse and only needs memory per level.
+     *
+     * @param limit maximum number of open objects and arrays
+     * @return this
+     */
+    public JsonReader setNestingLimit(int limit) {
+        if (limit < 0) {
+            throw new IllegalArgumentException("Nesting limit cannot be negative: " + limit);
+        }
+        nestingLimit = limit;
+        return this;
+    }
+
     // ==================== Structure ====================
 
     /**
@@ -394,7 +409,10 @@ public final class JsonReader implements Closeable {
         peeked = PEEKED_NONE;
     }
 
-    private void push(int newScope) {
+    private void push(int newScope) throws InvalidJsonException {
+        if (depth >= nestingLimit) {
+            throw error("Exceeded the nesting limit of " + nestingLimit, getPosition() - 1);
+        }
         if (depth == stack.length) {
             stack = Arrays.copyOf(stack, stack.length * 2);
         }
@@ -1133,6 +1151,7 @@ public final class JsonReader implements Closeable {
     private int scope = SCOPE_EMPTY_DOCUMENT;
     private int[] stack = new int[16];
     private int depth = 0;
+    private int nestingLimit = Integer.MAX_VALUE;
 
     private final CharBuffer name = new CharBuffer();
     private final CharBuffer chars = new CharBuffer();
