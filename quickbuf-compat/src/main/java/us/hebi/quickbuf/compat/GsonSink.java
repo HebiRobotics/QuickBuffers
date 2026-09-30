@@ -92,6 +92,11 @@ public class GsonSink extends JsonSink implements Closeable, Flushable {
     }
 
     @Override
+    protected void writeMapKey(final CharSequence key) throws IOException {
+        writer.name(key.toString());
+    }
+
+    @Override
     protected void writeNumber(double value) throws IOException {
         if (Double.isNaN(value)) {
             writer.value("NaN");

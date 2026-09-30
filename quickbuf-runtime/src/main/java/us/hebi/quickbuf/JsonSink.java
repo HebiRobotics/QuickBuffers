@@ -400,6 +400,24 @@ public abstract class JsonSink implements Closeable, Flushable {
         return this;
     }
 
+    /**
+     * Writes the entries of a map field as an object, e.g., {"key1":value1,"key2":value2}
+     */
+    public JsonSink writeMap(final FieldName name, final RepeatedMessage<?> value) throws IOException {
+        writeFieldName(name);
+        beginObject();
+        if (mapEntrySink == null) {
+            mapEntrySink = new MapEntrySink(this);
+        }
+        for (int i = 0; i < value.length; i++) {
+            value.array[i].writeTo(mapEntrySink);
+        }
+        endObject();
+        return this;
+    }
+
+    private MapEntrySink mapEntrySink = null;
+
     public JsonSink writeRepeatedString(final FieldName name, final RepeatedString value) throws IOException {
         writeFieldName(name);
         beginArray();
@@ -456,6 +474,13 @@ public abstract class JsonSink implements Closeable, Flushable {
      */
     protected abstract void writeFieldName(FieldName name) throws IOException;
 
+    /**
+     * Writes the key of a map entry as the name of the next value
+     */
+    protected void writeMapKey(CharSequence key) throws IOException {
+        throw new UnsupportedOperationException(getClass().getSimpleName() + " does not support map fields");
+    }
+
     protected abstract void writeNumber(double value) throws IOException;
 
     protected abstract void writeNumber(float value) throws IOException;
@@ -507,6 +532,141 @@ public abstract class JsonSink implements Closeable, Flushable {
     protected abstract void endArray() throws IOException;
 
     private RepeatedByte tmpBytes = null;
+
+    /**
+     * Turns the generated {"key":k,"value":v} of a map entry into "k":v of the parent sink.
+     * Generated entries always write the key before the value.
+     */
+    private static final class MapEntrySink extends JsonSink {
+
+        MapEntrySink(JsonSink parent) {
+            this.parent = parent;
+        }
+
+        @Override
+        protected void writeFieldName(FieldName name) {
+            atKey = "key".equals(name.getJsonName());
+        }
+
+        @Override
+        protected void writeNumber(double value) throws IOException {
+            parent.writeNumber(value);
+        }
+
+        @Override
+        protected void writeNumber(float value) throws IOException {
+            parent.writeNumber(value);
+        }
+
+        @Override
+        protected void writeNumber(long value) throws IOException {
+            if (atKey) {
+                parent.writeMapKey(Long.toString(value));
+            } else {
+                parent.writeNumber(value);
+            }
+        }
+
+        @Override
+        protected void writeNumber(int value) throws IOException {
+            if (atKey) {
+                parent.writeMapKey(Integer.toString(value));
+            } else {
+                parent.writeNumber(value);
+            }
+        }
+
+        @Override
+        protected void writeUnsignedNumber(long value) throws IOException {
+            if (atKey) {
+                unsignedKey.clear();
+                NumberEncoding.writeUnsignedLong(value, unsignedKey);
+                parent.writeMapKey(new String(unsignedKey.array, 0, unsignedKey.length, Charsets.ASCII));
+            } else {
+                parent.writeUnsignedNumber(value);
+            }
+        }
+
+        @Override
+        protected void writeBoolean(boolean value) throws IOException {
+            if (atKey) {
+                parent.writeMapKey(value ? "true" : "false");
+            } else {
+                parent.writeBoolean(value);
+            }
+        }
+
+        @Override
+        protected void writeString(Utf8String value) throws IOException {
+            if (atKey) {
+                parent.writeMapKey(value.toString());
+            } else {
+                parent.writeString(value);
+            }
+        }
+
+        @Override
+        protected void writeString(CharSequence value) throws IOException {
+            if (atKey) {
+                parent.writeMapKey(value);
+            } else {
+                parent.writeString(value);
+            }
+        }
+
+        @Override
+        protected void writeBinary(RepeatedByte value) throws IOException {
+            parent.writeBinary(value);
+        }
+
+        @Override
+        protected void writeEnumValue(int number, ProtoEnum.EnumConverter<?> converter) throws IOException {
+            parent.writeEnumValue(number, converter);
+        }
+
+        @Override
+        protected void writeMessageValue(ProtoMessage<?> value) throws IOException {
+            parent.writeMessageValue(value);
+        }
+
+        @Override
+        public JsonSink beginObject() {
+            return this; // the entry itself
+        }
+
+        @Override
+        public JsonSink endObject() {
+            return this;
+        }
+
+        @Override
+        protected void beginArray() {
+            throw new UnsupportedOperationException("map values can't be repeated");
+        }
+
+        @Override
+        protected void endArray() {
+            throw new UnsupportedOperationException("map values can't be repeated");
+        }
+
+        @Override
+        public JsonSink clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
+        }
+
+        private final JsonSink parent;
+        private final RepeatedByte unsignedKey = RepeatedByte.newEmptyInstance();
+        private boolean atKey;
+
+    }
 
     /**
      * Maps protobuf messages onto the generic JsonWriter, which does
@@ -564,6 +724,11 @@ public abstract class JsonSink implements Closeable, Flushable {
         @Override
         protected void writeFieldName(final FieldName name) {
             writer.name(!preserveProtoFieldNames ? name.getJsonKeyBytes() : name.getProtoKeyBytes());
+        }
+
+        @Override
+        protected void writeMapKey(CharSequence key) {
+            writer.name(key);
         }
 
         @Override

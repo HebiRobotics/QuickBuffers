@@ -366,6 +366,27 @@ public abstract class JsonSource implements Closeable {
         return value;
     }
 
+    /**
+     * Reads the entries of a map field from an object, e.g., {"key1":value1,"key2":value2}
+     */
+    public <ProtoMsg extends ProtoMessage<ProtoMsg>> void readMap(final RepeatedMessage<ProtoMsg> value) throws IOException {
+        beginObject();
+        final MapEntrySource entrySource = mapEntrySource != null ? mapEntrySource : new MapEntrySource(this);
+        mapEntrySource = null; // maps nested in the values use their own
+        while (!isAtEnd()) {
+            currentField = readFieldName();
+            final ProtoMsg entry = value.next().mergeFrom(entrySource.reset(currentField));
+            if (entrySource.skippedUnknownEnum) {
+                entry.clear(); // like protobuf, drop the entry instead of storing the default value
+                value.length--;
+            }
+        }
+        mapEntrySource = entrySource;
+        endObject();
+    }
+
+    private MapEntrySource mapEntrySource = null;
+
     public void readRepeatedString(final RepeatedString value) throws IOException {
         beginArray();
         while (!isAtEnd()) {
@@ -505,6 +526,312 @@ public abstract class JsonSource implements Closeable {
         return bytes;
     }
 
+
+    /**
+     * Presents a map member "k":v of the parent source as the {"key":k,"value":v} that the
+     * generated map entries read. The key comes from the member name, the value from the parent.
+     */
+    private static final class MapEntrySource extends JsonSource {
+
+        MapEntrySource(JsonSource parent) {
+            this.parent = parent;
+        }
+
+        MapEntrySource reset(CharSequence key) {
+            keySource.key = key;
+            atKey = true;
+            atEnd = false;
+            skippedUnknownEnum = false;
+            ignoreUnknownFields = parent.ignoreUnknownFields;
+            return this;
+        }
+
+        private JsonSource next() {
+            if (atKey) {
+                atKey = false;
+                return keySource;
+            }
+            atEnd = true;
+            return parent;
+        }
+
+        @Override
+        public double readDouble() throws IOException {
+            return next().readDouble();
+        }
+
+        @Override
+        public float readFloat() throws IOException {
+            return next().readFloat();
+        }
+
+        @Override
+        public int readInt32() throws IOException {
+            return next().readInt32();
+        }
+
+        @Override
+        public long readInt64() throws IOException {
+            return next().readInt64();
+        }
+
+        @Override
+        public long readUInt64() throws IOException {
+            return next().readUInt64();
+        }
+
+        @Override
+        public long readFixed64() throws IOException {
+            return next().readFixed64();
+        }
+
+        @Override
+        public int readFixed32() throws IOException {
+            return next().readFixed32();
+        }
+
+        @Override
+        public int readUInt32() throws IOException {
+            return next().readUInt32();
+        }
+
+        @Override
+        public int readSFixed32() throws IOException {
+            return next().readSFixed32();
+        }
+
+        @Override
+        public long readSFixed64() throws IOException {
+            return next().readSFixed64();
+        }
+
+        @Override
+        public int readSInt32() throws IOException {
+            return next().readSInt32();
+        }
+
+        @Override
+        public long readSInt64() throws IOException {
+            return next().readSInt64();
+        }
+
+        @Override
+        public boolean readBool() throws IOException {
+            return next().readBool();
+        }
+
+        @Override
+        public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
+            return next().readEnum(converter);
+        }
+
+        @Override
+        public void readString(Utf8String store) throws IOException {
+            next().readString(store);
+        }
+
+        @Override
+        public void readBytes(RepeatedByte store) throws IOException {
+            next().readBytes(store);
+        }
+
+        @Override
+        public ProtoSource readBytesAsSource() throws IOException {
+            return next().readBytesAsSource();
+        }
+
+        @Override
+        public <ProtoMsg extends ProtoMessage<ProtoMsg>> ProtoMsg readMessage(ProtoMsg msg) throws IOException {
+            return next().readMessage(msg);
+        }
+
+        @Override
+        public <ProtoMsg extends ProtoMessage<ProtoMsg>> ProtoMsg readGroup(ProtoMsg msg) throws IOException {
+            return next().readGroup(msg);
+        }
+
+        @Override
+        public void skipUnknownEnumValue() throws IOException {
+            parent.skipUnknownEnumValue();
+            skippedUnknownEnum = true;
+        }
+
+        @Override
+        public boolean trySkipNullValue() throws IOException {
+            if (isAtNull()) {
+                throw new InvalidJsonException("Map value is null for key '" + keySource.key + "'");
+            }
+            return false;
+        }
+
+        @Override
+        protected boolean isAtNull() throws IOException {
+            return !atKey && parent.isAtNull();
+        }
+
+        @Override
+        protected void skipValue() throws IOException {
+            next().skipValue();
+        }
+
+        @Override
+        protected CharSequence readFieldName() {
+            return atKey ? "key" : "value";
+        }
+
+        @Override
+        public boolean isAtEnd() {
+            return atEnd;
+        }
+
+        @Override
+        public boolean beginObject() {
+            return true; // the entry itself
+        }
+
+        @Override
+        public void endObject() {
+        }
+
+        @Override
+        public void beginArray() {
+            throw new UnsupportedOperationException("map values can't be repeated");
+        }
+
+        @Override
+        public void endArray() {
+            throw new UnsupportedOperationException("map values can't be repeated");
+        }
+
+        @Override
+        public void close() {
+        }
+
+        private final JsonSource parent;
+        private final MapKeySource keySource = new MapKeySource();
+        private boolean atKey;
+        private boolean atEnd;
+        boolean skippedUnknownEnum;
+
+    }
+
+    /**
+     * Reads the key types of map entries from a member name
+     */
+    private static final class MapKeySource extends JsonSource {
+
+        @Override
+        public long readInt64() throws IOException {
+            final int length = toAscii();
+            return JsonDecoding.Numbers.readLong(bytes.array, 0, length);
+        }
+
+        @Override
+        public long readUInt64() throws IOException {
+            final int length = toAscii();
+            return JsonDecoding.Numbers.readUnsignedLong(bytes.array, 0, length);
+        }
+
+        @Override
+        public int readInt32() throws IOException {
+            final long value = readInt64();
+            if ((int) value != value) {
+                throw outOfRange("int32", value);
+            }
+            return (int) value;
+        }
+
+        @Override
+        public boolean readBool() throws IOException {
+            if ("true".contentEquals(key)) {
+                return true;
+            } else if ("false".contentEquals(key)) {
+                return false;
+            }
+            throw new InvalidJsonException("Invalid bool map key: '" + key + "'");
+        }
+
+        @Override
+        public void readString(Utf8String store) {
+            store.copyFrom(key);
+        }
+
+        private int toAscii() {
+            bytes.clear();
+            for (int i = 0; i < key.length(); i++) {
+                final char c = key.charAt(i);
+                bytes.add((byte) (c < 0x80 ? c : '?')); // not a valid number
+            }
+            return bytes.length;
+        }
+
+        @Override
+        public double readDouble() {
+            throw new UnsupportedOperationException("not a map key type");
+        }
+
+        @Override
+        public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) {
+            throw new UnsupportedOperationException("not a map key type");
+        }
+
+        @Override
+        public void readBytes(RepeatedByte store) {
+            throw new UnsupportedOperationException("not a map key type");
+        }
+
+        @Override
+        public ProtoSource readBytesAsSource() {
+            throw new UnsupportedOperationException("not a map key type");
+        }
+
+        @Override
+        protected void skipValue() {
+        }
+
+        @Override
+        protected boolean isAtNull() {
+            return false;
+        }
+
+        @Override
+        protected CharSequence readFieldName() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isAtEnd() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean beginObject() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void endObject() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void beginArray() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void endArray() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close() {
+        }
+
+        CharSequence key;
+        private final RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+
+    }
 
     /**
      * Maps protobuf messages onto the generic JsonReader. Scalars are read as raw bytes

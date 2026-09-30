@@ -631,9 +631,13 @@ class MessageGenerator {
 
         writeTo.addStatement("output.beginObject()");
 
-        // add every set field
-        getFieldSortedByOutputOrder().forEach(f -> {
-            if (f.getInfo().isRequired()) {
+        // add every set field. Map entries always write both fields in order, i.e., "key": value
+        final boolean isMapEntry = info.getDescriptor().getOptions().getMapEntry();
+        (isMapEntry ? getFieldSortedByNumber() : getFieldSortedByOutputOrder()).forEach(f -> {
+            if (isMapEntry) {
+                writeTo.addCode(f.ensureFieldNotNull);
+                f.generateJsonSerializationCode(writeTo);
+            } else if (f.getInfo().isRequired()) {
                 // no need to check has state again
                 f.generateJsonSerializationCode(writeTo);
             } else {
@@ -644,7 +648,7 @@ class MessageGenerator {
         });
 
         // add unknown fields as base64
-        if (info.isStoreUnknownFieldsEnabled()) {
+        if (info.isStoreUnknownFieldsEnabled() && !isMapEntry) {
             writeTo.addCode(named("if ($unknownBytes:N.length() > 0)"))
                     .beginControlFlow("")
                     .addStatement(named("output.writeBytes($abstractMessage:T.$unknownBytesKey:N, $unknownBytes:N)"))
@@ -873,6 +877,12 @@ class MessageGenerator {
                 break;
         }
         return fields;
+    }
+
+    private List<FieldGenerator> getFieldSortedByNumber() {
+        final List<FieldGenerator> sortedFields = new ArrayList<>(fields);
+        sortedFields.sort(FieldUtil.AscendingNumberSorter);
+        return sortedFields;
     }
 
     private List<FieldGenerator> getFieldSortedByOutputOrder() {

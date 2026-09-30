@@ -375,7 +375,9 @@ public class FieldGenerator {
     }
 
     protected void generateJsonSerializationCode(MethodSpec.Builder method) {
-        if (info.isRepeated()) {
+        if (info.isMap()) {
+            method.addStatement(named("output.writeMap($fieldNames:T.$field:N, $field:N)"));
+        } else if (info.isRepeated()) {
             method.addStatement(named("output.writeRepeated$capitalizedType:L($fieldNames:T.$field:N, $field:N)"));
         } else if (info.isEnum()) {
             method.addStatement(named("output.write$capitalizedType:L($fieldNames:T.$field:N, $field:N, $type:T.converter())"));
@@ -387,7 +389,9 @@ public class FieldGenerator {
     protected void generateJsonDeserializationCode(MethodSpec.Builder method) {
         method.addCode(clearOtherOneOfs).addCode(ensureFieldNotNull);
         if (info.isRepeated()) {
-            if (info.isEnum()) {
+            if (info.isMap()) {
+                method.addStatement(named("input.readMap($field:N)"));
+            } else if (info.isEnum()) {
                 method.addStatement(named("input.readRepeated$capitalizedType:L($field:N, $type:T.converter())"));
             } else {
                 method.addStatement(named("input.readRepeated$capitalizedType:L($field:N)"));

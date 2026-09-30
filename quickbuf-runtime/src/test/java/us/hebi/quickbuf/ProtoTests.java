@@ -989,6 +989,31 @@ public class ProtoTests {
     }
 
     @Test
+    public void testJsonMaps() throws IOException {
+        Struct struct = Struct.newInstance();
+        struct.getMutableFields().next().setKey("n").getMutableValue().setNumberValue(1);
+        struct.getMutableFields().next().setKey("s\"").getMutableValue().setStringValue("x");
+        struct.getMutableFields().next(); // entries without key and value use the defaults
+        String json = "{\"fields\":{\"n\":{\"numberValue\":1},\"s\\\"\":{\"stringValue\":\"x\"},\"\":{}}}";
+        assertEquals(json, JsonSink.newInstance().writeMessage(struct).toString());
+
+        Struct parsed = Struct.parseFrom(JsonSource.newInstance(json));
+        assertEquals(3, parsed.getFields().length());
+        assertEquals("s\"", parsed.getFields().get(1).getKey());
+        assertEquals("x", parsed.getFields().get(1).getValue().getStringValue());
+        assertEquals(json, JsonSink.newInstance().writeMessage(parsed).toString());
+
+        String nested = "{\"fields\":{\"a\":{\"structValue\":{\"fields\":{\"b\":{\"boolValue\":true}}}},\"c\":{\"boolValue\":false}}}";
+        assertEquals(nested, JsonSink.newInstance().writeMessage(Struct.parseFrom(JsonSource.newInstance(nested))).toString());
+
+        try {
+            Struct.parseFrom(JsonSource.newInstance("{\"fields\":{\"n\":null}}"));
+            fail("map values can't be null");
+        } catch (InvalidJsonException expected) {
+        }
+    }
+
+    @Test
     public void testLazyInitialization() throws IOException {
         assertNotNull(Value.newInstance().getMutableListValue());
         assertNotNull(Value.newInstance().getMutableStringValueBytes());

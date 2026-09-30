@@ -80,6 +80,11 @@ public class JacksonSink extends JsonSink {
     }
 
     @Override
+    protected void writeMapKey(final CharSequence key) throws IOException {
+        writer.writeFieldName(key.toString());
+    }
+
+    @Override
     protected void writeNumber(double value) throws IOException {
         if (Double.isNaN(value)) {
             writer.writeString("NaN");

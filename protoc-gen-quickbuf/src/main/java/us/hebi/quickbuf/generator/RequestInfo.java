@@ -513,6 +513,13 @@ public class RequestInfo {
             return "proto3".equals(getParentTypeInfo().getParentFile().getDescriptor().getSyntax());
         }
 
+        public boolean isMap() {
+            // protoc turns map fields into repeated entry messages nested in the parent
+            return isRepeated() && isMessage() && parentTypeInfo.getDescriptor().getNestedTypeList().stream()
+                    .anyMatch(type -> type.getOptions().getMapEntry()
+                            && descriptor.getTypeName().equals(parentTypeInfo.typeId + "." + type.getName()));
+        }
+
         public boolean isSingularPrimitiveOrEnum() {
             return isSingular() && (isPrimitive() || isEnum());
         }

@@ -13,6 +13,7 @@
 * changed repeated scalar fields of proto3 files to be written packed by default like protobuf. An explicit `[packed = false]` is still honored
 * fixed enum alias names being rejected when parsing enums by name, e.g., in JSON
 * fixed escaped characters in quoted JSON scalars such as numbers, e.g., `"1\u0032"` for an int field
+* changed map fields to use the JSON object form of the proto3 mapping, e.g., `{"key1":value1}`, instead of an array of entries. JSON with the old array form can't be read anymore
 
 == 1.5 (unreleased)
 
