@@ -2,7 +2,7 @@
   
 Google offers a [conformance test suite](https://github.com/protocolbuffers/protobuf/blob/main/conformance/README.md) that contains thousands of automated unit tests to check whether an implementation conforms to the specification. The suite is setup similarly to protoc plugins where a native executable calls the plugin and communicates via `std::in` and `std::out`. Due to [limitations with pipes](https://github.com/protocolbuffers/protobuf/blob/main/conformance/conformance.proto#L38-L55) in Windows and macOS, the tester can currently only be run on Linux.
 
-QuickBuffers currently passes all required and recommended tests and provides options to produce binary equivalent output to Protobuf-Java. The test implementation is in [ConformanceQuickbuf.java](src/main/java/us/hebi/quickbuf/conformance/ConformanceQuickbuf.java).
+QuickBuffers passes all proto2 tests and provides options to produce binary equivalent output to Protobuf-Java. The proto3 tests run as well, and the ones that need unsupported features (JSON maps and well-known types, implicit presence, open enums, strict JSON parsing) are listed in [failure_list.txt](failure_list.txt). The test implementation is in [ConformanceQuickbuf.java](src/main/java/us/hebi/quickbuf/conformance/ConformanceQuickbuf.java).
 
 **Compile the QuickBuffers test executable**
 
@@ -38,19 +38,19 @@ cmake . -Dprotobuf_BUILD_CONFORMANCE=ON && cmake --build .
 cd ${protobufDir}
 cp ${quickbufDir}/conformance/target/ConformanceQuickbuf.exe ${protobufDir}/
 chmod +x ConformanceQuickbuf.exe
-./conformance_test_runner --enforce_recommended ConformanceQuickbuf.exe
+./conformance_test_runner --enforce_recommended --failure_list ${quickbufDir}/conformance/failure_list.txt ConformanceQuickbuf.exe
 ```
 
-The output should list 0 failures. Unsupported features such as the text format and some Google internal formats are skipped.
+The output should list 0 unexpected failures. Unsupported features such as the text format and some Google internal formats are skipped. The 3.20 runner does not know the tests marked `# since 3.21`, so filter them out of the list first.
 
 ```text
-user:~/protobuf$ ./conformance_test_runner --enforce_recommended ConformanceQuickbuf.exe
+user:~/protobuf$ ./conformance_test_runner --enforce_recommended --failure_list failure_list.txt ConformanceQuickbuf.exe
 WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
 I0000 00:00:1675465291.622071   18024 conformance_test_runner.cc:315] ConformanceQuickbuf.exe
 
 CONFORMANCE TEST BEGIN ====================================
 
-CONFORMANCE SUITE PASSED: 653 successes, 1376 skipped, 0 expected failures, 0 unexpected failures.
+CONFORMANCE SUITE PASSED: 1727 successes, 0 skipped, 302 expected failures, 0 unexpected failures.
 
 WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
 I0000 00:00:1675465292.115120   22087 conformance_test_runner.cc:315] ConformanceQuickbuf.exe

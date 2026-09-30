@@ -79,14 +79,12 @@ public class ConformanceQuickbuf {
 
     private ConformanceResponse doTest(ConformanceRequest request, ConformanceResponse response) {
         String messageType = request.getMessageType();
-        boolean isProto3 = messageType.equals("protobuf_test_messages.proto3.TestAllTypesProto3");
         boolean isProto2 = messageType.equals("protobuf_test_messages.proto2.TestAllTypesProto2");
 
         // skip unsupported modes
         if (!request.hasPayload()) throw new IllegalArgumentException("Request didn't have payload.");
         if (request.hasTextPayload()) return response.setSkipped("text");
         if (request.hasJspbPayload()) return response.setSkipped("jspb");
-        if (isProto3) return response.setSkipped("proto3");
 
         final ProtoMessage<?> testMessage = isProto2
                 ? TestAllTypesProto2.newInstance()
