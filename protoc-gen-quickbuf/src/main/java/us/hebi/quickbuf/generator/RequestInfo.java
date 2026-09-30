@@ -504,7 +504,13 @@ public class RequestInfo {
         }
 
         public boolean isPacked() {
-            return isPackable() && descriptor.getOptions().hasPacked() && descriptor.getOptions().getPacked();
+            if (!isPackable()) {
+                return false;
+            } else if (descriptor.getOptions().hasPacked()) {
+                return descriptor.getOptions().getPacked();
+            }
+            // proto3 packs repeated scalars by default
+            return "proto3".equals(getParentTypeInfo().getParentFile().getDescriptor().getSyntax());
         }
 
         public boolean isSingularPrimitiveOrEnum() {

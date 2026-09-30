@@ -10,6 +10,7 @@
 * fixed `JsonSource` rounding float values twice, which was off by one bit in rare cases
 * changed `JsonSource` to accept integral values with a fraction or exponent for integer fields, e.g., `1.0` or `1e3`, like protobuf's `JsonFormat`
 * added a recursion limit to JSON sources, `JsonSource::setRecursionLimit` with a default of 64 like `ProtoSource`
+* changed repeated scalar fields of proto3 files to be written packed by default like protobuf. An explicit `[packed = false]` is still honored
 
 == 1.5 (unreleased)
 
