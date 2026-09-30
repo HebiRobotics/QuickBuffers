@@ -508,6 +508,27 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedReserveGrowsGeometrically() {
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+        RepeatedString strings = RepeatedString.newEmptyInstance();
+        int byteReallocations = 0;
+        int stringReallocations = 0;
+        for (int i = 0; i < 100000; i++) {
+            int capacity = bytes.capacity();
+            bytes.reserve(1).setLength(bytes.length() + 1); // like the json writers
+            byteReallocations += capacity != bytes.capacity() ? 1 : 0;
+
+            capacity = strings.capacity();
+            strings.add("");
+            stringReallocations += capacity != strings.capacity() ? 1 : 0;
+        }
+        assertTrue("byte reallocations: " + byteReallocations, byteReallocations < 40);
+        assertTrue("string reallocations: " + stringReallocations, stringReallocations < 40);
+
+        assertEquals(10, RepeatedByte.newEmptyInstance().reserve(10).capacity());
+    }
+
+    @Test
     public void testRepeatedMessageShrinkingCopy() {
         TestAllTypes[] values = new TestAllTypes[]{
                 TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),

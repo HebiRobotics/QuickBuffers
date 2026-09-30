@@ -67,18 +67,28 @@ abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> im
     /**
      * Makes sure that the internal storage capacity has space for
      * at least the requested number of entries. This method will
-     * increase the internal capacity if needed.
+     * increase the internal capacity if needed. The capacity grows
+     * by at least half, so appending in small steps stays linear.
      *
      * @param count number of entries to be added
      */
     @SuppressWarnings("unchecked")
     public final RepeatedType reserve(int count) {
         final int desiredSize = length + count;
-        if (desiredSize - capacity() > 0) { // overflow-conscious
-            extendCapacityTo(desiredSize);
+        final int oldCapacity = capacity();
+        if (desiredSize - oldCapacity > 0) { // overflow-conscious
+            // overflow-conscious code (copied from ArrayList::grow)
+            int newCapacity = oldCapacity + (oldCapacity >> 1);
+            if (newCapacity - desiredSize < 0)
+                newCapacity = desiredSize;
+            if (newCapacity - MAX_ARRAY_SIZE > 0)
+                newCapacity = desiredSize > MAX_ARRAY_SIZE ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
+            extendCapacityTo(newCapacity);
         }
         return (RepeatedType) this;
     }
+
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /**
      * Sets the output length to zero and performs any
