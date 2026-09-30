@@ -147,12 +147,14 @@ public class JsonNumbersTest {
                 "\"optionalUint32\":4.294967295e9," +
                 "\"optionalUint64\":1.8446744073709551e19," +
                 "\"optionalSfixed32\":-0," +
+                "\"optionalFixed32\":\"2\\u0031\"," + // escaped digit
                 "\"repeatedInt32\":[1e1,\"2.00\",30E-1]}"));
         assertEquals(1, msg.getOptionalInt32());
         assertEquals(-1500, msg.getOptionalInt64());
         assertEquals(-1, msg.getOptionalUint32());
         assertEquals(-616, msg.getOptionalUint64()); // 18446744073709551000 as unsigned
         assertEquals(0, msg.getOptionalSfixed32());
+        assertEquals(21, msg.getOptionalFixed32());
         assertArrayEquals(new int[]{10, 2, 3}, msg.getRepeatedInt32().toArray());
 
         for (String json : new String[]{
