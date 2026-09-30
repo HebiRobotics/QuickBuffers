@@ -559,7 +559,7 @@ public final class JsonReader implements Closeable {
     }
 
     /**
-     * Copies the raw bytes of the next scalar, i.e., the undecoded contents of a string or the
+     * Copies the bytes of the next scalar, i.e., the unescaped contents of a string or the
      * text of any unquoted value including non-standard ones such as NaN, into the output.
      *
      * @return false without consuming anything if the value is null
@@ -1002,9 +1002,10 @@ public final class JsonReader implements Closeable {
             } else if (c < 0x20 && !lenient) {
                 throw controlCharacter(c);
             }
-            output.add((byte) c);
             if (c == '\\') {
-                output.add((byte) readByte());
+                readEscapedUtf8(output); // e.g. escaped digits in a quoted number
+            } else {
+                output.add((byte) c);
             }
         }
     }

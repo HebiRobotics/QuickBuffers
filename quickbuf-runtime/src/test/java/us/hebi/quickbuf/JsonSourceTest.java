@@ -225,6 +225,12 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testEscapedQuotedValues() throws Exception {
+        TestAllTypes msg = parseJson("{\"optionalFixed32\":\"2\\u0031\"}");
+        Assert.assertEquals(21, msg.getOptionalFixed32());
+    }
+
+    @Test
     public void testInvalidIntegerValues() throws Exception {
         for (String json : new String[]{
                 "{\"optionalInt32\":\"\"}",
