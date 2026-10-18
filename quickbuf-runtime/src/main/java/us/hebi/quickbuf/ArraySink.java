@@ -218,7 +218,7 @@ class ArraySink extends ProtoSink {
                 return super.setOutput(buffer, offset, length);
             } else {
                 // Wrapping direct memory
-                if (offset <= 0) {
+                if (offset == 0) { // some Android phones use the sign bit as a flag, so negative addresses can be valid
                     throw new NullPointerException("null reference with invalid address offset");
                 }
                 this.buffer = null;

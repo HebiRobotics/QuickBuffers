@@ -307,7 +307,7 @@ class ArraySource extends ProtoSource {
                 // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;
                 return super.setInput(buffer, offset, length);
-            } else if (offset <= 0) {
+            } else if (offset == 0) { // some Android phones use the sign bit as a flag, so negative addresses can be valid
                 throw new NullPointerException("null reference with invalid base address");
             } else if (length < 0) {
                 throw new ArrayIndexOutOfBoundsException("negative length");

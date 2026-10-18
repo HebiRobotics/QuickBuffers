@@ -84,6 +84,26 @@ public class UnsafeTest {
     }
 
     @Test
+    public void testTaggedDirectAddress() {
+        // e.g. Android with ARM top byte ignore puts a tag into the upper bits
+        long address = -16L << 56 | 0x1000;
+        ProtoSink.newDirectSink().setOutput(null, address, 8);
+        ProtoSource.newDirectSource().setInput(null, address, 8);
+
+        try {
+            ProtoSink.newDirectSink().setOutput(null, 0, 8);
+            fail("null address sink");
+        } catch (NullPointerException npe) {
+        }
+
+        try {
+            ProtoSource.newDirectSource().setInput(null, 0, 8);
+            fail("null address source");
+        } catch (NullPointerException npe) {
+        }
+    }
+
+    @Test
     public void testRepeatedPacked() throws IOException {
         RepeatedPackables.Packed msg = RepeatedPackables.Packed.parseFrom(CompatibilityTest.repeatedPackablesPacked());
         int size = msg.getSerializedSize();
