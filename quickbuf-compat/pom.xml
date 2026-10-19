@@ -14,8 +14,6 @@
 
     <properties>
         <javaModuleName>us.hebi.quickbuf.compat</javaModuleName>
-        <maven.compiler.source>6</maven.compiler.source>
-        <maven.compiler.target>6</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -104,35 +102,7 @@
                 </executions>
             </plugin>
 
-            <!-- Plugins required for publishing to Maven Central -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>jdk17compat</id>
-            <activation>
-                <jdk>(11,)</jdk>
-            </activation>
-            <properties>
-                <!-- increase language level for recent jdks to allow compiling. Release with 8 -->
-                <maven.compiler.source>8</maven.compiler.source>
-                <maven.compiler.target>8</maven.compiler.target>
-            </properties>
-        </profile>
-    </profiles>
 
 </project>

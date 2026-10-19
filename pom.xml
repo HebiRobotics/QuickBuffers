@@ -87,7 +87,7 @@
         <scriptsDir>${project.basedir}/../protoc-gen-quickbuf/src/main/scripts</scriptsDir>
 
         <!-- Default settings -->
-        <protobuf.version>3.21.12</protobuf.version>
+        <protobuf.version>4.36.2</protobuf.version>
         <protoc.jar.version>3.11.4</protoc.jar.version>
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
 
@@ -121,12 +121,12 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.13.1</version>
+                <version>2.22.3</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
-                <version>2.9.0</version>
+                <version>2.14.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
@@ -161,7 +161,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.30</version>
+                <version>1.18.48</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
@@ -183,6 +183,12 @@
         <!-- Common plugin configurations -->
         <pluginManagement>
             <plugins>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.16.0</version>
+                </plugin>
 
                 <!-- Shade plugins as uber-jars, so we can call them without dependencies -->
                 <plugin>
@@ -350,6 +356,17 @@
     </build>
 
     <profiles>
+
+        <!-- JDK 23+ no longer runs annotation processors (Lombok, JMH) from the classpath by default -->
+        <profile>
+            <id>jdk23proc</id>
+            <activation>
+                <jdk>[23,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.proc>full</maven.compiler.proc>
+            </properties>
+        </profile>
 
         <!-- Other plugins required for publishing to Maven Central -->
         <profile>

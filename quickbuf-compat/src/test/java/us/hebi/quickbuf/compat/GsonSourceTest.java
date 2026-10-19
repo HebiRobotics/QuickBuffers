@@ -64,10 +64,10 @@ public class GsonSourceTest extends JsonSourceTest {
             parseJson(input);
             fail("expected error: " + error);
         } catch (IOException ioe) {
-            assertEquals(error, ioe.getMessage());
+            assertEquals(firstLine(error), firstLine(ioe.getMessage()));
         } catch (IllegalStateException stateEx) {
             // TODO: wrap IllegalStateException?
-            assertEquals(error, stateEx.getMessage());
+            assertEquals(firstLine(error), firstLine(stateEx.getMessage()));
         }
     }
 

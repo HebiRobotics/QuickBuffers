@@ -14,11 +14,9 @@
 
     <properties>
         <javaModuleName>us.hebi.quickbuf.runtime</javaModuleName>
-        <maven.compiler.source>6</maven.compiler.source>
-        <maven.compiler.target>6</maven.compiler.target>
         <apiDirectory>us/hebi/quickbuf</apiDirectory>
         <copyFromDir>${basedir}/src/main/java/${apiDirectory}</copyFromDir>
-        <generatedSourcesDir>${basedir}/target/generated-sources/annotations/</generatedSourcesDir>
+        <generatedSourcesDir>${basedir}/target/generated-sources/primitives/</generatedSourcesDir>
         <copyToDir>${generatedSourcesDir}/${apiDirectory}</copyToDir>
     </properties>
 
@@ -61,7 +59,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
                 <configuration>
                     <excludes>
                         <exclude>**/us/hebi/quickbuf/JdkMethods.java</exclude>
@@ -230,19 +227,5 @@
 
         </plugins>
     </build>
-
-    <profiles>
-        <!-- Increases the language level for recent jdks to allow compiling. Release with jdk 8 -->
-        <profile>
-            <id>jdk17compat</id>
-            <activation>
-                <jdk>(11,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.source>8</maven.compiler.source>
-                <maven.compiler.target>8</maven.compiler.target>
-            </properties>
-        </profile>
-    </profiles>
 
 </project>
