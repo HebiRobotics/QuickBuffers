@@ -10,17 +10,15 @@ on:
 
 jobs:
   conformance:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
     - uses: graalvm/setup-graalvm@v1
       with:
-        version: 'latest'
-        java-version: '21'
-        set-java-home: 'true'
-        components: 'native-image'
-        cache: ''
+        distribution: 'graalvm'
+        version: '25.4'
+        native-image-musl: 'true'
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build protoc plugins

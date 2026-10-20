@@ -91,8 +91,7 @@
         <protoc.jar.version>3.11.4</protoc.jar.version>
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
 
-        <graalvm.tools.version>0.9.27</graalvm.tools.version>
-        <native.staticArg>--static</native.staticArg>
+        <graalvm.tools.version>1.1.14</graalvm.tools.version>
         <native.extension>.exe</native.extension>
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
@@ -298,8 +297,8 @@
                         <buildArgs>
                             <arg>-march=compatibility</arg> <!-- support older processors (see #54) -->
                             <arg>--no-fallback</arg>
+                            <arg>-Os</arg> <!-- optimize for download size -->
                             <arg>--verbose</arg>
-                            <arg>${native.staticArg}</arg>
                         </buildArgs>
                     </configuration>
                 </plugin>
@@ -481,6 +480,31 @@
             </properties>
         </profile>
         <profile>
+            <id>platform-linux-x86_64</id>
+            <activation>
+                <os>
+                    <name>linux</name>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.graalvm.buildtools</groupId>
+                            <artifactId>native-maven-plugin</artifactId>
+                            <configuration>
+                                <buildArgs combine.children="append">
+                                    <arg>--static</arg> <!-- only supported on linux -->
+                                    <arg>--libc=musl</arg> <!-- fully static glibc is no longer supported -->
+                                </buildArgs>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
             <id>platform-osx</id>
             <activation>
                 <os>
@@ -489,7 +513,6 @@
             </activation>
             <properties>
                 <protoc.os>osx</protoc.os>
-                <native.staticArg>--verbose</native.staticArg> <!-- unsupported on osx -->
             </properties>
         </profile>
         <profile>
@@ -502,6 +525,30 @@
             <properties>
                 <protoc.arch>aarch_64</protoc.arch>
             </properties>
+        </profile>
+        <profile>
+            <id>platform-linux-aarch64</id>
+            <activation>
+                <os>
+                    <name>linux</name>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.graalvm.buildtools</groupId>
+                            <artifactId>native-maven-plugin</artifactId>
+                            <configuration>
+                                <buildArgs combine.children="append">
+                                    <arg>--static-nolibc</arg> <!-- graal rejects musl on aarch64 -->
+                                </buildArgs>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
         </profile>
 
         <!-- uses the generated native generator -->
