@@ -533,6 +533,29 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedMessageAddAllKeepsCapacity() {
+        RepeatedMessage<TestAllTypes> other = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        other.next().setOptionalInt32(1);
+        other.next().setOptionalInt32(2);
+
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        messages.reserve(8);
+        TestAllTypes first = messages.next().setOptionalInt32(0);
+        messages.addAll(other);
+        assertEquals(8, messages.capacity());
+        assertSame(first, messages.get(0));
+        assertEquals(3, messages.length());
+        assertEquals(2, messages.get(2).getOptionalInt32());
+
+        messages.clear();
+        messages.copyFrom(other);
+        assertEquals(8, messages.capacity());
+        assertSame(first, messages.get(0));
+        assertEquals(2, messages.length());
+        assertEquals(1, messages.get(0).getOptionalInt32());
+    }
+
+    @Test
     public void testBytes() throws IOException {
         byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];

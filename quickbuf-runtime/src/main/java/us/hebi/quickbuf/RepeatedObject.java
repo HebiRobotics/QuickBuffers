@@ -84,7 +84,7 @@ abstract class RepeatedObject<SubType extends RepeatedObject<SubType, STORE, IN,
         if (other.length < length) {
             clearElementsFrom(other.length);
         }
-        if (other.length > length) {
+        if (other.length > capacity()) {
             extendCapacityTo(other.length);
         }
         length = other.length;
@@ -103,7 +103,7 @@ abstract class RepeatedObject<SubType extends RepeatedObject<SubType, STORE, IN,
     @Override
     public void addAll(SubType values) {
         final int newLength = length + values.length;
-        extendCapacityTo(newLength);
+        reserve(values.length);
         for (int i = 0; i < values.length; i++) {
             copyFrom0(array[length + i], values.array[i]);
         }
