@@ -55,6 +55,33 @@
                 </executions>
             </plugin>
 
+            <!-- only use APIs that are available on Android -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>animal-sniffer-maven-plugin</artifactId>
+                <version>1.28</version>
+                <configuration>
+                    <signature>
+                        <groupId>net.sf.androidscents.signature</groupId>
+                        <artifactId>android-api-level-21</artifactId>
+                        <version>5.0.1_r2</version>
+                    </signature>
+                    <ignores>
+                        <!-- guarded fast paths -->
+                        <ignore>sun.misc.Unsafe</ignore>
+                        <!-- multiplyHigh in the pre-compiled JdkMethods, the plugin can't ignore single methods -->
+                        <ignore>java.lang.Math</ignore>
+                    </ignores>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Don't compile sources that we replace with a pre-compiled class file -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
