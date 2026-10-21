@@ -38,7 +38,6 @@ class Javadoc {
     public static String inherit() {
         // Note: JavaDoc automatically adds the superclass doc,
         // so we don't need to manually call it out.
-//        return "{@inheritDoc}";
         return "";
     }
 
@@ -72,7 +71,7 @@ class Javadoc {
 
     public static CodeBlock.Builder withComments(SourceCodeInfo.Location location) {
         // Protobuf-java seems to prefer leading comments and only use trailing as a fallback.
-        // They also remove the first space as well as empty lines, but that'
+        // They also remove the first space as well as empty lines, which is not done here.
         CodeBlock.Builder builder = CodeBlock.builder();
         String format = "<pre>\n$L</pre>\n\n";
         if (location.hasLeadingComments()) {

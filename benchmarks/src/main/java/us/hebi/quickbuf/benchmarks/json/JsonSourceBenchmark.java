@@ -64,7 +64,7 @@ import static us.hebi.quickbuf.benchmarks.comparison.SbeThroughputBenchmarkQuick
  * JsonSourceBenchmark.testJsonMarketDecode     thrpt   10  484,539 ± 49,410  ops/ms
  *
  * @author Florian Enner
- * @since 01 Mär 2022
+ * @since 01 Mar 2022
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
