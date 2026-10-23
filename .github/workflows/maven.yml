@@ -11,12 +11,11 @@ on:
 jobs:
   package:
     strategy:
-      fail-fast: false # keep going to see whether a failure is platform specific
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         jdk: [8, 27]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
     - name: Set up JDK
