@@ -38,18 +38,6 @@
         <tag>HEAD</tag>
     </scm>
 
-    <!-- Maven Central Distribution -->
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
     <!-- Required: developer information: -->
     <developers>
         <developer>
@@ -89,7 +77,7 @@
         <!-- Default settings -->
         <protobuf.version>4.36.2</protobuf.version>
         <protoc.jar.version>3.11.4</protoc.jar.version>
-        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        <autoPublish>true</autoPublish>
 
         <graalvm.tools.version>1.1.14</graalvm.tools.version>
         <native.extension>.exe</native.extension>
@@ -377,7 +365,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.0.1</version>
+                        <version>3.3.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -393,7 +381,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.6.3</version>
+                        <version>3.12.0</version>
                         <executions>
                             <execution>
                                 <id>attach-javadoc</id>
@@ -409,7 +397,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.0.1</version>
+                        <version>3.2.8</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -430,23 +418,15 @@
                         </executions>
                     </plugin>
 
-                    <!-- Deploy selected modules -->
+                    <!-- Publish via the Central Portal (replaces the deploy plugin) -->
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>3.0.0-M1</version>
-                    </plugin>
-
-                    <!-- Nexus Staging -->
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.13</version>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.11.0</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>${autoReleaseAfterClose}</autoReleaseAfterClose>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>${autoPublish}</autoPublish>
                         </configuration>
                     </plugin>
 
