@@ -35,7 +35,7 @@ import static us.hebi.quickbuf.ProtoUtil.*;
  * but a basic version is working.
  *
  * @author Florian Enner
- * @since 17 Mär 2022
+ * @since 17 Mar 2022
  */
 class JsonDecoding {
 
@@ -113,10 +113,10 @@ class JsonDecoding {
         }
 
         public static boolean isBreak(int ch) {
-            return breaks[ch];
+            return ch < 0 || breaks[ch]; // EOF also ends a value
         }
 
-        private static final boolean[] breaks = new boolean[127];
+        private static final boolean[] breaks = new boolean[256];
         final static int[] sHexValues = new int[256];
         final static int[] TRUE_VALUE = {INT_t, INT_r, INT_u, INT_e};
         final static int[] FALSE_VALUE = {INT_f, INT_a, INT_l, INT_s, INT_e};
@@ -271,6 +271,8 @@ class JsonDecoding {
                     return '\\';
                 case '"':
                     return '"';
+                case '/':
+                    return '/';
                 case 'b':
                     return '\b';
                 case 't':
@@ -359,7 +361,7 @@ class JsonDecoding {
                 int digit;
                 for (result = 0L; i < len; result -= (long) digit) {
                     digit = (buffer[i++ + tokenStart] & 0xFF) - INT_0;
-                    if (digit < 0 || result < multmin) {
+                    if (digit < 0 || digit > 9 || result < multmin) {
                         throw InvalidJsonException.illegalNumberFormat();
                     }
 

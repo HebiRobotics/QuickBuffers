@@ -72,6 +72,83 @@ public class JsonSourceTest {
 
     }
 
+    @Test(timeout = 5000)
+    public void testSkippingTruncatedInput() throws Exception {
+        for (String json : new String[]{"{\"unknown\":[1", "{\"unknown\":{\"a\":1"}) {
+            try {
+                ForeignMessage.newInstance().mergeFrom(newJsonSource(json).setIgnoreUnknownFields(true));
+                fail("expected to fail on truncated input: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
+    public void testUnpaddedBase64() throws Exception {
+        assertArrayEquals(new byte[]{1}, parseJson("{\"optionalBytes\":\"AQ\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2}, parseJson("{\"optionalBytes\":\"AQI\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2, 3}, parseJson("{\"optionalBytes\":\"AQID\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2}, parseJson("{\"optionalBytes\":\"AQI=\"}").getOptionalBytes().toArray());
+
+        // escapes get decoded first, so escaped line breaks get ignored like other illegal chars
+        assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6}, parseJson("{\"optionalBytes\":\"AQID\\r\\nBAUG\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{1, 2}, parseJson("{\"optionalBytes\":\"\\u0041QI\"}").getOptionalBytes().toArray());
+
+        for (String json : new String[]{"{\"optionalBytes\":\"A\"}", "{\"optionalBytes\":\"AQIDB\"}"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on invalid base64 length: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
+    public void testEscapedSolidus() throws Exception {
+        assertEquals("a/b", parseJson("{\"optionalString\":\"a\\/b\"}").getOptionalString());
+
+        // PHP escapes forward slashes in base64 values
+        assertArrayEquals(new byte[]{(byte) 0xAB, (byte) 0xFF}, parseJson("{\"optionalBytes\":\"q\\/8=\"}").getOptionalBytes().toArray());
+        assertArrayEquals(new byte[]{(byte) 0xAB, (byte) 0xFF}, parseJson("{\"optionalBytes\":\"q\\/8\"}").getOptionalBytes().toArray());
+    }
+
+    @Test
+    public void testInvalidUnquotedValues() throws Exception {
+        for (String json : new String[]{"{\"optionalInt32\":1" + (char) 0xE9 + "}", "{\"optionalInt32\":12a}", "{\"optionalInt32\":"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on invalid input: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
+    public void testIntegersOutOfRange() throws Exception {
+        for (String json : new String[]{
+                "{\"optionalInt32\":2147483648}",
+                "{\"optionalInt32\":4294967297}",
+                "{\"optionalUint32\":4294967296}",
+                "{\"optionalUint32\":-2147483649}"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on out of range value: " + json);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
+    public void testUnsignedInt32() throws Exception {
+        TestAllTypes msg = parseJson("{\"optionalUint32\":4294967295,\"optionalFixed32\":2147483648," +
+                "\"repeatedUint32\":[4294967295,-1],\"repeatedFixed32\":[2147483648]}");
+        assertEquals(-1, msg.getOptionalUint32());
+        assertEquals(Integer.MIN_VALUE, msg.getOptionalFixed32());
+        assertEquals(-1, msg.getRepeatedUint32().get(0));
+        assertEquals(-1, msg.getRepeatedUint32().get(1));
+        assertEquals(Integer.MIN_VALUE, msg.getRepeatedFixed32().get(0));
+    }
+
     @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);

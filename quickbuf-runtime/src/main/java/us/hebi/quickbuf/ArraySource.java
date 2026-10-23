@@ -31,9 +31,9 @@ import static us.hebi.quickbuf.WireFormat.*;
  * Source that reads from a flat array
  *
  * @author Florian Enner
- * @since 06 Mär 2022
+ * @since 06 Mar 2022
  */
-class ArraySource extends ProtoSource{
+class ArraySource extends ProtoSource {
 
     private int bufferSizeAfterLimit;
     protected int offset;
@@ -53,10 +53,10 @@ class ArraySource extends ProtoSource{
         if (byteLimit < 0) {
             throw InvalidProtocolBufferException.negativeSize();
         }
-        byteLimit += position;
-        if (byteLimit > limit) { // limit is always Math.min(limit, currentLimit)
+        if (byteLimit > limit - position) { // limit is always Math.min(limit, currentLimit)
             throw InvalidProtocolBufferException.truncatedMessage();
         }
+        byteLimit += position;
         final int oldLimit = currentLimit;
         currentLimit = byteLimit;
         recomputeBufferSizeAfterLimit();
@@ -95,6 +95,7 @@ class ArraySource extends ProtoSource{
         this.position = offset + position;
     }
 
+    @Override
     protected void requireRemaining(final int numBytes) throws IOException {
         if (numBytes < 0) {
             throw InvalidProtocolBufferException.negativeSize();
@@ -306,7 +307,7 @@ class ArraySource extends ProtoSource{
                 // Wrapping heap buffer
                 baseOffset = BYTE_ARRAY_OFFSET;
                 return super.setInput(buffer, offset, length);
-            } else if (offset <= 0) {
+            } else if (offset == 0) { // some Android phones use the sign bit as a flag, so negative addresses can be valid
                 throw new NullPointerException("null reference with invalid base address");
             } else if (length < 0) {
                 throw new ArrayIndexOutOfBoundsException("negative length");

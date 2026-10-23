@@ -22,7 +22,7 @@ package us.hebi.quickbuf;
 
 /**
  * @author Florian Enner
- * @since 18 Mär 2022
+ * @since 18 Mar 2022
  */
 public class InvalidJsonException extends InvalidProtocolBufferException {
 
@@ -37,6 +37,10 @@ public class InvalidJsonException extends InvalidProtocolBufferException {
                 "While parsing a protocol message, the input ended unexpectedly " +
                         "in the middle of a field. This could mean either than the " +
                         "input has been truncated or that the input is invalid.");
+    }
+
+    static InvalidJsonException invalidBase64() {
+        return new InvalidJsonException("Invalid base64 value.");
     }
 
     static InvalidJsonException illegalNumberFormat() {

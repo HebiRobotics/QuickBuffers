@@ -7,9 +7,9 @@
 # QuickBuffers - Fast Protocol Buffers without Allocations
 
 [![Build](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/maven.yml)
-[![Protobuf Conformance Tests](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml/badge.svg?branch=main)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml)
-[![Protobuf Conformance Tests](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml/badge.svg?branch=develop)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/us.hebi.quickbuf/quickbuf-runtime/badge.svg)](https://maven-badges.herokuapp.com/maven-central/us.hebi.quickbuf/quickbuf-runtime)
+[![Conformance (main)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml/badge.svg?branch=main)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml)
+[![Conformance (develop)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml/badge.svg?branch=develop)](https://github.com/HebiRobotics/QuickBuffers/actions/workflows/conformance.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/us.hebi.quickbuf/quickbuf-runtime)](https://central.sonatype.com/artifact/us.hebi.quickbuf/quickbuf-runtime)
 
 QuickBuffers is a Java implementation of [Google's Protocol Buffers](https://developers.google.com/protocol-buffers/) that has been developed for low latency use cases in zero-allocation environments. It has no external dependencies, and the API follows Protobuf-Java where feasible to simplify migration.
 
@@ -52,13 +52,13 @@ In order to use QuickBuffers you need to generate messages and add the correspon
 The message generator `protoc-gen-quickbuf` is set up as a plugin for the protocol buffers compiler `protoc`. You can install one of the [pre-built packages](https://hebirobotics.github.io/QuickBuffers/download.html) and run:
 
 ```sh
-protoc-quickbuf --quickbuf_out=${options>:<outputDir> <protoFiles>
+protoc-quickbuf --quickbuf_out=<options>:<outputDir> <protoFiles>
 ```
 
 or use a [protoc-gen-quickbuf-${version}-${arch}.exe](https://repo1.maven.org/maven2/us/hebi/quickbuf/protoc-gen-quickbuf/) plugin binary with an absolute `pluginPath`:
 
 ```sh
-protoc --plugin-protoc-gen-quickbuf=${exePath} --quickbuf_out=${options>:<outputDir> <protoFiles>
+protoc --plugin=protoc-gen-quickbuf=${exePath} --quickbuf_out=<options>:<outputDir> <protoFiles>
 ```
 
 or build messages in Maven using the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin):
@@ -150,7 +150,7 @@ for (int i = 0; i < 4; i++) {
 }
 ```
 
-Messages can be read from a `ProtoSource` and written to a `ProtoSink`. `newInstance` instantiates optimized implementations for accessing contiguous blocks of memory such as `byte[]` and `ByteBuffer`. Reads and writes do not modify the `ByteBuffer` state, so positions and limits need to be manually if needed.
+Messages can be read from a `ProtoSource` and written to a `ProtoSink`. `newInstance` instantiates optimized implementations for accessing contiguous blocks of memory such as `byte[]` and `ByteBuffer`. Reads and writes do not modify the `ByteBuffer` state, so positions and limits need to be updated manually if needed.
 
 ```Java
 // Convenience wrappers
@@ -180,6 +180,23 @@ Additionally, there are also (non-optimized) convenience wrappers for `InputStre
 ```Java
 ProtoSink.newInstance(new ByteArrayOutputStream());
 ProtoSource.newInstance(new ByteArrayInputStream(bytes));
+```
+
+A `RepeatedByte` output grows as needed, so the size does not need to be known up front. Together with the length delimited form it can hold a stream of multiple messages.
+
+```Java
+// Write multiple messages to a growing buffer
+RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+ProtoSink sink = ProtoSink.newInstance(bytes);
+for (RootMessage msg : messages) {
+    msg.writeDelimitedTo(sink);
+}
+
+// Read them back one at a time
+ProtoSource source = ProtoSource.newInstance(bytes);
+while (!source.isAtEnd()) {
+    result.clearQuick().mergeDelimitedFrom(source);
+}
 ```
 
 Keep in mind that mutability comes at the cost of thread-safety, so contents should be cloned with `ProtoMessage::clone` or copied with `ProtoMessage::copyFrom` before being passed to another thread.
@@ -416,7 +433,7 @@ Be aware that this prevents the definition of cycles in the message definitions.
 
 ## Proguard configuration
 
-There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file. R8 should automatically pick it up from the bundled [config file](./runtime/src/main/resources/META-INF/proguard/quickbuf-runtime.pro).
+There are no reflections, so none of the fields need to be preserved or special cased. However, Proguard may warn about missing methods when obfuscating against an older runtime. This is related to an intentional workaround, so the warnings can just be disabled by adding the line below to the `proguard.conf` file. R8 should automatically pick it up from the bundled [config file](./quickbuf-runtime/src/main/resources/META-INF/proguard/quickbuf-runtime.pro).
 
 ```text
 -dontwarn us.hebi.quickbuf.JdkMethods

@@ -97,14 +97,22 @@ public class GsonSource extends JsonSource {
 
     @Override
     public void readBytes(RepeatedByte store) throws IOException {
-        decodeBase64(reader.nextString(), store.clear());
+        readBase64(reader.nextString(), store.clear());
     }
 
     @Override
     public ProtoSource readBytesAsSource() throws IOException {
         RepeatedByte store = RepeatedByte.newEmptyInstance();
-        decodeBase64(reader.nextString(), store);
+        readBase64(reader.nextString(), store);
         return ProtoSource.newInstance(store);
+    }
+
+    private static void readBase64(String input, RepeatedByte output) throws InvalidJsonException {
+        try {
+            decodeBase64(input, output);
+        } catch (IllegalArgumentException invalid) {
+            throw new InvalidJsonException(invalid.getMessage());
+        }
     }
 
     @Override

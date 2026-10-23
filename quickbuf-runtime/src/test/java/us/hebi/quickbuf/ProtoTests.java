@@ -457,6 +457,105 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedObjectsWithOffset() {
+        RepeatedString strings = RepeatedString.newEmptyInstance();
+        strings.addAll(new String[]{"a", "b", "c", "d"}, 1, 2);
+        assertEquals("[b, c]", strings.toString());
+        strings.copyFrom(new String[]{"a", "b", "c", "d"}, 2, 2);
+        assertEquals("[c, d]", strings.toString());
+
+        RepeatedBytes bytes = RepeatedBytes.newEmptyInstance();
+        bytes.addAll(new byte[][]{{1}, {2}, {3}, {4}}, 1, 2);
+        assertEquals(2, bytes.length());
+        assertArrayEquals(new byte[]{2}, bytes.get(0).toArray());
+        assertArrayEquals(new byte[]{3}, bytes.get(1).toArray());
+        bytes.copyFrom(new byte[][]{{1}, {2}, {3}, {4}}, 2, 2);
+        assertEquals(2, bytes.length());
+        assertArrayEquals(new byte[]{3}, bytes.get(0).toArray());
+        assertArrayEquals(new byte[]{4}, bytes.get(1).toArray());
+
+        TestAllTypes[] values = new TestAllTypes[4];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = TestAllTypes.newInstance().setOptionalInt32(i);
+        }
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        messages.addAll(values, 1, 2);
+        assertEquals(2, messages.length());
+        assertEquals(values[1], messages.get(0));
+        assertEquals(values[2], messages.get(1));
+        messages.copyFrom(values, 2, 2);
+        assertEquals(2, messages.length());
+        assertEquals(values[2], messages.get(0));
+        assertEquals(values[3], messages.get(1));
+    }
+
+    @Test
+    public void testRepeatedEnumsWithOffset() {
+        NestedEnum[] values = new NestedEnum[]{NestedEnum.FOO, NestedEnum.BAR, NestedEnum.BAZ};
+        RepeatedEnum<NestedEnum> enums = RepeatedEnum.newEmptyInstance(NestedEnum.converter());
+        enums.addAll(values, 1, 2);
+        assertEquals("[2, 3]", enums.toString());
+        enums.copyFrom(values, 2, 1);
+        assertEquals("[3]", enums.toString());
+    }
+
+    @Test
+    public void testRepeatedEnumsAddSelf() {
+        RepeatedEnum<NestedEnum> enums = RepeatedEnum.newEmptyInstance(NestedEnum.converter());
+        enums.addAll(NestedEnum.FOO, NestedEnum.BAR);
+        enums.addAll(enums);
+        assertEquals("[1, 2, 1, 2]", enums.toString());
+    }
+
+    @Test
+    public void testRepeatedMessageShrinkingCopy() {
+        TestAllTypes[] values = new TestAllTypes[]{
+                TestAllTypes.newInstance().setOptionalInt32(1).setOptionalInt64(2),
+                TestAllTypes.newInstance().setOptionalInt32(3).setOptionalInt64(4)
+        };
+        RepeatedMessage<TestAllTypes> shorter = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        shorter.add(values[0]);
+
+        // reused elements past the new length must not keep old values
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        messages.addAll(values);
+        messages.copyFrom(shorter);
+        messages.clear();
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+
+        messages.clear();
+        messages.addAll(values);
+        messages.copyFrom(new TestAllTypes[]{values[0]});
+        messages.clear();
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+        assertEquals(TestAllTypes.newInstance(), messages.next());
+    }
+
+    @Test
+    public void testRepeatedMessageAddAllKeepsCapacity() {
+        RepeatedMessage<TestAllTypes> other = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        other.next().setOptionalInt32(1);
+        other.next().setOptionalInt32(2);
+
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        messages.reserve(8);
+        TestAllTypes first = messages.next().setOptionalInt32(0);
+        messages.addAll(other);
+        assertEquals(8, messages.capacity());
+        assertSame(first, messages.get(0));
+        assertEquals(3, messages.length());
+        assertEquals(2, messages.get(2).getOptionalInt32());
+
+        messages.clear();
+        messages.copyFrom(other);
+        assertEquals(8, messages.capacity());
+        assertSame(first, messages.get(0));
+        assertEquals(2, messages.length());
+        assertEquals(1, messages.get(0).getOptionalInt32());
+    }
+
+    @Test
     public void testBytes() throws IOException {
         byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];
@@ -755,6 +854,26 @@ public class ProtoTests {
             fail();
         }
         assertArrayEquals(outData, inData);
+    }
+
+    @Test
+    public void testDelimitedStreamInGrowingBuffer() throws IOException {
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+        ProtoSink sink = ProtoSink.newInstance(bytes);
+        for (int i = 0; i < 100; i++) {
+            TestAllTypes.newInstance().setOptionalInt32(i).setOptionalString("value " + i).writeDelimitedTo(sink);
+        }
+
+        ProtoSource source = ProtoSource.newInstance(bytes);
+        TestAllTypes result = TestAllTypes.newInstance();
+        int count = 0;
+        while (!source.isAtEnd()) {
+            result.clearQuick().mergeDelimitedFrom(source);
+            assertEquals(count, result.getOptionalInt32());
+            assertEquals("value " + count, result.getOptionalString());
+            count++;
+        }
+        assertEquals(100, count);
     }
 
     @Test

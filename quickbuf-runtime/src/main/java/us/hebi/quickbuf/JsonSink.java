@@ -682,7 +682,7 @@ public abstract class JsonSink implements Closeable, Flushable {
 
         @Override
         public void close() throws IOException {
-            output.extendCapacityTo(0);
+            // the output may be owned by the caller and is still needed after closing
         }
 
         @Override
