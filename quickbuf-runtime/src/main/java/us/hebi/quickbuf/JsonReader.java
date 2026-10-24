@@ -25,7 +25,11 @@ import us.hebi.quickbuf.ProtoUtil.Charsets;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static us.hebi.quickbuf.ProtoUtil.*;
 
@@ -369,10 +373,14 @@ public final class JsonReader implements Closeable {
      */
     public long readLong() throws IOException {
         final int start = readNumber(true);
-        if (numberDigits > 18 && (numberDigits > 19 || (numberMantissa < 0 && !(numberNegative && numberMantissa == Long.MIN_VALUE)))) {
+        if (!isLongRange()) {
             throw numberError("Value out of range for long", start);
         }
         return numberNegative ? -numberMantissa : numberMantissa;
+    }
+
+    private boolean isLongRange() {
+        return numberDigits <= 18 || (numberDigits == 19 && (numberMantissa >= 0 || (numberNegative && numberMantissa == Long.MIN_VALUE)));
     }
 
     /**
@@ -421,6 +429,84 @@ public final class JsonReader implements Closeable {
             offset = peeked >= PEEKED_NUMBER ? getPosition() : getPosition() - 1; // unquoted values are not consumed by peek
         }
         throw error("Unexpected value after the root value", offset);
+    }
+
+    /**
+     * Reads the next value into maps, lists, strings, booleans and nulls. Integers that fit into
+     * a long become Longs and all other numbers Doubles. Allocates. Cap untrusted input via
+     * {@link #setNestingLimit(int)}.
+     */
+    @SuppressWarnings("unchecked")
+    public Object readValue() throws IOException {
+        final List<Object> parents = new ArrayList<>();
+        final List<String> parentNames = new ArrayList<>();
+        Object container = null;
+        String key = null;
+        while (true) {
+            Object value;
+            if (container != null && !hasNext()) {
+                if (container instanceof Map) {
+                    endObject();
+                } else {
+                    endArray();
+                }
+                value = container;
+                container = parents.remove(parents.size() - 1);
+                key = parentNames.remove(parentNames.size() - 1);
+            } else {
+                if (container instanceof Map) {
+                    key = readName().toString();
+                }
+                switch (peek()) {
+                    case BEGIN_OBJECT:
+                        beginObject();
+                        parents.add(container);
+                        parentNames.add(key);
+                        container = new LinkedHashMap<String, Object>();
+                        continue;
+                    case BEGIN_ARRAY:
+                        beginArray();
+                        parents.add(container);
+                        parentNames.add(key);
+                        container = new ArrayList<Object>();
+                        continue;
+                    case STRING:
+                        value = readString();
+                        break;
+                    case NUMBER:
+                        value = readNumberValue();
+                        break;
+                    case BOOLEAN:
+                        value = readBoolean();
+                        break;
+                    case NULL:
+                        readNull();
+                        value = null;
+                        break;
+                    default:
+                        throw expected("a value", peeked);
+                }
+            }
+            if (container == null) {
+                return value;
+            } else if (container instanceof Map) {
+                ((Map<String, Object>) container).put(key, value);
+            } else {
+                ((List<Object>) container).add(value);
+            }
+        }
+    }
+
+    private Object readNumberValue() throws IOException {
+        final int start = readNumber(false);
+        if (!numberFractional && isLongRange()) {
+            return numberNegative ? -numberMantissa : numberMantissa;
+        }
+        final double result = toDouble(buffer, start, pos);
+        if (Double.isInfinite(result)) {
+            throw numberError("Value out of range for double", start);
+        }
+        return result;
     }
 
     /**

@@ -27,6 +27,7 @@ import us.hebi.quickbuf.JsonEncoding.StringEncoding;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Streaming writer for UTF-8 encoded JSON that works without protobuf messages, e.g.,
@@ -355,6 +356,50 @@ public final class JsonWriter {
         final int pos = output.addLength(length);
         System.arraycopy(utf8Json, offset, output.array, pos, length);
         return this;
+    }
+
+    /**
+     * Writes maps, iterables, arrays, numbers, strings, booleans and nulls, e.g., the output of
+     * {@link JsonReader#readValue()}. Cycles are not detected.
+     */
+    public JsonWriter writeValue(Object value) {
+        if (value == null) {
+            return writeNull();
+        } else if (value instanceof Map) {
+            beginObject();
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+                writeName(String.valueOf(entry.getKey()));
+                writeValue(entry.getValue());
+            }
+            return endObject();
+        } else if (value instanceof Iterable) {
+            beginArray();
+            for (Object element : (Iterable<?>) value) {
+                writeValue(element);
+            }
+            return endArray();
+        } else if (value instanceof Object[]) {
+            beginArray();
+            for (Object element : (Object[]) value) {
+                writeValue(element);
+            }
+            return endArray();
+        } else if (value instanceof Double) {
+            return writeDouble((Double) value);
+        } else if (value instanceof Float) {
+            return writeFloat((Float) value);
+        } else if (value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte) {
+            return writeLong(((Number) value).longValue());
+        } else if (value instanceof Number) {
+            return writeDouble(((Number) value).doubleValue());
+        } else if (value instanceof CharSequence) {
+            return writeString((CharSequence) value);
+        } else if (value instanceof Character) {
+            return writeString(String.valueOf(value));
+        } else if (value instanceof Boolean) {
+            return writeBoolean((Boolean) value);
+        }
+        throw new IllegalArgumentException("Unsupported value type: " + value.getClass().getName());
     }
 
     // ==================== Implementation ====================

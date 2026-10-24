@@ -25,6 +25,12 @@ import protos.test.quickbuf.TestAllTypes;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -226,6 +232,48 @@ public class JsonWriterTest {
                 .endArray();
         JsonReader reader = JsonReader.newInstance(writer.getBytes());
         assertEquals(JsonReaderTest.tokens(JsonReader.newInstance("[{\"a\":\"x\\ny\",\"b\":[1.5,null]},-3]")), JsonReaderTest.tokens(reader));
+    }
+
+    @Test
+    public void testWriteValue() {
+        Map<Object, Object> map = new LinkedHashMap<>();
+        map.put("d", 1.5);
+        map.put("f", 0.25f);
+        map.put("l", Long.MIN_VALUE);
+        map.put("i", -3);
+        map.put("s", (short) 4);
+        map.put("b", (byte) 5);
+        map.put("big", new BigDecimal("0.5"));
+        map.put("nan", Double.NaN);
+        map.put("str", new StringBuilder("x\ny"));
+        map.put("c", 'c');
+        map.put("t", true);
+        map.put("n", null);
+        map.put(7, Arrays.asList(new Object[]{"a", null}, Collections.emptyMap(), new LinkedHashSet<>(Arrays.asList(1, 2))));
+        assertEquals("{\"d\":1.5,\"f\":0.25,\"l\":-9223372036854775808,\"i\":-3,\"s\":4,\"b\":5,\"big\":0.5,\"nan\":\"NaN\"," +
+                "\"str\":\"x\\ny\",\"c\":\"c\",\"t\":true,\"n\":null,\"7\":[[\"a\",null],{},[1,2]]}", JsonWriter.newInstance().writeValue(map).toString());
+        assertEquals("null", JsonWriter.newInstance().writeValue(null).toString());
+        assertEquals("[]", JsonWriter.newInstance().writeValue(new Object[0]).toString());
+        assertEquals("{}", JsonWriter.newInstance().writeValue(Collections.emptyMap()).toString());
+    }
+
+    @Test
+    public void testWriteValueRoundTrip() throws IOException {
+        String json = "{\"a\":[1.5,-3,\"x\\ny\",true,null,{},[]],\"b\":{\"c\":[[0.25]],\"d\":false},\"e\":\"\"}";
+        Object value = JsonReader.newInstance(json).readValue();
+        String written = JsonWriter.newInstance().writeValue(value).toString();
+        assertEquals(json, written);
+        assertEquals(value, JsonReader.newInstance(written).readValue());
+    }
+
+    @Test
+    public void testWriteValueUnsupportedType() {
+        try {
+            JsonWriter.newInstance().writeValue(Collections.singletonList(new Object()));
+            fail("expected an IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Unsupported value type: java.lang.Object", e.getMessage());
+        }
     }
 
     @Test

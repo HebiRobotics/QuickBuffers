@@ -29,7 +29,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -131,6 +134,55 @@ public class JsonReaderTest {
         assertError("Exceeded the nesting limit of 3 at offset 15", reader::beginArray);
         assertError("Exceeded the nesting limit of 1 at offset 1", () -> JsonReader.newInstance("[[1]]").setNestingLimit(1).skipValue());
         assertError("Exceeded the nesting limit of 0 at offset 0", () -> JsonReader.newInstance("{}").setNestingLimit(0).beginObject());
+    }
+
+    @Test
+    public void testReadValue() throws IOException {
+        Object value = JsonReader.newInstance("{\"b\":[1.5,\"x\",true,null,{},[]],\"a\":{\"c\":-2},\"b\":false}").readValue();
+        assertTrue(value instanceof LinkedHashMap);
+        Map<?, ?> map = (Map<?, ?>) value;
+        assertEquals(Arrays.asList("b", "a"), new ArrayList<>(map.keySet()));
+        assertEquals(false, map.get("b"));
+        assertEquals(Collections.singletonMap("c", -2L), map.get("a"));
+
+        value = JsonReader.newInstance("[1.5,\"x\",true,null,{},[]]").readValue();
+        assertTrue(value instanceof ArrayList);
+        assertEquals(Arrays.asList(1.5, "x", true, null, Collections.emptyMap(), Collections.emptyList()), value);
+
+        JsonReader reader = JsonReader.newInstance(" 1 \"s\" true null {} [] ");
+        assertEquals(1L, reader.readValue());
+        assertEquals("s", reader.readValue());
+        assertEquals(true, reader.readValue());
+        assertNull(reader.readValue());
+        assertEquals(Collections.emptyMap(), reader.readValue());
+        assertEquals(Collections.emptyList(), reader.readValue());
+        assertEquals(END_DOCUMENT, reader.peek());
+
+        assertEquals(Arrays.asList(9007199254740993L, Long.MIN_VALUE, 9.223372036854775808E18, 12345678901234567890.0, 100.0, 1.0, -0.5, 0L, 0L),
+                JsonReader.newInstance("[9007199254740993,-9223372036854775808,9223372036854775808,12345678901234567890,1e2,1.0,-0.5,-0,0]").readValue());
+
+        assertEquals(getError(() -> JsonReader.newInstance("[1e999]").beginArray().readDouble()),
+                getError(() -> JsonReader.newInstance("[1e999]").readValue()));
+        assertError("Expected a value but reached the end of the input at offset 0", () -> JsonReader.newInstance("").readValue());
+        assertError("Expected a value but reached the end of the input at offset 6", () -> JsonReader.newInstance("{\"a\":[").readValue());
+    }
+
+    @Test
+    public void testReadValueDeepNesting() throws IOException {
+        StringBuilder json = new StringBuilder();
+        for (int i = 0; i < 100000; i++) {
+            json.append('[');
+        }
+        for (int i = 0; i < 100000; i++) {
+            json.append(']');
+        }
+        Object value = JsonReader.newInstance(json.toString()).readValue();
+        for (int i = 1; i < 100000; i++) {
+            assertEquals(1, ((List<?>) value).size());
+            value = ((List<?>) value).get(0);
+        }
+        assertEquals(Collections.emptyList(), value);
+        assertError("Exceeded the nesting limit of 512 at offset 512", () -> JsonReader.newInstance(json.toString()).setNestingLimit(512).readValue());
     }
 
     @Test
