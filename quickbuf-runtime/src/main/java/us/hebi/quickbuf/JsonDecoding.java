@@ -24,7 +24,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
-import static us.hebi.quickbuf.ProtoUtil.*;
 
 /**
  * Number parsing and lookup tables for reading JSON
@@ -192,29 +191,6 @@ class JsonDecoding {
         private static void setPow5(long[] table, int q, BigInteger value) {
             table[2 * (q - MIN_POW10)] = value.shiftRight(64).longValue();
             table[2 * (q - MIN_POW10) + 1] = value.longValue();
-        }
-
-        static double readDouble(byte[] buffer, int tokenStart, int tokenEnd) {
-            int first = buffer[tokenStart];
-            if (first == '-') {
-                return -readDouble(buffer, tokenStart + 1, tokenEnd);
-            } else if (first == 'N') {
-                checkArgument((tokenEnd - tokenStart) == 3, "invalid double value");
-                checkArgument(buffer[tokenStart + 1] == 'a', "invalid double value");
-                checkArgument(buffer[tokenStart + 2] == 'N', "invalid double value");
-                return Double.NaN;
-            } else if (first == 'I') {
-                checkArgument((tokenEnd - tokenStart) == 8, "invalid double value");
-                checkArgument(buffer[tokenStart + 1] == 'n', "invalid double value");
-                checkArgument(buffer[tokenStart + 2] == 'f', "invalid double value");
-                checkArgument(buffer[tokenStart + 3] == 'i', "invalid double value");
-                checkArgument(buffer[tokenStart + 4] == 'n', "invalid double value");
-                checkArgument(buffer[tokenStart + 5] == 'i', "invalid double value");
-                checkArgument(buffer[tokenStart + 6] == 't', "invalid double value");
-                checkArgument(buffer[tokenStart + 7] == 'y', "invalid double value");
-            }
-            String str = new String(buffer, tokenStart, tokenEnd - tokenStart, Charsets.ASCII);
-            return Double.parseDouble(str);
         }
 
         static long readLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {

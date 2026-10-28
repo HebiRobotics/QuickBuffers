@@ -207,7 +207,8 @@ public class JsonAllocationTest {
                 .setOptionalBytes(new byte[]{0, 1, 2, (byte) 0xFF, 42})
                 .setOptionalNestedEnum(NestedEnum.BAZ);
         msg.getMutableRepeatedNestedEnum().clear().add(NestedEnum.FOO);
-        msg.getMutableRepeatedDouble().add(1.2345678901234567e-89).add(9007199254740993.0).add(-0.0);
+        msg.getMutableRepeatedDouble().add(1.2345678901234567e-89).add(9007199254740993.0).add(-0.0)
+                .add(Double.POSITIVE_INFINITY).add(Double.NEGATIVE_INFINITY);
         String unknown = "{\"unknownObject\":{\"a\":[1,-2.5e-3,\"x\\u00e9\",true,null,{}]}," + LONG_NUMBER;
         String names = JsonSink.newInstance().setWriteEnumsAsInts(false).writeMessage(msg).toString();
         String numbers = JsonSink.newInstance().setWriteEnumsAsInts(true).writeMessage(msg).toString();

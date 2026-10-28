@@ -181,6 +181,31 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testFloatingPointValues() throws Exception {
+        TestAllTypes msg = parseJson("{\"repeatedDouble\":[\"NaN\",\"Infinity\",\"-Infinity\",NaN,Infinity,-Infinity,\"1e2\",007,\"-00.5\"]," +
+                "\"repeatedFloat\":[\"NaN\",\"Infinity\",\"-Infinity\",\"1.5\",-007]}");
+        Assert.assertArrayEquals(new double[]{Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY,
+                Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 100, 7, -0.5}, msg.getRepeatedDouble().toArray(), 0);
+        Assert.assertArrayEquals(new float[]{Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY,
+                1.5f, -7}, msg.getRepeatedFloat().toArray(), 0);
+    }
+
+    @Test
+    public void testInvalidFloatingPointValues() throws Exception {
+        for (String value : new String[]{"\"Inf\"", "\"inf\"", "\"nan\"", "\"-NaN\"", "\"+Infinity\"", "\"--1\"",
+                "\"\"", "\"-\"", "\" 1\"", "\"1d\"", "\"0x1p3\"", "\"1.\"", "\".5\"", "+1"}) {
+            for (String field : new String[]{"optionalDouble", "optionalFloat"}) {
+                String json = "{\"" + field + "\":" + value + "}";
+                try {
+                    parseJson(json);
+                    fail("expected to fail on invalid value: " + json);
+                } catch (InvalidJsonException expected) {
+                }
+            }
+        }
+    }
+
+    @Test
     public void testIntegersOutOfRange() throws Exception {
         for (String json : new String[]{
                 "{\"optionalInt32\":2147483648}",

@@ -536,10 +536,10 @@ public abstract class JsonSource implements Closeable {
         @Override
         public double readDouble() throws IOException {
             readValueRange();
-            if (isValueNumber()) {
+            if (isValueNumber() || isValueNumberWithLeadingZeros()) {
                 return reader.toDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
             }
-            return JsonDecoding.Numbers.readDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
+            return readSpecialValue();
         }
 
         /**
@@ -549,10 +549,10 @@ public abstract class JsonSource implements Closeable {
         @Override
         public float readFloat() throws IOException {
             readValueRange();
-            if (isValueNumber()) {
+            if (isValueNumber() || isValueNumberWithLeadingZeros()) {
                 return reader.toFloat(reader.valueArray, reader.valueStart, reader.valueEnd);
             }
-            return (float) JsonDecoding.Numbers.readDouble(reader.valueArray, reader.valueStart, reader.valueEnd);
+            return (float) readSpecialValue();
         }
 
         @Override
@@ -672,13 +672,61 @@ public abstract class JsonSource implements Closeable {
             }
         }
 
-        /**
-         * Parses the value range if it is a JSON number. Other forms that earlier versions
-         * accepted, e.g., NaN or leading zeros, take the slower paths.
-         */
+        /** True if the value range is a JSON number. NaN and leading zeros take the slower paths. */
         private boolean isValueNumber() {
             return reader.parseNumber(reader.valueArray, reader.valueStart, reader.valueEnd) == reader.valueEnd
                     && reader.numberErrorText == null;
+        }
+
+        /**
+         * Earlier versions accepted leading zeros, e.g., 007 or -00.5, which JSON does not allow
+         */
+        private boolean isValueNumberWithLeadingZeros() {
+            final byte[] buf = reader.valueArray;
+            final int end = reader.valueEnd;
+            final boolean negative = reader.valueStart < end && buf[reader.valueStart] == '-';
+            final int start = negative ? reader.valueStart + 1 : reader.valueStart;
+            int i = start;
+            while (i + 1 < end && buf[i] == '0' && buf[i + 1] >= '0' && buf[i + 1] <= '9') {
+                i++;
+            }
+            if (i == start || reader.parseNumber(buf, i, end) != end || reader.numberErrorText != null) {
+                return false;
+            }
+            reader.numberNegative = negative;
+            return true;
+        }
+
+        /**
+         * Reads the special values of the protobuf mapping, quoted or unquoted
+         */
+        private double readSpecialValue() throws IOException {
+            if (isValue(NAN)) {
+                return Double.NaN;
+            } else if (isValue(POSITIVE_INFINITY)) {
+                return Double.POSITIVE_INFINITY;
+            } else if (isValue(NEGATIVE_INFINITY)) {
+                return Double.NEGATIVE_INFINITY;
+            }
+            throw invalidNumber();
+        }
+
+        private InvalidJsonException invalidNumber() {
+            String value = new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8);
+            String atField = (currentField == null ? "" : " for field '" + currentField + "'");
+            return new InvalidJsonException("Invalid number '" + value + "'" + atField, reader.getPosition());
+        }
+
+        private boolean isValue(byte[] expected) {
+            if (reader.valueEnd - reader.valueStart != expected.length) {
+                return false;
+            }
+            for (int i = 0; i < expected.length; i++) {
+                if (reader.valueArray[reader.valueStart + i] != expected[i]) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void checkNotAtNull() throws IOException {
@@ -692,6 +740,10 @@ public abstract class JsonSource implements Closeable {
             final long offset = reader.getPosition();
             return new InvalidJsonException("Expected non-null value" + atField, offset);
         }
+
+        private static final byte[] NAN = "NaN".getBytes(ASCII);
+        private static final byte[] POSITIVE_INFINITY = "Infinity".getBytes(ASCII);
+        private static final byte[] NEGATIVE_INFINITY = "-Infinity".getBytes(ASCII);
 
         private final JsonReader reader;
         private final RepeatedByte buffer = RepeatedByte.newEmptyInstance();

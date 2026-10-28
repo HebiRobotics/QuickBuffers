@@ -52,6 +52,16 @@ public class JacksonSourceTest extends JsonSourceTest {
     }
 
     @Override
+    public void testFloatingPointValues() {
+        // not run: Jackson rejects leading zeros
+    }
+
+    @Override
+    public void testInvalidFloatingPointValues() {
+        // not run: Jackson parses quoted numbers with its own, more lenient rules
+    }
+
+    @Override
     protected JsonSource newJsonSource(String json) throws IOException {
         return new JacksonSource(json);
     }
