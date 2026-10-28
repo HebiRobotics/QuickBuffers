@@ -891,6 +891,39 @@ public final class JsonReader implements Closeable {
     }
 
     /**
+     * Scales the mantissa of the last parsed number to the integer it represents, e.g., for
+     * 1.0 or 1e3 like protobuf's JsonFormat. Integers beyond 64 bits get more than 19 digits.
+     *
+     * @return false if the number has a fraction
+     */
+    boolean scaleToInteger() {
+        if (numberDigits > 19) {
+            return false; // 1.00000000000000000000 would be integral, not worth supporting
+        }
+        long value = numberMantissa;
+        if (value == 0) {
+            return true;
+        }
+        for (int q = numberExponent; q < 0; q++) {
+            final long quotient = (value >>> 1) / 5; // unsigned division by 10
+            if (value != 10 * quotient) {
+                return false;
+            }
+            value = quotient;
+        }
+        for (int q = numberExponent; q > 0; q--) {
+            if (value + Long.MIN_VALUE > MAX_UINT64_DIV_10 + Long.MIN_VALUE) {
+                numberDigits = 20;
+                return true;
+            }
+            value *= 10;
+        }
+        numberMantissa = value;
+        numberDigits = 19; // the unsigned magnitude needs the full range check
+        return true;
+    }
+
+    /**
      * Converts the last parsed number, or its text if it has more than 19 digits
      */
     double toDouble(byte[] text, int start, int end) {
@@ -1207,6 +1240,7 @@ public final class JsonReader implements Closeable {
     }
 
     private static final int STREAM_BUFFER_SIZE = 8 * 1024;
+    private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
     private static final int MAX_EXPONENT = 100000000; // saturates, as larger exponents round to zero or infinity anyway
 
     // ordered so that ranges can be checked with a single comparison

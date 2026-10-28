@@ -206,6 +206,35 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testIntegralValues() throws Exception {
+        TestAllTypes msg = parseJson("{\"repeatedInt32\":[1.0,\"1e2\",-2.5e1,\"0.0\",007]," +
+                "\"repeatedInt64\":[\"9.223372036854775807e18\",\"-9223372036854775808\",-9.223372036854775808e18,12345678900e-2]}");
+        Assert.assertArrayEquals(new int[]{1, 100, -25, 0, 7}, msg.getRepeatedInt32().toArray());
+        Assert.assertArrayEquals(new long[]{Long.MAX_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, 123456789},
+                msg.getRepeatedInt64().toArray());
+    }
+
+    @Test
+    public void testInvalidIntegerValues() throws Exception {
+        for (String json : new String[]{
+                "{\"optionalInt32\":\"\"}",
+                "{\"optionalInt64\":\"\"}",
+                "{\"optionalInt32\":1.5}",
+                "{\"optionalInt64\":\"1e-1\"}",
+                "{\"optionalInt64\":1e19}",
+                "{\"optionalInt64\":9223372036854775808}",
+                "{\"optionalInt32\":\"+1\"}",
+                "{\"optionalInt64\":+1}",
+                "{\"optionalInt32\":2147483648.0}"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on invalid value: " + json);
+            } catch (InvalidJsonException expected) {
+            }
+        }
+    }
+
+    @Test
     public void testIntegersOutOfRange() throws Exception {
         for (String json : new String[]{
                 "{\"optionalInt32\":2147483648}",

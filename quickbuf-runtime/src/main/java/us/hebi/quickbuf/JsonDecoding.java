@@ -38,7 +38,6 @@ class JsonDecoding {
         public final static int INT_0 = '0';
         public final static int INT_9 = '9';
         public final static int INT_MINUS = '-';
-        public final static int INT_PLUS = '+';
 
         final static int[] sHexValues = new int[256];
         final static int[] sEscapedValues = new int[256]; // char for the byte after a backslash, except 'u'
@@ -199,14 +198,14 @@ class JsonDecoding {
             int len = tokenEnd - tokenStart;
             long limit = -9223372036854775807L;
             if (len <= 0) {
-                return 0;
+                throw InvalidJsonException.illegalNumberFormat();
             } else {
                 int firstChar = buffer[tokenStart] & 0xFF;
                 if (firstChar < INT_0) {
                     if (firstChar == INT_MINUS) {
                         negative = true;
                         limit = -9223372036854775808L;
-                    } else if (firstChar != INT_PLUS) {
+                    } else {
                         throw InvalidJsonException.illegalNumberFormat();
                     }
 
