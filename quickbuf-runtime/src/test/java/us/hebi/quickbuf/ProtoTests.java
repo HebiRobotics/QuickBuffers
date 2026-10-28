@@ -556,6 +556,21 @@ public class ProtoTests {
     }
 
     @Test
+    public void testRepeatedPrimitiveCopyKeepsCapacity() {
+        RepeatedDouble doubles = RepeatedDouble.newEmptyInstance().reserve(8);
+        doubles.clear();
+        doubles.copyFrom(RepeatedDouble.newEmptyInstance().addAll(new double[]{1, 2}));
+        assertEquals(8, doubles.capacity());
+        assertEquals("[1.0, 2.0]", doubles.toString());
+
+        RepeatedEnum<NestedEnum> enums = RepeatedEnum.newEmptyInstance(NestedEnum.converter()).reserve(8);
+        enums.clear();
+        enums.copyFrom(RepeatedEnum.newEmptyInstance(NestedEnum.converter()).addAll(NestedEnum.FOO, NestedEnum.BAR));
+        assertEquals(8, enums.capacity());
+        assertEquals("[1, 2]", enums.toString());
+    }
+
+    @Test
     public void testBytes() throws IOException {
         byte[] utf8Bytes = "optionalByteString\uD83D\uDCA9".getBytes(UTF_8);
         byte[] randomBytes = new byte[256];

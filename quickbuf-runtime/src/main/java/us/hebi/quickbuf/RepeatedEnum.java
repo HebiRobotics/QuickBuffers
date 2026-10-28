@@ -82,7 +82,7 @@ public final class RepeatedEnum<E extends ProtoEnum> extends RepeatedField<Repea
         if (converter != other.converter) {
             throw new IllegalArgumentException("Enum types do not match");
         }
-        if (other.length > length) {
+        if (other.length > capacity()) {
             extendCapacityTo(other.length);
         }
         System.arraycopy(other.array, 0, array, 0, other.length);
