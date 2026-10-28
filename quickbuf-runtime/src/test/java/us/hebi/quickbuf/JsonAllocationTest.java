@@ -87,7 +87,7 @@ public class JsonAllocationTest {
 
     @Test
     public void testReusedReader() throws IOException {
-        byte[][] inputs = split(messages().replace(LONG_NUMBER, "")); // more than 19 digits fall back to the JDK
+        byte[][] inputs = split(messages().replace(LONG_NUMBER, "").replace(UINT64_NUMBER, "")); // more than 19 digits fall back to the JDK
         JsonReader reader = JsonReader.newInstance();
         Utf8String string = Utf8String.newEmptyInstance();
         int[] count = {0};
@@ -229,6 +229,7 @@ public class JsonAllocationTest {
     }
 
     private static final String LONG_NUMBER = "\"unknownNumber\":12345678901234567890123,";
+    private static final String UINT64_NUMBER = "\"optionalUint64\":18446744073709551614,";
     private static final int NUM_WARMUP = 5000;
     private static final int NUM_MEASURED = 500;
 

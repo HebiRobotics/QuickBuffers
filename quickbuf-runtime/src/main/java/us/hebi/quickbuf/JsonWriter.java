@@ -231,6 +231,12 @@ public final class JsonWriter {
         return this;
     }
 
+    JsonWriter writeUnsignedLong(long value) {
+        beforeValue();
+        NumberEncoding.writeUnsignedLong(value, output);
+        return this;
+    }
+
     public JsonWriter writeInt(int value) {
         beforeValue();
         NumberEncoding.writeInt(value, output);

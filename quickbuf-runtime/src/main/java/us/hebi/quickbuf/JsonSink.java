@@ -202,7 +202,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeFixed64(final FieldName name, final long value) throws IOException {
-        return writeInt64(name, value); // TODO: write unsigned 64
+        return writeUInt64(name, value);
     }
 
     public JsonSink writeSFixed64(final FieldName name, final long value) throws IOException {
@@ -210,7 +210,9 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeUInt64(final FieldName name, final long value) throws IOException {
-        return writeInt64(name, value); // // TODO: write unsigned 64
+        writeFieldName(name);
+        writeUnsignedNumber(value);
+        return this;
     }
 
     public JsonSink writeSInt64(final FieldName name, final long value) throws IOException {
@@ -218,7 +220,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeFixed32(final FieldName name, final int value) throws IOException {
-        return writeInt32(name, value); // TODO: write unsigned 32
+        return writeInt64(name, value & 0xFFFFFFFFL);
     }
 
     public JsonSink writeSFixed32(final FieldName name, final int value) throws IOException {
@@ -226,7 +228,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeUInt32(final FieldName name, final int value) throws IOException {
-        return writeInt32(name, value); // TODO: write unsigned 32
+        return writeInt64(name, value & 0xFFFFFFFFL);
     }
 
     public JsonSink writeSInt32(final FieldName name, final int value) throws IOException {
@@ -238,7 +240,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedFixed64(final FieldName name, final RepeatedLong value) throws IOException {
-        return writeRepeatedInt64(name, value); // TODO: write unsigned 64
+        return writeRepeatedUInt64(name, value);
     }
 
     public JsonSink writeRepeatedSFixed64(final FieldName name, final RepeatedLong value) throws IOException {
@@ -246,7 +248,13 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedUInt64(final FieldName name, final RepeatedLong value) throws IOException {
-        return writeRepeatedInt64(name, value); // TODO: write unsigned 64
+        writeFieldName(name);
+        beginArray();
+        for (int i = 0; i < value.length; i++) {
+            writeUnsignedNumber(value.array[i]);
+        }
+        endArray();
+        return this;
     }
 
     public JsonSink writeRepeatedSInt64(final FieldName name, final RepeatedLong value) throws IOException {
@@ -254,7 +262,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedFixed32(final FieldName name, final RepeatedInt value) throws IOException {
-        return writeRepeatedInt32(name, value); // TODO: write unsigned 32
+        return writeRepeatedUInt32(name, value);
     }
 
     public JsonSink writeRepeatedSFixed32(final FieldName name, final RepeatedInt value) throws IOException {
@@ -262,7 +270,13 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeRepeatedUInt32(final FieldName name, final RepeatedInt value) throws IOException {
-        return writeRepeatedInt32(name, value); // TODO: write unsigned 32
+        writeFieldName(name);
+        beginArray();
+        for (int i = 0; i < value.length; i++) {
+            writeNumber(value.array[i] & 0xFFFFFFFFL);
+        }
+        endArray();
+        return this;
     }
 
     public JsonSink writeRepeatedSInt32(final FieldName name, final RepeatedInt value) throws IOException {
@@ -449,6 +463,10 @@ public abstract class JsonSink implements Closeable, Flushable {
 
     protected abstract void writeNumber(int value) throws IOException;
 
+    protected void writeUnsignedNumber(long value) throws IOException {
+        writeNumber(value); // libraries without unsigned support write values above 2^63 as negative numbers
+    }
+
     protected abstract void writeBoolean(boolean value) throws IOException;
 
     protected abstract void writeString(Utf8String value) throws IOException;
@@ -555,6 +573,11 @@ public abstract class JsonSink implements Closeable, Flushable {
         @Override
         protected void writeNumber(int value) {
             writer.writeInt(value);
+        }
+
+        @Override
+        protected void writeUnsignedNumber(long value) {
+            writer.writeUnsignedLong(value);
         }
 
         @Override
