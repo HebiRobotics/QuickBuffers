@@ -192,6 +192,22 @@ class JsonDecoding {
             table[2 * (q - MIN_POW10) + 1] = value.longValue();
         }
 
+        static long readUnsignedLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
+            if (tokenEnd <= tokenStart || buffer[tokenStart] == INT_MINUS) {
+                return readLong(buffer, tokenStart, tokenEnd);
+            }
+            long result = 0;
+            for (int i = tokenStart; i < tokenEnd; i++) {
+                final int digit = (buffer[i] & 0xFF) - INT_0;
+                if (digit < 0 || digit > 9 || result < 0 || result > MAX_UINT64_DIV_10
+                        || (result == MAX_UINT64_DIV_10 && digit > MAX_UINT64_LAST_DIGIT)) {
+                    throw InvalidJsonException.illegalNumberFormat();
+                }
+                result = result * 10 + digit;
+            }
+            return result;
+        }
+
         static long readLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
             boolean negative = false;
             int i = 0;
@@ -250,6 +266,8 @@ class JsonDecoding {
             return true;
         }
 
+        private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
+        private static final int MAX_UINT64_LAST_DIGIT = 5; // 18446744073709551615 % 10
         private static final long MAX_EXACT_DOUBLE = 1L << 53;
         private static final double[] EXACT_POW10 = {
                 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,

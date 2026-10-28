@@ -221,17 +221,18 @@ public abstract class JsonSource implements Closeable {
     }
 
     /**
-     * Read a {@code uint64} field value from the source.
+     * Read a {@code uint64} field value from the source. Negative values
+     * written by older versions represent the same bits.
      */
     public long readUInt64() throws IOException {
-        return this.readInt64(); // TODO: read unsigned 64
+        return this.readInt64(); // implementations should override to support values beyond Long.MAX_VALUE
     }
 
     /**
      * Read a {@code fixed64} field value from the source.
      */
     public long readFixed64() throws IOException {
-        return this.readInt64(); // TODO: read unsigned 64
+        return this.readUInt64();
     }
 
     /**
@@ -289,7 +290,7 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedFixed64(final RepeatedLong value) throws IOException {
-        readRepeatedInt64(value); // TODO: read unsigned 64
+        readRepeatedUInt64(value);
     }
 
     public void readRepeatedSFixed64(final RepeatedLong value) throws IOException {
@@ -297,7 +298,11 @@ public abstract class JsonSource implements Closeable {
     }
 
     public void readRepeatedUInt64(final RepeatedLong value) throws IOException {
-        readRepeatedInt64(value); // TODO: read unsigned 64
+        beginArray();
+        while (!isAtEnd()) {
+            value.add(readUInt64());
+        }
+        endArray();
     }
 
     public void readRepeatedSInt64(final RepeatedLong value) throws IOException {
@@ -571,6 +576,19 @@ public abstract class JsonSource implements Closeable {
                 return reader.numberNegative ? -reader.numberMantissa : reader.numberMantissa;
             }
             return JsonDecoding.Numbers.readLong(reader.valueArray, reader.valueStart, reader.valueEnd);
+        }
+
+        @Override
+        public long readUInt64() throws IOException {
+            readValueRange();
+            if (isValueInteger()) {
+                if (!reader.numberNegative) {
+                    return reader.numberMantissa;
+                } else if (reader.numberMantissa >= 0 || reader.numberMantissa == Long.MIN_VALUE) {
+                    return -reader.numberMantissa;
+                }
+            }
+            return JsonDecoding.Numbers.readUnsignedLong(reader.valueArray, reader.valueStart, reader.valueEnd);
         }
 
         @Override

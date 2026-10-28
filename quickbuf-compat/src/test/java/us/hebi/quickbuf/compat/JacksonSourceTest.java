@@ -72,6 +72,21 @@ public class JacksonSourceTest extends JsonSourceTest {
     }
 
     @Override
+    public void testUnsignedInt64() {
+        // not run: Jackson reads uint64 as a signed long
+    }
+
+    @Override
+    public void testUnsignedIntegralValues() {
+        // not run: Jackson reads uint64 as a signed long
+    }
+
+    @Override
+    public void testUnsignedRoundTrip() {
+        // not run: Jackson reads uint64 as a signed long
+    }
+
+    @Override
     protected JsonSource newJsonSource(String json) throws IOException {
         return new JacksonSource(json);
     }

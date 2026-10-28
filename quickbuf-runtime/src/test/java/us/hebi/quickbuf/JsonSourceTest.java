@@ -225,6 +225,7 @@ public class JsonSourceTest {
                 "{\"optionalInt64\":9223372036854775808}",
                 "{\"optionalInt32\":\"+1\"}",
                 "{\"optionalInt64\":+1}",
+                "{\"optionalUint64\":\"+1\"}",
                 "{\"optionalInt32\":2147483648.0}"}) {
             try {
                 parseJson(json);
@@ -240,7 +241,10 @@ public class JsonSourceTest {
                 "{\"optionalInt32\":2147483648}",
                 "{\"optionalInt32\":4294967297}",
                 "{\"optionalUint32\":4294967296}",
-                "{\"optionalUint32\":-2147483649}"}) {
+                "{\"optionalUint32\":-2147483649}",
+                "{\"optionalUint64\":18446744073709551616}",
+                "{\"optionalUint64\":-9223372036854775809}",
+                "{\"repeatedUint64\":[99999999999999999999]}"}) {
             try {
                 parseJson(json);
                 fail("expected to fail on out of range value: " + json);
@@ -258,6 +262,39 @@ public class JsonSourceTest {
         assertEquals(-1, msg.getRepeatedUint32().get(0));
         assertEquals(-1, msg.getRepeatedUint32().get(1));
         assertEquals(Integer.MIN_VALUE, msg.getRepeatedFixed32().get(0));
+    }
+
+    @Test
+    public void testUnsignedInt64() throws Exception {
+        TestAllTypes msg = parseJson("{\"optionalUint64\":18446744073709551615,\"optionalFixed64\":\"9223372036854775808\"," +
+                "\"repeatedUint64\":[9223372036854775807,10000000000000000000],\"repeatedFixed64\":[1,\"9223372036854775809\"]}");
+        assertEquals(-1L, msg.getOptionalUint64());
+        assertEquals(Long.MIN_VALUE, msg.getOptionalFixed64());
+        assertArrayEquals(new long[]{Long.MAX_VALUE, -8446744073709551616L}, msg.getRepeatedUint64().toArray());
+        assertArrayEquals(new long[]{1, Long.MIN_VALUE + 1}, msg.getRepeatedFixed64().toArray());
+
+        // signed values written by older versions
+        msg = parseJson("{\"optionalUint64\":-1,\"optionalFixed64\":-9223372036854775808}");
+        assertEquals(-1L, msg.getOptionalUint64());
+        assertEquals(Long.MIN_VALUE, msg.getOptionalFixed64());
+    }
+
+    @Test
+    public void testUnsignedIntegralValues() throws Exception {
+        assertEquals(-8446744073709551616L, parseJson("{\"optionalUint64\":1e19}").getOptionalUint64());
+        assertEquals(-446744073709551616L, parseJson("{\"optionalUint64\":\"1.8e19\"}").getOptionalUint64());
+    }
+
+    @Test
+    public void testUnsignedRoundTrip() throws Exception {
+        TestAllTypes msg = TestAllTypes.newInstance()
+                .setOptionalUint64(-1L) // 2^64-1
+                .setOptionalFixed64(Long.MIN_VALUE) // 2^63
+                .setOptionalUint32(-1) // 2^32-1
+                .setOptionalFixed32(Integer.MIN_VALUE); // 2^31
+        msg.getMutableRepeatedUint64().addAll(new long[]{0, -1L, Long.MIN_VALUE, Long.MAX_VALUE});
+        msg.getMutableRepeatedFixed32().addAll(new int[]{0, -1, Integer.MIN_VALUE});
+        testRoundTrip(msg);
     }
 
     @Test
