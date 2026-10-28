@@ -805,7 +805,7 @@ public class FieldGenerator {
         if (info.isPackable()) m.put("packedTag", info.getPackedTag());
         if (info.isFixedWidth()) m.put("fixedWidth", info.getFixedWidth());
         if (info.isRepeated())
-            m.put("getRepeatedIndex_i", info.isPrimitive() || info.isEnum() ? "array()[i]" : "get(i)");
+            m.put("getRepeatedIndex_i", info.isPrimitive() || info.isEnum() ? "array()[i]" : info.isString() ? "getUtf8String(i)" : "get(i)");
 
         // utility classes
         m.put("fieldNames", getInfo().getParentTypeInfo().getFieldNamesClass());
