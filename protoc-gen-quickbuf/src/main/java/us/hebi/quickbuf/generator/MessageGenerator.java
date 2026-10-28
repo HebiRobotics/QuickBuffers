@@ -163,6 +163,14 @@ class MessageGenerator {
         type.addMethod(isEmpty.build());
     }
 
+    /** isEmpty() only checks the has-bits, so messages holding only unknown fields need the extra check */
+    private String isEmptyWithUnknownBytes(String prefix) {
+        if (!info.isStoreUnknownFieldsEnabled()) {
+            return prefix + "isEmpty()";
+        }
+        return prefix + "isEmpty() && " + prefix + RuntimeClasses.unknownBytesField + ".length() == 0";
+    }
+
     private MethodSpec generateClearCode(String name, boolean isFullClear) {
         MethodSpec.Builder clear = MethodSpec.methodBuilder(name)
                 .addJavadoc(Javadoc.inherit())
@@ -172,7 +180,7 @@ class MessageGenerator {
 
         // no fields set -> no need to clear (e.g. unused nested messages)
         // NOTE: always make sure that the constructor creates conditions that clears everything
-        clear.beginControlFlow("if (isEmpty())")
+        clear.beginControlFlow("if ($L)", isEmptyWithUnknownBytes(""))
                 .addStatement("return this")
                 .endControlFlow();
 
@@ -457,7 +465,7 @@ class MessageGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(info.getTypeName());
 
-        mergeFrom.beginControlFlow("if (other.isEmpty())")
+        mergeFrom.beginControlFlow("if ($L)", isEmptyWithUnknownBytes("other."))
                 .addStatement("return this")
                 .endControlFlow();
         mergeFrom.addStatement("cachedSize = -1");

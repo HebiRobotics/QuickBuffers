@@ -849,6 +849,21 @@ public class ProtoTests {
     }
 
     @Test
+    public void testOnlyUnknownFields() throws IOException {
+        byte[] bytes = TestAllTypes.newInstance().setOptionalString("unknown").toByteArray();
+        TestAllTypes.NestedMessage msg = TestAllTypes.NestedMessage.parseFrom(bytes);
+        assertTrue(msg.isEmpty());
+
+        TestAllTypes.NestedMessage merged = TestAllTypes.NestedMessage.newInstance().mergeFrom(msg);
+        assertArrayEquals(bytes, merged.toByteArray());
+
+        msg.clear();
+        assertEquals(0, msg.getUnknownBytes().length());
+        merged.clearQuick();
+        assertEquals(0, merged.getUnknownBytes().length());
+    }
+
+    @Test
     public void testDelimitedStream() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.getCombinedMessage());
 
