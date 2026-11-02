@@ -38,6 +38,14 @@ public final class RepeatedString extends RepeatedObject<RepeatedString, Utf8Str
         return array[index].getString(decoder);
     }
 
+    /**
+     * @return the internal storage at the index, which can be read without decoding the string
+     */
+    public Utf8String getUtf8String(final int index) {
+        checkIndex(index);
+        return array[index];
+    }
+
     @Override
     protected void setIndex0(int index, CharSequence value) {
         array[index].copyFrom(value);

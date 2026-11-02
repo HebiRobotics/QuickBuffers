@@ -97,7 +97,7 @@ public final class RepeatedFloat extends RepeatedField<RepeatedFloat, Float> {
 
     @Override
     public void copyFrom(RepeatedFloat other) {
-        if (other.length > length) {
+        if (other.length > capacity()) {
             extendCapacityTo(other.length);
         }
         System.arraycopy(other.array, 0, array, 0, other.length);
