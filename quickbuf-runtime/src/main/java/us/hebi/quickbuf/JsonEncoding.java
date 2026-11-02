@@ -93,7 +93,7 @@ class JsonEncoding {
 
         static void writeRawAscii(CharSequence sequence, RepeatedByte output) {
             final int length = sequence.length();
-            output.reserve(length);
+            output.reserveGrowing(length);
             for (int i = 0; i < length; i++) {
                 output.array[output.length++] = (byte) sequence.charAt(i);
             }
@@ -258,7 +258,7 @@ class JsonEncoding {
     static class NumberEncoding {
 
         public static void writeInt(final int value, final RepeatedByte output) {
-            output.reserve(MAX_INT_SIZE);
+            output.reserveGrowing(MAX_INT_SIZE);
             if (value < 0) {
                 if (value == Integer.MIN_VALUE) {
                     output.addAll(MIN_INT);
@@ -272,7 +272,7 @@ class JsonEncoding {
         }
 
         public static void writeLong(final long value, final RepeatedByte output) {
-            output.reserve(MAX_LONG_SIZE);
+            output.reserveGrowing(MAX_LONG_SIZE);
             if (value < 0) {
                 if (value == Long.MIN_VALUE) {
                     output.addAll(MIN_LONG);
@@ -404,7 +404,7 @@ class JsonEncoding {
         }
 
         public static void writeDouble(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE + 1); // sign before subsequent reserve
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE + 1); // sign before subsequent reserve
             final double pval = writeSpecialValues(val, max3, output);
             if (pval >= 0) {
                 if (pval < max12) {
@@ -433,7 +433,7 @@ class JsonEncoding {
          * comma precision depending on the value size.
          */
         static void writeDouble12(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max12, output);
             if (pval >= 0) {
 
@@ -477,7 +477,7 @@ class JsonEncoding {
         }
 
         static void writeDouble9(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max9, output);
             if (pval >= 0) {
 
@@ -515,7 +515,7 @@ class JsonEncoding {
         }
 
         static void writeDouble6(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max6, output);
             if (pval >= 0) {
 
@@ -548,7 +548,7 @@ class JsonEncoding {
         }
 
         static void writeDouble3(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max3, output);
             if (pval >= 0) {
 
@@ -835,7 +835,7 @@ class JsonEncoding {
         @Override
         public void writeFloat(float value, RepeatedByte output) {
             try {
-                this.output = output.reserve(MAX_CHARS_FLOAT);
+                this.output = output.reserveGrowing(MAX_CHARS_FLOAT);
                 final int type = Schubfach.encodeFloat(value, this);
                 if (type != Schubfach.NON_SPECIAL) {
                     writeSpecial(type, output);
@@ -848,7 +848,7 @@ class JsonEncoding {
         @Override
         public void writeDouble(double value, RepeatedByte output) {
             try {
-                this.output = output.reserve(MAX_CHARS_DOUBLE);
+                this.output = output.reserveGrowing(MAX_CHARS_DOUBLE);
                 final int type = Schubfach.encodeDouble(value, this);
                 if (type != Schubfach.NON_SPECIAL) {
                     writeSpecial(type, output);

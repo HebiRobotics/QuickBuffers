@@ -81,6 +81,28 @@ abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> im
     }
 
     /**
+     * Like {@link #reserve(int)}, but grows the capacity by at least half like ArrayList.
+     *
+     * @param count number of entries to be added
+     */
+    @SuppressWarnings("unchecked")
+    public final RepeatedType reserveGrowing(int count) {
+        final int desiredSize = length + count;
+        final int oldCapacity = capacity();
+        if (desiredSize - oldCapacity > 0) { // overflow-conscious (copied from ArrayList::grow)
+            int newCapacity = oldCapacity + (oldCapacity >> 1);
+            if (newCapacity - desiredSize < 0) {
+                newCapacity = desiredSize;
+            }
+            if (newCapacity - MAX_ARRAY_SIZE > 0) {
+                newCapacity = desiredSize > MAX_ARRAY_SIZE ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
+            }
+            extendCapacityTo(newCapacity);
+        }
+        return (RepeatedType) this;
+    }
+
+    /**
      * Sets the output length to zero and performs any
      * necessary cleanup of the content. Does not release
      * the internal buffer.
@@ -106,6 +128,7 @@ abstract class RepeatedField<RepeatedType extends RepeatedField, GenericType> im
     protected abstract void extendCapacityTo(int desiredSize);
 
     protected int length = 0;
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /**
      * Repeated fields have no immutable state and should not

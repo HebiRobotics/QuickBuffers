@@ -286,6 +286,22 @@ public class JsonWriterTest {
         assertIllegalState("Not inside an array", () -> JsonWriter.newInstance().endArray());
     }
 
+    @Test
+    public void testGrowthPastReservedCapacity() {
+        JsonWriter writer = JsonWriter.newInstance().reserve(100).beginArray();
+        RepeatedByte bytes = writer.getBytes();
+        int reallocations = 0;
+        for (int i = 0; i < 100000; i++) {
+            int capacity = bytes.capacity();
+            writer.writeDouble(i + 0.5).writeInt(i).writeLong(i);
+            reallocations += capacity != bytes.capacity() ? 1 : 0;
+        }
+        assertTrue("reallocations: " + reallocations, reallocations < 40);
+
+        assertEquals(10, RepeatedByte.newEmptyInstance().reserve(10).capacity());
+        assertEquals(15, RepeatedByte.newEmptyInstance().reserve(10).setLength(10).reserveGrowing(1).capacity());
+    }
+
     private static void assertIllegalState(String message, Runnable action) {
         try {
             action.run();
