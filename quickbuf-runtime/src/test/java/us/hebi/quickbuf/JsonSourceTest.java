@@ -86,12 +86,12 @@ public class JsonSourceTest {
 
     @Test
     public void testInvalidStructure() {
-        assertStructureError("{\"optionalInt32\":1,}", "Trailing comma before '}' at offset 19");
-        assertStructureError("{\"repeatedInt32\":[1,]}", "Trailing comma before ']' at offset 20");
-        assertStructureError("{\"optionalInt32\":1 \"optionalInt64\":2}", "Expected ',' or '}' but got '\"' at offset 19");
-        assertStructureError("{\"optionalInt32\":}", "Expected a value but got '}' at offset 17");
-        assertStructureError("{\"optionalInt32\" 1}", "Expected ':' but got '1' at offset 17");
-        assertStructureError("{\"repeatedInt32\":[1}", "Expected ',' or ']' but got '}' at offset 19");
+        assertStructureError("{\"optionalInt32\":1,}", "Trailing comma before '}' for field 'optionalInt32' at offset 19");
+        assertStructureError("{\"repeatedInt32\":[1,]}", "Trailing comma before ']' for field 'repeatedInt32[1]' at offset 20");
+        assertStructureError("{\"optionalInt32\":1 \"optionalInt64\":2}", "Expected ',' or '}' but got '\"' for field 'optionalInt32' at offset 19");
+        assertStructureError("{\"optionalInt32\":}", "Expected a value but got '}' for field 'optionalInt32' at offset 17");
+        assertStructureError("{\"optionalInt32\" 1}", "Expected ':' but got '1' for field 'optionalInt32' at offset 17");
+        assertStructureError("{\"repeatedInt32\":[1}", "Expected ',' or ']' but got '}' for field 'repeatedInt32[0]' at offset 19");
     }
 
     private static void assertStructureError(String json, String error) {
@@ -354,9 +354,9 @@ public class JsonSourceTest {
     public void testBadInputs() {
         testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n' at offset 0");
         testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '[' at offset 0");
-        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes' at offset 19");
-        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' at offset 28");
-        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' at offset 17");
+        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes[0]' at offset 19");
+        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' for field 'repeatedForeignMessage[0]' at offset 28");
+        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' for field 'optionalBool' at offset 17");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
     }

@@ -472,8 +472,12 @@ public abstract class JsonSource implements Closeable {
     // ==================== Implementation ====================
 
     InvalidJsonException outOfRange(String type, Object value) {
+        return fieldError("Value out of range for " + type + ": " + value);
+    }
+
+    InvalidJsonException fieldError(String message) {
         String atField = (currentField == null ? "" : " for field '" + currentField + "'");
-        return new InvalidJsonException("Value out of range for " + type + ": " + value + atField);
+        return new InvalidJsonException(message + atField);
     }
 
     // Note: proto3 json accepts base64 with and without padding
@@ -742,8 +746,7 @@ public abstract class JsonSource implements Closeable {
 
         private InvalidJsonException invalidNumber() {
             String value = new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8);
-            String atField = (currentField == null ? "" : " for field '" + currentField + "'");
-            return new InvalidJsonException("Invalid number '" + value + "'" + atField, reader.getPosition());
+            return fieldError("Invalid number '" + value + "'");
         }
 
         private boolean isValue(byte[] expected) {
@@ -765,9 +768,12 @@ public abstract class JsonSource implements Closeable {
         }
 
         private InvalidJsonException nullValue() {
-            String atField = (currentField == null ? "" : " for field '" + currentField + "'");
-            final long offset = reader.getPosition();
-            return new InvalidJsonException("Expected non-null value" + atField, offset);
+            return fieldError("Expected non-null value");
+        }
+
+        @Override
+        InvalidJsonException fieldError(String message) {
+            return reader.newError(message);
         }
 
         private static final byte[] NAN = "NaN".getBytes(ASCII);

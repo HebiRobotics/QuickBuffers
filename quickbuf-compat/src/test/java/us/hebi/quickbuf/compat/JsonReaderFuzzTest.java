@@ -104,9 +104,13 @@ public class JsonReaderFuzzTest {
             rejected++;
         }
 
-        // streams with refills at every position must behave like arrays
+        // streams with refills at every position must behave like arrays, except for names that left the buffer
         Result streamed = parseReader(JsonReader.newInstance(new SlowInputStream(input, 3)));
-        assertEquals(actual.toString(), streamed.toString());
+        assertEquals(withoutPath(actual.toString()), withoutPath(streamed.toString()));
+    }
+
+    private static String withoutPath(String result) {
+        return result.replaceAll("(?s) for field '.*' at offset ", " at offset ");
     }
 
     private static Result parseJackson(byte[] input) throws IOException {

@@ -316,7 +316,7 @@ while (reader.hasNext()) {
 reader.endObject();
 ```
 
-The reader checks the structure strictly according to RFC 8259 and reports errors with the byte offset. Names and strings can be read into reused buffers. Like the `JsonSink`, the pretty printing puts each object member on a new line and keeps arrays on one line.
+The reader checks the structure strictly according to RFC 8259 and reports errors with the field path, e.g. `main.sub[2].value`, and the byte offset. Names and strings can be read into reused buffers. Like the `JsonSink`, the pretty printing puts each object member on a new line and keeps arrays on one line.
 
 ## Building from source
 

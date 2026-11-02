@@ -52,8 +52,9 @@ import static us.hebi.quickbuf.ProtoUtil.*;
  * The structure is validated strictly: missing or trailing commas, missing colons and
  * mismatched brackets are errors, including inside skipped values. Number syntax is
  * validated by the typed reads. A leading UTF-8 byte order mark is skipped. Errors are
- * {@link InvalidJsonException}s that include the byte offset. Whitespace separated root
- * values can be read one after another, and {@link #endDocument()} checks that nothing follows.
+ * {@link InvalidJsonException}s that include the field path and the byte offset. Whitespace
+ * separated root values can be read one after another, and {@link #endDocument()} checks that
+ * nothing follows.
  * <p>
  * The typed reads only accept standard JSON, e.g., {@link #readInt()} rejects quoted numbers.
  * The protobuf mapping with its quoted numbers and special values is read by a {@link JsonSource}.
@@ -160,6 +161,7 @@ public final class JsonReader implements Closeable {
         peeked = PEEKED_NONE;
         scope = SCOPE_EMPTY_DOCUMENT;
         depth = 0;
+        nameOffset = -1;
         return this;
     }
 
@@ -231,7 +233,9 @@ public final class JsonReader implements Closeable {
      */
     public CharSequence readName() throws IOException {
         consume(PEEKED_NAME, "a name");
+        final long start = getPosition();
         readQuotedChars(name.clear());
+        path[depth - 1] = nameOffset = start;
         peekValueAfterName();
         return name;
     }
@@ -251,7 +255,7 @@ public final class JsonReader implements Closeable {
     public void skipValue() throws IOException {
         int p = peeked == PEEKED_NONE ? doPeek() : peeked;
         if (p == PEEKED_NAME) {
-            skipQuoted();
+            skipName();
             p = peekValueAfterName();
         }
         if (lenient && (p == PEEKED_BEGIN_OBJECT || p == PEEKED_BEGIN_ARRAY)) {
@@ -279,7 +283,7 @@ public final class JsonReader implements Closeable {
                     level--;
                     break;
                 case PEEKED_NAME:
-                    skipQuoted();
+                    skipName();
                     p = peekValueAfterName();
                     continue;
                 case PEEKED_STRING:
@@ -603,7 +607,9 @@ public final class JsonReader implements Closeable {
         }
         if (depth == stack.length) {
             stack = Arrays.copyOf(stack, stack.length * 2);
+            path = Arrays.copyOf(path, stack.length);
         }
+        path[depth] = newScope == SCOPE_EMPTY_ARRAY ? 0 : -1;
         stack[depth++] = scope;
         scope = newScope;
     }
@@ -642,6 +648,7 @@ public final class JsonReader implements Closeable {
     private int peekNextElement() throws IOException {
         int c = nextNonWhitespace();
         if (c == ',') {
+            path[depth - 1]++;
             c = nextNonWhitespace();
             if (c == ']') {
                 throw trailingComma(c);
@@ -1115,6 +1122,12 @@ public final class JsonReader implements Closeable {
         return c & 0x3F;
     }
 
+    private void skipName() throws IOException {
+        final long start = getPosition();
+        skipQuoted();
+        path[depth - 1] = start;
+    }
+
     private void skipQuoted() throws IOException {
         while (true) {
             final int c = readByte();
@@ -1224,8 +1237,48 @@ public final class JsonReader implements Closeable {
         return error("Unexpected end of input", getPosition());
     }
 
-    private static InvalidJsonException error(String message, long offset) {
-        return new InvalidJsonException(message, offset);
+    private InvalidJsonException error(String message, long offset) {
+        final String path = getPath();
+        return new InvalidJsonException(path.isEmpty() ? message : message + " for field '" + path + "'", offset);
+    }
+
+    /**
+     * Joins the names and indices of the open levels, e.g. main.sub[2].value, or returns an empty
+     * string if there is no name. Names that a stream has already moved out of the buffer print as '?'.
+     */
+    String getPath() {
+        final StringBuilder sb = new StringBuilder();
+        boolean hasName = false;
+        for (int level = 0; level < depth; level++) {
+            final int levelScope = level + 1 < depth ? stack[level + 1] : scope;
+            if (levelScope == SCOPE_NONEMPTY_ARRAY) {
+                sb.append('[').append(path[level]).append(']');
+            } else if (levelScope == SCOPE_NONEMPTY_OBJECT && path[level] >= 0) {
+                if (sb.length() > 0) {
+                    sb.append('.');
+                }
+                appendName(sb, path[level]);
+                hasName = true;
+            }
+        }
+        return hasName ? sb.toString() : "";
+    }
+
+    private void appendName(StringBuilder sb, long offset) {
+        final long index = offset - bufferOffset;
+        if (offset == nameOffset) {
+            sb.append(name);
+            return;
+        } else if (index < 0 || index > limit) {
+            sb.append('?');
+            return;
+        }
+        final int start = (int) index;
+        int end = start;
+        while (end < limit && buffer[end] != '"') {
+            end += buffer[end] == '\\' ? 2 : 1;
+        }
+        sb.append(new String(buffer, start, Math.min(end, limit) - start, Charsets.UTF_8));
     }
 
     /**
@@ -1318,6 +1371,8 @@ public final class JsonReader implements Closeable {
     private int peeked = PEEKED_NONE;
     private int scope = SCOPE_EMPTY_DOCUMENT;
     private int[] stack = new int[16];
+    private long[] path = new long[16]; // per level: offset of the last name in objects, index in arrays
+    private long nameOffset = -1; // offset of the name that is decoded in the name buffer
     private int depth = 0;
     private int nestingLimit = Integer.MAX_VALUE;
 

@@ -164,7 +164,7 @@ public class JsonReaderTest {
         assertEquals(getError(() -> JsonReader.newInstance("[1e999]").beginArray().readDouble()),
                 getError(() -> JsonReader.newInstance("[1e999]").readValue()));
         assertError("Expected a value but reached the end of the input at offset 0", () -> JsonReader.newInstance("").readValue());
-        assertError("Expected a value but reached the end of the input at offset 6", () -> JsonReader.newInstance("{\"a\":[").readValue());
+        assertError("Expected a value but reached the end of the input for field 'a[0]' at offset 6", () -> JsonReader.newInstance("{\"a\":[").readValue());
     }
 
     @Test
@@ -410,18 +410,18 @@ public class JsonReaderTest {
         assertInvalid("[,1]", "Expected a value but got ',' at offset 1");
         assertInvalid("[1 2]", "Expected ',' or ']' but got '2' at offset 3");
         assertInvalid("[1,,2]", "Expected a value but got ',' at offset 3");
-        assertInvalid("{\"a\":1,}", "Trailing comma before '}' at offset 7");
+        assertInvalid("{\"a\":1,}", "Trailing comma before '}' for field 'a' at offset 7");
         assertInvalid("{,\"a\":1}", "Expected a name or '}' but got ',' at offset 1");
-        assertInvalid("{\"a\":1 \"b\":2}", "Expected ',' or '}' but got '\"' at offset 7");
-        assertInvalid("{\"a\":1,,\"b\":2}", "Expected a name but got ',' at offset 7");
-        assertInvalid("{\"a\" 1}", "Expected ':' but got '1' at offset 5");
-        assertInvalid("{\"a\"::1}", "Expected a value but got ':' at offset 5");
-        assertInvalid("{\"a\":}", "Expected a value but got '}' at offset 5");
+        assertInvalid("{\"a\":1 \"b\":2}", "Expected ',' or '}' but got '\"' for field 'a' at offset 7");
+        assertInvalid("{\"a\":1,,\"b\":2}", "Expected a name but got ',' for field 'a' at offset 7");
+        assertInvalid("{\"a\" 1}", "Expected ':' but got '1' for field 'a' at offset 5");
+        assertInvalid("{\"a\"::1}", "Expected a value but got ':' for field 'a' at offset 5");
+        assertInvalid("{\"a\":}", "Expected a value but got '}' for field 'a' at offset 5");
         assertInvalid("{'a':1}", "Expected a name or '}' but got ''' at offset 1");
         assertInvalid("{a:1}", "Expected a name or '}' but got 'a' at offset 1");
         assertInvalid("{1:1}", "Expected a name or '}' but got '1' at offset 1");
         assertInvalid("[1}", "Expected ',' or ']' but got '}' at offset 2");
-        assertInvalid("{\"a\":1]", "Expected ',' or '}' but got ']' at offset 6");
+        assertInvalid("{\"a\":1]", "Expected ',' or '}' but got ']' for field 'a' at offset 6");
         assertInvalid("]", "Expected a value but got ']' at offset 0");
         assertInvalid("[]]", "Expected a value but got ']' at offset 2");
         assertInvalid("[tru]", "Expected 'true' but got 'tru]' at offset 1");
@@ -450,9 +450,9 @@ public class JsonReaderTest {
         assertInvalid("[1", "Expected ',' or ']' but reached the end of the input at offset 2");
         assertInvalid("[1,", "Expected a value but reached the end of the input at offset 3");
         assertInvalid("{", "Expected a name or '}' but reached the end of the input at offset 1");
-        assertInvalid("{\"a\"", "Expected ':' but reached the end of the input at offset 4");
-        assertInvalid("{\"a\":", "Expected a value but reached the end of the input at offset 5");
-        assertInvalid("{\"a\":1", "Expected ',' or '}' but reached the end of the input at offset 6");
+        assertInvalid("{\"a\"", "Expected ':' but reached the end of the input for field 'a' at offset 4");
+        assertInvalid("{\"a\":", "Expected a value but reached the end of the input for field 'a' at offset 5");
+        assertInvalid("{\"a\":1", "Expected ',' or '}' but reached the end of the input for field 'a' at offset 6");
         assertInvalid("{\"a", "Unexpected end of input at offset 3");
         assertInvalid("[\"a\\", "Unexpected end of input at offset 4");
         assertInvalid("[\"\\u00", "Unexpected end of input at offset 6");
@@ -461,10 +461,10 @@ public class JsonReaderTest {
 
     @Test
     public void testSkipValueMismatch() throws IOException {
-        assertError("Expected ',' or '}' but got ']' at offset 10", () -> JsonReader.newInstance("{\"a\":[1,2]]}").skipValue());
+        assertError("Expected ',' or '}' but got ']' for field 'a' at offset 10", () -> JsonReader.newInstance("{\"a\":[1,2]]}").skipValue());
         assertError("Expected ',' or ']' but got '}' at offset 5", () -> JsonReader.newInstance("[[1,2}]").skipValue());
-        assertError("Expected a value but got '}' at offset 11", () -> JsonReader.newInstance("{\"a\":{\"b\":[}]}").skipValue());
-        assertError("Expected ':' but got ',' at offset 11", () -> JsonReader.newInstance("[{\"a\":1,\"b\",2}]").skipValue());
+        assertError("Expected a value but got '}' for field 'a.b[0]' at offset 11", () -> JsonReader.newInstance("{\"a\":{\"b\":[}]}").skipValue());
+        assertError("Expected ':' but got ',' for field '[0].b' at offset 11", () -> JsonReader.newInstance("[{\"a\":1,\"b\",2}]").skipValue());
         assertError("Trailing comma before ']' at offset 4", () -> JsonReader.newInstance("[[1,]]").skipValue());
         assertError("Expected ',' or ']' but reached the end of the input at offset 6", () -> JsonReader.newInstance("[[1,2]").skipValue());
     }
@@ -611,11 +611,13 @@ public class JsonReaderTest {
         reader.endArray();
         assertEquals(END_DOCUMENT, reader.peek());
 
-        // same offsets as array input
+        // same offsets as array input, but names that left the buffer print as '?'
         byte[] invalid = (json.substring(0, 9000) + ",]").getBytes(Charsets.UTF_8);
         String error = getError(() -> tokens(JsonReader.newInstance(invalid)));
-        assertEquals(error, getError(() -> tokens(JsonReader.newInstance(new SlowInputStream(invalid, 3)))));
-        assertEquals(error, getError(() -> tokens(JsonReader.newInstance(new ByteArrayInputStream(invalid)))));
+        assertTrue(error, error.contains(" for field 'items[86].number' at offset "));
+        String streamError = error.replace("'items[", "'?[");
+        assertEquals(streamError, getError(() -> tokens(JsonReader.newInstance(new SlowInputStream(invalid, 3)))));
+        assertEquals(streamError, getError(() -> tokens(JsonReader.newInstance(new ByteArrayInputStream(invalid)))));
     }
 
     @Test
