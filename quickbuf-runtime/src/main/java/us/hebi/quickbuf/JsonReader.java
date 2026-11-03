@@ -346,6 +346,21 @@ public final class JsonReader implements Closeable {
     }
 
     /**
+     * Reads a standard or URL-safe base64 string, with or without padding, into the store
+     */
+    public void readBase64(RepeatedByte store) throws IOException {
+        consume(PEEKED_STRING, "a string");
+        final long start = getPosition();
+        readQuotedUtf8(value);
+        final int length = Base64.decodedLength(value.array, 0, value.length);
+        if (length < 0) {
+            throw error("Invalid base64 string", start);
+        }
+        store.clear();
+        Base64.decode(value.array, 0, value.length, store.array, store.addLength(length), length);
+    }
+
+    /**
      * Reads a number. Values beyond the double range are rejected like protobuf's JsonFormat
      * does, rather than becoming infinite. Values that are too small become zero.
      */

@@ -323,6 +323,27 @@ public class JsonReaderTest {
     }
 
     @Test
+    public void testBase64() throws IOException {
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance().addAll(new byte[]{1, 2, 3, (byte) 0xFB, (byte) 0xFF});
+        String json = JsonWriter.newInstance().writeBase64(bytes).toString();
+        RepeatedByte store = RepeatedByte.newEmptyInstance().addAll(new byte[]{9});
+        JsonReader.newInstance(json).readBase64(store);
+        assertEquals(bytes, store);
+
+        JsonReader.newInstance("\"AQID-_8\"").readBase64(store);
+        assertEquals(bytes, store);
+        JsonReader.newInstance("\"\"").readBase64(store);
+        assertEquals(0, store.length());
+
+        assertError("Invalid base64 string for field 'a' at offset 6", () -> {
+            JsonReader reader = JsonReader.newInstance("{\"a\":\"AQIDB\"}");
+            reader.beginObject().readName();
+            reader.readBase64(RepeatedByte.newEmptyInstance());
+        });
+        assertError("Expected a string but got '1' at offset 0", () -> JsonReader.newInstance("1").readBase64(RepeatedByte.newEmptyInstance()));
+    }
+
+    @Test
     public void testNumbers() throws IOException {
         assertEquals(Double.doubleToLongBits(-0.0), Double.doubleToLongBits(JsonReader.newInstance("-0").readDouble()));
         assertEquals(Float.floatToIntBits(-0f), Float.floatToIntBits(JsonReader.newInstance("-0.0").readFloat()));
