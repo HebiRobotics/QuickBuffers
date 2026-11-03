@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
+ * Experimental:
+ * <p>
  * Streaming writer for UTF-8 encoded JSON that works without protobuf messages, e.g.,
  * <pre>{@code
  * JsonWriter writer = JsonWriter.newInstance();

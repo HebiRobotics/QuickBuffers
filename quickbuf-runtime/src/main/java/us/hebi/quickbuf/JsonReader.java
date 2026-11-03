@@ -20,20 +20,18 @@
 
 package us.hebi.quickbuf;
 
-import us.hebi.quickbuf.ProtoUtil.Charsets;
+import us.hebi.quickbuf.ProtoUtil.*;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static us.hebi.quickbuf.ProtoUtil.*;
 
 /**
+ * Experimental:
+ * <p>
  * Streaming reader for UTF-8 encoded JSON (RFC 8259) that works without protobuf messages.
  * Values are pulled one token at a time, e.g.,
  * <pre>{@code
@@ -1048,7 +1046,9 @@ public final class JsonReader implements Closeable {
         }
     }
 
-    /** UTF-8 cannot encode an unpaired surrogate, so it is an error */
+    /**
+     * UTF-8 cannot encode an unpaired surrogate, so it is an error
+     */
     private int readLowSurrogate(int high) throws IOException {
         final long offset = getPosition() - 6; // start of the escape
         if (Character.isHighSurrogate((char) high) && readByte() == '\\' && readByte() == 'u') {
