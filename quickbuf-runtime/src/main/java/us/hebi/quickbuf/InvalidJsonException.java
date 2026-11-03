@@ -30,7 +30,32 @@ public class InvalidJsonException extends InvalidProtocolBufferException {
 
     public InvalidJsonException(String description) {
         super(description);
+        this.description = description;
+        this.offset = -1;
     }
+
+    InvalidJsonException(String description, long offset) {
+        super(description + " at offset " + offset);
+        this.description = description;
+        this.offset = offset;
+    }
+
+    /**
+     * @return the message without the offset suffix
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @return the byte offset of the error relative to the start of the input, or -1 if unknown
+     */
+    public long getOffset() {
+        return offset;
+    }
+
+    private final String description;
+    private final long offset;
 
     static InvalidJsonException truncatedMessage() {
         return new InvalidJsonException(

@@ -28,7 +28,6 @@ QuickBuffers passes all [proto2 conformance tests](./conformance) and is compati
 * [Services](https://developers.google.com/protocol-buffers/docs/proto#services) are not implemented
 * [Extensions](https://developers.google.com/protocol-buffers/docs/proto#extensions) are embedded directly into the extended message, so support is limited to generation time.
 * The [proto files](https://github.com/protocolbuffers/protobuf/tree/main/src/google/protobuf) for [well-known proto3 types](https://protobuf.dev/reference/protobuf/google.protobuf/) such as `timestamp.proto` or `duration.proto`need to be included manually. Their special cased JSON representations are not implemented.
-* Unsigned integer types are JSON encoded as signed integer numbers
 
 ## Getting started
 
@@ -280,8 +279,6 @@ msg.clearQuick()
 ```
 
 The default implementation encodes the minimal representation accepted by the protobuf spec, i.e., floating point numbers do not append a trailing zero, and long integers are encoded without quotes. Alternative implementations based on GSON and Jackson can be found in the `quickbuf-compat` artifact.
-
-Note that the built-in JsonSink has been optimized quite a bit, but the JsonSource is very barebones due to a lack of an internal use case for JSON decoding.
 
 ## Building from source
 

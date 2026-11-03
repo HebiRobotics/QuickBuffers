@@ -22,13 +22,10 @@ package us.hebi.quickbuf;
 
 import org.junit.Before;
 import org.junit.Test;
-import us.hebi.quickbuf.JsonDecoding.JsonLexer;
-import us.hebi.quickbuf.JsonDecoding.StringDecoding;
 import us.hebi.quickbuf.JsonEncoding.Base64Encoding;
 import us.hebi.quickbuf.JsonEncoding.BooleanEncoding;
 import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
-import us.hebi.quickbuf.JsonSource.ArraySource;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.io.IOException;
@@ -57,7 +54,7 @@ public class JsonEncodingTest {
         for (int i = 0; i < 100; i++) {
             byte[] expected = new byte[i];
             rnd.nextBytes(expected);
-            Base64Encoding.writeQuotedBase64(expected, expected.length, bytes.setLength(0));
+            Base64Encoding.writeQuotedBase64(expected, 0, expected.length, bytes.setLength(0));
             String result = new String(bytes.array, 1, bytes.length - 2, Charsets.UTF_8); // without quotes
             byte[] actual = java.util.Base64.getDecoder().decode(result); // IntelliJ complains, but works in Maven (test sources 8)
             assertArrayEquals(result, expected, actual);
@@ -119,6 +116,24 @@ public class JsonEncodingTest {
         testLong(Long.MIN_VALUE);
         testLong(Long.MAX_VALUE);
         testLong(0);
+    }
+
+    @Test
+    public void testUnsignedLongEncoding() throws Exception {
+        long[] values = new long[n + 5];
+        for (int i = 0; i < n; i++) {
+            values[i] = rnd.nextLong();
+        }
+        values[n] = -1;
+        values[n + 1] = Long.MIN_VALUE;
+        values[n + 2] = Long.MIN_VALUE + 1;
+        values[n + 3] = Long.MAX_VALUE;
+        values[n + 4] = 0;
+        RepeatedByte bytes = RepeatedByte.newEmptyInstance();
+        for (long value : values) {
+            NumberEncoding.writeUnsignedLong(value, bytes.clear());
+            assertEquals(Long.toUnsignedString(value), new String(bytes.toArray(), Charsets.ASCII));
+        }
     }
 
     @Test
@@ -321,17 +336,15 @@ public class JsonEncodingTest {
 
         {
             // compare post-replacement utf8 input
-            RepeatedByte utf8 = RepeatedByte.newEmptyInstance();
-            JsonLexer lexer = new ArraySource(bytes.array, 1, length - 1);
-            StringDecoding.readQuotedUtf8(lexer, utf8);
-            assertEquals(input, new String(utf8.array, 0, utf8.length, Charsets.UTF_8));
+            Utf8String utf8 = Utf8String.newEmptyInstance();
+            JsonReader.newInstance(bytes.array, 0, length).readString(utf8);
+            assertEquals(input, new String(utf8.bytes(), 0, utf8.size(), Charsets.UTF_8));
         }
 
         {
             // compare fully decoded input
             StringBuilder builder = new StringBuilder(length);
-            JsonLexer lexer = new ArraySource(bytes.array, 1, length - 1);
-            StringDecoding.readQuotedUtf8(lexer, builder);
+            JsonReader.newInstance(bytes.array, 0, length).readString(builder);
             assertEquals(input, builder.toString());
         }
 

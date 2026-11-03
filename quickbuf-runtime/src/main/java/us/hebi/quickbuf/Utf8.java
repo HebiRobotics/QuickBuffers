@@ -516,12 +516,12 @@ class Utf8 {
             return b & 0x3F;
         }
 
-        private static char highSurrogate(int codePoint) {
+        static char highSurrogate(int codePoint) {
             return (char) ((MIN_HIGH_SURROGATE - (MIN_SUPPLEMENTARY_CODE_POINT >>> 10))
                     + (codePoint >>> 10));
         }
 
-        private static char lowSurrogate(int codePoint) {
+        static char lowSurrogate(int codePoint) {
             return (char) (MIN_LOW_SURROGATE + (codePoint & 0x3ff));
         }
     }

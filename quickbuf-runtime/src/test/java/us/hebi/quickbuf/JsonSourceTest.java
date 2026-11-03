@@ -25,6 +25,7 @@ import org.junit.Test;
 import protos.test.quickbuf.ForeignMessage;
 import protos.test.quickbuf.TestAllTypes;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
@@ -84,6 +85,62 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testInvalidStructure() {
+        assertStructureError("{\"optionalInt32\":1,}", "Trailing comma before '}' for field 'optionalInt32' at offset 19");
+        assertStructureError("{\"repeatedInt32\":[1,]}", "Trailing comma before ']' for field 'repeatedInt32[1]' at offset 20");
+        assertStructureError("{\"optionalInt32\":1 \"optionalInt64\":2}", "Expected ',' or '}' but got '\"' for field 'optionalInt32' at offset 19");
+        assertStructureError("{\"optionalInt32\":}", "Expected a value but got '}' for field 'optionalInt32' at offset 17");
+        assertStructureError("{\"optionalInt32\" 1}", "Expected ':' but got '1' for field 'optionalInt32' at offset 17");
+        assertStructureError("{\"repeatedInt32\":[1}", "Expected ',' or ']' but got '}' for field 'repeatedInt32[0]' at offset 19");
+    }
+
+    private static void assertStructureError(String json, String error) {
+        try {
+            TestAllTypes.parseFrom(JsonSource.newInstance(json));
+            fail("expected error: " + error);
+        } catch (IOException e) {
+            assertEquals(error, e.getMessage());
+        }
+    }
+
+    @Test
+    public void testSkippingInvalidUnknownFields() throws Exception {
+        String json = "{\"unknown\":{\"a\":[1,],\"b\":,\"c\" 2},\"unknown2\":[{],\"optionalInt32\":1}";
+        TestAllTypes msg = TestAllTypes.parseFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(true));
+        assertEquals(1, msg.getOptionalInt32());
+    }
+
+    @Test
+    public void testReuse() throws IOException {
+        JsonSource source = JsonSource.newInstance().setIgnoreUnknownFields(true);
+        TestAllTypes msg = TestAllTypes.newInstance();
+        msg.clear().mergeFrom(source.setInput("{\"optionalInt32\":1,\"unknown\":{}}"));
+        assertEquals(1, msg.getOptionalInt32());
+
+        msg.clear().mergeFrom(source.setInput(new ByteArrayInputStream("{\"optionalInt32\":2}".getBytes(ProtoUtil.Charsets.UTF_8))));
+        assertEquals(2, msg.getOptionalInt32());
+
+        try {
+            msg.clear().mergeFrom(source.setInput("{\"optionalInt32\":"));
+            fail("expected truncated input to fail");
+        } catch (IOException expected) {
+        }
+        msg.clear().mergeFrom(source.setInput("{\"optionalInt32\":3}"));
+        assertEquals(3, msg.getOptionalInt32());
+    }
+
+    @Test
+    public void testInvalidUtf8InNames() {
+        byte[] json = {'{', '"', (byte) 0x80, '"', ':', '1', '}'};
+        try {
+            TestAllTypes.parseFrom(JsonSource.newInstance(json).setIgnoreUnknownFields(true));
+            fail("expected invalid utf-8 to fail");
+        } catch (IOException e) {
+            assertEquals("Invalid UTF-8 in string at offset 2", e.getMessage());
+        }
+    }
+
+    @Test
     public void testUnpaddedBase64() throws Exception {
         assertArrayEquals(new byte[]{1}, parseJson("{\"optionalBytes\":\"AQ\"}").getOptionalBytes().toArray());
         assertArrayEquals(new byte[]{1, 2}, parseJson("{\"optionalBytes\":\"AQI\"}").getOptionalBytes().toArray());
@@ -124,12 +181,70 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testFloatingPointValues() throws Exception {
+        TestAllTypes msg = parseJson("{\"repeatedDouble\":[\"NaN\",\"Infinity\",\"-Infinity\",NaN,Infinity,-Infinity,\"1e2\",007,\"-00.5\"]," +
+                "\"repeatedFloat\":[\"NaN\",\"Infinity\",\"-Infinity\",\"1.5\",-007]}");
+        Assert.assertArrayEquals(new double[]{Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY,
+                Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 100, 7, -0.5}, msg.getRepeatedDouble().toArray(), 0);
+        Assert.assertArrayEquals(new float[]{Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY,
+                1.5f, -7}, msg.getRepeatedFloat().toArray(), 0);
+    }
+
+    @Test
+    public void testInvalidFloatingPointValues() throws Exception {
+        for (String value : new String[]{"\"Inf\"", "\"inf\"", "\"nan\"", "\"-NaN\"", "\"+Infinity\"", "\"--1\"",
+                "\"\"", "\"-\"", "\" 1\"", "\"1d\"", "\"0x1p3\"", "\"1.\"", "\".5\"", "+1"}) {
+            for (String field : new String[]{"optionalDouble", "optionalFloat"}) {
+                String json = "{\"" + field + "\":" + value + "}";
+                try {
+                    parseJson(json);
+                    fail("expected to fail on invalid value: " + json);
+                } catch (InvalidJsonException expected) {
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testIntegralValues() throws Exception {
+        TestAllTypes msg = parseJson("{\"repeatedInt32\":[1.0,\"1e2\",-2.5e1,\"0.0\",007]," +
+                "\"repeatedInt64\":[\"9.223372036854775807e18\",\"-9223372036854775808\",-9.223372036854775808e18,12345678900e-2]}");
+        Assert.assertArrayEquals(new int[]{1, 100, -25, 0, 7}, msg.getRepeatedInt32().toArray());
+        Assert.assertArrayEquals(new long[]{Long.MAX_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, 123456789},
+                msg.getRepeatedInt64().toArray());
+    }
+
+    @Test
+    public void testInvalidIntegerValues() throws Exception {
+        for (String json : new String[]{
+                "{\"optionalInt32\":\"\"}",
+                "{\"optionalInt64\":\"\"}",
+                "{\"optionalInt32\":1.5}",
+                "{\"optionalInt64\":\"1e-1\"}",
+                "{\"optionalInt64\":1e19}",
+                "{\"optionalInt64\":9223372036854775808}",
+                "{\"optionalInt32\":\"+1\"}",
+                "{\"optionalInt64\":+1}",
+                "{\"optionalUint64\":\"+1\"}",
+                "{\"optionalInt32\":2147483648.0}"}) {
+            try {
+                parseJson(json);
+                fail("expected to fail on invalid value: " + json);
+            } catch (InvalidJsonException expected) {
+            }
+        }
+    }
+
+    @Test
     public void testIntegersOutOfRange() throws Exception {
         for (String json : new String[]{
                 "{\"optionalInt32\":2147483648}",
                 "{\"optionalInt32\":4294967297}",
                 "{\"optionalUint32\":4294967296}",
-                "{\"optionalUint32\":-2147483649}"}) {
+                "{\"optionalUint32\":-2147483649}",
+                "{\"optionalUint64\":18446744073709551616}",
+                "{\"optionalUint64\":-9223372036854775809}",
+                "{\"repeatedUint64\":[99999999999999999999]}"}) {
             try {
                 parseJson(json);
                 fail("expected to fail on out of range value: " + json);
@@ -147,6 +262,39 @@ public class JsonSourceTest {
         assertEquals(-1, msg.getRepeatedUint32().get(0));
         assertEquals(-1, msg.getRepeatedUint32().get(1));
         assertEquals(Integer.MIN_VALUE, msg.getRepeatedFixed32().get(0));
+    }
+
+    @Test
+    public void testUnsignedInt64() throws Exception {
+        TestAllTypes msg = parseJson("{\"optionalUint64\":18446744073709551615,\"optionalFixed64\":\"9223372036854775808\"," +
+                "\"repeatedUint64\":[9223372036854775807,10000000000000000000],\"repeatedFixed64\":[1,\"9223372036854775809\"]}");
+        assertEquals(-1L, msg.getOptionalUint64());
+        assertEquals(Long.MIN_VALUE, msg.getOptionalFixed64());
+        assertArrayEquals(new long[]{Long.MAX_VALUE, -8446744073709551616L}, msg.getRepeatedUint64().toArray());
+        assertArrayEquals(new long[]{1, Long.MIN_VALUE + 1}, msg.getRepeatedFixed64().toArray());
+
+        // signed values written by older versions
+        msg = parseJson("{\"optionalUint64\":-1,\"optionalFixed64\":-9223372036854775808}");
+        assertEquals(-1L, msg.getOptionalUint64());
+        assertEquals(Long.MIN_VALUE, msg.getOptionalFixed64());
+    }
+
+    @Test
+    public void testUnsignedIntegralValues() throws Exception {
+        assertEquals(-8446744073709551616L, parseJson("{\"optionalUint64\":1e19}").getOptionalUint64());
+        assertEquals(-446744073709551616L, parseJson("{\"optionalUint64\":\"1.8e19\"}").getOptionalUint64());
+    }
+
+    @Test
+    public void testUnsignedRoundTrip() throws Exception {
+        TestAllTypes msg = TestAllTypes.newInstance()
+                .setOptionalUint64(-1L) // 2^64-1
+                .setOptionalFixed64(Long.MIN_VALUE) // 2^63
+                .setOptionalUint32(-1) // 2^32-1
+                .setOptionalFixed32(Integer.MIN_VALUE); // 2^31
+        msg.getMutableRepeatedUint64().addAll(new long[]{0, -1L, Long.MIN_VALUE, Long.MAX_VALUE});
+        msg.getMutableRepeatedFixed32().addAll(new int[]{0, -1, Integer.MIN_VALUE});
+        testRoundTrip(msg);
     }
 
     @Test
@@ -204,11 +352,11 @@ public class JsonSourceTest {
 
     @Test
     public void testBadInputs() {
-        testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n'");
-        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '['");
-        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes'");
-        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' for field 'repeatedForeignMessage'");
-        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' for field 'optionalBool'");
+        testError(CompatibilityTest.JSON_NULL, "Expected '{' but got 'n' at offset 0");
+        testError(CompatibilityTest.JSON_LIST_EMPTY, "Expected '{' but got '[' at offset 0");
+        testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes[0]' at offset 19");
+        testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' for field 'repeatedForeignMessage[0]' at offset 28");
+        testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' for field 'optionalBool' at offset 17");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
         testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
     }

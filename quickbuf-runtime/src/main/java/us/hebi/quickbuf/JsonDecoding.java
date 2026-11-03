@@ -20,116 +20,38 @@
 
 package us.hebi.quickbuf;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import static us.hebi.quickbuf.JsonDecoding.IntChar.*;
-import static us.hebi.quickbuf.ProtoUtil.*;
 
 /**
- * JSON spec: https://datatracker.ietf.org/doc/html/rfc7159
- * <p>
- * Initial implementation based on some code from QSON and JsonIter.
- * Exception handling and number parsing etc. needs to be improved,
- * but a basic version is working.
+ * Number parsing and lookup tables for reading JSON
  *
  * @author Florian Enner
  * @since 17 Mar 2022
  */
 class JsonDecoding {
 
-    static interface JsonLexer {
-        /**
-         * @return 0-255 or -1 if end of stream
-         */
-        int readRawByte() throws IOException;
-
-        /**
-         * @return 0-255, or exception if end of stream
-         */
-        int readByte() throws IOException;
-
-        /**
-         * @return next non-whitespace, or exception if end of stream
-         */
-        int readNextToken() throws IOException;
-
-    }
-
     static class IntChar {
 
-        public final static int INT_UNINITIALIZED = -2;
-        public final static int INT_EOF = -1;
-        public final static int INT_TAB = '\t';
-        public final static int INT_LF = '\n';
-        public final static int INT_CR = '\r';
-        public final static int INT_SPACE = 0x0020;
-
-        // Markup
-        public final static int INT_LBRACKET = '[';
-        public final static int INT_RBRACKET = ']';
-        public final static int INT_LCURLY = '{';
-        public final static int INT_RCURLY = '}';
-        public final static int INT_QUOTE = '"';
-        public final static int INT_APOS = '\'';
-        public final static int INT_BACKSLASH = '\\';
-        public final static int INT_SLASH = '/';
-        public final static int INT_ASTERISK = '*';
-        public final static int INT_COLON = ':';
-        public final static int INT_COMMA = ',';
-        public final static int INT_HASH = '#';
-
-        // Number chars
         public final static int INT_0 = '0';
         public final static int INT_9 = '9';
         public final static int INT_MINUS = '-';
-        public final static int INT_PLUS = '+';
 
-        public final static int INT_PERIOD = '.';
-        public final static int INT_e = 'e';
-        public final static int INT_E = 'E';
-
-        public final static int INT_t = 't';
-        public final static int INT_r = 'r';
-        public final static int INT_u = 'u';
-        public final static int INT_f = 'f';
-        public final static int INT_a = 'a';
-        public final static int INT_l = 'l';
-        public final static int INT_s = 's';
-
-        public final static int INT_n = 'n';
-
-
-        public static boolean isDigit(int ch) {
-            return ch >= INT_0 && ch <= INT_9;
-        }
-
-        public static boolean isWhitespace(int ch) {
-            return ch == INT_SPACE
-                    || ch == INT_LF
-                    || ch == INT_CR
-                    || ch == INT_TAB;
-        }
-
-        public static boolean isBreak(int ch) {
-            return ch < 0 || breaks[ch]; // EOF also ends a value
-        }
-
-        private static final boolean[] breaks = new boolean[256];
         final static int[] sHexValues = new int[256];
-        final static int[] TRUE_VALUE = {INT_t, INT_r, INT_u, INT_e};
-        final static int[] FALSE_VALUE = {INT_f, INT_a, INT_l, INT_s, INT_e};
-        final static int[] NULL_VALUE = {INT_n, INT_u, INT_l, INT_l};
+        final static int[] sEscapedValues = new int[256]; // char for the byte after a backslash, except 'u'
 
         static {
-            breaks[' '] = true;
-            breaks['\t'] = true;
-            breaks['\n'] = true;
-            breaks['\r'] = true;
-            breaks[','] = true;
-            breaks['}'] = true;
-            breaks[']'] = true;
+            Arrays.fill(sEscapedValues, -1);
+            sEscapedValues['"'] = '"';
+            sEscapedValues['\\'] = '\\';
+            sEscapedValues['/'] = '/';
+            sEscapedValues['b'] = '\b';
+            sEscapedValues['f'] = '\f';
+            sEscapedValues['n'] = '\n';
+            sEscapedValues['r'] = '\r';
+            sEscapedValues['t'] = '\t';
 
             Arrays.fill(sHexValues, -1);
             for (int i = 0; i < 10; ++i) {
@@ -143,192 +65,147 @@ class JsonDecoding {
 
     }
 
-
-    static class StringDecoding {
-
-        /**
-         * current token needs to be at the beginning quote. Ends at the last quote read.
-         */
-        static void readQuotedUtf8(JsonLexer source, RepeatedByte result) throws IOException {
-            result.clear();
-            while (true) {
-                final int ch = source.readByte();
-                if (ch == INT_QUOTE) {
-                    return;
-                } else if (ch != INT_BACKSLASH) {
-                    // standard ascii or UTF8
-                    result.add((byte) ch);
-                } else {
-                    // Convert JSON specific escaping to raw UTF8
-                    int escapedChar = source.readByte();
-                    if (escapedChar == INT_u) {
-                        char c = readEscapedHexChar(source);
-                        if (c < 0x80) {
-                            result.add((byte) c);
-                        } else if (c < 0x800) {
-                            // 11 bits, two UTF-8 bytes
-                            result.add((byte) ((0xF << 6) | (c >>> 6)));
-                            result.add((byte) (0x80 | (0x3F & c)));
-                        } else if ((c < Character.MIN_SURROGATE || Character.MAX_SURROGATE < c)) {
-                            // Maximum single-char code point is 0xFFFF, 16 bits, three UTF-8 bytes
-                            result.add((byte) ((0xF << 5) | (c >>> 12)));
-                            result.add((byte) (0x80 | (0x3F & (c >>> 6))));
-                            result.add((byte) (0x80 | (0x3F & c)));
-                        } else {
-                            // Minimum code point represented by a surrogate pair is 0x10000, 17 bits, four UTF-8 bytes
-                            checkArgument(source.readByte() == '\\', "expected surrogate pair");
-                            checkArgument(source.readByte() == 'u', "expected surrogate pair");
-                            final char low = readEscapedHexChar(source);
-                            int codePoint = Character.toCodePoint(c, low);
-                            result.add((byte) ((0xF << 4) | (codePoint >>> 18)));
-                            result.add((byte) (0x80 | (0x3F & (codePoint >>> 12))));
-                            result.add((byte) (0x80 | (0x3F & (codePoint >>> 6))));
-                            result.add((byte) (0x80 | (0x3F & codePoint)));
-                        }
-                    } else {
-                        result.add((byte) escapedToRawChar(escapedChar));
-                    }
-                }
-            }
-        }
-
-        static void readQuotedUtf8(JsonLexer source, StringBuilder result) throws IOException {
-            result.setLength(0);
-            while (true) {
-                int c = source.readByte();
-                if (c == INT_QUOTE) {
-                    return;
-
-                } else if (c == INT_BACKSLASH) {
-
-                    // escaped char or unicode
-                    int ch2 = source.readByte();
-                    if (ch2 == INT_u) {
-                        result.append(readEscapedHexChar(source));
-                    } else {
-                        result.append(escapedToRawChar(ch2));
-                    }
-
-                } else if (c < 128) {
-
-                    // single char
-                    result.append((char) c);
-
-                } else {
-
-                    // multi-char (from QSON)
-                    int tmp = c & 0xF0; // mask out top 4 bits to test for multibyte
-                    if (tmp == 0xC0 || tmp == 0xD0) {
-                        // 2 byte
-                        int d = source.readByte();
-                        if ((d & 0xC0) != 0x080) {
-                            throw new InvalidJsonException("Invalid UTF8 2 byte encoding");
-                        }
-                        c = ((c & 0x1F) << 6) | (d & 0x3F);
-                    } else if (tmp == 0xE0) {
-                        // 3 byte
-                        c &= 0x0F;
-                        int d = source.readByte();
-                        if ((d & 0xC0) != 0x080) {
-                            throw new InvalidJsonException("Invalid UTF8 3 byte encoding");
-                        }
-                        c = (c << 6) | (d & 0x3F);
-                        d = source.readByte();
-                        if ((d & 0xC0) != 0x080) {
-                            throw new InvalidJsonException("Invalid UTF8 3 byte encoding");
-                        }
-                        c = (c << 6) | (d & 0x3F);
-                    } else if (tmp == 0xF0) {
-                        // 4 byte
-                        int d = source.readByte();
-                        if ((d & 0xC0) != 0x080) {
-                            throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
-                        }
-                        c = ((c & 0x07) << 6) | (d & 0x3F);
-                        d = source.readByte();
-                        if ((d & 0xC0) != 0x080) {
-                            throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
-                        }
-                        c = (c << 6) | (d & 0x3F);
-                        d = source.readByte();
-                        if ((d & 0xC0) != 0x080) {
-                            throw new InvalidJsonException("Invalid UTF8 4 byte encoding");
-                        }
-                        c = ((c << 6) | (d & 0x3F)) - 0x10000;
-                        result.append((char) (0xD800 | (c >> 10)));
-                        c = 0xDC00 | (c & 0x3FF);
-                    }
-                    result.append((char) c);
-
-                }
-
-            }
-        }
-
-        static char escapedToRawChar(int escapedChar) throws InvalidJsonException {
-            switch (escapedChar) {
-                case '\\':
-                    return '\\';
-                case '"':
-                    return '"';
-                case '/':
-                    return '/';
-                case 'b':
-                    return '\b';
-                case 't':
-                    return '\t';
-                case 'n':
-                    return '\n';
-                case 'f':
-                    return '\f';
-                case 'r':
-                    return '\r';
-                default:
-                    throw new InvalidJsonException("Unknown character format in result: '" + (char) escapedChar + "'");
-            }
-        }
-
-        static char readEscapedHexChar(JsonLexer source) throws IOException {
-            return (char) (readHexDigit(source) << 12
-                    | readHexDigit(source) << 8
-                    | readHexDigit(source) << 4
-                    | readHexDigit(source));
-        }
-
-        static int readHexDigit(JsonLexer source) throws IOException {
-            int raw = source.readByte();
-            int value = sHexValues[raw];
-            if (value < 0) {
-                throw new InvalidJsonException("expected a hex-digit, but found: '" + (char) raw + "'");
-            }
-            return value;
-        }
-
-    }
-
     static class Numbers {
 
-        static double readDouble(byte[] buffer, int tokenStart, int tokenEnd) {
-            int first = buffer[tokenStart];
-            if (first == '-') {
-                return -readDouble(buffer, tokenStart + 1, tokenEnd);
-            } else if (first == 'N') {
-                checkArgument((tokenEnd - tokenStart) == 3, "invalid double value");
-                checkArgument(buffer[tokenStart + 1] == 'a', "invalid double value");
-                checkArgument(buffer[tokenStart + 2] == 'N', "invalid double value");
-                return Double.NaN;
-            } else if (first == 'I') {
-                checkArgument((tokenEnd - tokenStart) == 8, "invalid double value");
-                checkArgument(buffer[tokenStart + 1] == 'n', "invalid double value");
-                checkArgument(buffer[tokenStart + 2] == 'f', "invalid double value");
-                checkArgument(buffer[tokenStart + 3] == 'i', "invalid double value");
-                checkArgument(buffer[tokenStart + 4] == 'n', "invalid double value");
-                checkArgument(buffer[tokenStart + 5] == 'i', "invalid double value");
-                checkArgument(buffer[tokenStart + 6] == 't', "invalid double value");
-                checkArgument(buffer[tokenStart + 7] == 'y', "invalid double value");
+        /**
+         * Converts w * 10^q with correct rounding. Clinger's fast path covers w and 10^|q| that are
+         * exact doubles, so a single multiplication or division rounds correctly. Everything else
+         * goes through Eisel-Lemire.
+         *
+         * @param w unsigned mantissa with at most 19 digits
+         */
+        static double toDouble(boolean negative, long w, int q) {
+            final double value;
+            if (w == 0) {
+                value = 0;
+            } else if (w > 0 && w <= MAX_EXACT_DOUBLE && q >= -22 && q <= 22) {
+                value = q < 0 ? w / EXACT_POW10[-q] : w * EXACT_POW10[q];
+            } else if (w > 0 && q > 22 && q <= 22 + 15 && w <= MAX_EXACT_DOUBLE / (long) EXACT_POW10[q - 22]) {
+                value = (w * (long) EXACT_POW10[q - 22]) * EXACT_POW10[22]; // e.g. 123e30 = 123000000000e22
+            } else {
+                return Double.longBitsToDouble(eiselLemire(w, q) | (negative ? Long.MIN_VALUE : 0));
             }
-            String str = new String(buffer, tokenStart, tokenEnd - tokenStart, Charsets.ASCII);
-            return Double.parseDouble(str);
+            return negative ? -value : value;
+        }
+
+        /**
+         * Converts w * 10^q with Clinger's fast path in float arithmetic, or by rounding the
+         * correctly rounded double, which is only wrong if it sits exactly between two floats.
+         *
+         * @param w unsigned mantissa with at most 19 digits
+         * @return NaN if the result may be off by double rounding
+         */
+        static float toFloat(boolean negative, long w, int q) {
+            if (w > 0 && w <= MAX_EXACT_FLOAT && q >= -10 && q <= 10) {
+                final float value = q < 0 ? w / EXACT_FLOAT_POW10[-q] : w * EXACT_FLOAT_POW10[q];
+                return negative ? -value : value;
+            }
+            final double value = toDouble(negative, w, q);
+            final long bits = Double.doubleToRawLongBits(value);
+            if ((bits & FLOAT_ROUNDING_BITS) == FLOAT_MIDPOINT || (value != 0 && Math.abs(value) < Float.MIN_NORMAL)) {
+                return Float.NaN; // float subnormals have fewer bits, so their midpoints differ
+            }
+            return (float) value;
+        }
+
+        /**
+         * Eisel-Lemire as in fast_float's decimal_to_binary.h (Apache-2.0 / MIT, Copyright Daniel Lemire),
+         * https://github.com/fastfloat/fast_float/blob/v8.0.2/include/fast_float/decimal_to_binary.h
+         * The truncated 128 bit powers of five are always precise enough for 19 digits, see
+         * Mushtak and Lemire, "Fast Number Parsing Without Fallback".
+         *
+         * @return the bits of the positive double closest to w * 10^q
+         */
+        private static long eiselLemire(long w, int q) {
+            if (q < MIN_POW10) {
+                return 0;
+            } else if (q > MAX_POW10) {
+                return INFINITY_BITS;
+            }
+            final int lz = Long.numberOfLeadingZeros(w);
+            w <<= lz;
+            final int index = 2 * (q - MIN_POW10);
+            long high = unsignedMultiplyHigh(w, POW5_128[index]);
+            long low = w * POW5_128[index];
+            if ((high & 0x1FF) == 0x1FF) {
+                final long secondHigh = unsignedMultiplyHigh(w, POW5_128[index + 1]);
+                low += secondHigh;
+                if (secondHigh + Long.MIN_VALUE > low + Long.MIN_VALUE) {
+                    high++;
+                }
+            }
+            final int upperBit = (int) (high >>> 63);
+            final int shift = upperBit + 64 - 52 - 3;
+            long mantissa = high >>> shift;
+            int power2 = (((152170 + 65536) * q) >> 16) + 63 + upperBit - lz + 1023;
+            if (power2 <= 0) { // subnormal
+                if (-power2 + 1 >= 64) {
+                    return 0;
+                }
+                mantissa >>>= -power2 + 1;
+                mantissa += mantissa & 1;
+                mantissa >>>= 1;
+                return mantissa; // rounding up to the smallest normal also sets the exponent bit
+            }
+            if ((low & ~1L) == 0 && q >= -4 && q <= 23 && (mantissa & 3) == 1 && (mantissa << shift) == high) {
+                mantissa &= ~1L; // exactly halfway, so round to even
+            }
+            mantissa += mantissa & 1;
+            mantissa >>>= 1;
+            if (mantissa >= (2L << 52)) {
+                mantissa = 1L << 52;
+                power2++;
+            }
+            if (power2 >= 0x7FF) {
+                return INFINITY_BITS;
+            }
+            return (mantissa & ~(1L << 52)) | ((long) power2 << 52);
+        }
+
+        private static long unsignedMultiplyHigh(long a, long b) {
+            return JdkMath.multiplyHigh(a, b) + ((a >> 63) & b) + ((b >> 63) & a);
+        }
+
+        /**
+         * 128 bit approximations of 5^q for q in [-342, 308] as pairs of high and low bits,
+         * generated like fast_float's script/table_generation.py
+         */
+        private static long[] computePowersOfFive() {
+            final long[] table = new long[2 * (MAX_POW10 - MIN_POW10 + 1)];
+            BigInteger pow5 = BigInteger.ONE;
+            for (int q = 0; q <= Math.max(-MIN_POW10, MAX_POW10); q++, pow5 = pow5.multiply(BigInteger.valueOf(5))) {
+                if (q <= MAX_POW10) {
+                    setPow5(table, q, pow5.shiftLeft(128 - pow5.bitLength())); // truncated
+                }
+                if (q > 0 && -q >= MIN_POW10) {
+                    final int z = pow5.bitLength();
+                    final int b = q <= 27 ? z + 127 : 2 * z + 128;
+                    final BigInteger c = BigInteger.ONE.shiftLeft(b).divide(pow5).add(BigInteger.ONE);
+                    setPow5(table, -q, c.shiftRight(Math.max(0, c.bitLength() - 128)));
+                }
+            }
+            return table;
+        }
+
+        private static void setPow5(long[] table, int q, BigInteger value) {
+            table[2 * (q - MIN_POW10)] = value.shiftRight(64).longValue();
+            table[2 * (q - MIN_POW10) + 1] = value.longValue();
+        }
+
+        static long readUnsignedLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
+            if (tokenEnd <= tokenStart || buffer[tokenStart] == INT_MINUS) {
+                return readLong(buffer, tokenStart, tokenEnd);
+            }
+            long result = 0;
+            for (int i = tokenStart; i < tokenEnd; i++) {
+                final int digit = (buffer[i] & 0xFF) - INT_0;
+                if (digit < 0 || digit > 9 || result < 0 || result > MAX_UINT64_DIV_10
+                        || (result == MAX_UINT64_DIV_10 && digit > MAX_UINT64_LAST_DIGIT)) {
+                    throw InvalidJsonException.illegalNumberFormat();
+                }
+                result = result * 10 + digit;
+            }
+            return result;
         }
 
         static long readLong(byte[] buffer, int tokenStart, int tokenEnd) throws InvalidJsonException {
@@ -337,14 +214,14 @@ class JsonDecoding {
             int len = tokenEnd - tokenStart;
             long limit = -9223372036854775807L;
             if (len <= 0) {
-                return 0;
+                throw InvalidJsonException.illegalNumberFormat();
             } else {
                 int firstChar = buffer[tokenStart] & 0xFF;
                 if (firstChar < INT_0) {
                     if (firstChar == INT_MINUS) {
                         negative = true;
                         limit = -9223372036854775808L;
-                    } else if (firstChar != INT_PLUS) {
+                    } else {
                         throw InvalidJsonException.illegalNumberFormat();
                     }
 
@@ -382,39 +259,27 @@ class JsonDecoding {
                 tokenStart++;
             }
             for (int i = tokenStart; i < tokenEnd; i++) {
-                if (buffer[i] < 0 || intDigits[buffer[i]] < 0) {
+                if (buffer[i] < INT_0 || buffer[i] > INT_9) {
                     return false;
                 }
             }
             return true;
         }
 
-        final static int[] intDigits = new int[127];
-        final static int[] floatDigits = new int[127];
-        final static int END_OF_NUMBER = -2;
-        final static int DOT_IN_NUMBER = -3;
-        final static int INVALID_CHAR_FOR_NUMBER = -1;
-        static final long POW10[] = {
-                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-                1000000000, 10000000000L, 100000000000L, 1000000000000L,
-                10000000000000L, 100000000000000L, 1000000000000000L};
-
-        static {
-            for (int i = 0; i < floatDigits.length; i++) {
-                floatDigits[i] = INVALID_CHAR_FOR_NUMBER;
-                intDigits[i] = INVALID_CHAR_FOR_NUMBER;
-            }
-            for (int i = '0'; i <= '9'; ++i) {
-                floatDigits[i] = (i - '0');
-                intDigits[i] = (i - '0');
-            }
-            floatDigits[','] = END_OF_NUMBER;
-            floatDigits[']'] = END_OF_NUMBER;
-            floatDigits['}'] = END_OF_NUMBER;
-            floatDigits[' '] = END_OF_NUMBER;
-            floatDigits['.'] = DOT_IN_NUMBER;
-        }
-
+        private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
+        private static final int MAX_UINT64_LAST_DIGIT = 5; // 18446744073709551615 % 10
+        private static final long MAX_EXACT_DOUBLE = 1L << 53;
+        private static final double[] EXACT_POW10 = {
+                1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
+                1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
+        private static final long MAX_EXACT_FLOAT = 1L << 24;
+        private static final float[] EXACT_FLOAT_POW10 = {1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f};
+        private static final long FLOAT_ROUNDING_BITS = (1L << 29) - 1; // double bits below the float mantissa
+        private static final long FLOAT_MIDPOINT = 1L << 28;
+        private static final int MIN_POW10 = -342; // 19 digits * 10^-343 round to zero
+        private static final int MAX_POW10 = 308; // 1 * 10^309 rounds to infinity
+        private static final long INFINITY_BITS = Double.doubleToRawLongBits(Double.POSITIVE_INFINITY);
+        private static final long[] POW5_128 = computePowersOfFive();
     }
 
     private JsonDecoding() {

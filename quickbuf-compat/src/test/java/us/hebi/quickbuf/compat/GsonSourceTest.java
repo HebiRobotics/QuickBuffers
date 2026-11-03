@@ -59,6 +59,31 @@ public class GsonSourceTest extends JsonSourceTest {
     }
 
     @Override
+    public void testInvalidFloatingPointValues() {
+        // not run: Gson throws unchecked NumberFormatExceptions for invalid numbers
+    }
+
+    @Override
+    public void testInvalidIntegerValues() {
+        // not run: Gson throws unchecked NumberFormatExceptions for invalid numbers
+    }
+
+    @Override
+    public void testUnsignedInt64() {
+        // not run: Gson reads uint64 as a signed long
+    }
+
+    @Override
+    public void testUnsignedIntegralValues() {
+        // not run: Gson reads uint64 as a signed long
+    }
+
+    @Override
+    public void testUnsignedRoundTrip() {
+        // not run: Gson reads uint64 as a signed long
+    }
+
+    @Override
     protected JsonSource newJsonSource(String json) {
         return new GsonSource(json);
     }

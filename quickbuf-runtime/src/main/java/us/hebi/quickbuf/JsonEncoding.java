@@ -44,7 +44,7 @@ class JsonEncoding {
         /**
          * RFC4648
          */
-        static void writeQuotedBase64(final byte[] bytes, final int length, RepeatedByte output) {
+        static void writeQuotedBase64(final byte[] bytes, final int offset, final int length, RepeatedByte output) {
 
             // Size output buffer
             final int encodedLength = ((length + 2) / 3) << 2;
@@ -55,7 +55,8 @@ class JsonEncoding {
             // Encode 24-bit blocks
             int i;
             final int blockableLength = (length / 3) * 3;
-            for (i = 0; i < blockableLength; i += 3, pos += 4) {
+            final int blockableEnd = offset + blockableLength;
+            for (i = offset; i < blockableEnd; i += 3, pos += 4) {
                 // Copy next three bytes into lower 24 bits of int
                 final int bits = (bytes[i] & 0xff) << 16 | (bytes[i + 1] & 0xff) << 8 | (bytes[i + 2] & 0xff);
 
@@ -92,15 +93,17 @@ class JsonEncoding {
 
         static void writeRawAscii(CharSequence sequence, RepeatedByte output) {
             final int length = sequence.length();
-            output.reserve(length);
+            output.reserveGrowing(length);
             for (int i = 0; i < length; i++) {
                 output.array[output.length++] = (byte) sequence.charAt(i);
             }
         }
 
         static void writeQuotedUtf8(Utf8String sequence, RepeatedByte output) {
-            final int numBytes = sequence.size();
-            final byte[] utf8 = sequence.bytes();
+            writeQuotedUtf8(sequence.bytes(), 0, sequence.size(), output);
+        }
+
+        static void writeQuotedUtf8(final byte[] utf8, final int start, final int numBytes, RepeatedByte output) {
             int i = 0;
 
             // Fast-path: no escape support
@@ -111,7 +114,7 @@ class JsonEncoding {
                 out[offset - 1] = '"';
 
                 for (; i < numBytes; i++) {
-                    final byte c = utf8[i];
+                    final byte c = utf8[start + i];
                     if (CAN_DIRECT_WRITE_UTF8[c & 0xFF]) {
                         out[offset + i] = c;
                     } else {
@@ -126,7 +129,7 @@ class JsonEncoding {
 
             // Slow-path: with escape support
             for (; i < numBytes; i++) {
-                final byte c = utf8[i];
+                final byte c = utf8[start + i];
                 if (CAN_DIRECT_WRITE_UTF8[c & 0xFF]) {
                     final int offset = output.addLength(1);
                     output.array[offset] = c;
@@ -255,7 +258,7 @@ class JsonEncoding {
     static class NumberEncoding {
 
         public static void writeInt(final int value, final RepeatedByte output) {
-            output.reserve(MAX_INT_SIZE);
+            output.reserveGrowing(MAX_INT_SIZE);
             if (value < 0) {
                 if (value == Integer.MIN_VALUE) {
                     output.addAll(MIN_INT);
@@ -269,7 +272,7 @@ class JsonEncoding {
         }
 
         public static void writeLong(final long value, final RepeatedByte output) {
-            output.reserve(MAX_LONG_SIZE);
+            output.reserveGrowing(MAX_LONG_SIZE);
             if (value < 0) {
                 if (value == Long.MIN_VALUE) {
                     output.addAll(MIN_LONG);
@@ -279,6 +282,17 @@ class JsonEncoding {
                 output.length = writePositiveLong(-value, output.array, output.length);
             } else {
                 output.length = writePositiveLong(+value, output.array, output.length);
+            }
+        }
+
+        public static void writeUnsignedLong(final long value, final RepeatedByte output) {
+            if (value >= 0) {
+                writeLong(value, output);
+            } else {
+                // write all but the last digit as a signed value
+                final long quotient = (value >>> 1) / 5;
+                writeLong(quotient, output);
+                output.add((byte) ('0' + (value - quotient * 10)));
             }
         }
 
@@ -390,7 +404,7 @@ class JsonEncoding {
         }
 
         public static void writeDouble(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE + 1); // sign before subsequent reserve
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE + 1); // sign before subsequent reserve
             final double pval = writeSpecialValues(val, max3, output);
             if (pval >= 0) {
                 if (pval < max12) {
@@ -419,7 +433,7 @@ class JsonEncoding {
          * comma precision depending on the value size.
          */
         static void writeDouble12(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max12, output);
             if (pval >= 0) {
 
@@ -463,7 +477,7 @@ class JsonEncoding {
         }
 
         static void writeDouble9(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max9, output);
             if (pval >= 0) {
 
@@ -501,7 +515,7 @@ class JsonEncoding {
         }
 
         static void writeDouble6(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max6, output);
             if (pval >= 0) {
 
@@ -534,7 +548,7 @@ class JsonEncoding {
         }
 
         static void writeDouble3(final double val, final RepeatedByte output) {
-            output.reserve(MAX_FIXED_DOUBLE_SIZE);
+            output.reserveGrowing(MAX_FIXED_DOUBLE_SIZE);
             final double pval = writeSpecialValues(val, max3, output);
             if (pval >= 0) {
 
@@ -821,7 +835,7 @@ class JsonEncoding {
         @Override
         public void writeFloat(float value, RepeatedByte output) {
             try {
-                this.output = output.reserve(MAX_CHARS_FLOAT);
+                this.output = output.reserveGrowing(MAX_CHARS_FLOAT);
                 final int type = Schubfach.encodeFloat(value, this);
                 if (type != Schubfach.NON_SPECIAL) {
                     writeSpecial(type, output);
@@ -834,7 +848,7 @@ class JsonEncoding {
         @Override
         public void writeDouble(double value, RepeatedByte output) {
             try {
-                this.output = output.reserve(MAX_CHARS_DOUBLE);
+                this.output = output.reserveGrowing(MAX_CHARS_DOUBLE);
                 final int type = Schubfach.encodeDouble(value, this);
                 if (type != Schubfach.NON_SPECIAL) {
                     writeSpecial(type, output);
