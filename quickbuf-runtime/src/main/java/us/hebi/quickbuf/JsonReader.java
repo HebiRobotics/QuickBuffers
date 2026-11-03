@@ -232,6 +232,7 @@ public final class JsonReader implements Closeable {
     public CharSequence readName() throws IOException {
         consume(PEEKED_NAME, "a name");
         final long start = getPosition();
+        path[depth - 1] = -1;
         readQuotedChars(name.clear());
         path[depth - 1] = nameOffset = start;
         peekValueAfterName();
@@ -1124,6 +1125,7 @@ public final class JsonReader implements Closeable {
 
     private void skipName() throws IOException {
         final long start = getPosition();
+        path[depth - 1] = -1;
         skipQuoted();
         path[depth - 1] = start;
     }

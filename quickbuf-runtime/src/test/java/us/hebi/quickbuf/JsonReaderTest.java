@@ -165,6 +165,7 @@ public class JsonReaderTest {
                 getError(() -> JsonReader.newInstance("[1e999]").readValue()));
         assertError("Expected a value but reached the end of the input at offset 0", () -> JsonReader.newInstance("").readValue());
         assertError("Expected a value but reached the end of the input for field 'a[0]' at offset 6", () -> JsonReader.newInstance("{\"a\":[").readValue());
+        assertError("Invalid escape sequence '\\x' for field 'a' at offset 14", () -> JsonReader.newInstance("{\"a\":{\"bb\":1,\"\\x\":2}}").readValue());
     }
 
     @Test
@@ -467,6 +468,7 @@ public class JsonReaderTest {
         assertError("Expected ':' but got ',' for field '[0].b' at offset 11", () -> JsonReader.newInstance("[{\"a\":1,\"b\",2}]").skipValue());
         assertError("Trailing comma before ']' at offset 4", () -> JsonReader.newInstance("[[1,]]").skipValue());
         assertError("Expected ',' or ']' but reached the end of the input at offset 6", () -> JsonReader.newInstance("[[1,2]").skipValue());
+        assertError("Unexpected end of input for field 'a' at offset 14", () -> JsonReader.newInstance("{\"a\":{\"b\":1,\"c").skipValue());
     }
 
     @Test
