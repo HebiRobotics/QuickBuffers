@@ -2,7 +2,7 @@
 
 In order to support the `pluginArtifact` parameter (`"us.hebi.quickbuf:protoc-gen-quickbuf:${version}"`) of the [protoc-jar-maven-plugin](https://github.com/os72/protoc-jar-maven-plugin), we need to upload native executables to Maven Central and match the naming convention of [protoc](https://repo1.maven.org/maven2/com/google/protobuf/protoc/3.20.0/) and the [protoc-gen-grpc-java](https://repo1.maven.org/maven2/io/grpc/protoc-gen-grpc-java/1.9.1/) plugin.
 
-The Java bytecode can be compiled to a standalone native executable using [GraalVM](https://www.graalvm.org/). This also gets rid of requiring an installed Java runtime and significantly speeds up execution due to ahead of time compilation and faster startup time. The caveat is that the images need to be compiled on each supported platform, which currently requires a self-hosted runner for linux-aarch64.
+The Java bytecode can be compiled to a standalone native executable using [GraalVM](https://www.graalvm.org/). This also gets rid of requiring an installed Java runtime and significantly speeds up execution due to ahead of time compilation and faster startup time. The caveat is that the images need to be compiled on each supported platform, which is done on Github hosted runners.
 
 Releasing to Maven Central as well as Conveyor packaging happen automatically in a Github action. It can be triggered manually in the action interface.
 
@@ -10,7 +10,6 @@ Releasing to Maven Central as well as Conveyor packaging happen automatically in
 
 * Update version
   * `mvn versions:set -DprocessAllModules -DnewVersion=${NEW_VERSION}`
-  * update `app.version` in `../conveyor.conf`
   * update version in `../Readme.md`
 * Create a tag
 * [Trigger Github Action](https://github.com/HebiRobotics/QuickBuffers/actions)
