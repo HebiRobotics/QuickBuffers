@@ -38,6 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -441,6 +442,22 @@ public class ProtoTests {
     }
 
     @Test
+    public void testUtf8Helpers() {
+        for (String value : new String[]{"", "ascii", "umlauts \u00e4\u00f6\u00fc", "emoji \uD83D\uDCA9"}) {
+            byte[] expected = value.getBytes(UTF_8);
+            assertEquals(expected.length, ProtoUtil.encodedLengthUtf8(value));
+
+            byte[] actual = new byte[expected.length + 2];
+            assertEquals(expected.length + 1, ProtoUtil.encodeUtf8(value, actual, 1, expected.length));
+            assertArrayEquals(expected, Arrays.copyOfRange(actual, 1, expected.length + 1));
+
+            StringBuilder decoded = new StringBuilder();
+            ProtoUtil.decodeUtf8(actual, 1, expected.length, decoded);
+            assertEquals(value, decoded.toString());
+        }
+    }
+
+    @Test
     public void testRepeatedStrings() throws IOException {
         TestAllTypes msg = TestAllTypes.parseFrom(CompatibilityTest.repeatedStrings());
         assertEquals(4, msg.getRepeatedString().length());
@@ -505,6 +522,41 @@ public class ProtoTests {
         enums.addAll(NestedEnum.FOO, NestedEnum.BAR);
         enums.addAll(enums);
         assertEquals("[1, 2, 1, 2]", enums.toString());
+    }
+
+    @Test
+    public void testRepeatedBytesFromBuffers() {
+        for (ByteBuffer buffer : new ByteBuffer[]{ByteBuffer.allocate(4), ByteBuffer.allocateDirect(4)}) {
+            buffer.put(new byte[]{1, 2, 3, 4});
+            RepeatedBytes bytes = RepeatedBytes.newEmptyInstance();
+
+            buffer.position(1);
+            bytes.add(buffer);
+            assertEquals(4, buffer.position());
+            assertArrayEquals(new byte[]{2, 3, 4}, bytes.get(0).toArray());
+
+            buffer.position(3);
+            bytes.set(0, buffer);
+            assertArrayEquals(new byte[]{4}, bytes.get(0).toArray());
+
+            buffer.position(0);
+            bytes.get(0).addAll(buffer);
+            assertArrayEquals(new byte[]{4, 1, 2, 3, 4}, bytes.get(0).toArray());
+        }
+    }
+
+    @Test
+    public void testRepeatedMessageSort() {
+        RepeatedMessage<TestAllTypes> messages = RepeatedMessage.newEmptyInstance(TestAllTypes.getFactory());
+        for (int value : new int[]{3, 1, 2}) {
+            messages.next().setOptionalInt32(value);
+        }
+        TestAllTypes three = messages.get(0);
+        messages.sort((a, b) -> Integer.compare(a.getOptionalInt32(), b.getOptionalInt32()));
+        assertEquals(1, messages.get(0).getOptionalInt32());
+        assertEquals(2, messages.get(1).getOptionalInt32());
+        assertEquals(3, messages.get(2).getOptionalInt32());
+        assertSame(three, messages.get(2));
     }
 
     @Test

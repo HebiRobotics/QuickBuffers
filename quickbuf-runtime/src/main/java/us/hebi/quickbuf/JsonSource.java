@@ -202,9 +202,34 @@ public abstract class JsonSource implements Closeable {
      * Reads a message value from the source and merges the contents into the provided message
      */
     public <ProtoMsg extends ProtoMessage<ProtoMsg>> ProtoMsg readMessage(final ProtoMsg msg) throws IOException {
+        if (recursionDepth >= recursionLimit) {
+            throw InvalidJsonException.recursionLimitExceeded();
+        }
+        ++recursionDepth;
         msg.mergeFrom(this);
+        --recursionDepth;
         return msg;
     }
+
+    /**
+     * Set the maximum message recursion depth. In order to prevent malicious
+     * messages from causing stack overflows, {@code JsonSource} limits
+     * how deeply messages may be nested. The default limit is 64.
+     *
+     * @return the old limit.
+     */
+    public int setRecursionLimit(final int limit) {
+        if (limit < 0) {
+            throw new IllegalArgumentException("Recursion limit cannot be negative: " + limit);
+        }
+        final int oldLimit = recursionLimit;
+        recursionLimit = limit;
+        return oldLimit;
+    }
+
+    int recursionDepth = 0;
+    private int recursionLimit = DEFAULT_RECURSION_LIMIT;
+    private static final int DEFAULT_RECURSION_LIMIT = 64;
 
     /**
      * Skips the current value
@@ -531,6 +556,7 @@ public abstract class JsonSource implements Closeable {
         public JsonSource setInput(byte[] bytes, int offset, int length) {
             reader.setInput(bytes, offset, length);
             currentField = null;
+            recursionDepth = 0;
             return this;
         }
 
@@ -538,6 +564,7 @@ public abstract class JsonSource implements Closeable {
         public JsonSource setInput(InputStream inputStream) {
             reader.setInput(inputStream);
             currentField = null;
+            recursionDepth = 0;
             return this;
         }
 
