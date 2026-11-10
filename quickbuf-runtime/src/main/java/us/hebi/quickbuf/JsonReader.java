@@ -356,8 +356,8 @@ public final class JsonReader implements Closeable {
         if (length < 0) {
             throw error("Invalid base64 string", start);
         }
-        store.clear();
-        Base64.decode(value.array, 0, value.length, store.array, store.addLength(length), length);
+        final int offset = store.clear().addLength(length);
+        Base64.decode(value.array, 0, value.length, store.array, offset, length);
     }
 
     /**

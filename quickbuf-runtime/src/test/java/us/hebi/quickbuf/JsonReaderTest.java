@@ -336,6 +336,10 @@ public class JsonReaderTest {
         JsonReader.newInstance("\"\"").readBase64(store);
         assertEquals(0, store.length());
 
+        RepeatedByte emptyStore = RepeatedByte.newEmptyInstance();
+        JsonReader.newInstance(json).readBase64(emptyStore);
+        assertEquals(bytes, emptyStore);
+
         assertError("Invalid base64 string for field 'a' at offset 6", () -> {
             JsonReader reader = JsonReader.newInstance("{\"a\":\"AQIDB\"}");
             reader.beginObject().readName();
