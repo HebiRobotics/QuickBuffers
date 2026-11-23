@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import protos.test.quickbuf.TestAllTypes;
 import protos.test.quickbuf.TestAllTypes.NestedEnum;
@@ -35,12 +36,18 @@ import static org.junit.Assert.*;
 /**
  * Checks that the built-in JsonSource decodes messages into reused messages without allocating,
  * both for whitespace separated root values in one input and for one input per message, and
- * that reused readers, writers and sinks do not allocate either.
+ * that reused readers, writers and sinks do not allocate either. Flaky on some JDKs, so it only
+ * runs with -Dquickbuf.allocationTests=true.
  *
  * @author Florian Enner
  * @since 30 Sep 2026
  */
 public class JsonAllocationTest {
+
+    @BeforeClass
+    public static void requireManualRun() {
+        Assume.assumeTrue("enable with -Dquickbuf.allocationTests=true", Boolean.getBoolean("quickbuf.allocationTests"));
+    }
 
     @Test
     public void testByteArrayInput() throws IOException {

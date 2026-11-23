@@ -580,7 +580,7 @@ public class JsonReaderTest {
             assertTrue(reader.readValueRange());
             assertEquals("12345", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
             assertTrue(reader.readValueRange());
-            assertEquals("6\\\"7", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
+            assertEquals("6\"7", new String(reader.valueArray, reader.valueStart, reader.valueEnd - reader.valueStart, Charsets.UTF_8));
             assertFalse(reader.readValueRange());
             reader.readNull();
             assertTrue(reader.readValueRange());
@@ -626,12 +626,12 @@ public class JsonReaderTest {
         }
         assertEquals(expected, tokens(JsonReader.newInstance(new ByteArrayInputStream(bytes))));
 
-        // raw values across refills
+        // unescaped values across refills
         JsonReader reader = JsonReader.newInstance(new SlowInputStream("[\"a\\\"b\", 12345.5e1, true]".getBytes(Charsets.UTF_8), 1));
         RepeatedByte raw = RepeatedByte.newEmptyInstance();
         reader.beginArray();
         reader.readValueBytes(raw);
-        assertEquals("a\\\"b", new String(raw.toArray(), Charsets.UTF_8));
+        assertEquals("a\"b", new String(raw.toArray(), Charsets.UTF_8));
         reader.readValueBytes(raw);
         assertEquals("12345.5e1", new String(raw.toArray(), Charsets.UTF_8));
         reader.readValueBytes(raw);

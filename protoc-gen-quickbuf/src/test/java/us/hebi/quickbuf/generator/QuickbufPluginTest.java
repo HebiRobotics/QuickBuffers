@@ -121,6 +121,18 @@ public class QuickbufPluginTest {
     }
 
     @Test
+    public void testProto3PackedByDefault() {
+        RequestInfo info = RequestInfo.withoutTypeMap(TestRequestLoader.getUnsupportedProto3Request());
+        RequestInfo.FieldInfo field = info.getFiles().stream()
+                .flatMap(file -> file.getMessageTypes().stream())
+                .filter(type -> type.getDescriptor().getName().equals("RootMessage3"))
+                .flatMap(type -> type.getFields().stream())
+                .filter(f -> f.getDescriptor().getName().equals("repeated_field"))
+                .findFirst().orElseThrow(AssertionError::new);
+        assertTrue(field.isPacked());
+    }
+
+    @Test
     @Ignore("manual debugging info")
     public void printRequestPackages() throws IOException {
         CodeGeneratorRequest request = TestRequestLoader.getAllTypesEagerRequest();

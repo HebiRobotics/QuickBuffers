@@ -657,7 +657,16 @@ public abstract class JsonSource implements Closeable {
         public <T extends ProtoEnum<?>> T readEnum(ProtoEnum.EnumConverter<T> converter) throws IOException {
             readValueBytes();
             if (JsonDecoding.Numbers.isInteger(buffer.array, 0, buffer.length)) {
-                return converter.forNumber((int) JsonDecoding.Numbers.readLong(buffer.array, 0, buffer.length));
+                final long number;
+                try {
+                    number = JsonDecoding.Numbers.readLong(buffer.array, 0, buffer.length);
+                } catch (InvalidJsonException invalid) {
+                    throw fieldError("Invalid number '" + bufferViewAscii + "'");
+                }
+                if ((int) number != number) {
+                    throw outOfRange("enum", number);
+                }
+                return converter.forNumber((int) number);
             } else {
                 return converter.forName(bufferViewAscii);
             }

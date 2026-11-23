@@ -1,6 +1,6 @@
 /*-
  * #%L
- * quickbuf-benchmarks
+ * quickbuf-compat
  * %%
  * Copyright (C) 2019 HEBI Robotics
  * %%
