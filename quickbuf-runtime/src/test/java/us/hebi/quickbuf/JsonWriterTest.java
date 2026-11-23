@@ -26,11 +26,14 @@ import us.hebi.quickbuf.ProtoUtil.Charsets;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -255,6 +258,21 @@ public class JsonWriterTest {
         assertEquals("null", JsonWriter.newInstance().writeValue(null).toString());
         assertEquals("[]", JsonWriter.newInstance().writeValue(new Object[0]).toString());
         assertEquals("{}", JsonWriter.newInstance().writeValue(Collections.emptyMap()).toString());
+    }
+
+    @Test
+    public void testWriteValueExactNumbers() {
+        assertEquals("[18446744073709551616,0.10000000000000000555,1E+400,9007199254740993,7]", JsonWriter.newInstance().writeValue(Arrays.asList(
+                BigInteger.ONE.shiftLeft(64),
+                new BigDecimal("0.10000000000000000555"),
+                new BigDecimal("1E+400"),
+                new AtomicLong(9007199254740993L),
+                new AtomicInteger(7))).toString());
+    }
+
+    @Test
+    public void testWriteValueUtf8String() {
+        assertEquals("[\"x\\ny\"]", JsonWriter.newInstance().writeValue(Collections.singletonList(Utf8String.newInstance("x\ny"))).toString());
     }
 
     @Test
