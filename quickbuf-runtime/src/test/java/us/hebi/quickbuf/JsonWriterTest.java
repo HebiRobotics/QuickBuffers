@@ -258,6 +258,17 @@ public class JsonWriterTest {
     }
 
     @Test
+    public void testNullNameKeepsState() {
+        JsonWriter writer = JsonWriter.newInstance().beginObject();
+        try {
+            writer.writeName((CharSequence) null);
+            fail("expected a NullPointerException");
+        } catch (NullPointerException expected) {
+        }
+        assertEquals("{\"a\":1}", writer.writeName("a").writeInt(1).endObject().toString());
+    }
+
+    @Test
     public void testWriteValueRoundTrip() throws IOException {
         String json = "{\"a\":[1.5,-3,\"x\\ny\",true,null,{},[]],\"b\":{\"c\":[[0.25]],\"d\":false},\"e\":\"\"}";
         Object value = JsonReader.newInstance(json).readValue();

@@ -170,6 +170,7 @@ public final class JsonWriter {
     }
 
     public JsonWriter writeName(CharSequence name) {
+        ProtoUtil.checkNotNull(name);
         if (beforeName() != 0) {
             writeByte(',');
         }
