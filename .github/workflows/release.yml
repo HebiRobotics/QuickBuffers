@@ -25,6 +25,9 @@ on:
         description: "Conveyor Revision"
         default: '0'
 
+permissions:
+  contents: read
+
 jobs:
   native-plugins:
     strategy:
@@ -132,9 +135,7 @@ jobs:
       with:
         distribution: zulu
         java-version: 8
-    - uses: stCarolas/setup-maven@v5.1
-      with:
-        maven-version: 3.9.11
+        cache: maven
 
     - name: Import GPG Key
       uses: crazy-max/ghaction-import-gpg@v7
@@ -188,9 +189,6 @@ jobs:
           distribution: zulu
           java-version: 8
           cache: maven
-      - uses: stCarolas/setup-maven@v5.1
-        with:
-          maven-version: 3.9.11
 
       - name: Clean Workspace
         run: mvn clean
@@ -210,30 +208,35 @@ jobs:
             --projects "protoc-gen-quickbuf,quickbuf-compat" -am \
             -DskipTests="${{ github.event.inputs.skipTests }}"
 
-      - name: Create DigiCert auth cert
-        id: auth_cert
-        uses: timheuer/base64-to-file@v1.2
-        with:
-          fileName: 'DigiCert_auth.p12'
-          encodedString: ${{ secrets.DIGICERT_AUTH_CERT_BASE64 }}
+      # Conveyor creates the Windows signing tokens through the Azure CLI session. The official
+      # actions run inside a container that does not make the az session available to other steps.
+      - name: Login to Azure CLI
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          command -v az > /dev/null || curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          client_id=$(jq -r .clientId <<< "$AZURE_CREDENTIALS")
+          client_secret=$(jq -r .clientSecret <<< "$AZURE_CREDENTIALS")
+          tenant_id=$(jq -r .tenantId <<< "$AZURE_CREDENTIALS")
+          echo "::add-mask::$client_id"
+          echo "::add-mask::$client_secret"
+          echo "::add-mask::$tenant_id"
+          az login --service-principal --username "$client_id" --password "$client_secret" --tenant "$tenant_id" > /dev/null
+
+      - name: Conveyor Setup
+        run: |
+          wget https://downloads.hydraulic.dev/conveyor/hydraulic-conveyor_22.3_amd64.deb -O conveyor.deb
+          echo "cc93ff5efd6c224d4764d3137cb973bd39c059fb8b95192306c0f0187b2cc4e9  conveyor.deb" | sha256sum -c
+          sudo apt install ./conveyor.deb
 
       - name: Conveyor Site
-        uses: hydraulic-software/conveyor/actions/build@v22.3
         env:
           APPLE_APP_ID: ${{secrets.APPLE_APP_ID}}
           APPLE_APP_TEAM_ID: ${{secrets.APPLE_APP_TEAM_ID}}
           APPLE_APP_PASSWORD: ${{secrets.APPLE_APP_PASSWORD}}
           SIGNING_KEY: ${{secrets.CONVEYOR_SIGNING_KEY}}
-          DIGICERT_AUTH_CERT: ${{steps.auth_cert.outputs.filePath}}
-          DIGICERT_AUTH_PW: ${{secrets.DIGICERT_AUTH_PW}}
-          DIGICERT_API_KEY: ${{secrets.DIGICERT_API_KEY}}
-          DIGICERT_SIGNING_KEY_ALIAS: ${{secrets.DIGICERT_SIGNING_KEY_ALIAS}}
-        with:
-          conveyor_version: '22.3'
-          signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}
-          agree_to_license: 1
-          command: make site
-          extra_flags: -Kapp.revision="${{ github.event.inputs.conveyorRevision }}" -f conveyor-ci.conf
+          REVISION: ${{ inputs.conveyorRevision }}
+        run: conveyor --agree-to-license=1 -f conveyor-ci.conf -Kapp.revision="$REVISION" make site
 
       - name: Upload site
         uses: actions/upload-artifact@v7
@@ -242,3 +245,7 @@ jobs:
           path: output/*
           retention-days: 10
           # TODO: publish to Github releases directly?
+
+      - name: Cleanup Azure login
+        if: always()
+        run: az logout

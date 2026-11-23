@@ -18,6 +18,7 @@ Behavior changes
 * changed repeated scalar fields in proto3 files to be packed by default. Proto2 files are unchanged
 * changed the built-in `JsonSource` to read input streams through a buffer, so it may read past the end of the root value
 * the `linux-aarch_64` plugin now needs glibc 2.35 or newer (Ubuntu 22.04+)
+* the macOS plugins now need macOS 15 or newer
 * updated the bundled protoc and the generator's protobuf-java to 4.36.2
 
 Performance
