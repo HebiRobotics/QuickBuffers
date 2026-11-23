@@ -79,7 +79,7 @@ jobs:
         path: "protoc-gen-*/target/*.exe"
         retention-days: 10
 
-  native-plugins-rosetta: # Oracle publishes no macOS x64 builds after 25.0.1, so the x64 GraalVM runs under Rosetta
+  native-plugins-rosetta: # GraalVM has no macOS x64 builds after 25.0.1, so the x64 Liberica NIK runs under Rosetta
     runs-on: macos-15
     timeout-minutes: 25
     steps:
@@ -88,12 +88,12 @@ jobs:
       with:
         maven-version: 3.9.11
 
-    - name: Set up x64 GraalVM
+    - name: Set up x64 Liberica NIK
       run: |
         sudo softwareupdate --install-rosetta --agree-to-license
-        archive="graalvm-jdk-25.0.1_macos-x64_bin.tar.gz"
-        curl -sSfLO "https://download.oracle.com/graalvm/25/archive/$archive"
-        echo "$(curl -sSfL "https://download.oracle.com/graalvm/25/archive/$archive.sha256")  $archive" | shasum -a 256 -c
+        archive="bellsoft-liberica-vm-openjdk25.0.5.0.3+6-25.0.5.0.3+1-macos-amd64.tar.gz"
+        curl -sSfLO "https://github.com/bell-sw/LibericaNIK/releases/download/25.0.5.0.3+1-25.0.5.0.3+6/$archive"
+        echo "d6846e1858e260cb6bf4b8685531a5afbd7cd3c3  $archive" | shasum -a 1 -c
         mkdir "$RUNNER_TEMP/graalvm"
         tar -xzf "$archive" -C "$RUNNER_TEMP/graalvm" --strip-components=1
         echo "JAVA_HOME=$RUNNER_TEMP/graalvm/Contents/Home" >> "$GITHUB_ENV"
@@ -103,7 +103,7 @@ jobs:
       run: |
         echo "GRAALVM_HOME: $GRAALVM_HOME"
         echo "JAVA_HOME: $JAVA_HOME"
-        arch -x86_64 mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am -P"makeNative,useNative" -DskipTests="${{ github.event.inputs.skipTests }}"
+        arch -x86_64 mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am -P"makeNative,useNative" -Dnative.optimizationLevel=b -DskipTests="${{ github.event.inputs.skipTests }}"
 
     - name: Check plugin architecture and minimum macOS version
       run: |
@@ -121,7 +121,7 @@ jobs:
 
   maven-artifacts:
     needs: [native-plugins, native-plugins-rosetta]
-    runs-on: [ubuntu-latest]
+    runs-on: [ubuntu-24.04]
     if: ${{ github.event_name == 'workflow_dispatch' }}
     timeout-minutes: 30
     continue-on-error: false
