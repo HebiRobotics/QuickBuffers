@@ -1310,7 +1310,7 @@ public final class JsonReader implements Closeable {
     }
 
     private static final int STREAM_BUFFER_SIZE = 8 * 1024;
-    private static final int DEFAULT_NESTING_LIMIT = 1000;
+    static final int DEFAULT_NESTING_LIMIT = 1000;
     private static final long MAX_UINT64_DIV_10 = 0x1999999999999999L; // 18446744073709551615 / 10
     private static final int MAX_EXPONENT = 100000000; // saturates, as larger exponents round to zero or infinity anyway
 

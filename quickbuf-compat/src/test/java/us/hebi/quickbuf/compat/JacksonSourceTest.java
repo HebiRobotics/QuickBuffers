@@ -72,6 +72,11 @@ public class JacksonSourceTest extends JsonSourceTest {
     }
 
     @Override
+    public void testRecursionLimitAboveNestingLimit() {
+        // not run: Jackson limits nesting to 1000 levels
+    }
+
+    @Override
     protected JsonSource newJsonSource(String json) throws IOException {
         return new JacksonSource(json);
     }

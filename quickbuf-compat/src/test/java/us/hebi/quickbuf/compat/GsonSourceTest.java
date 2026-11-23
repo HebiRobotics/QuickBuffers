@@ -69,6 +69,11 @@ public class GsonSourceTest extends JsonSourceTest {
     }
 
     @Override
+    public void testRecursionLimitAboveNestingLimit() {
+        // not run: Gson limits nesting to 255 levels
+    }
+
+    @Override
     protected JsonSource newJsonSource(String json) {
         return new GsonSource(json);
     }

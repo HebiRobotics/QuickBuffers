@@ -332,6 +332,22 @@ public class JsonSourceTest {
     }
 
     @Test
+    public void testRecursionLimitAboveNestingLimit() throws Exception {
+        final int levels = 600; // 1200 messages in 1800 levels of json
+        StringBuilder json = new StringBuilder();
+        for (int i = 0; i < levels; i++) {
+            json.append("{\"repeatedNestedMessage\":[{\"recursiveMessage\":");
+        }
+        json.append("{}");
+        for (int i = 0; i < levels; i++) {
+            json.append("}]}");
+        }
+        JsonSource source = newJsonSource(json.toString());
+        source.setRecursionLimit(2 * levels + 1);
+        LazyMessage.newInstance().mergeFrom(source);
+    }
+
+    @Test
     public void testManualInput() throws Exception {
         TestAllTypes msg = parseJson(CompatibilityTest.JSON_MANUAL_INPUT);
         assertEquals(CompatibilityTest.JSON_MANUAL_INPUT, msg.toString());

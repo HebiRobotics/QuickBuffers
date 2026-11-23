@@ -577,6 +577,15 @@ public abstract class JsonSource implements Closeable {
             return this;
         }
 
+        /** Raises the nesting limit of the reader as well, repeated fields nest two levels per message */
+        @Override
+        public int setRecursionLimit(int limit) {
+            final int oldLimit = super.setRecursionLimit(limit);
+            final long nesting = Math.max(JsonReader.DEFAULT_NESTING_LIMIT, 2L * limit + 1);
+            reader.setNestingLimit((int) Math.min(Integer.MAX_VALUE, nesting));
+            return oldLimit;
+        }
+
         /** Values beyond the double range become infinite like 1.4, the JsonReader rejects them */
         @Override
         public double readDouble() throws IOException {
