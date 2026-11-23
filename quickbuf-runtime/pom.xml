@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>quickbuf-runtime</artifactId>
+    <name>QuickBuffers Runtime</name>
 
     <properties>
         <javaModuleName>us.hebi.quickbuf.runtime</javaModuleName>

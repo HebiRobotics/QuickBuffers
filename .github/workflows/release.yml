@@ -165,9 +165,8 @@ jobs:
         MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }} # Central Portal user token
         MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN }}
         GPG_KEYNAME: ${{ secrets.MAVEN_GPG_KEYNAME }}
-        GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       run: |
-        echo GPG_TTY=$(tty) >> $GITHUB_ENV
         mvn -B -U ${{ github.event.inputs.mavenGoal }} \
           -s settings.xml \
           -DautoPublish=true \

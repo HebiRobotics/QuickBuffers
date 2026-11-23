@@ -408,12 +408,7 @@
                                 </goals>
                                 <configuration>
                                     <keyname>${gpg.keyname}</keyname>
-                                    <passphraseServerId>${gpg.keyname}</passphraseServerId>
-                                    <gpgArguments>
-                                        <!-- Prevent gpg from using pinentry programs -->
-                                        <arg>--pinentry-mode</arg>
-                                        <arg>loopback</arg>
-                                    </gpgArguments>
+                                    <bestPractices>true</bestPractices> <!-- passphrase only from gpg-agent or MAVEN_GPG_PASSPHRASE -->
                                 </configuration>
                             </execution>
                         </executions>

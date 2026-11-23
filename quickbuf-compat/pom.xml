@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>quickbuf-compat</artifactId>
+    <name>QuickBuffers Compat</name>
 
     <properties>
         <javaModuleName>us.hebi.quickbuf.compat</javaModuleName>
