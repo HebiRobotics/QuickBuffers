@@ -419,6 +419,8 @@ public class JsonSourceTest {
         testError("{\"optionalNestedMessage\":{\"bb\":1},\"optionalNestedEnum\":\"BOGUS\"}", "Encountered unknown enum value on field: 'optionalNestedEnum' at offset 62");
         testError("{\"optionalInt64\":\"12a\"}", "Invalid number '12a' for field 'optionalInt64' at offset 22");
         testError("{\"optionalUint64\":\"18446744073709551616\"}", "Invalid number '18446744073709551616' for field 'optionalUint64' at offset 40");
+        testError("{\"optionalNestedEnum\":99999999999999999999}", "Invalid number '99999999999999999999' for field 'optionalNestedEnum' at offset 42");
+        testError("{\"optionalNestedEnum\":4294967297}", "Value out of range for enum: 4294967297 for field 'optionalNestedEnum' at offset 32");
     }
 
     @Test
