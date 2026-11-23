@@ -131,14 +131,14 @@ public abstract class JsonSource implements Closeable {
 
     public void skipUnknownField() throws IOException {
         if (!ignoreUnknownFields) {
-            throw new InvalidJsonException("Encountered unknown field: '" + currentField + "'");
+            throw error("Encountered unknown field: '" + fieldPath() + "'");
         }
         skipValue();
     }
 
     public void skipUnknownEnumValue() throws IOException {
         if (!ignoreUnknownFields) {
-            throw new InvalidJsonException("Encountered unknown enum value on field: '" + currentField + "'");
+            throw error("Encountered unknown enum value on field: '" + fieldPath() + "'");
         }
     }
 
@@ -505,6 +505,15 @@ public abstract class JsonSource implements Closeable {
         return new InvalidJsonException(message + atField);
     }
 
+    /** Error for a message that already names the field */
+    InvalidJsonException error(String message) {
+        return new InvalidJsonException(message);
+    }
+
+    CharSequence fieldPath() {
+        return currentField;
+    }
+
     // Note: proto3 json accepts base64 with and without padding
     protected static void decodeBase64(String input, RepeatedByte output) {
         final byte[] bytes = input.getBytes(ISO_8859_1); // other chars become an ignored '?'
@@ -606,7 +615,11 @@ public abstract class JsonSource implements Closeable {
             if (isValueInteger() && (reader.numberMantissa >= 0 || (reader.numberNegative && reader.numberMantissa == Long.MIN_VALUE))) {
                 return reader.numberNegative ? -reader.numberMantissa : reader.numberMantissa;
             }
-            return JsonDecoding.Numbers.readLong(reader.valueArray, reader.valueStart, reader.valueEnd);
+            try {
+                return JsonDecoding.Numbers.readLong(reader.valueArray, reader.valueStart, reader.valueEnd);
+            } catch (InvalidJsonException invalid) {
+                throw invalidNumber();
+            }
         }
 
         @Override
@@ -619,7 +632,11 @@ public abstract class JsonSource implements Closeable {
                     return -reader.numberMantissa;
                 }
             }
-            return JsonDecoding.Numbers.readUnsignedLong(reader.valueArray, reader.valueStart, reader.valueEnd);
+            try {
+                return JsonDecoding.Numbers.readUnsignedLong(reader.valueArray, reader.valueStart, reader.valueEnd);
+            } catch (InvalidJsonException invalid) {
+                throw invalidNumber();
+            }
         }
 
         @Override
@@ -801,6 +818,16 @@ public abstract class JsonSource implements Closeable {
         @Override
         InvalidJsonException fieldError(String message) {
             return reader.newError(message);
+        }
+
+        @Override
+        InvalidJsonException error(String message) {
+            return new InvalidJsonException(message, reader.getPosition());
+        }
+
+        @Override
+        CharSequence fieldPath() {
+            return reader.getPath();
         }
 
         private static final byte[] NAN = "NaN".getBytes(ASCII);

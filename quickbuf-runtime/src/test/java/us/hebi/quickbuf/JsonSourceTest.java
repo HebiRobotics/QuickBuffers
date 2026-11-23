@@ -68,8 +68,8 @@ public class JsonSourceTest {
         try {
             wrongMsg.mergeFrom(newJsonSource(json).setIgnoreUnknownFields(false));
             fail("expected to fail on unknown fields");
-        } catch (IOException e) {
-            assertEquals("Encountered unknown field: 'optionalDouble'", e.getMessage());
+        } catch (InvalidJsonException e) {
+            assertEquals("Encountered unknown field: 'optionalDouble'", e.getDescription());
         }
 
     }
@@ -391,8 +391,12 @@ public class JsonSourceTest {
         testError(CompatibilityTest.JSON_REPEATED_BYTES_NULL_VALUE, "Expected non-null value for field 'repeatedBytes[0]' at offset 19");
         testError(CompatibilityTest.JSON_REPEATED_MSG_NULL_VALUE, "Expected '{' but got 'n' for field 'repeatedForeignMessage[0]' at offset 28");
         testError(CompatibilityTest.JSON_BAD_BOOLEAN, "Expected 'false' but got 'fals}' for field 'optionalBool' at offset 17");
-        testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField'");
-        testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField'");
+        testError(CompatibilityTest.JSON_UNKNOWN_FIELD, "Encountered unknown field: 'unknownField' at offset 17");
+        testError(CompatibilityTest.JSON_UNKNOWN_FIELD_NULL, "Encountered unknown field: 'unknownField' at offset 17");
+        testError("{\"optionalNestedMessage\":{\"bb\":1,\"unknownField\":2}}", "Encountered unknown field: 'optionalNestedMessage.unknownField' at offset 48");
+        testError("{\"optionalNestedMessage\":{\"bb\":1},\"optionalNestedEnum\":\"BOGUS\"}", "Encountered unknown enum value on field: 'optionalNestedEnum' at offset 62");
+        testError("{\"optionalInt64\":\"12a\"}", "Invalid number '12a' for field 'optionalInt64' at offset 22");
+        testError("{\"optionalUint64\":\"18446744073709551616\"}", "Invalid number '18446744073709551616' for field 'optionalUint64' at offset 40");
     }
 
     @Test
