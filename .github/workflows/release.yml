@@ -34,9 +34,6 @@ jobs:
           - runner: windows-2025
             platform: windows-x86_64
             timeout: 15
-          - runner: macos-15-intel
-            platform: osx-x86_64
-            timeout: 15
           - runner: macos-15
             platform: osx-aarch_64
             timeout: 10
@@ -56,7 +53,7 @@ jobs:
     - uses: graalvm/setup-graalvm@v1
       with:
         distribution: 'graalvm'
-        version: '25.4'
+        version: '25.5'
         native-image-musl: ${{ matrix.platform == 'linux-x86_64' }}
         native-image-job-reports: 'true'
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -67,6 +64,14 @@ jobs:
         echo "JAVA_HOME: $JAVA_HOME"
         mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am -P"makeNative,useNative" -DskipTests="${{ github.event.inputs.skipTests }}"
 
+    - name: Check plugin architecture and minimum macOS version
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        for exe in protoc-gen-*/target/*.exe; do
+          file "$exe"
+          otool -l "$exe" | grep -A4 LC_BUILD_VERSION | grep minos || echo "  no LC_BUILD_VERSION"
+        done
+
     - name: Upload native plugins
       uses: actions/upload-artifact@v7
       with:
@@ -74,8 +79,48 @@ jobs:
         path: "protoc-gen-*/target/*.exe"
         retention-days: 10
 
+  native-plugins-rosetta: # Oracle publishes no macOS x64 builds after 25.0.1, so the x64 GraalVM runs under Rosetta
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+    - uses: actions/checkout@v7
+    - uses: stCarolas/setup-maven@v5.1
+      with:
+        maven-version: 3.9.11
+
+    - name: Set up x64 GraalVM
+      run: |
+        sudo softwareupdate --install-rosetta --agree-to-license
+        archive="graalvm-jdk-25.0.1_macos-x64_bin.tar.gz"
+        curl -sSfLO "https://download.oracle.com/graalvm/25/archive/$archive"
+        echo "$(curl -sSfL "https://download.oracle.com/graalvm/25/archive/$archive.sha256")  $archive" | shasum -a 256 -c
+        mkdir "$RUNNER_TEMP/graalvm"
+        tar -xzf "$archive" -C "$RUNNER_TEMP/graalvm" --strip-components=1
+        echo "JAVA_HOME=$RUNNER_TEMP/graalvm/Contents/Home" >> "$GITHUB_ENV"
+        echo "GRAALVM_HOME=$RUNNER_TEMP/graalvm/Contents/Home" >> "$GITHUB_ENV"
+
+    - name: Build native plugins # also builds dependencies to the output
+      run: |
+        echo "GRAALVM_HOME: $GRAALVM_HOME"
+        echo "JAVA_HOME: $JAVA_HOME"
+        arch -x86_64 mvn clean package --projects "protoc-gen-quickbuf,quickbuf-compat" -am -P"makeNative,useNative" -DskipTests="${{ github.event.inputs.skipTests }}"
+
+    - name: Check plugin architecture and minimum macOS version
+      run: |
+        for exe in protoc-gen-*/target/*.exe; do
+          file "$exe"
+          otool -l "$exe" | grep -A4 LC_BUILD_VERSION | grep minos || echo "  no LC_BUILD_VERSION"
+        done
+
+    - name: Upload native plugins
+      uses: actions/upload-artifact@v7
+      with:
+        name: native-plugins-osx-x86_64
+        path: "protoc-gen-*/target/*.exe"
+        retention-days: 10
+
   maven-artifacts:
-    needs: [native-plugins]
+    needs: [native-plugins, native-plugins-rosetta]
     runs-on: [ubuntu-latest]
     if: ${{ github.event_name == 'workflow_dispatch' }}
     timeout-minutes: 30
@@ -131,7 +176,7 @@ jobs:
           -DskipTests="${{ github.event.inputs.skipTests }}"
 
   conveyor-site:
-    needs: [native-plugins]
+    needs: [native-plugins, native-plugins-rosetta]
     runs-on: [ubuntu-latest]
     timeout-minutes: 30
     continue-on-error: false

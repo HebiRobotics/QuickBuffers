@@ -81,6 +81,7 @@
 
         <graalvm.tools.version>1.1.14</graalvm.tools.version>
         <native.extension>.exe</native.extension>
+        <native.optimizationLevel>s</native.optimizationLevel> <!-- optimize for download size -->
         <protoc.os>determined-via-profile</protoc.os>
         <protoc.arch>x86_64</protoc.arch>
 
@@ -285,7 +286,7 @@
                         <buildArgs>
                             <arg>-march=compatibility</arg> <!-- support older processors (see #54) -->
                             <arg>--no-fallback</arg>
-                            <arg>-Os</arg> <!-- optimize for download size -->
+                            <arg>-O${native.optimizationLevel}</arg>
                             <arg>--verbose</arg>
                         </buildArgs>
                     </configuration>
