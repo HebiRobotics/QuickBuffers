@@ -77,6 +77,11 @@ public class GsonSource extends JsonSource {
     }
 
     @Override
+    public long readUInt64() throws IOException {
+        return UnsignedNumbers.parseUInt64(reader.nextString());
+    }
+
+    @Override
     public boolean readBool() throws IOException {
         return reader.nextBoolean();
     }

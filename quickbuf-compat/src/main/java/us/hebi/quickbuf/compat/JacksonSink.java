@@ -111,6 +111,15 @@ public class JacksonSink extends JsonSink {
     }
 
     @Override
+    protected void writeUnsignedNumber(long value) throws IOException {
+        if (value >= 0) {
+            writer.writeNumber(value);
+        } else {
+            writer.writeNumber(Long.toUnsignedString(value));
+        }
+    }
+
+    @Override
     protected void writeNumber(int value) throws IOException {
         writer.writeNumber(value);
     }

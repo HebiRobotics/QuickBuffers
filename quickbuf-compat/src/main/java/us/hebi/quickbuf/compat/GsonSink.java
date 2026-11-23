@@ -123,6 +123,15 @@ public class GsonSink extends JsonSink implements Closeable, Flushable {
     }
 
     @Override
+    protected void writeUnsignedNumber(long value) throws IOException {
+        if (value >= 0) {
+            writer.value(value);
+        } else {
+            writer.jsonValue(Long.toUnsignedString(value));
+        }
+    }
+
+    @Override
     protected void writeNumber(int value) throws IOException {
         writer.value(value);
     }
