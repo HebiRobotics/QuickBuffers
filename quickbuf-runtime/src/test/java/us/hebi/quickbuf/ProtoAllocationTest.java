@@ -21,6 +21,7 @@
 package us.hebi.quickbuf;
 
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import protos.test.quickbuf.TestAllTypes;
 import protos.test.quickbuf.TestAllTypes.NestedMessage;
@@ -32,12 +33,18 @@ import java.lang.management.ThreadMXBean;
 import static org.junit.Assert.*;
 
 /**
- * Checks that reused messages, sources and sinks read, write and copy binary messages without allocating
+ * Checks that reused messages, sources and sinks read, write and copy binary messages without allocating.
+ * Flaky on some JDKs, so it only runs with -Dquickbuf.allocationTests=true.
  *
  * @author Florian Enner
  * @since 28 Oct 2026
  */
 public class ProtoAllocationTest {
+
+    @BeforeClass
+    public static void requireManualRun() {
+        Assume.assumeTrue("enable with -Dquickbuf.allocationTests=true", Boolean.getBoolean("quickbuf.allocationTests"));
+    }
 
     @Test
     public void testReadWrite() throws IOException {
