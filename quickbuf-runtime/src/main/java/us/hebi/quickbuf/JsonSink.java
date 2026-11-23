@@ -220,7 +220,7 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeFixed32(final FieldName name, final int value) throws IOException {
-        return writeInt64(name, value & 0xFFFFFFFFL);
+        return writeUInt32(name, value);
     }
 
     public JsonSink writeSFixed32(final FieldName name, final int value) throws IOException {
@@ -228,7 +228,9 @@ public abstract class JsonSink implements Closeable, Flushable {
     }
 
     public JsonSink writeUInt32(final FieldName name, final int value) throws IOException {
-        return writeInt64(name, value & 0xFFFFFFFFL);
+        writeFieldName(name);
+        writeNumber(value & 0xFFFFFFFFL);
+        return this;
     }
 
     public JsonSink writeSInt32(final FieldName name, final int value) throws IOException {

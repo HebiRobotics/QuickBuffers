@@ -20,16 +20,19 @@
 
 package us.hebi.quickbuf.compat;
 
+import com.google.gson.stream.JsonWriter;
 import org.junit.Assert;
 import org.junit.Test;
 import protos.test.quickbuf.TestAllTypes;
 import us.hebi.quickbuf.CompatibilityTest;
+import us.hebi.quickbuf.FieldName;
 import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.JsonSinkTest;
 import us.hebi.quickbuf.JsonSource;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 
 /**
  * @author Florian Enner
@@ -58,9 +61,19 @@ public class GsonSinkTest extends JsonSinkTest {
         Assert.assertEquals(expected, actual);
     }
 
-    @Override
-    public void testUnsignedInt64() {
-        // not run: Gson and Jackson write uint64 as a signed long
+    @Test
+    public void testUInt32WithQuotedInt64() throws IOException {
+        StringWriter output = new StringWriter();
+        JsonSink sink = new GsonSink(new JsonWriter(output)) {
+            @Override
+            public JsonSink writeInt64(FieldName name, long value) throws IOException {
+                return writeString(name, String.valueOf(value));
+            }
+        };
+        TestAllTypes msg = TestAllTypes.newInstance().setOptionalFixed32(-1).setOptionalUint32(-1);
+        msg.getMutableRepeatedUint32().add(-1);
+        sink.writeMessage(msg);
+        Assert.assertEquals("{\"optionalFixed32\":4294967295,\"optionalUint32\":4294967295,\"repeatedUint32\":[4294967295]}", output.toString());
     }
 
     public JsonSink newJsonSink() {

@@ -26,8 +26,12 @@ import us.hebi.quickbuf.JsonEncoding.NumberEncoding;
 import us.hebi.quickbuf.JsonEncoding.StringEncoding;
 import us.hebi.quickbuf.ProtoUtil.Charsets;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Experimental:
@@ -170,6 +174,7 @@ public final class JsonWriter {
     }
 
     public JsonWriter writeName(CharSequence name) {
+        ProtoUtil.checkNotNull(name);
         if (beforeName() != 0) {
             writeByte(',');
         }
@@ -396,12 +401,17 @@ public final class JsonWriter {
             return writeDouble((Double) value);
         } else if (value instanceof Float) {
             return writeFloat((Float) value);
-        } else if (value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte) {
+        } else if (value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte
+                || value instanceof AtomicLong || value instanceof AtomicInteger) {
             return writeLong(((Number) value).longValue());
+        } else if (value instanceof BigInteger || value instanceof BigDecimal) {
+            return writeRaw(value.toString());
         } else if (value instanceof Number) {
             return writeDouble(((Number) value).doubleValue());
         } else if (value instanceof CharSequence) {
             return writeString((CharSequence) value);
+        } else if (value instanceof Utf8String) {
+            return writeString((Utf8String) value);
         } else if (value instanceof Character) {
             return writeString(String.valueOf(value));
         } else if (value instanceof Boolean) {

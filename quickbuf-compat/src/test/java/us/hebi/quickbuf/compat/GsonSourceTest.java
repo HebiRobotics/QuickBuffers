@@ -69,18 +69,8 @@ public class GsonSourceTest extends JsonSourceTest {
     }
 
     @Override
-    public void testUnsignedInt64() {
-        // not run: Gson reads uint64 as a signed long
-    }
-
-    @Override
-    public void testUnsignedIntegralValues() {
-        // not run: Gson reads uint64 as a signed long
-    }
-
-    @Override
-    public void testUnsignedRoundTrip() {
-        // not run: Gson reads uint64 as a signed long
+    public void testRecursionLimitAboveNestingLimit() {
+        // not run: Gson limits nesting to 255 levels
     }
 
     @Override
